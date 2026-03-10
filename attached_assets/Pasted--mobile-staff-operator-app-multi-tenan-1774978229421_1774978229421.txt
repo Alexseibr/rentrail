@@ -1,0 +1,542 @@
+Теперь нужно реализовать следующий mobile-операционный слой для staff/operator app новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что уже готовы:
+- mobile app foundation на Expo / React Native
+- auth/session bootstrap
+- company/branch context
+- dashboard
+- assets list/detail
+- rentals list/detail + workflow actions
+- clients list/detail
+- inquiries list/detail
+- incidents list/detail
+- maintenance list/detail
+- notifications list
+- reusable mobile UI primitives
+- backend endpoints for core modules already exist
+
+## Цель этапа
+Добавить в mobile app foundation, которая делает приложение реально пригодным для полевой работы:
+
+1. QR / barcode scanning foundation
+2. camera/photo evidence foundation
+3. attachment uploads to backend / object storage flow
+4. push notifications foundation
+5. offline mutation queue foundation
+6. background sync hooks foundation
+
+Важно:
+- не делать пока сложную offline-first distributed system
+- не делать BLE integration сейчас
+- не делать production-polished media gallery
+- не делать overly complex document scanner
+- сделать strong MVP foundation, чтобы позже можно было расширить
+
+App по-прежнему staff/operator oriented, а не consumer client app.
+
+Стек:
+- Expo / React Native
+- TypeScript
+- Expo Router or React Navigation (используй то, что уже выбрано)
+- Expo Camera / Barcode scanner APIs or equivalent Expo-supported solution
+- Expo ImagePicker if needed
+- Expo Notifications for push foundation
+- Secure local storage / persistence as needed
+- TanStack Query + local mutation queue pattern
+- clean service abstractions
+
+---
+
+# 1. Общая цель этапа
+
+Mobile app должна начать поддерживать реальные полевые сценарии:
+- оператор сканирует QR транспорта
+- быстро открывает asset или rental
+- фиксирует фото при выдаче/возврате/повреждении
+- прикладывает фото к инциденту/ремонту/возврату
+- получает push-уведомления
+- может выполнить часть действий при плохом интернете через queued mutations
+- позже можно нарастить background sync и richer field workflows
+
+---
+
+# 2. QR / barcode scanning foundation
+
+## 2.1. Цель
+Сделать reusable scanning flow, который позволяет:
+- отсканировать QR транспорта
+- отсканировать internal code / barcode / device code
+- перейти к соответствующей сущности
+
+## 2.2. Нужен reusable scanner screen/module
+Сделай общий scanning module/screen, а не отдельную реализацию в каждом месте.
+
+Поддержи сценарии:
+- scan asset QR
+- scan asset internal code / barcode
+- scan device code
+- future-ready for battery QR
+
+## 2.3. Scanner output modes
+После сканирования должно быть возможно:
+- resolve asset by qrCode/internalCode
+- resolve device by externalId/serial/imei if applicable
+- fallback to generic scan result callback
+
+## 2.4. Routes / UX
+Нужно сделать flow:
+- open scanner
+- request camera permission
+- scan code
+- show loading/resolving state
+- navigate to resolved entity
+- handle not found gracefully
+
+## 2.5. Scanner use cases
+Поддержи integration points:
+- from assets list → scan asset
+- from create rental → scan asset
+- from maintenance/incidents → attach scanned asset
+- from device screens → scan device
+
+## 2.6. Validation
+Сделай simple parser/helper:
+- normalize scan text
+- identify likely qr/internal/device code
+- strip prefixes if needed
+- don’t hardcode only one format if avoidable
+
+## 2.7. What NOT to overbuild
+Не нужно сейчас:
+- multi-code scan sessions
+- advanced AR overlays
+- batch scanning
+- continuous warehouse mode
+
+---
+
+# 3. Camera / photo evidence foundation
+
+## 3.1. Цель
+Добавить reusable фотофиксацию для operational evidence:
+- фото транспорта при выдаче
+- фото транспорта при возврате
+- фото повреждения
+- фото ремонта
+- фото батареи / устройства при необходимости later
+
+## 3.2. Нужен reusable media capture module
+Сделай общий flow:
+- capture photo from camera
+- choose from gallery optionally
+- preview selected image
+- confirm / retake / remove
+- upload
+- attach to target entity
+
+## 3.3. Initial target entities
+Нужно поддержать foundation для attachment/photo usage in:
+- incidents
+- maintenance
+- rentals return flow
+- assets (optional, if backend already has photo support)
+- future check-in/check-out reports
+
+## 3.4. Metadata
+Для каждой фото-attachment полезно хранить/передавать:
+- local uri
+- file name
+- mime type
+- file size
+- capturedAt
+- entityType
+- entityId
+- optional notes/tag
+- optional uploader userId (server-side)
+
+## 3.5. UX
+Нужно:
+- permission request handling
+- loading states
+- upload progress if reasonably easy
+- retry upload if failed
+- clear success/failure messaging
+
+## 3.6. Future-ready
+Не делай пока сложную annotation editor.
+Но не строй flow так, чтобы потом невозможно было добавить:
+- multiple photos
+- photo categories
+- evidence tags
+- comments
+
+---
+
+# 4. Attachment upload foundation
+
+## 4.1. Цель
+Сделать clean upload flow from mobile to backend/object storage.
+
+## 4.2. Архитектурный подход
+Предпочтительно:
+- app requests upload intent / signed upload target from backend
+- app uploads file
+- app confirms attachment record
+
+Либо:
+- app sends multipart to backend if current backend simpler
+
+Выбери clean MVP path и объясни решение.
+Важно: не хардкодить upload flow так, чтобы потом невозможно было масштабировать.
+
+## 4.3. Нужен attachment model foundation
+Если backend еще не имеет unified attachments model, предложи foundation:
+- attachments
+или
+- entity-specific photos tables with shared abstraction
+
+Но mobile layer должен работать через reusable upload service.
+
+## 4.4. Required flows
+Нужно поддержать:
+- upload single photo
+- attach uploaded photo to incident
+- attach uploaded photo to maintenance
+- attach uploaded photo to rental return/check flow
+- retry failed upload
+
+## 4.5. Error scenarios
+Обработай:
+- no internet
+- upload timeout
+- auth expired
+- invalid file type
+- file too large
+- backend rejects attachment
+
+---
+
+# 5. Push notifications foundation
+
+## 5.1. Цель
+Подготовить push notifications для operator app.
+
+## 5.2. MVP scope
+Сделай foundation для:
+- permission request
+- Expo push token registration
+- backend registration endpoint integration
+- handling push received in foreground/background
+- open relevant screen when notification tapped, if payload contains route/entity hints
+
+## 5.3. Backend integration expectation
+Если backend endpoint еще не существует, предложи foundation API contract:
+- POST /mobile/push/register
+- POST /mobile/push/unregister
+И payload model:
+- device push token
+- platform
+- app version
+- current user
+- company context optional
+
+## 5.4. Notification categories
+Подготовь types:
+- inquiry_assigned
+- rental_overdue
+- incident_created
+- maintenance_assigned
+- payment_issue
+- low_battery_alert
+- device_offline
+- blacklist_alert
+- system_message
+
+## 5.5. UX
+Нужно:
+- permission denied handling
+- token refresh handling
+- local registration status in app
+- graceful fallback if push unavailable
+
+## 5.6. What NOT to overbuild
+Не делай сейчас:
+- rich notification actions
+- custom sounds/channels complexity beyond basics
+- marketing pushes
+- full notification preference center unless trivial
+
+---
+
+# 6. Offline mutation queue foundation
+
+## 6.1. Цель
+При плохом интернете оператор не должен сразу терять действие.
+Нужно сделать базовый mutation queue foundation.
+
+## 6.2. Scope
+Не нужно делать full offline-first DB sync.
+Нужно сделать pragmatic queued actions for selected mutations.
+
+## 6.3. Первые supported queued actions
+Выбери небольшой but useful set:
+- mark inquiry contacted
+- create incident
+- create maintenance
+- change asset status
+- rental return action maybe, if safe enough
+- attachment upload retry job
+
+Опиши, какие действия safe for queue in MVP, а какие пока лучше оставлять online-only.
+
+## 6.4. Queue model
+Нужен local persisted mutation queue:
+- id
+- actionType
+- payload
+- createdAt
+- status
+- retryCount
+- lastError
+- companyContext
+- branchContext
+- dependency info optional
+
+## 6.5. Queue statuses
+- queued
+- syncing
+- failed
+- completed
+- canceled
+
+## 6.6. Rules
+- actions must be idempotency-aware where possible
+- network restore should trigger sync attempt
+- queue should survive app restart
+- user should see pending sync items somewhere simple
+- avoid queueing unsafe multi-step workflows without explicit design
+
+## 6.7. UI
+Нужен minimal UI/indicator:
+- sync pending badge/count
+- maybe simple screen in settings/operations:
+  - queued actions
+  - failed actions
+  - retry / discard
+
+---
+
+# 7. Background sync hooks foundation
+
+## 7.1. Goal
+Подготовить future path for background retry/sync without overengineering.
+
+## 7.2. MVP scope
+Сделай foundation hooks/services:
+- app resume triggers queue sync
+- network reconnect triggers queue sync
+- optional periodic foreground timer sync
+- document where true background sync is postponed
+
+## 7.3. Important
+Если Expo limitations or reliability issues exist for real background sync in MVP, do not fake it.
+Implement clean foreground/resume/network-based sync and document future background options.
+
+---
+
+# 8. Connectivity awareness
+
+## 8.1. Need network state awareness
+Добавь network state handling:
+- online/offline indicator
+- disable clearly unsafe online-only actions when offline
+- queue supported actions instead where applicable
+- show meaningful user feedback
+
+## 8.2. UX examples
+- “Нет сети, действие поставлено в очередь”
+- “Нет сети, это действие доступно только онлайн”
+- “Синхронизация восстановлена”
+
+---
+
+# 9. Mobile operational workflows to enhance
+
+## 9.1. Rental return with photo evidence
+Улучши rental return flow:
+- optional/required photos
+- return notes
+- queue upload if needed
+- safe completion UX
+
+## 9.2. Incident creation with photos
+Create incident flow should support:
+- pick related asset/client/rental
+- add description
+- set severity/type
+- capture/attach photos
+- queue if offline-safe
+
+## 9.3. Maintenance creation with photos
+Create maintenance should support:
+- related asset
+- type
+- description
+- optional photos
+- queue if safe
+
+## 9.4. Scan-to-open flow
+Allow operator to:
+- open scanner
+- scan asset QR
+- immediately land on asset detail or rental flow
+
+---
+
+# 10. Reusable mobile services/modules
+
+## 10.1. Create reusable modules
+Нужны отдельные reusable modules/services for:
+- scanner service / scanner screen
+- media capture service
+- upload service
+- push registration service
+- network monitor service
+- sync queue service
+- offline action policy helper
+
+Не размазывай эту логику по screens.
+
+## 10.2. Offline action policy
+Сделай explicit policy helper:
+- which action types are queueable
+- which require online-only
+- why
+
+---
+
+# 11. Suggested screens / UI additions
+
+## 11.1. New screens/components
+Добавь foundation for:
+- ScannerScreen
+- MediaCaptureSheet / MediaPicker
+- UploadProgress component
+- SyncStatusBanner
+- SyncQueueScreen (minimal)
+- NotificationPermissionPrompt if useful
+- Push settings/status row in settings
+
+## 11.2. Integrate into existing screens
+Assets:
+- scan entry point
+- maybe quick scan button in header
+
+Rentals:
+- return flow with photos
+
+Incidents:
+- create with photo attachments
+
+Maintenance:
+- create with photo attachments
+
+Notifications:
+- open target entity when payload allows
+
+Settings:
+- push registration status
+- sync queue status
+
+---
+
+# 12. API layer additions
+
+## 12.1. Frontend/mobile API services
+Сделай clean service methods for:
+- resolve scanned code
+- request upload target / upload file / confirm attachment
+- register push token
+- unregister push token
+- retry queued mutations
+
+## 12.2. If backend endpoints missing
+If some backend endpoints are missing, define expected contract cleanly and stub integration points.
+Do not block the mobile architecture.
+
+---
+
+# 13. Security and privacy considerations
+
+## 13.1. Camera/media
+- handle permissions explicitly
+- don’t store sensitive media forever locally after successful upload unless needed
+- clean temp files if practical
+
+## 13.2. Push
+- unregister token on logout if possible
+- tie token to user/device/company context carefully
+- avoid leaking sensitive content in push previews unless intended
+
+## 13.3. Offline queue
+- persist only necessary payload
+- avoid storing secrets in queue
+- if queued payload contains sensitive notes, keep local storage choice reasonable and document limitations
+
+---
+
+# 14. README/mobile docs update
+
+Добавь:
+- scanner architecture
+- media/upload flow
+- push registration flow
+- offline queue rules
+- which actions are queueable
+- how sync is triggered
+- current limitations
+- future expansion points (QR, photos, push, offline, background sync)
+
+---
+
+# 15. What NOT to do now
+Пока не реализовывай:
+- BLE smart lock controls
+- full offline database replication
+- video uploads
+- OCR/document scanning
+- image annotation editor
+- complex push preference matrix
+- guaranteed background sync worker on all platforms
+- advanced batch scanning
+- warehouse bulk operations
+- route maps with live tracking
+- signature capture
+
+Это позже.
+
+---
+
+# 16. What I want as output
+1. Scanner foundation
+2. Media capture + image picker foundation
+3. Upload service foundation
+4. Push registration foundation
+5. Offline mutation queue foundation
+6. Network awareness layer
+7. Sync status UI
+8. Integration into incidents / maintenance / rental return / asset scan flow
+9. README update
+10. Short explanation of MVP compromises and future hooks
+
+---
+
+# 17. Order of work
+Сначала:
+1. покажи module/service structure additions
+2. опиши scan/upload/push/offline queue architecture
+3. clearly define which actions are queueable vs online-only
+4. only then implement screens/services/hooks
+
+Do not overengineer full offline-first sync.
+Build a pragmatic field-operations foundation.

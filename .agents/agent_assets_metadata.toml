@@ -1,0 +1,31 @@
+uploads = []
+
+[[generated]]
+id = "SfeUUsEXyuUkqdIDiZmfM"
+uri = "file://artifacts/staff-app/assets/images/icon.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "5dLoUSQk6_jvVsjTI4dJM"
+uri = "file://artifacts/staff-app/assets/images/splash-icon.png"
+type = "image"
+title = "generated_image"
+
+[[outputs]]
+id = "MkonT9hs9Kr1lj0GWmgP4"
+uri = "file://exports/platform-functionality.docx"
+type = "word_document"
+title = "Описание функционала платформы (DOCX)"
+
+[[outputs]]
+id = "BDrKMhs-SvOzGi2ERx-3n"
+uri = "file://VeloRent_Documentation.docx"
+type = "word_document"
+title = "VeloRent Platform — Техническая документация"
+
+[[outputs]]
+id = "6RLYvcaxezIzSWqy5XZb2"
+uri = "file://product-description.pdf"
+type = "pdf"
+title = "RideFlow — Описание продукта (PDF)"

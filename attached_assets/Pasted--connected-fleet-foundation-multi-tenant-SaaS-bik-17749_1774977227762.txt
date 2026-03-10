@@ -1,0 +1,748 @@
+Теперь нужно реализовать connected fleet foundation для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что уже готовы:
+- schema and migrations for core modules
+- auth / RBAC / memberships
+- CRUD for branches / stations / clients / assets / rentals / blacklist
+- payments / deposits / incidents / maintenance / reports foundation
+- public pages / inquiries / b2b requests / notifications / feature flags foundation
+- audit service
+- tenant-safe repositories
+- Zod validation
+- company / branch guards
+
+## Цель этапа
+Заложить clean backend foundation для connected mobility:
+1. device registry
+2. asset-device binding
+3. telemetry ingest
+4. telemetry snapshots and events
+5. battery foundation
+6. geofence foundation
+7. command queue foundation
+8. map/reporting extensions for telemetry-aware assets
+
+Важно:
+- пока не интегрировать конкретного hardware vendor tightly
+- строить vendor-agnostic модель
+- пока не делать полноценный real-time websocket streaming layer, если это не нужно для foundation
+- пока не делать complex route optimization
+- архитектура должна быть готова к GPS, battery, smart lock, alarm, geofence, device commands
+
+---
+
+# 1. Общая модель connected fleet
+
+Нужно перейти от просто `asset` к модели:
+- asset
+- device
+- battery
+- telemetry
+- geofence
+- command
+
+При этом:
+- asset остается центральной бизнес-сущностью
+- device — техническая сущность
+- один asset может иметь несколько device bindings
+- battery может быть отдельной сущностью для ebike/escooter
+- telemetry snapshots/events должны быть tenant-safe
+- commands должны идти через queued command model
+
+---
+
+# 2. Device registry foundation
+
+## 2.1. Отдельная сущность devices
+Создай foundation table:
+- devices
+
+Поля:
+- id
+- companyId
+- branchId nullable
+- stationId nullable
+- deviceType
+- provider
+- externalId
+- serialNumber nullable
+- imei nullable
+- simNumber nullable
+- firmwareVersion nullable
+- status
+- capabilities jsonb nullable
+- lastSeenAt nullable
+- metadata jsonb nullable
+- createdAt
+- updatedAt
+- archivedAt nullable
+
+## 2.2. Device types
+Поддержи enum:
+- gps_tracker
+- smart_lock
+- battery_bms
+- controller
+- iot_gateway
+- other
+
+## 2.3. Device statuses
+Поддержи:
+- draft
+- active
+- inactive
+- offline
+- maintenance
+- blocked
+- retired
+
+## 2.4. Uniqueness
+Сделай разумные unique/index rules:
+- externalId + provider unique where applicable
+- imei unique where applicable
+- companyId indexes
+- status indexes
+
+## 2.5. CRUD endpoints
+Реализуй:
+- POST /devices
+- GET /devices
+- GET /devices/:id
+- PATCH /devices/:id
+- POST /devices/:id/archive
+- POST /devices/:id/restore
+- POST /devices/:id/change-status
+
+## 2.6. Access rules
+- devices tenant-scoped
+- branch-scoped users не должны видеть devices других branch, если binding/ownership branch-specific
+- company-level managers/admins can see all company devices
+- superAdmin can see all
+
+---
+
+# 3. Asset-device binding
+
+## 3.1. Отдельная связующая таблица
+Создай table:
+- asset_devices
+
+Поля:
+- id
+- companyId
+- assetId
+- deviceId
+- bindingType
+- isPrimary
+- installedAt
+- removedAt nullable
+- status
+- notes nullable
+- createdAt
+- updatedAt
+
+## 3.2. Binding types
+Поддержи:
+- tracker
+- lock
+- battery_bms
+- controller
+- gateway
+- other
+
+## 3.3. Binding statuses
+Поддержи:
+- active
+- removed
+- suspended
+
+## 3.4. Rules
+- asset и device должны принадлежать одной company
+- если branch-level consistency требуется, валидируй ее
+- один primary tracker/lock per asset per binding type, если applicable
+- removed binding не участвует в current telemetry resolution
+
+## 3.5. Endpoints
+- POST /assets/:id/devices
+- GET /assets/:id/devices
+- POST /assets/:id/devices/:bindingId/remove
+- POST /assets/:id/devices/:bindingId/set-primary
+
+## 3.6. Useful helper
+Сделай service:
+- getCurrentActiveDevicesForAsset(assetId)
+
+---
+
+# 4. Telemetry foundation
+
+## 4.1. Tables
+Создай:
+- telemetry_snapshots
+- telemetry_events
+- location_history
+
+## 4.2. telemetry_snapshots
+Поля:
+- id
+- companyId
+- assetId nullable
+- deviceId nullable
+- batteryId nullable
+- lat nullable
+- lng nullable
+- speed nullable
+- heading nullable
+- batteryPercent nullable
+- batteryVoltage nullable
+- lockState nullable
+- alarmState nullable
+- onlineState nullable
+- odometer nullable
+- payload jsonb nullable
+- recordedAt
+- createdAt
+
+Назначение: хранить последний/периодический срез.
+
+## 4.3. telemetry_events
+Поля:
+- id
+- companyId
+- assetId nullable
+- deviceId nullable
+- batteryId nullable
+- eventType
+- severity
+- payload jsonb nullable
+- recordedAt
+- createdAt
+
+## 4.4. event types
+Поддержи минимум:
+- location_update
+- online
+- offline
+- low_battery
+- charging_started
+- charging_stopped
+- lock_opened
+- lock_closed
+- alarm_armed
+- alarm_disarmed
+- geofence_enter
+- geofence_exit
+- unauthorized_movement
+- tamper_detected
+- battery_disconnected
+- battery_connected
+- ping
+- other
+
+## 4.5. event severity
+Поддержи:
+- info
+- warning
+- critical
+
+## 4.6. location_history
+Поля:
+- id
+- companyId
+- assetId nullable
+- deviceId nullable
+- lat
+- lng
+- speed nullable
+- heading nullable
+- recordedAt
+- createdAt
+
+Нужно хранить history отдельно, чтобы не смешивать с event log.
+
+## 4.7. Rules
+- все telemetry данные tenant-scoped
+- companyId должен быть корректно вычислен по device/asset binding, не blindly trusted
+- assetId можно резолвить по active binding, если ingest пришел от device-level payload
+- если asset не найден, но device существует, telemetry все равно можно принять на device-level
+- invalid or unbound telemetry should not crash ingest pipeline
+
+---
+
+# 5. Telemetry ingest API
+
+## 5.1. Endpoint
+Сделай foundation endpoint:
+- POST /telemetry/ingest
+
+Это machine-to-machine endpoint.
+Не использовать обычный tenant JWT user auth.
+
+## 5.2. Auth for ingest
+Предложи и реализуй простой secure MVP path:
+например:
+- provider API key
+или
+- device secret / ingestion token
+или
+- signed header
+
+Выбери clean minimal design и опиши ее.
+Важно:
+- не оставляй ingest без auth
+- не используй обычный user JWT для device ingest
+
+## 5.3. Input DTO
+Payload должен быть vendor-agnostic.
+Например:
+- provider
+- deviceExternalId or deviceId
+- recordedAt
+- lat/lng
+- speed
+- heading
+- batteryPercent
+- batteryVoltage
+- lockState
+- alarmState
+- onlineState
+- odometer
+- rawPayload optional
+- events optional []
+
+## 5.4. Ingest behavior
+При приеме:
+1. аутентифицируй источник
+2. resolve device
+3. resolve company
+4. optionally resolve active asset binding
+5. сохранить telemetry snapshot
+6. если есть location -> сохранить location history
+7. если есть derived/explicit events -> сохранить telemetry events
+8. update device.lastSeenAt
+9. optionally update asset lastSeenAt / derived fields if clean for foundation
+
+## 5.5. Idempotency / duplicates
+Сделай basic anti-duplicate strategy:
+- if same provider + externalId + recordedAt + payload signature repeated, optionally ignore duplicate snapshot
+Не overengineer, но хотя бы опиши решение.
+
+---
+
+# 6. Telemetry read endpoints
+
+## 6.1. Asset telemetry
+Реализуй:
+- GET /telemetry/assets/:id/latest
+- GET /telemetry/assets/:id/events
+- GET /telemetry/assets/:id/locations
+
+## 6.2. Device telemetry
+Реализуй:
+- GET /telemetry/devices/:id/latest
+- GET /telemetry/devices/:id/events
+
+## 6.3. Filters
+Для events/location:
+- from
+- to
+- eventType
+- severity
+- pagination
+
+## 6.4. Access rules
+- tenant-safe
+- branch-scoped users only for accessible branches/assets
+- company admins/managers all company telemetry
+- superAdmin all
+
+---
+
+# 7. Battery foundation
+
+## 7.1. Отдельная сущность
+Создай:
+- batteries
+- battery_assignments
+- battery_events
+
+## 7.2. batteries fields
+- id
+- companyId
+- branchId nullable
+- stationId nullable
+- serialNumber
+- model nullable
+- capacityWh nullable
+- healthPercent nullable
+- cycleCount nullable
+- currentChargePercent nullable
+- currentVoltage nullable
+- status
+- metadata jsonb nullable
+- createdAt
+- updatedAt
+- archivedAt nullable
+
+## 7.3. battery statuses
+- available
+- installed
+- charging
+- service
+- retired
+
+## 7.4. battery_assignments
+Поля:
+- id
+- companyId
+- batteryId
+- assetId
+- installedAt
+- removedAt nullable
+- installedByUserId nullable
+- removedByUserId nullable
+- status
+- notes nullable
+- createdAt
+- updatedAt
+
+## 7.5. battery assignment statuses
+- active
+- removed
+
+## 7.6. battery_events
+Поля:
+- id
+- companyId
+- batteryId
+- assetId nullable
+- eventType
+- payload jsonb nullable
+- recordedAt
+- createdAt
+
+## 7.7. battery event types
+Поддержи:
+- installed
+- removed
+- charging_started
+- charging_stopped
+- low_battery
+- health_drop
+- disconnected
+- connected
+- other
+
+## 7.8. Endpoints
+- POST /batteries
+- GET /batteries
+- GET /batteries/:id
+- PATCH /batteries/:id
+- POST /batteries/:id/archive
+- POST /assets/:id/batteries/assign
+- POST /assets/:id/batteries/remove
+- GET /assets/:id/batteries
+- GET /batteries/:id/events
+
+## 7.9. Rules
+- only ebike/escooter assets should normally use batteries, but do not hardcode too aggressively if future asset types may also support them
+- one active battery assignment per battery
+- if business rule says one active battery per asset in MVP, enforce it and document it
+- update battery status on assign/remove/charging flow
+
+---
+
+# 8. Geofence foundation
+
+## 8.1. Table
+Создай:
+- geofences
+
+Поля:
+- id
+- companyId
+- branchId nullable
+- stationId nullable
+- name
+- type
+- geometry jsonb
+- rules jsonb nullable
+- isActive
+- createdAt
+- updatedAt
+- archivedAt nullable
+
+## 8.2. geofence types
+Поддержи:
+- operating_zone
+- no_ride_zone
+- return_zone
+- service_zone
+- charging_zone
+
+## 8.3. geofence rules
+Можно хранить jsonb, например:
+- triggersExitEvent
+- triggersEnterEvent
+- hardRestriction
+- returnAllowed
+- speedLimit
+- requiresManualReview
+
+## 8.4. Endpoints
+- POST /geofences
+- GET /geofences
+- GET /geofences/:id
+- PATCH /geofences/:id
+- POST /geofences/:id/archive
+
+## 8.5. Rules
+- tenant-safe
+- branch-scoped visibility if geofence tied to branch
+- geometry validation basic (GeoJSON-like), but do not overengineer GIS if not needed in MVP
+- prepare model so later PostGIS can be introduced if necessary
+
+## 8.6. Geofence evaluation
+Для foundation достаточно:
+- helper/service that can evaluate point-in-zone for simple polygons if geometry valid
+- use this helper during telemetry ingest when lat/lng is present
+- generate geofence_enter / geofence_exit events if desired and feasible
+If too much for this phase, at minimum prepare model and leave TODO with clear interfaces.
+But try to implement basic evaluation if reasonable.
+
+---
+
+# 9. Command queue foundation
+
+## 9.1. Purpose
+Нужен foundation для remote commands:
+- lock
+- unlock
+- arm alarm
+- disarm alarm
+- ping
+- locate
+- disable
+
+## 9.2. Table
+Создай:
+- device_commands
+
+Поля:
+- id
+- companyId
+- assetId nullable
+- deviceId
+- commandType
+- payload jsonb nullable
+- status
+- requestedByUserId nullable
+- queuedAt
+- sentAt nullable
+- acknowledgedAt nullable
+- failedAt nullable
+- expiresAt nullable
+- responsePayload jsonb nullable
+- errorMessage nullable
+- createdAt
+- updatedAt
+
+## 9.3. command types
+- lock
+- unlock
+- arm_alarm
+- disarm_alarm
+- locate
+- ping
+- disable
+
+## 9.4. command statuses
+- queued
+- sent
+- acknowledged
+- failed
+- expired
+- canceled
+
+## 9.5. Endpoints
+- POST /devices/:id/commands
+- GET /devices/:id/commands
+- GET /commands/:id
+
+Optional convenience endpoints:
+- POST /assets/:id/lock
+- POST /assets/:id/unlock
+- POST /assets/:id/alarm/arm
+- POST /assets/:id/alarm/disarm
+
+These can resolve primary active lock/tracker and enqueue command.
+
+## 9.6. Rules
+- device must belong to company
+- command allowed only if device capability supports it
+- commands are queued, not executed inline
+- for now actual provider dispatch can be stubbed / mocked / abstracted
+- command state changes should be possible via service
+- later worker/provider adapter can send actual commands
+
+## 9.7. Provider abstraction
+Сделай foundation interface/abstraction for future:
+- dispatchCommand(device, command)
+- parseCommandAck(...)
+Но пока можно не реализовывать real vendor code.
+
+---
+
+# 10. Map/reporting extensions
+
+## 10.1. Asset live map endpoint
+Сделай:
+- GET /reports/live-map
+
+Возвращает для assets with telemetry:
+- assetId
+- assetType
+- status
+- lat
+- lng
+- batteryPercent if available
+- lockState if available
+- onlineState if available
+- branchId
+- stationId
+- lastSeenAt
+
+Filters:
+- branchId
+- assetType
+- status
+- onlineState
+
+## 10.2. Low battery endpoint
+Сделай:
+- GET /reports/low-battery-assets
+
+Возвращает assets/devices/batteries where battery below threshold.
+Threshold as query param with sensible default.
+
+## 10.3. Offline devices endpoint
+Сделай:
+- GET /reports/offline-devices
+
+Возвращает devices where lastSeenAt older than threshold.
+
+---
+
+# 11. Validation (Zod)
+
+Сделай DTO schemas для:
+- create/update device
+- change device status
+- bind/unbind device
+- telemetry ingest
+- telemetry query filters
+- create/update battery
+- assign/remove battery
+- create/update geofence
+- enqueue command
+- reporting filters
+
+---
+
+# 12. Audit logging
+
+Логируй:
+- device created/updated/archived/status changed
+- asset-device binding created/removed/set-primary
+- battery created/updated/assigned/removed/archived
+- geofence created/updated/archived
+- command queued
+- command status changed if internal action
+- telemetry ingest не надо писать как обычный audit business change for every packet, иначе будет noise
+- internal admin operations around telemetry/device config — yes
+
+---
+
+# 13. Performance / storage considerations
+
+## 13.1. Important
+Telemetry can grow fast.
+Сделай clean indexes and storage separation:
+- indexes on companyId, assetId, deviceId, recordedAt
+- pagination on events/history endpoints
+- avoid loading giant payloads by default
+
+## 13.2. Snapshot strategy
+Опиши clearly:
+- telemetry_snapshots = latest/periodic state table
+- location_history = route points
+- telemetry_events = meaningful events
+
+If you choose to update one latest snapshot row per asset/device instead of append-only snapshots, explain.
+For MVP foundation, append-only + latest query is acceptable, but be explicit.
+
+---
+
+# 14. README update
+
+Добавь:
+- device model
+- asset-device bindings
+- telemetry ingest auth approach
+- battery model
+- geofence model
+- command queue model
+- live map endpoints
+- limitations of current foundation
+- what is stubbed vs fully implemented
+
+---
+
+# 15. Что НЕ делать сейчас
+Пока не реализовывай:
+- realtime websocket subscriptions
+- vendor-specific SDK hard integrations
+- route replay visual frontend
+- predictive maintenance
+- advanced geospatial analytics
+- OTA firmware updates
+- full command worker system with retries/backoff unless lightweight
+- mobile BLE integration
+- push notifications from telemetry
+
+Это позже.
+
+---
+
+# 16. Что хочу получить на выходе
+1. New schema additions:
+   - devices
+   - asset_devices
+   - telemetry_snapshots
+   - telemetry_events
+   - location_history
+   - batteries
+   - battery_assignments
+   - battery_events
+   - geofences
+   - device_commands
+2. Routes/controllers/services/repositories
+3. Ingest auth approach
+4. Telemetry ingest endpoint
+5. Read endpoints
+6. Command queue foundation
+7. Live map / battery / offline reports
+8. README update
+9. Краткое описание MVP-компромиссов and future vendor integration hooks
+
+---
+
+# 17. Порядок работы
+Сначала:
+1. покажи proposed schema additions
+2. покажи endpoint map
+3. опиши ingest auth and asset/device/battery/geofence/command rules
+4. только потом переходи к коду
+
+Не хардкодь логику под одного железного вендора.
+Строй vendor-agnostic connected fleet foundation.

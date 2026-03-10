@@ -1,0 +1,57 @@
+import { z } from "zod/v4";
+
+const envSchema = z.object({
+  PORT: z.string().min(1),
+  DATABASE_URL: z.string().min(1),
+  SESSION_SECRET: z.string().min(8).optional(),
+
+  NODE_ENV: z
+    .enum(["development", "test", "staging", "production"])
+    .default("development"),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace"])
+    .default("info"),
+
+  DEFAULT_OBJECT_STORAGE_BUCKET_ID: z.string().optional(),
+  PRIVATE_OBJECT_DIR: z.string().optional(),
+  PUBLIC_OBJECT_SEARCH_PATHS: z.string().optional(),
+  PUBLIC_OBJECT_CACHE_TTL_SEC: z.preprocess(
+    (val) => (val === undefined ? "3600" : val),
+    z
+      .string()
+      .regex(/^\d+$/, "Must be a whole number (digits only)")
+      .transform(Number)
+      .pipe(z.number().int().positive()),
+  ),
+
+  TELEMETRY_API_KEY: z.string().optional(),
+
+  TELTONIKA_TCP_PORT: z.string().optional(),
+
+  YUKASSA_SHOP_ID: z.string().optional(),
+  YUKASSA_SECRET_KEY: z.string().optional(),
+  YUKASSA_RETURN_URL: z.string().optional(),
+
+  TINKOFF_TERMINAL_KEY: z.string().optional(),
+  TINKOFF_SECRET_KEY: z.string().optional(),
+
+  CLOUDPAYMENTS_PUBLIC_ID: z.string().optional(),
+  CLOUDPAYMENTS_API_SECRET: z.string().optional(),
+});
+
+export type Env = z.infer<typeof envSchema>;
+
+export function validateEnv(): Env {
+  const result = envSchema.safeParse(process.env);
+  if (!result.success) {
+    const issues = result.error.issues.map(
+      (i) => `  ${i.path.join(".")}: ${i.message}`,
+    );
+    throw new Error(`Environment validation failed:\n${issues.join("\n")}`);
+  }
+  return result.data;
+}
+
+export function getEnvProfile(): string {
+  return process.env.NODE_ENV ?? "development";
+}

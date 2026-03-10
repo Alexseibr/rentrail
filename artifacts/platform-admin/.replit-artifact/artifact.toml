@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/platform-admin/"
+title = "Platform Admin"
+version = "1.0.0"
+id = "artifacts/platform-admin"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/platform-admin/" ]
+localPort = 19215
+
+[services.development]
+run = "pnpm --filter @workspace/platform-admin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/platform-admin", "run", "build" ]
+publicDir = "artifacts/platform-admin/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19215"
+BASE_PATH = "/platform-admin/"

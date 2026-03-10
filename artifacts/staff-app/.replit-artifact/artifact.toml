@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/staff-app/"
+title = "Staff App"
+version = "1.0.0"
+id = "artifacts/staff-app"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/staff-app/" ]
+localPort = 26160
+
+[services.development]
+run = "pnpm --filter @workspace/staff-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/staff-app", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/staff-app", "run", "serve" ]
+
+[services.env]
+PORT = "26160"
+BASE_PATH = "/staff-app/"

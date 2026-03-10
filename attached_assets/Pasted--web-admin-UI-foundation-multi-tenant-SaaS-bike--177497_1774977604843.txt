@@ -1,0 +1,724 @@
+Теперь нужно реализовать web admin UI foundation для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что backend foundation уже существует:
+- auth / sessions / RBAC / memberships
+- companies / branches / stations
+- clients
+- assets
+- rentals
+- blacklist
+- payments / deposits
+- incidents / maintenance
+- reports
+- public settings / branding / inquiries / b2b requests / notifications
+- telemetry / devices / batteries / geofences / commands foundation
+
+## Цель этапа
+Сделать первую рабочую web admin panel, через которую можно:
+- логиниться
+- выбирать company context
+- выбирать branch context
+- переходить по разделам
+- управлять core сущностями
+- видеть dashboard summaries
+- работать с inquiries / B2B / notifications
+- работать с devices / telemetry reports
+- настраивать public page / branding
+- подготовить базу для дальнейшей mobile/app/public UI разработки
+
+## Стек
+Используй:
+- React
+- Vite
+- TypeScript
+- TailwindCSS
+- shadcn/ui
+- React Router
+- TanStack Query (если еще не подключен, подключи)
+- Zustand или Context для auth/app context, выбери clean option и объясни
+- forms через react-hook-form + zod resolver
+- таблицы и фильтры без overengineering
+
+Важно:
+- не делать car-specific UI
+- UI должен быть asset-first
+- tenant-aware
+- branch-aware
+- role/permission-aware
+- modular
+- responsive enough, но сейчас приоритет desktop admin experience
+
+---
+
+# 1. Общая архитектура frontend
+
+## 1.1. Нужны отдельные уровни UI
+Сделай структуру:
+- public auth pages
+- protected admin app
+- optional public company page foundation later
+
+Минимум:
+- login page
+- app shell
+- topbar
+- sidebar
+- content area
+- company switcher
+- branch switcher/filter
+- user menu
+- notification center entry
+
+## 1.2. App shell
+Нужен общий layout:
+- sidebar navigation
+- top header
+- current company
+- current branch
+- breadcrumbs optional
+- page title region
+- content region
+
+## 1.3. Routing
+Сделай route structure примерно такого уровня:
+- /login
+- /app/dashboard
+- /app/branches
+- /app/stations
+- /app/clients
+- /app/assets
+- /app/rentals
+- /app/payments
+- /app/deposits
+- /app/blacklist
+- /app/incidents
+- /app/maintenance
+- /app/inquiries
+- /app/b2b-requests
+- /app/devices
+- /app/batteries
+- /app/geofences
+- /app/reports
+- /app/notifications
+- /app/settings/public
+- /app/settings/branding
+- /app/settings/modules
+
+Если superAdmin UI уже возможно, можно подготовить routes позже, но пока tenant admin panel — приоритет.
+
+---
+
+# 2. Auth UI foundation
+
+## 2.1. Login page
+Сделай страницу логина:
+- email
+- password
+- show/hide password
+- loading state
+- error state
+- language-ready texts if easy
+- clean branded but minimal design
+
+## 2.2. Auth state
+Нужно хранить:
+- access token/session state
+- current user
+- memberships
+- permissions
+- current company context
+- current branch context
+
+Сделай clean auth/app state layer.
+
+## 2.3. Protected routes
+Сделай:
+- route guard для authenticated users
+- redirect to /login if unauthorized
+- loading state while /auth/me resolves
+
+## 2.4. Permission-aware rendering
+Нужен helper/hook вида:
+- useHasPermission(permission)
+- useHasAnyPermission([...])
+
+Чтобы:
+- скрывать недоступные menu items
+- защищать страницы
+- контролировать кнопки действий
+
+---
+
+# 3. Company and branch context UX
+
+## 3.1. Company switcher
+Так как один user может быть в нескольких компаниях, нужен switcher.
+
+Показывать:
+- current company
+- список доступных companies
+- role summary if useful
+
+При переключении:
+- сохранять current company in app state
+- optionally persist in local storage
+- refetch scoped data
+
+## 3.2. Branch switcher / filter
+Нужен branch selector:
+- all branches, если доступно
+- конкретный branch
+- only accessible branches
+- зависит от memberships
+
+При переключении:
+- обновлять active branch context/filter
+- не ломать страницы
+- branch-restricted users не должны видеть недоступные branches
+
+## 3.3. Context propagation
+Все API calls должны использовать active company context и, где нужно, active branch context.
+
+Сделай централизованный API client/interceptor/helper.
+
+---
+
+# 4. Navigation structure
+
+## 4.1. Sidebar groups
+Сделай clean sidebar с группами:
+
+### Overview
+- Dashboard
+- Notifications
+
+### Operations
+- Assets
+- Rentals
+- Clients
+- Blacklist
+- Inquiries
+- B2B Requests
+
+### Finance
+- Payments
+- Deposits
+
+### Service & Risk
+- Incidents
+- Maintenance
+
+### Connected Fleet
+- Devices
+- Batteries
+- Geofences
+- Reports / Live Map
+
+### Organization
+- Branches
+- Stations
+
+### Settings
+- Public Settings
+- Branding
+- Modules
+
+Скрывай пункты по permissions/modules when relevant.
+
+---
+
+# 5. Shared UI patterns
+
+## 5.1. Нужны reusable primitives
+Сделай reusable:
+- page header
+- data table wrapper
+- search input
+- filter bar
+- status badge
+- empty state
+- loading state
+- confirm dialog
+- form dialog/drawer
+- pagination
+- error alert
+- metric cards
+- section cards
+
+## 5.2. Tables
+Для list screens сделай consistent data-table pattern:
+- search
+- filters
+- pagination
+- row actions
+- skeleton/loading
+- empty state
+
+Не нужно пока overengineered grid framework.
+
+## 5.3. Forms
+Используй:
+- react-hook-form
+- zod resolver
+- shadcn/ui fields
+- server error handling
+- create/edit reuse where possible
+
+---
+
+# 6. Dashboard UI
+
+## 6.1. Company dashboard
+Сделай `/app/dashboard`
+
+Показывай:
+- total assets
+- active rentals
+- overdue rentals
+- open incidents
+- assets in maintenance
+- revenue period
+- low battery count if telemetry module available
+- offline devices count if available
+- recent inquiries
+- recent B2B requests
+
+Используй backend summary endpoints.
+
+## 6.2. Branch-aware dashboard
+Если выбран конкретный branch, dashboard должен показывать branch-scoped data.
+
+## 6.3. UI sections
+- top metric cards
+- operations summary
+- finance summary
+- alerts/issues summary
+- latest activity list if easy
+- recent leads/inquiries
+
+---
+
+# 7. CRUD screens — core entities
+
+## 7.1. Branches
+Сделай:
+- list page
+- create/edit dialog or page
+- archive action
+- basic filters/search
+
+## 7.2. Stations
+Сделай:
+- list page
+- create/edit
+- filter by branch
+- archive action
+
+## 7.3. Clients
+Сделай:
+- list page
+- search by name/phone/email/document
+- filters by status
+- create/edit
+- detail drawer/page
+- rentals/payments summary if easy
+
+## 7.4. Assets
+Сделай:
+- list page
+- filters:
+  - assetType
+  - status
+  - branch
+  - station
+  - isPublic
+- create/edit
+- detail page/drawer
+- change status action
+- current device/battery summary if available
+- latest telemetry summary if available
+
+## 7.5. Rentals
+Сделай:
+- list page
+- filters by status/client/asset/branch/date
+- create rental form
+- rental detail page/drawer
+- action buttons:
+  - approve
+  - start
+  - extend
+  - return
+  - cancel
+- history/status timeline if easy
+
+## 7.6. Blacklist
+Сделай:
+- list page
+- filters by scope/action
+- create/edit entry
+- blacklist check form/tool
+- badges for effective severity
+
+---
+
+# 8. Finance screens
+
+## 8.1. Payments
+Сделай:
+- list page
+- filters by status/type/branch/date
+- create payment
+- mark paid
+- mark failed
+- refund
+- detail drawer/page
+
+## 8.2. Deposits
+Сделай:
+- list page
+- create deposit
+- hold
+- release
+- forfeit
+- cancel
+- summary indicators:
+  - original
+  - released
+  - forfeited
+  - remaining
+
+---
+
+# 9. Risk and service screens
+
+## 9.1. Incidents
+Сделай:
+- list page
+- filters by status/type/severity/branch
+- create incident
+- edit/update incident
+- escalate / resolve / close actions
+- badges for severity and status
+
+## 9.2. Maintenance
+Сделай:
+- list page
+- filters by status/type/branch
+- create maintenance order
+- start / complete / cancel
+- show related asset
+- cost estimate / actual cost
+- outcome notes
+
+---
+
+# 10. Leads / public flow screens
+
+## 10.1. Inquiries
+Сделай:
+- list page
+- filters by status/branch/date
+- inquiry detail view
+- actions:
+  - mark contacted
+  - convert to client
+  - convert to rental draft
+  - reject
+- show blacklist pre-check result if present
+
+## 10.2. B2B requests
+Сделай:
+- list page
+- filters by status/date
+- detail view
+- actions:
+  - mark contacted
+  - convert
+  - reject
+
+---
+
+# 11. Connected fleet screens
+
+## 11.1. Devices
+Сделай:
+- list page
+- filters by deviceType/status/provider/branch
+- create/edit
+- change status
+- detail view with:
+  - provider
+  - externalId
+  - imei
+  - lastSeenAt
+  - linked assets
+
+## 11.2. Batteries
+Сделай:
+- list page
+- filters by status/branch/station
+- create/edit
+- detail view
+- show current asset assignment
+- assign/remove actions if backend ready
+
+## 11.3. Geofences
+Сделай:
+- list page
+- create/edit
+- type/status filters
+- geometry as raw JSON textarea for MVP acceptable
+- do not overbuild map editor now unless very easy
+
+## 11.4. Reports / live map
+Сделай first screen for:
+- live map summary list
+- low battery assets
+- offline devices
+
+Если map UI сложно на этом этапе, можно начать с:
+- telemetry summary table
+- coordinates display
+- status cards
+Но если легко, add map using a clean library and keep it minimal.
+
+---
+
+# 12. Notifications UI
+
+## 12.1. Notification center
+Сделай:
+- notifications page or topbar panel
+- unread count
+- list notifications
+- mark read
+- mark all read
+
+## 12.2. UX
+Notifications должны быть user-specific.
+Показывай:
+- title
+- body
+- createdAt
+- read/unread state
+
+---
+
+# 13. Settings UI
+
+## 13.1. Public settings
+Сделай страницу:
+- publicEnabled
+- publicSlug
+- publicTitle
+- publicDescription
+- publicPhone
+- publicEmail
+- publicCity
+- publicAddress
+- toggles for:
+  - show assets
+  - show pricing
+  - show stations
+  - show B2B form
+  - show inquiry form
+
+## 13.2. Branding
+Сделай страницу:
+- logoUrl
+- coverImageUrl
+- primaryColor
+- secondaryColor
+- websiteUrl
+- social links
+- preview block if easy
+
+## 13.3. Modules
+Сделай страницу:
+- enabled modules list
+- toggles/readonly depending on permissions
+- clear distinction between platform-controlled vs company-controlled if backend supports it
+
+---
+
+# 14. API layer in frontend
+
+## 14.1. Central API client
+Сделай centralized API client:
+- auth token injection
+- company/branch context headers
+- error normalization
+- 401 handling
+- query helpers
+
+## 14.2. Query hooks
+Сделай clean hooks/services for:
+- auth/me
+- dashboard
+- branches/stations
+- clients
+- assets
+- rentals
+- blacklist
+- payments/deposits
+- incidents/maintenance
+- inquiries/b2b
+- devices/batteries/geofences
+- notifications
+- settings
+
+Не обязательно делать 100% codegen.
+Но слой должен быть organized.
+
+---
+
+# 15. UX rules
+
+## 15.1. Permission-aware pages
+Если нет permission:
+- либо hide nav item
+- либо show access denied page
+Оба варианта допустимы, но поведение должно быть consistent.
+
+## 15.2. Loading and empty states
+У каждой page/list:
+- loading skeleton
+- error state
+- empty state with useful message/action
+
+## 15.3. Branch scope
+Если user branch-restricted:
+- скрывай unavailable branches
+- не давай выбрать forbidden branch
+- filters and forms must respect scope
+
+---
+
+# 16. Public page UI foundation (minimal)
+
+Если времени хватает, сделай minimal public page UI foundation:
+
+## 16.1. Public company page
+Route:
+- /p/:slug
+
+Показывать:
+- logo
+- title
+- description
+- contacts
+- visible assets summary
+- visible stations
+- inquiry form
+- B2B form
+
+## 16.2. Important
+Это пока MVP foundation.
+Не нужно polished marketing site.
+Главное:
+- связка с backend public endpoints
+- чистая структура
+- готовность к доработке
+
+---
+
+# 17. State management
+
+Выбери clean model и объясни:
+- Auth/app context via Zustand or Context
+- server state via TanStack Query
+- UI local state in components
+
+Не делай огромный global store для всего подряд.
+
+---
+
+# 18. Form validation and error handling
+
+- use react-hook-form
+- zod resolver
+- field-level errors
+- submit-level errors
+- mutation loading states
+- optimistic updates only where safe
+
+---
+
+# 19. Styling expectations
+
+Используй:
+- TailwindCSS
+- shadcn/ui
+- clean neutral design
+- clear spacing
+- readable tables/cards
+- practical admin feel
+- avoid decorative clutter
+
+Нужны:
+- consistent status badges
+- card components
+- metric tiles
+- dialogs/drawers
+- tabs where useful
+
+---
+
+# 20. README/frontend docs update
+
+Добавь:
+- app structure
+- route map
+- state management choices
+- how company/branch context works
+- how permission-aware UI works
+- how to run frontend locally
+- env vars needed
+- which screens are implemented
+
+---
+
+# 21. Что НЕ делать сейчас
+Пока не реализовывай:
+- mobile app
+- deep charting dashboard
+- advanced drag-and-drop kanban CRM
+- full map editor
+- websocket live updates everywhere
+- image upload UX polish
+- PDF export
+- localization completion for every string
+- highly polished landing page design system
+
+Это позже.
+
+---
+
+# 22. Что хочу получить на выходе
+1. Frontend app shell
+2. Login page
+3. Protected routing
+4. Company switcher
+5. Branch switcher/filter
+6. Sidebar/topbar/navigation
+7. Dashboard page
+8. CRUD list/form/detail screens for core modules
+9. Notifications UI
+10. Settings pages
+11. Minimal public company page foundation
+12. README update
+13. Краткое описание принятых UI/UX компромиссов
+
+---
+
+# 23. Порядок работы
+Сначала:
+1. покажи frontend folder/module structure
+2. покажи route map
+3. опиши auth/company/branch context strategy
+4. опиши reusable UI primitives
+5. только потом переходи к коду
+
+Не пытайся сразу отполировать весь UI.
+Сначала сделай strong admin foundation with clean architecture.

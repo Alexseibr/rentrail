@@ -1,0 +1,64 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "prepare": "husky",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "test": "vitest run --reporter=verbose",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/unit.xml unit.test",
+    "test:unit:report": "bash -c 'mkdir -p test-results; pnpm run test:unit; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- unit.xml; exit $rc'",
+    "test:integration": "vitest run --config vitest.integration.ts --bail",
+    "test:db-helpers": "vitest run --project api-db-helpers",
+    "test:api": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
+    "test:api:report": "bash -c 'mkdir -p test-results; pnpm run test:api; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- api.xml; exit $rc'",
+    "test:coverage": "vitest run --coverage",
+    "lint": "prettier --check .",
+    "lint:eslint": "eslint .",
+    "lint:eslint:strict": "eslint . --max-warnings 0",
+    "lint:eslint:fix": "eslint . --fix",
+    "lint:fix": "prettier --write .",
+    "format:check": "prettier --check . || (printf '\\n[Format check failed] One or more files are not formatted correctly.\\nRun: pnpm run lint:fix\\n\\n' >&2 && exit 1)",
+    "seed": "pnpm --filter @workspace/scripts run seed-rbac",
+    "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
+    "seed:demo:reset": "pnpm --filter @workspace/scripts run seed-demo:reset",
+    "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
+    "codegen:check": "pnpm --filter @workspace/api-spec run codegen && git --no-optional-locks diff --exit-code -- lib/api-client-react/src/generated/ lib/api-zod/src/generated/ artifacts/mockup-sandbox/src/.generated/ || (printf '\\n[codegen:check failed] Generated files differ from Orval output. Run: pnpm --filter @workspace/api-spec run codegen\\n\\n' >&2 && exit 1)",
+    "type-coverage": "pnpm -r --filter \"./artifacts/**\" --if-present run type-coverage",
+    "ci": "bash ci.sh"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,mjs,cjs,jsx,json,css,md,yaml,yml}": [
+      "prettier --write"
+    ]
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/supertest": "^7.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
+    "@vitest/coverage-v8": "^4.1.2",
+    "eslint": "^10.3.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.2",
+    "prettier": "^3.8.1",
+    "supertest": "^7.2.2",
+    "type-coverage": "^2.29.7",
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "docx": "^9.6.1"
+  }
+}

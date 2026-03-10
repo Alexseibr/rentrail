@@ -1,0 +1,481 @@
+Теперь нужно подготовить go-live и rollout plan для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что уже готовы:
+- backend and database foundation
+- tenant modules
+- connected fleet foundation
+- web admin tenant UI
+- mobile operator app
+- public pages / inquiries / b2b requests
+- QA / tests / demo data / CI-CD / release readiness
+- platform super-admin / SaaS billing / moderation / white-label foundation
+
+## Цель этапа
+Подготовить систему не просто к разработке, а к реальному запуску с первыми клиентами.
+
+Нужно сделать:
+1. go-live strategy
+2. staged rollout plan
+3. environment strategy
+4. migration/data import strategy for first tenants
+5. onboarding flow for first companies
+6. internal ops playbooks
+7. launch checklist
+8. first 30/60/90 days operating model
+
+Важно:
+- запуск должен быть realistic
+- сначала owner tenant (наш собственный бизнес) как tenant #1
+- потом limited pilot tenants
+- потом wider rollout
+- не строить unrealistic big-bang launch
+
+---
+
+# 1. Launch strategy
+
+## 1.1. Recommend phased rollout
+Prepare a staged rollout plan:
+
+### Phase 0 — Internal alpha
+- own company as tenant #1
+- own branches/stations/assets/staff
+- internal operational testing
+- validate workflows with real data
+- no external tenants yet
+
+### Phase 1 — Controlled beta
+- 1–3 friendly pilot companies
+- limited modules enabled
+- close support
+- manual monitoring
+- fast feedback loop
+
+### Phase 2 — Paid pilot / early access
+- 5–10 tenants
+- billing enabled selectively
+- onboarding template stabilized
+- support/documentation improved
+
+### Phase 3 — Public launch
+- broader sales/onboarding
+- stronger support process
+- platform moderation/billing fully active
+
+Document this rollout model clearly.
+
+## 1.2. Non-goals of launch
+Define what is intentionally not promised at initial launch:
+- not every IoT integration
+- not every mobile field workflow
+- not every white-label automation
+- not massive self-serve scale on day one
+
+---
+
+# 2. Environment and deployment strategy
+
+## 2.1. Need explicit environment model
+Document and prepare:
+- local
+- test
+- staging
+- production
+
+## 2.2. Staging rules
+Staging should mirror production enough for:
+- migrations
+- auth
+- public pages
+- mobile app testing
+- telemetry ingest test flows
+- SaaS billing simulation
+- support/demo verification
+
+## 2.3. Production deployment checklist
+Define:
+- infra requirements
+- DB
+- storage
+- env vars
+- secrets
+- domain routing
+- SSL
+- monitoring
+- backup jobs
+- cron/jobs
+- queues if any
+
+If deployment code/config exists, organize it and document it.
+
+---
+
+# 3. Go-live readiness gates
+
+## 3.1. Define hard go-live gates
+Must-have gates before production launch:
+- migrations verified
+- env validation green
+- health endpoints green
+- auth/session flows verified
+- tenant isolation tests green
+- rental/payment/deposit workflows green
+- public page flow verified
+- push/offline queue mobile smoke verified
+- telemetry ingest auth verified if telemetry enabled
+- backups configured
+- logs/monitoring visible
+- seed/demo environment ready
+- super-admin moderation ready
+- billing/manual invoicing process ready if charging tenants
+
+## 3.2. Define soft gates
+Nice-to-have but not blocking:
+- polished analytics
+- advanced public page styling
+- non-critical mobile enhancements
+- richer white-label automation
+
+---
+
+# 4. Data migration / import strategy for first tenants
+
+## 4.1. Goal
+Need realistic path to onboard existing rental businesses.
+
+## 4.2. Importable entities
+Prepare import strategy for:
+- companies
+- branches
+- stations
+- staff users
+- clients
+- assets
+- blacklist entries
+- rental history optionally
+- payments/deposits optionally
+- devices/batteries optionally
+
+## 4.3. MVP approach
+Design practical import paths:
+- CSV/Excel import templates
+- admin-assisted import
+- partial import with validation reports
+- staged import by entity type
+
+## 4.4. Data migration rules
+Need clear rules for:
+- deduplication
+- phone normalization
+- missing branch/station mapping
+- invalid statuses
+- missing required fields
+- import previews
+- import failure reporting
+
+## 4.5. Tenant #1 migration
+Because own company is first tenant, define a special pilot migration plan:
+- source data inventory
+- mapping spreadsheet
+- first import
+- reconciliation checklist
+- manual cleanup workflow
+- signoff criteria
+
+---
+
+# 5. Onboarding flow for first companies
+
+## 5.1. Goal
+Define a repeatable onboarding playbook for first external tenants.
+
+## 5.2. Onboarding stages
+Example:
+1. qualification call
+2. company setup
+3. branch/station setup
+4. staff invitations
+5. asset import
+6. tariff/public page setup
+7. blacklist/import config
+8. workflow training
+9. soft launch
+10. first-week support
+
+## 5.3. Need actual onboarding checklist
+Create onboarding checklist/template for each tenant:
+- legal/company data collected
+- contacts collected
+- plan selected
+- modules enabled
+- branches created
+- staff invited
+- assets imported
+- public page configured
+- test rental completed
+- payment/deposit workflow verified
+- incident/maintenance workflow verified
+- mobile login verified
+
+## 5.4. Ownership
+Define who does what:
+- platform team
+- tenant owner/admin
+- optional support/onboarding specialist
+
+---
+
+# 6. First tenant operating model
+
+## 6.1. Tenant #1 = our own business
+Need explicit operating plan for using own fleet/business as first production tenant.
+
+Define:
+- which branches/stations go live first
+- which staff roles are enabled first
+- which modules are enabled first
+- what data is entered/imported
+- what fallback/manual processes remain
+- what success metrics determine readiness for external tenants
+
+## 6.2. Recommended first-live scope
+Choose a limited live scope such as:
+- one city or one branch first
+- one or two stations
+- limited asset subset
+- limited staff set
+- rentals/payments/maintenance/inquiries first
+- telemetry only on subset if needed
+
+Document rationale.
+
+---
+
+# 7. Internal ops playbooks
+
+## 7.1. Need platform operational playbooks
+Create practical playbooks for:
+- new tenant approval
+- tenant setup
+- billing issue handling
+- blocked tenant handling
+- public page misconfiguration
+- import failure handling
+- support incident escalation
+- telemetry ingest failure
+- push registration issues
+- mobile login/session issues
+
+## 7.2. Need tenant-side ops playbooks
+Create operational playbooks for tenant teams:
+- create asset
+- create client
+- start rental
+- return rental
+- incident handling
+- maintenance handling
+- blacklist handling
+- inquiry conversion
+- end-of-day checks
+- low battery/offline device checks if telemetry enabled
+
+These can be markdown docs/checklists first.
+
+---
+
+# 8. Support model for first 30/60/90 days
+
+## 8.1. Need realistic support model
+Define:
+- response windows
+- who handles support
+- escalation levels
+- what issues are critical
+- what can wait for scheduled release
+
+## 8.2. Suggested early support model
+For first 30 days:
+- founder-level/manual support acceptable
+- shared support channel
+- issue triage daily
+- bugfix cadence frequent
+
+For 60–90 days:
+- move to structured issue tracking
+- categorize product gap vs bug vs support request
+- define SLA-ish expectations
+
+Document this clearly.
+
+---
+
+# 9. Launch documentation pack
+
+## 9.1. Need a real launch pack
+Prepare docs/templates for:
+- internal go-live checklist
+- tenant onboarding checklist
+- import template instructions
+- support playbooks
+- rollback checklist
+- incident communication template
+- release notes template
+- known limitations list
+
+## 9.2. Must include known limitations
+Need a visible “known limitations at launch” list to manage expectations.
+
+---
+
+# 10. Rollback and incident readiness
+
+## 10.1. Need rollback plan
+Define:
+- what to do if production migration fails
+- what to do if auth breaks
+- what to do if tenant isolation bug found
+- what to do if payment/deposit flow misbehaves
+- what to do if mobile release has critical issue
+- what to do if telemetry ingest floods/fails
+
+## 10.2. Severity model
+Define simple incident severity model:
+- SEV1
+- SEV2
+- SEV3
+
+And what action each requires.
+
+## 10.3. Communication templates
+Prepare templates for:
+- internal incident update
+- tenant-facing service issue notice
+- workaround message
+- recovery notice
+
+---
+
+# 11. Release and rollout cadence
+
+## 11.1. Need release model
+Define:
+- how often backend/web/mobile release
+- hotfix process
+- migration process
+- staging signoff process
+- release ownership
+
+## 11.2. Suggested MVP cadence
+Example:
+- scheduled weekly release window
+- emergency hotfix path
+- mobile less frequent but controlled
+- DB migrations only with signoff and backup check
+
+Document chosen approach.
+
+---
+
+# 12. Success metrics for launch
+
+## 12.1. Need measurable success metrics
+Define launch metrics for:
+- tenant onboarding completion time
+- first successful rental time
+- support ticket volume
+- issue severity counts
+- login failure rate
+- payment workflow success rate
+- inquiry conversion speed
+- asset utilization
+- overdue incident rate
+- telemetry device online rate if enabled
+
+## 12.2. 30-day success criteria
+Define what “launch worked” means after first 30 days.
+
+---
+
+# 13. Commercial onboarding readiness
+
+## 13.1. Need practical commercial setup
+For first external tenants define:
+- pricing presentation
+- trial vs paid policy
+- who gets white-label
+- who gets telemetry module
+- manual invoice or platform billing
+- what is included in onboarding
+- support level by plan
+
+## 13.2. Early adopter rules
+Document if pilot tenants get:
+- discounted pricing
+- white-glove onboarding
+- roadmap influence
+- beta limitations accepted
+
+---
+
+# 14. Tenant-facing launch assets
+
+## 14.1. Need minimal tenant-facing materials
+Prepare foundation/templates for:
+- onboarding welcome email
+- admin setup instructions
+- staff login instructions
+- mobile app usage quick start
+- public page setup guide
+- import template guide
+- FAQ for first tenants
+
+These can be docs/templates first, not polished marketing material.
+
+---
+
+# 15. Platform-team readiness checklist
+
+## 15.1. Need an internal operational readiness list
+Cover:
+- owner of support
+- owner of releases
+- owner of billing
+- owner of onboarding
+- owner of incident response
+- owner of product backlog triage
+- access to monitoring/logs
+- backup recovery tested
+- demo tenant healthy
+- first tenant data imported
+- mobile builds distributed/tested
+
+---
+
+# 16. Expected outputs
+
+I want the following concrete outputs:
+1. phased rollout plan
+2. go-live gates (hard/soft)
+3. deployment/environment strategy
+4. migration/import strategy
+5. onboarding checklist for first tenants
+6. tenant #1 internal launch plan
+7. support/ops playbooks
+8. incident/rollback plan
+9. launch documentation pack outline
+10. launch success metrics
+11. 30/60/90-day operating model
+12. practical recommendations on what to launch first vs defer
+
+---
+
+# 17. Format of work
+First:
+1. show rollout phases
+2. show go-live gate model
+3. show tenant #1 launch approach
+4. show external tenant onboarding model
+5. then produce the docs/checklists/templates/playbooks
+
+Do not assume a giant public launch immediately.
+Build a realistic controlled rollout path.

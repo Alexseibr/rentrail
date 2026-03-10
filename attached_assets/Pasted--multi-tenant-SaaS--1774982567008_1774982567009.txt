@@ -1,0 +1,694 @@
+Нужно разработать с нуля новую multi-tenant SaaS-платформу для аренды велосипедов, электровелосипедов, самокатов и электросамокатов для доставки и городской мобильности.
+
+Это НЕ car rental system.
+Это НЕ single-company app.
+Это НЕ просто landing + form.
+
+Это:
+- web-first SaaS platform
+- multi-tenant
+- company -> branch -> station hierarchy
+- asset-first domain model
+- rentals / payments / blacklist / maintenance / incidents
+- later connected fleet: devices, telemetry, batteries, geofences, commands
+- later mobile operator app
+- later public pages and B2B flows
+- later super-admin and SaaS billing
+- later white-label
+
+Главный принцип:
+не пытайся сразу построить весь продукт.
+Иди по этапам.
+После каждого этапа:
+1. кратко покажи, что сделано
+2. какие файлы/модули созданы
+3. какие решения приняты
+4. какие риски/компромиссы есть
+5. что логично делать дальше
+
+Если видишь архитектурный риск — сначала опиши его и предложи clean solution, а потом кодируй.
+
+---
+
+# 0. PRODUCT AND ARCHITECTURAL RULES
+
+Система должна строиться по модели:
+
+Platform
+-> Company
+-> Branch
+-> Station
+-> Assets / Clients / Staff / Rentals / Payments / Incidents / Maintenance / Devices / Batteries
+
+## Основные сущности
+- company
+- branch
+- station
+- user
+- company membership
+- branch membership
+- role
+- permission
+- client
+- asset
+- rental
+- payment
+- deposit
+- blacklist entry
+- incident
+- maintenance order
+- public inquiry
+- b2b request
+- device
+- battery
+- telemetry snapshot/event
+- geofence
+- command
+
+## Поддерживаемые asset types
+- bike
+- ebike
+- scooter
+- escooter
+
+## Строгие принципы
+- multi-tenant first
+- tenant isolation first
+- companyId required for business data
+- branchId/stationId where relevant
+- asset-first, not car-first
+- RBAC + memberships
+- auditability
+- workflow actions instead of free status patching
+- future-ready for telemetry and mobile
+- no hardcoded single-company assumptions
+- no magic admin bypasses without audit
+
+---
+
+# 1. STACK
+
+Используй:
+- Monorepo with pnpm workspaces
+- Backend: Node.js + TypeScript + Express 5
+- Database: PostgreSQL
+- ORM: Drizzle ORM
+- Validation: Zod
+- Web admin: React + Vite + TailwindCSS + shadcn/ui
+- Mobile: React Native + Expo
+- Object Storage: S3-compatible
+- TanStack Query where useful
+- react-hook-form + zod resolver for forms
+- JWT access + refresh tokens
+- Refresh token rotation
+- Optional 2FA foundation, but not first priority
+
+If you believe a slightly different folder structure is cleaner, explain why before applying it.
+
+---
+
+# 2. WORK STYLE RULES
+
+Ты должен работать по этапам.
+
+## Перед началом каждого этапа:
+1. кратко опиши цель этапа
+2. перечисли модули/файлы, которые будут затронуты
+3. перечисли принятые бизнес-правила
+4. перечисли, что НЕ делаем на этом этапе
+
+## После завершения каждого этапа:
+1. покажи summary выполненного
+2. перечисли основные созданные файлы/модули
+3. покажи endpoint list / route list / screen list if relevant
+4. укажи remaining gaps
+5. предложи следующий этап
+
+## Очень важно
+Не делай giant dump кода без структуры.
+Иди последовательно.
+Если объем большой — разбивай на разумные модули.
+
+---
+
+# 3. PHASE PLAN
+
+Ниже обязательная последовательность разработки.
+Не перескакивай через foundation.
+
+---
+
+## PHASE 1 — Monorepo and backend foundation
+
+Сначала сделай:
+- monorepo structure
+- api-server scaffold
+- shared lib/db scaffold
+- env config
+- Express app foundation
+- health endpoint
+- request logging
+- error handling
+- base middlewares
+- Zod validation layer
+- README start instructions
+
+### Output of phase 1
+I want:
+- folder structure
+- backend bootstrap
+- env example
+- health route
+- error middleware
+- request logger
+- module skeleton
+
+Do NOT move to UI yet.
+
+---
+
+## PHASE 2 — Database schema and migrations
+
+Сделай первую версию schema and migrations for:
+
+### Platform / Tenant
+- companies
+- company_settings
+- branches
+- stations
+
+### Access / RBAC
+- users
+- roles
+- permissions
+- role_permissions
+- user_company_memberships
+- user_branch_memberships
+- sessions
+
+### Clients
+- clients
+
+### Assets
+- assets
+- asset_status_history
+
+### Rentals
+- rental_plans
+- rentals
+- rental_status_history
+
+### Finance foundation
+- payments
+- deposits
+
+### Blacklist
+- blacklist_entries
+
+### Audit
+- audit_logs
+
+### Requirements
+- enums
+- indexes
+- unique constraints
+- relations
+- tenant-safe design
+- createdAt/updatedAt
+- archivedAt where relevant
+- seeds for roles/permissions
+
+### Output of phase 2
+I want:
+- schema files
+- migrations
+- relation definitions
+- seed scripts
+- table/relationship summary
+
+---
+
+## PHASE 3 — Auth, sessions, memberships, RBAC
+
+Сделай:
+- register
+- login
+- refresh
+- logout
+- current user endpoint
+- session model with hashed refresh tokens
+- membership loading
+- RBAC middleware
+- company guard
+- branch guard
+- permission resolution
+- request auth context
+- seeds for roles/permissions mapping
+
+### Platform roles and tenant roles must be conceptually separated already, even if platform scope is expanded later.
+
+### Output of phase 3
+I want:
+- auth module
+- session service
+- RBAC middleware
+- membership loader
+- access rules summary
+- endpoint list
+
+---
+
+## PHASE 4 — Core tenant CRUD
+
+Реализуй tenant-safe CRUD/workflow foundation for:
+- companies (self company settings)
+- branches
+- stations
+- clients
+- assets
+- rentals
+- blacklist
+
+### Important rules
+- no unsafe generic CRUD
+- assets have explicit status transitions + status history
+- rentals have workflow actions:
+  - approve
+  - start
+  - extend
+  - return
+  - cancel
+- blacklist supports:
+  - branch
+  - company
+  - global
+- blacklist check service returns strongest effective decision
+- audit logs on create/update/workflow actions
+
+### Output of phase 4
+I want:
+- routes/controllers/services/repositories
+- DTO schemas
+- history tables used properly
+- audit integration
+- business rules summary
+
+---
+
+## PHASE 5 — Finance + incidents + maintenance + reports v1
+
+Implement:
+- payments workflow
+- deposits workflow
+- incidents workflow
+- maintenance workflow
+- reports/company-summary
+- reports/branch-summary
+- reports/fleet-utilization
+- reports/payments
+- reports/incidents
+- reports/maintenance
+
+### Rules
+- no payment provider integration yet
+- internal accounting foundation only
+- deposits have hold/release/forfeit lifecycle
+- maintenance may change asset status via rules
+- incidents and critical items appear in summaries
+
+### Output of phase 5
+I want:
+- finance modules
+- incident module
+- maintenance module
+- report endpoints
+- lifecycle rules summary
+
+---
+
+## PHASE 6 — Public pages + inquiries + B2B + branding + notifications + enabled modules
+
+Implement:
+- company public settings
+- company branding
+- public page API `/public/companies/:slug`
+- public visible assets/stations
+- inquiries entity and flow
+- B2B requests entity and flow
+- internal notifications foundation
+- enabled modules / feature flags foundation
+
+### Rules
+- public inquiries are leads, not active rentals
+- B2B requests are leads, not contracts
+- public endpoints rate-limited
+- internal processing audited
+
+### Output of phase 6
+I want:
+- public API routes
+- inquiry/B2B management routes
+- notifications foundation
+- branding/settings model
+- enabled modules model
+
+---
+
+## PHASE 7 — Connected fleet foundation
+
+Implement:
+- devices
+- asset-device bindings
+- telemetry snapshots/events/location history
+- telemetry ingest auth
+- battery foundation
+- geofence foundation
+- device command queue foundation
+- telemetry reports:
+  - live map summary
+  - low battery assets
+  - offline devices
+
+### Rules
+- vendor-agnostic model
+- ingest is machine-to-machine auth, not normal JWT
+- telemetry resolves company via device/binding, not trusted payload
+- command queue is abstracted, not hardcoded to one vendor
+- no full realtime streaming yet
+
+### Output of phase 7
+I want:
+- schema additions
+- ingest endpoint
+- read endpoints
+- commands foundation
+- device/battery/geofence CRUD
+- live ops report endpoints
+
+---
+
+## PHASE 8 — Web admin UI foundation
+
+Build tenant-side admin panel:
+- login page
+- protected routing
+- app shell
+- sidebar/topbar
+- company switcher
+- branch switcher/filter
+- permission-aware navigation
+- dashboard
+- CRUD screens for:
+  - branches
+  - stations
+  - clients
+  - assets
+  - rentals
+  - blacklist
+  - payments
+  - deposits
+  - incidents
+  - maintenance
+  - inquiries
+  - b2b requests
+  - devices
+  - batteries
+  - geofences
+  - settings/public
+  - settings/branding
+  - settings/modules
+- notifications UI
+- minimal public page UI foundation
+
+### Rules
+- company-aware
+- branch-aware
+- permission-aware
+- asset-first UI
+- desktop admin first
+- no overpolish, strong foundation
+
+### Output of phase 8
+I want:
+- route map
+- layout/components
+- implemented pages summary
+- state management explanation
+
+---
+
+## PHASE 9 — Mobile operator/staff app foundation
+
+Build mobile app (Expo / React Native) for staff:
+- login
+- session bootstrap
+- company switcher
+- branch context
+- dashboard
+- assets list/detail
+- rentals list/detail + workflow actions
+- clients list/detail
+- inquiries list/detail + actions
+- incidents list/detail + actions
+- maintenance list/detail + actions
+- notifications
+- reusable mobile primitives
+
+### Rules
+- this is staff/operator app, not consumer rental app
+- company-aware
+- branch-aware
+- role-aware
+- later-ready for scan/photo/push/offline
+- no full consumer UX now
+
+### Output of phase 9
+I want:
+- navigation map
+- screens summary
+- auth/context strategy
+- current limitations
+
+---
+
+## PHASE 10 — QR / camera / uploads / push / offline queue foundation
+
+Implement in mobile:
+- reusable QR/barcode scan flow
+- asset/device code resolution
+- reusable media capture flow
+- upload flow foundation
+- attachment linking to incidents/maintenance/rental return
+- push registration foundation
+- offline mutation queue foundation
+- connectivity awareness
+- sync status UI
+- background sync hooks foundation (resume/network-based)
+
+### Rules
+- offline queue only for selected safe actions
+- not full offline-first replication
+- not BLE now
+- not video/doc scanning now
+
+### Output of phase 10
+I want:
+- scanner architecture
+- media/upload architecture
+- push registration flow
+- queueable action policy
+- sync UI/status
+
+---
+
+## PHASE 11 — QA / tests / demo data / observability / CI-CD / release readiness
+
+Implement:
+- unit tests
+- integration tests
+- API tests
+- explicit tenant isolation test suite
+- smoke tests foundation for web
+- logic/service tests for mobile
+- seed/demo data system
+- health checks
+- structured logging
+- correlation IDs
+- env validation
+- CI pipeline
+- release checklist
+- QA scenario docs
+
+### Priority tests
+- tenant isolation
+- auth/session security
+- workflow integrity for assets/rentals/payments/deposits
+- telemetry ingest auth and resolution
+- blacklist decision logic
+
+### Output of phase 11
+I want:
+- testing structure
+- test commands
+- demo seed scripts
+- CI config
+- release checklist
+- QA docs
+
+---
+
+## PHASE 12 — Platform super-admin + SaaS billing + moderation + white-label
+
+Implement platform scope:
+- platform roles
+- platform routes
+- companies moderation
+- SaaS plan/subscription/invoice/payment admin
+- global blacklist management
+- white-label management
+- platform diagnostics
+- platform analytics
+- super-admin UI separate from tenant UI
+
+### Rules
+- platform scope separate from tenant scope
+- sensitive support/admin actions audited
+- no dangerous tenant impersonation casually
+- billing and moderation flows explicit
+
+### Output of phase 12
+I want:
+- platform role model
+- platform endpoints
+- super-admin UI routes/screens
+- moderation/billing/white-label summaries
+
+---
+
+## PHASE 13 — Go-live / rollout / migration / onboarding plan
+
+Prepare:
+- phased rollout plan
+- tenant #1 internal launch plan
+- pilot tenant onboarding model
+- data import/migration strategy
+- support playbooks
+- rollback plan
+- launch checklist
+- 30/60/90-day operating model
+- launch success metrics
+
+### Rules
+- tenant #1 is our own business
+- then limited pilot
+- then broader rollout
+- no big-bang launch assumption
+
+### Output of phase 13
+I want:
+- launch docs
+- onboarding docs
+- migration docs
+- support docs
+- rollout plan
+- metrics plan
+
+---
+
+# 4. IMPORTANT BUSINESS RULES TO PRESERVE THROUGH ALL PHASES
+
+Always preserve these rules:
+
+## Multi-tenancy
+- all business data scoped by companyId
+- branchId/stationId used where relevant
+- never query business entities by id without tenant scope
+
+## Access model
+- user may belong to multiple companies
+- user may belong to multiple branches
+- platform scope separate from tenant scope
+- permission-based checks, not only role-name checks
+
+## Assets
+- central entity is asset
+- supported types: bike / ebike / scooter / escooter
+- asset status changes are explicit actions
+- asset status history required
+
+## Rentals
+- workflow actions required
+- not free status patch
+- blacklist and asset availability checked before start
+- rental status history required
+
+## Blacklist
+- branch/company/global scopes
+- strongest-action resolution
+- not just boolean block flag
+
+## Finance
+- deposits have lifecycle
+- refund/release/forfeit math must be safe
+- audit on all sensitive financial actions
+
+## Connected fleet
+- vendor-agnostic
+- telemetry ingest separate auth model
+- commands queued, not direct inline magic
+
+## UI
+- tenant-aware
+- branch-aware
+- permission-aware
+- no mixing platform and tenant scope casually
+
+---
+
+# 5. DELIVERY FORMAT RULES
+
+For each phase, respond with:
+
+## A. Plan
+- what you are about to implement
+- key files/modules
+- key rules
+
+## B. Implementation
+- code/files/config in logical chunks
+
+## C. Summary
+- what was completed
+- route list / table list / screen list if relevant
+- known limitations
+- next recommended phase
+
+If a phase is too large, split it into subphases automatically, but do NOT skip steps.
+
+---
+
+# 6. WHAT YOU MUST NOT DO
+
+Do NOT:
+- collapse multi-tenant design into single-company shortcuts
+- model this as car rental
+- hardcode role checks everywhere
+- trust companyId blindly from request payloads
+- expose unsafe platform powers without audit
+- do giant uncontrolled refactors without explanation
+- jump to polished UI before backend foundation exists
+- overengineer every possible future feature before foundation works
+
+---
+
+# 7. START NOW
+
+Begin with PHASE 1 only.
+
+First show:
+1. proposed monorepo structure
+2. proposed backend module structure
+3. short explanation of architectural choices
+4. what will be included in phase 1 and what will NOT yet be included
+
+Then implement phase 1.

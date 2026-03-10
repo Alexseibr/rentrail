@@ -1,0 +1,29 @@
+{
+  "name": "@workspace/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "hello": "tsx ./src/hello.ts",
+    "seed-rbac": "tsx ./src/seed-rbac.ts",
+    "seed-demo": "tsx ./src/seed-demo.ts",
+    "seed-demo:reset": "tsx ./src/seed-demo.ts reset",
+    "check-map-cleanup": "tsx ./src/check-map-cleanup.ts",
+    "test": "tsx --test ./src/check-map-cleanup-lib.test.ts ./src/print-test-report-lib.test.ts ./src/ci-guard.test.ts ./src/ci-xml-files.test.ts",
+    "test-map-cleanup": "tsx --test ./src/check-map-cleanup.test.ts",
+    "collect-xml-files": "tsx ./src/collect-xml-files.ts",
+    "check-undeclared-xml": "tsx ./src/check-undeclared-xml.ts",
+    "print-test-report": "tsx ./src/print-test-report.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "bcrypt": "^6.0.0",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "catalog:",
+    "tsx": "catalog:"
+  }
+}
