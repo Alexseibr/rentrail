@@ -1,5 +1,14 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { validateEnv, getEnvProfile } from "./lib/env";
+
+try {
+  const env = validateEnv();
+  logger.info({ profile: getEnvProfile() }, "Environment validated");
+} catch (err) {
+  logger.fatal({ err }, "Environment validation failed — aborting startup");
+  process.exit(1);
+}
 
 const rawPort = process.env["PORT"];
 

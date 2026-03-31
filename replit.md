@@ -67,3 +67,44 @@ The platform includes a mobile staff application built with Expo/React Native, f
 - **Haptics (Mobile):** `expo-haptics`
 - **Local Storage (Mobile):** AsyncStorage
 - **Object Storage:** Google Cloud Storage (GCS) (via Replit App Storage for presigned URL uploads)
+- **Testing:** Vitest 4.x, supertest
+- **CI:** GitHub Actions
+
+## Testing
+
+The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
+
+### Test Commands
+- `pnpm test` — Run all 135 tests (7 suites)
+- `pnpm test:unit` — Unit tests only (pure logic, no DB)
+- `pnpm test:api` — API integration tests (supertest against real DB)
+- `pnpm test:integration` — Integration tests (DB-backed)
+
+### Test Utilities
+- `artifacts/api-server/src/test/setup.ts` — DB cleanup helpers (`cleanDatabase` preserves roles/permissions; `cleanDatabaseFull` truncates everything)
+- `artifacts/api-server/src/test/helpers.ts` — `createTestUser`, `createTestTenant`, `assignRole`, `authHeaders`, `clearRolesCache`
+- `artifacts/api-server/src/test/app.ts` — Express app instance for supertest
+- `artifacts/api-server/src/test/seed-rbac-inline.ts` — In-process RBAC seeder for API tests (avoids slow subprocess)
+
+### Test File Naming
+- `*.unit.test.ts` — Pure unit tests
+- `*.api.test.ts` — API/E2E tests via supertest
+- `*.int.test.ts` — Integration tests with DB
+
+## Observability
+
+- **Health endpoints:** `/api/healthz` (simple), `/api/health` (uptime), `/api/health/full` (DB latency + env info)
+- **Correlation IDs:** `x-correlation-id` header injected by middleware, propagated in pino-http logs
+- **Env validation:** Strict startup validation in `artifacts/api-server/src/lib/env.ts`
+- **Error tracking:** Abstraction layer ready for Sentry/etc integration
+
+## Demo Data
+
+- `pnpm seed:demo` — Seeds 40 assets, 20 clients, 14 rentals, devices, batteries, telemetry for company `velocity-rides`
+- All demo users use password `demo1234`
+
+## CI Pipeline
+
+- `.github/workflows/ci.yml` — Lint, typecheck, test, build stages
+- `docs/release-readiness.md` — Release checklist
+- `docs/qa-scenarios.md` — QA test matrix

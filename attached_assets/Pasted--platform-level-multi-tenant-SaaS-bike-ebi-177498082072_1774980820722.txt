@@ -1,0 +1,567 @@
+Теперь нужно реализовать platform-level слой для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что уже готовы:
+- backend foundation
+- tenant core modules
+- finance / incidents / maintenance / reports
+- public pages / inquiries / b2b requests / notifications / feature flags
+- telemetry / devices / batteries / geofences / commands foundation
+- web admin panel tenant-side
+- mobile operator app
+- scanner / uploads / push / offline queue
+- QA / tests / demo / CI / release readiness
+
+## Цель этапа
+Реализовать platform-level возможности для владельца SaaS:
+1. super-admin backend and UI
+2. SaaS billing admin UI and workflows
+3. tenant moderation / approvals / blocking
+4. platform global blacklist management
+5. white-label management foundation
+6. platform analytics and diagnostics
+7. support/admin operational tools
+
+Важно:
+- это platform scope, а не tenant scope
+- superAdmin должен работать отдельно от company roles
+- tenant data visibility должна быть controlled and auditable
+- не делай хаотичную “панель бога”, нужен clean governance layer
+
+---
+
+# 1. Platform scope and access model
+
+## 1.1. Platform roles
+Нужно явно поддержать platform-level roles:
+- superAdmin
+- platformAdmin
+- platformSupport
+- platformFinance
+- platformRisk
+
+Если в текущей системе только `superAdmin`, расширь модель cleanly.
+Можно через platform_roles / platform_permissions или через отдельный access layer.
+Выбери clean решение и объясни.
+
+## 1.2. Rule
+Platform roles не должны смешиваться с tenant company memberships.
+User может иметь:
+- platform-level role
+- tenant memberships
+одновременно, но это разные scopes.
+
+## 1.3. Auditing
+Все platform-level sensitive actions должны логироваться отдельно и подробно:
+- кто смотрел tenant
+- кто изменил billing/subscription
+- кто заблокировал tenant
+- кто менял white-label settings
+- кто добавил global blacklist entry
+
+---
+
+# 2. Platform super-admin backend foundation
+
+## 2.1. Platform companies endpoints
+Реализуй platform-level endpoints:
+- GET /platform/companies
+- GET /platform/companies/:id
+- PATCH /platform/companies/:id
+- POST /platform/companies/:id/approve
+- POST /platform/companies/:id/block
+- POST /platform/companies/:id/unblock
+- POST /platform/companies/:id/cancel
+- POST /platform/companies/:id/set-plan
+- GET /platform/companies/:id/usage
+- GET /platform/companies/:id/health-summary
+
+## 2.2. Fields visible at platform level
+Platform admin должен видеть:
+- company profile
+- owner/main contacts
+- subscription plan/status
+- enabled modules
+- counts: branches/stations/assets/users/rentals
+- billing overview
+- moderation status
+- public status
+- recent activity summary
+- telemetry/device counts if available
+
+## 2.3. Moderation statuses
+Поддержи status/moderation model:
+- pending
+- approved
+- blocked
+- suspended
+- canceled
+
+Если company status and moderation status already partially overlap, normalize cleanly and document it.
+
+---
+
+# 3. SaaS billing admin foundation
+
+## 3.1. Goal
+Platform should manage tenant subscriptions, invoices, payments and limits.
+
+## 3.2. Plans
+Поддержи SaaS plans:
+- Basic
+- Pro
+- Enterprise
+
+Каждый plan должен иметь:
+- name
+- code
+- price
+- currency
+- billing interval
+- limits
+- enabled modules
+- white-label availability
+- support tier
+- isActive
+
+## 3.3. Billing entities
+Если уже есть foundation tables, доработай where needed:
+- saas_plans
+- saas_subscriptions
+- saas_invoices
+- saas_payments
+- maybe plan_features / plan_limits if cleaner than json only
+
+## 3.4. Platform billing endpoints
+Реализуй:
+- GET /platform/billing/plans
+- POST /platform/billing/plans
+- PATCH /platform/billing/plans/:id
+- GET /platform/billing/subscriptions
+- GET /platform/billing/subscriptions/:id
+- PATCH /platform/billing/subscriptions/:id
+- POST /platform/billing/subscriptions/:id/activate
+- POST /platform/billing/subscriptions/:id/past-due
+- POST /platform/billing/subscriptions/:id/cancel
+- GET /platform/billing/invoices
+- GET /platform/billing/invoices/:id
+- POST /platform/billing/invoices/:id/mark-paid
+- POST /platform/billing/invoices/:id/void
+- GET /platform/billing/payments
+
+## 3.5. Billing rules
+- only platformFinance/platformAdmin/superAdmin can manage billing
+- tenant cannot directly mutate platform invoices except through allowed self-service flows later
+- plan changes should be audited
+- subscription status changes should be audited
+- limits must be computable from plan
+
+---
+
+# 4. Tenant moderation and governance
+
+## 4.1. Moderation flows
+Нужны platform actions:
+- approve new tenant
+- block tenant
+- suspend tenant
+- reactivate tenant
+- cancel tenant
+
+## 4.2. Block/suspend behavior
+Опиши and implement clean rules:
+- blocked tenant cannot login? or tenant users can login but app is read-only?
+- suspended tenant cannot create new operations?
+- canceled tenant is archived/inactive?
+Choose a practical MVP rule set and document it.
+
+## 4.3. Moderation reasons
+При sensitive actions platform must capture:
+- reasonCode
+- reasonText
+- actor
+- timestamps
+
+---
+
+# 5. Global blacklist management
+
+## 5.1. Goal
+Platform must manage global blacklist entries visible across tenants where policy applies.
+
+## 5.2. Platform endpoints
+Реализуй:
+- GET /platform/blacklist
+- POST /platform/blacklist
+- GET /platform/blacklist/:id
+- PATCH /platform/blacklist/:id
+- POST /platform/blacklist/:id/disable
+- POST /platform/blacklist/:id/enable
+
+## 5.3. Rules
+- only platformRisk/platformAdmin/superAdmin can manage global blacklist
+- global entries influence tenant-side effective blacklist decisions
+- all changes audited
+- support filters:
+  - actionType
+  - status
+  - reasonCode
+  - phone/document/email/fullName
+  - createdAt range
+
+---
+
+# 6. White-label management foundation
+
+## 6.1. Goal
+Allow platform to configure white-label capabilities for eligible tenants.
+
+## 6.2. White-label scope
+Platform should manage:
+- custom domain
+- brand name override
+- logos
+- theme colors
+- sender/display names later
+- app/public page brand configuration
+- allowed modules
+- white-label status
+
+## 6.3. Suggested model
+If not yet present, add clean foundation:
+- company_white_label_settings
+
+Fields could include:
+- companyId
+- customDomain nullable
+- brandNameOverride nullable
+- logoUrl nullable
+- coverUrl nullable
+- primaryColor nullable
+- secondaryColor nullable
+- customSupportEmail nullable
+- customSupportPhone nullable
+- status
+- enabledAt nullable
+- notes nullable
+- createdAt
+- updatedAt
+
+## 6.4. Endpoints
+- GET /platform/companies/:id/white-label
+- PATCH /platform/companies/:id/white-label
+- POST /platform/companies/:id/white-label/enable
+- POST /platform/companies/:id/white-label/disable
+
+## 6.5. Rules
+- white-label available only if plan allows it (or override by platform)
+- custom domain validation can be basic foundation only for now
+- actual DNS/SSL automation can be postponed, but interfaces should be ready
+
+---
+
+# 7. Platform diagnostics and health
+
+## 7.1. Goal
+Give superAdmin visibility into platform state.
+
+## 7.2. Platform diagnostic endpoints
+Реализуй:
+- GET /platform/health/summary
+- GET /platform/health/tenants
+- GET /platform/diagnostics/email
+- GET /platform/diagnostics/storage
+- GET /platform/diagnostics/queues
+- GET /platform/diagnostics/telemetry-ingest
+- GET /platform/diagnostics/mobile-push
+
+If some integrations are not live, return structured status placeholders/stubs.
+
+## 7.3. Health summary should include
+- total tenants
+- active tenants
+- pending tenants
+- blocked tenants
+- platform MRR estimate
+- total active assets
+- open critical incidents across tenants maybe aggregated
+- offline devices count aggregate if available
+- failed jobs/queues if any
+- email/storage integration status
+- build/version info
+
+---
+
+# 8. Platform analytics
+
+## 8.1. Goal
+Give SaaS owner business visibility.
+
+## 8.2. Endpoints
+- GET /platform/analytics/overview
+- GET /platform/analytics/tenants
+- GET /platform/analytics/billing
+- GET /platform/analytics/usage
+- GET /platform/analytics/risks
+
+## 8.3. Metrics
+Support at least:
+- total tenants
+- active tenants
+- trials
+- paid tenants
+- churned/canceled tenants
+- MRR
+- tenants by plan
+- average assets per tenant
+- average branches per tenant
+- top active tenants by rentals/assets
+- overdue invoice counts
+- global blacklist growth
+- inquiries/B2B pipeline totals if useful
+
+---
+
+# 9. Support/admin tools foundation
+
+## 9.1. Need limited tenant inspection tools
+Platform support sometimes needs to inspect tenant state.
+
+Build clean support tools:
+- tenant summary view
+- tenant recent audit activity
+- tenant recent errors/health summary if available
+- tenant counts and recent workflows
+
+## 9.2. Important
+Do NOT implement dangerous tenant impersonation casually.
+If you add any support-access feature, make it:
+- explicit
+- audited
+- reason-required
+- minimal
+Prefer read-only inspection for MVP.
+
+## 9.3. Optional
+If adding “open tenant in support mode”, make it heavily audited and read-only by default.
+If too risky, postpone and document.
+
+---
+
+# 10. Platform notifications/support inbox (optional foundation)
+
+## 10.1. If feasible
+Add platform-level feedback/support review:
+- GET /platform/feedback
+- GET /platform/feedback/:id
+- PATCH /platform/feedback/:id
+
+This can cover:
+- tenant feedback
+- support requests
+- bug reports
+
+If not yet modeled, create a simple foundation only if cleanly fits current architecture.
+
+---
+
+# 11. Super-admin web UI
+
+## 11.1. Need separate platform admin UI section
+Build super-admin UI routes, separate from tenant admin routes.
+
+Suggested routes:
+- /platform/dashboard
+- /platform/companies
+- /platform/companies/:id
+- /platform/billing/plans
+- /platform/billing/subscriptions
+- /platform/billing/invoices
+- /platform/blacklist
+- /platform/analytics
+- /platform/diagnostics
+- /platform/feedback
+- /platform/white-label
+
+## 11.2. Platform dashboard
+Show:
+- total tenants
+- active / pending / blocked
+- MRR
+- unpaid invoices
+- usage summary
+- diagnostics summary
+- recent tenant signups
+- recent moderation actions
+
+## 11.3. Companies list page
+Need:
+- search by name/slug/email/owner
+- filters by status/plan/moderation
+- columns for usage counts
+- quick actions approve/block/set-plan/open details
+
+## 11.4. Company detail page
+Need sections:
+- profile
+- moderation
+- plan/subscription
+- limits/usage
+- modules
+- public settings summary
+- white-label summary
+- health summary
+- recent billing
+- recent activity/audit summary
+
+## 11.5. Billing pages
+Need:
+- plans table/edit dialog
+- subscriptions table/filter/detail
+- invoices table/filter/detail
+- payments table/filter/detail
+
+## 11.6. Global blacklist page
+Need:
+- list/filter/search
+- create/edit
+- enable/disable actions
+- effective severity badges
+
+## 11.7. Diagnostics page
+Need cards/tables for:
+- email status
+- storage status
+- queues/jobs
+- telemetry ingest status
+- push status
+- build version
+
+## 11.8. Analytics page
+Need charts/cards/tables, but keep practical:
+- tenant counts
+- revenue/plan distribution
+- usage overview
+- recent trends if available
+
+## 11.9. White-label page
+Need:
+- tenant white-label list
+- status
+- domain/brand summary
+- edit per tenant
+
+---
+
+# 12. UI access rules
+
+## 12.1. Platform UI gating
+Only platform roles can see /platform routes.
+
+## 12.2. Tenant admins must not see platform routes
+Do not mix platform menu into normal tenant menu unless platform user has access.
+
+## 12.3. SuperAdmin + tenant membership combo
+If user has both scopes, UI should clearly separate:
+- platform mode
+- tenant mode
+
+Need clean mode switcher if appropriate.
+
+---
+
+# 13. Data safety and audit
+
+## 13.1. All platform actions must be audited
+Especially:
+- moderation status changes
+- billing changes
+- plan changes
+- invoice status changes
+- global blacklist changes
+- white-label changes
+- support tenant access/inspection actions
+
+## 13.2. Sensitive tenant inspection
+If platform views sensitive tenant data, log:
+- actor
+- tenant
+- action
+- reason if required
+
+---
+
+# 14. Testing requirements
+
+## 14.1. Add tests for
+- platform role access
+- tenant users denied from platform routes
+- billing plan/subscription transitions
+- tenant moderation effects
+- global blacklist impact
+- white-label availability rules
+- platform analytics/reports route access
+
+## 14.2. UI smoke tests
+Add smoke tests for:
+- platform dashboard loads
+- companies list filter works
+- company moderation action works
+- billing pages render
+- platform route guard works
+
+---
+
+# 15. README/docs update
+
+Add:
+- platform roles model
+- moderation lifecycle
+- SaaS billing model
+- white-label model
+- platform routes
+- platform UI mode separation
+- current limitations and postponed items
+
+---
+
+# 16. What NOT to do now
+Do not implement yet:
+- full automated payment gateway for SaaS billing
+- complex tax engine
+- legal invoicing country-specific logic
+- full domain provisioning automation
+- full impersonation/sudo session system
+- complex BI dashboards
+- reseller hierarchy
+- partner revenue sharing engine
+
+These can come later.
+
+---
+
+# 17. What I want as output
+1. Platform role/access model
+2. Backend platform routes/services
+3. SaaS billing admin workflows
+4. Tenant moderation workflows
+5. Global blacklist management
+6. White-label foundation
+7. Diagnostics/analytics foundation
+8. Super-admin web UI routes/pages
+9. Tests
+10. Docs update
+11. Short explanation of MVP governance/security compromises
+
+---
+
+# 18. Order of work
+First:
+1. show platform role/scope model
+2. show schema additions if needed
+3. show platform route map
+4. show UI route map
+5. explain moderation/billing/white-label rules
+6. only then implement code
+
+Do not merge platform governance logic into normal tenant admin logic.
+Keep platform scope explicit and clean.

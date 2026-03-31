@@ -6,13 +6,17 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "seed-rbac": "tsx ./src/seed-rbac.ts",
+    "seed-demo": "tsx ./src/seed-demo.ts",
+    "seed-demo:reset": "tsx ./src/seed-demo.ts reset",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
+    "bcrypt": "^6.0.0",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "catalog:",
     "tsx": "catalog:"
   }
