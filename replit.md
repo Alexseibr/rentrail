@@ -72,7 +72,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
     - **Access Control:** All billing endpoints require `superAdmin`, `platformAdmin`, or `platformFinance` platform role. `set-plan` restricted to `superAdmin`/`platformAdmin` only.
     - **Service:** `billing.service.ts` — plan CRUD, subscription lifecycle with state machine transitions, invoice lifecycle, payment queries, `getPlanLimitsForCompany`.
     - **Audit:** All billing operations logged to `platform_audit_logs` with action prefix `billing.*`.
-    - **321 tests across 12 suites** (37 new billing tests).
+    - **326 tests across 12 suites** (42 new billing tests).
 
 ## External Dependencies
 
@@ -98,7 +98,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
 
 ### Test Commands
-- `pnpm test` — Run all 321 tests (12 suites)
+- `pnpm test` — Run all 326 tests (12 suites)
 - `pnpm test:unit` — Unit tests only (pure logic, no DB)
 - `pnpm test:api` — API integration tests (supertest against real DB)
 - `pnpm test:integration` — Integration tests (DB-backed)

@@ -6,7 +6,7 @@ import {
   saasPayments,
   companies,
 } from "@workspace/db";
-import { eq, and, desc, count, sql, ilike, or } from "drizzle-orm";
+import { eq, and, desc, count, sql, ilike, or, gte, lte } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 
 type SubscriptionStatus = typeof saasSubscriptions.$inferSelect.status;
@@ -279,6 +279,8 @@ export interface InvoiceListOptions {
   companyId?: string;
   status?: string;
   subscriptionId?: string;
+  from?: Date;
+  to?: Date;
   page?: number;
   limit?: number;
 }
@@ -292,6 +294,8 @@ export async function listInvoices(opts: InvoiceListOptions) {
   if (opts.companyId) conditions.push(eq(saasInvoices.companyId, opts.companyId));
   if (opts.status) conditions.push(eq(saasInvoices.status, opts.status as InvoiceStatus));
   if (opts.subscriptionId) conditions.push(eq(saasInvoices.subscriptionId, opts.subscriptionId));
+  if (opts.from) conditions.push(gte(saasInvoices.createdAt, opts.from));
+  if (opts.to) conditions.push(lte(saasInvoices.createdAt, opts.to));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 

@@ -47,6 +47,8 @@ const invoiceListQuery = listQuery.extend({
   companyId: z.string().uuid().optional(),
   subscriptionId: z.string().uuid().optional(),
   status: z.enum(["draft", "issued", "paid", "void", "overdue"]).optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
 });
 
 const paymentListQuery = listQuery.extend({
@@ -259,6 +261,8 @@ router.get(
       companyId: req.query.companyId as string | undefined,
       status: req.query.status as string | undefined,
       subscriptionId: req.query.subscriptionId as string | undefined,
+      from: req.query.from ? new Date(req.query.from as string) : undefined,
+      to: req.query.to ? new Date(req.query.to as string) : undefined,
       page: req.query.page ? Number(req.query.page) : undefined,
       limit: req.query.limit ? Number(req.query.limit) : undefined,
     });

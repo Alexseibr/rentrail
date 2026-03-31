@@ -412,6 +412,69 @@ describe("Platform Billing", () => {
     });
   });
 
+  describe("invoice date-range filtering", () => {
+    it("filters invoices by from date", async () => {
+      const from = new Date(Date.now() - 1000).toISOString();
+      const res = await request(testApp)
+        .get(`/api/platform/billing/invoices?from=${encodeURIComponent(from)}`)
+        .set("Authorization", `Bearer ${platformFinance.token}`);
+
+      expect(res.status).toBe(200);
+      for (const item of res.body.data.items) {
+        expect(new Date(item.createdAt).getTime()).toBeGreaterThanOrEqual(new Date(from).getTime());
+      }
+    });
+
+    it("filters invoices by to date", async () => {
+      const to = new Date(Date.now() + 60000).toISOString();
+      const res = await request(testApp)
+        .get(`/api/platform/billing/invoices?to=${encodeURIComponent(to)}`)
+        .set("Authorization", `Bearer ${platformFinance.token}`);
+
+      expect(res.status).toBe(200);
+      for (const item of res.body.data.items) {
+        expect(new Date(item.createdAt).getTime()).toBeLessThanOrEqual(new Date(to).getTime());
+      }
+    });
+
+    it("filters invoices by combined from and to date range", async () => {
+      const from = new Date(Date.now() - 60000).toISOString();
+      const to = new Date(Date.now() + 60000).toISOString();
+      const res = await request(testApp)
+        .get(`/api/platform/billing/invoices?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+        .set("Authorization", `Bearer ${platformFinance.token}`);
+
+      expect(res.status).toBe(200);
+      for (const item of res.body.data.items) {
+        const ts = new Date(item.createdAt).getTime();
+        expect(ts).toBeGreaterThanOrEqual(new Date(from).getTime());
+        expect(ts).toBeLessThanOrEqual(new Date(to).getTime());
+      }
+    });
+
+    it("returns empty results for future date range", async () => {
+      const from = new Date(Date.now() + 86400000).toISOString();
+      const res = await request(testApp)
+        .get(`/api/platform/billing/invoices?from=${encodeURIComponent(from)}`)
+        .set("Authorization", `Bearer ${platformFinance.token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.items.length).toBe(0);
+    });
+
+    it("combines date range with status and company filters", async () => {
+      const from = new Date(Date.now() - 60000).toISOString();
+      const res = await request(testApp)
+        .get(`/api/platform/billing/invoices?companyId=${tenantA.company.id}&from=${encodeURIComponent(from)}`)
+        .set("Authorization", `Bearer ${platformFinance.token}`);
+
+      expect(res.status).toBe(200);
+      for (const item of res.body.data.items) {
+        expect(item.companyId).toBe(tenantA.company.id);
+      }
+    });
+  });
+
   describe("invoice void", () => {
     it("voids a draft invoice", async () => {
       const createRes = await request(testApp)
