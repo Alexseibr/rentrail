@@ -13,6 +13,14 @@ import inquiriesRouter from "./inquiries";
 import b2bRequestsRouter from "./b2b-requests";
 import notificationsRouter from "./notifications";
 import companySettingsRouter from "./company-settings";
+import devicesRouter from "./devices";
+import assetDevicesRouter from "./asset-devices";
+import telemetryRouter from "./telemetry";
+import batteriesRouter from "./batteries";
+import geofencesRouter from "./geofences";
+import commandsRouter from "./commands";
+import reportsRouter from "./reports";
+import providerApiKeysRouter from "./provider-api-keys";
 
 const router: IRouter = Router();
 
@@ -30,5 +38,13 @@ router.use(inquiriesRouter);
 router.use(b2bRequestsRouter);
 router.use(notificationsRouter);
 router.use(companySettingsRouter);
+router.use(devicesRouter);
+router.use(assetDevicesRouter);
+router.use(telemetryRouter);
+router.use(batteriesRouter);
+router.use(geofencesRouter);
+router.use(commandsRouter);
+router.use(reportsRouter);
+router.use(providerApiKeysRouter);
 
 export default router;

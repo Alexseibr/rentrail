@@ -1,0 +1,534 @@
+Теперь нужно реализовать слой quality, testing, demo data, observability и release readiness для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что уже готовы foundation-модули:
+- backend core
+- auth / RBAC / memberships
+- companies / branches / stations
+- clients / assets / rentals / blacklist
+- payments / deposits / incidents / maintenance / reports
+- public page / inquiries / b2b requests / notifications / modules
+- devices / telemetry / batteries / geofences / commands
+- web admin panel foundation
+- mobile staff/operator app foundation
+- scanner / uploads / push / offline queue foundation
+
+## Цель этапа
+Подготовить систему к реальной эксплуатации:
+1. automated tests foundation
+2. seed/demo data system
+3. observability / logging / health checks
+4. error tracking hooks
+5. CI pipeline
+6. environment validation
+7. release readiness checklist
+8. QA scenarios for MVP
+
+Важно:
+- не нужно сейчас строить enterprise QA platform
+- нужен practical, reproducible, developer-friendly quality layer
+- акцент на multi-tenant correctness, workflow integrity и safe releases
+
+---
+
+# 1. Testing strategy
+
+## 1.1. Нужно покрыть 4 уровня
+Сделай testing foundation для:
+1. unit tests
+2. service/integration tests
+3. API tests
+4. smoke/e2e foundation for critical flows
+
+## 1.2. Приоритет тестов
+Сначала покрыть самое рискованное:
+- auth / refresh / sessions
+- RBAC / tenant isolation
+- company/branch guards
+- assets / rentals workflow
+- blacklist effective decision
+- payments/deposits lifecycle
+- incidents / maintenance transitions
+- telemetry ingest auth and resolution
+- inquiry conversion flows
+
+## 1.3. Testing stack
+Выбери clean stack, например:
+- Vitest or Jest for unit/integration
+- Supertest for API tests
+- test database setup for PostgreSQL
+- optional Playwright foundation for web smoke tests
+- optional Expo/mobile tests only as light foundation for now
+
+Если выбираешь конкретный стек, опиши почему.
+
+---
+
+# 2. Backend unit tests
+
+## 2.1. Какие модули тестировать unit-level
+Покрой unit tests для чистой бизнес-логики:
+- permission resolution
+- company/branch access helpers
+- blacklist strongest-action resolver
+- rental status transition rules
+- asset status transition rules
+- deposit release/forfeit calculations
+- payment refund calculation
+- telemetry event normalization/parser
+- geofence simple evaluation helper
+- offline action policy helper if shared code exists
+
+## 2.2. Требования
+- deterministic tests
+- no real external network
+- isolated service/helper tests
+- easy test naming
+- clear arrange/act/assert structure
+
+---
+
+# 3. Backend integration / service tests
+
+## 3.1. Нужны integration tests для сервисов и repositories
+Покрой:
+- auth login + refresh + logout
+- membership loading
+- tenant-safe repository scoping
+- create asset with company/branch/station rules
+- create/start/return rental
+- blacklist check during rental create
+- create and process incident
+- create/start/complete maintenance
+- payment create / mark paid / refund
+- deposit hold / release / forfeit
+- telemetry ingest resolves device -> company -> asset
+- inquiry convert to client / rental draft
+
+## 3.2. Database
+Нужен clean test DB strategy.
+Используй:
+- isolated PostgreSQL test database
+- migrations applied in tests
+- per-suite/per-test cleanup strategy
+
+Опиши clearly:
+- how DB is prepared
+- how test data is seeded
+- how isolation is maintained
+
+---
+
+# 4. API tests
+
+## 4.1. Нужны end-to-end API tests через HTTP
+Покрой ключевые routes:
+- /auth/*
+- /branches
+- /stations
+- /clients
+- /assets
+- /rentals workflow actions
+- /blacklist/check
+- /payments / deposits workflow actions
+- /incidents / maintenance workflow actions
+- /public/companies/:slug
+- /public inquiries / b2b requests
+- /telemetry/ingest
+- /notifications
+- /reports summary endpoints
+
+## 4.2. Важные API test cases
+Покрой обязательно:
+- unauthorized access denied
+- wrong company context denied
+- wrong branch context denied
+- branch-scoped user cannot access foreign branch data
+- blacklisted client cannot start blocked rental
+- duplicate QR/serial constraints handled
+- offline/retired/lost asset cannot be rented incorrectly
+- refund > payment amount rejected
+- deposit release+forfeit > total rejected
+- public page disabled returns proper error/not found
+- public inquiry rate-limited behavior if feasible to test
+
+---
+
+# 5. Multi-tenant isolation test pack
+
+## 5.1. Очень важный блок
+Сделай отдельный suite именно для tenant isolation.
+
+Покрой:
+- user from company A cannot read company B assets
+- user from company A cannot mutate company B rentals
+- branch-scoped user in branch X cannot access branch Y if not allowed
+- company-level admin can access all company branches
+- superAdmin override works intentionally
+- public slug endpoints do not leak non-public company data
+- telemetry ingest cannot spoof company by payload alone
+
+## 5.2. Это should be explicit
+Не размазывай эти тесты случайно по другим suite.
+Сделай отдельный visible test group for tenant isolation.
+
+---
+
+# 6. Web admin test foundation
+
+## 6.1. UI test scope
+Не нужно покрывать весь UI exhaustively.
+Нужен smoke/component/integration foundation.
+
+## 6.2. What to cover
+Сделай tests для:
+- login flow
+- protected route redirect
+- company switcher behavior
+- branch switcher behavior
+- permission-aware nav visibility
+- dashboard loading state
+- one list page pattern (например assets)
+- one workflow action screen (например rental start/return)
+- notifications read flow
+- settings public/branding basic form submit
+
+## 6.3. Suggested tools
+Можно использовать:
+- React Testing Library
+- Vitest/Jest
+- optional Playwright for key smoke flows
+
+Если выбираешь Playwright, focus on a few critical smoke tests, not full browser automation matrix.
+
+---
+
+# 7. Mobile app test foundation
+
+## 7.1. Scope
+Не нужно пока exhaustive mobile E2E.
+Сделай practical test foundation.
+
+## 7.2. Cover at least:
+- auth bootstrap logic
+- secure token/session restore
+- company context selection logic
+- branch context filtering logic
+- queueable action policy
+- offline queue reducer/service logic
+- scanner resolver helper
+- upload service state handling
+- push registration service logic
+- key screen rendering smoke tests if practical
+
+## 7.3. Notes
+Если native/expo environment complicates E2E, document realistic limitations and keep to:
+- logic/service tests
+- light component tests
+
+---
+
+# 8. Demo / seed data system
+
+## 8.1. Цель
+Нужна сильная demo/seed system для:
+- локальной разработки
+- QA
+- sales demo
+- onboarding demo tenant
+- regression checks
+
+## 8.2. Что должно создаваться
+Сделай seed/demo generator, который умеет поднимать:
+- demo company
+- 2–3 branches
+- 3–5 stations
+- sample staff users with different roles
+- 30–50 assets of mixed types
+- clients
+- rentals in разных статусах
+- payments/deposits
+- blacklist examples
+- incidents
+- maintenance orders
+- inquiries / b2b requests
+- notifications
+- devices / telemetry / batteries if modules exist
+
+## 8.3. Quality of demo data
+Данные должны быть realistic enough:
+- разные asset statuses
+- overdue rentals
+- blocked clients
+- maintenance in progress
+- low battery devices
+- offline devices
+- open incidents
+- recent inquiries
+
+## 8.4. Seed modes
+Желательно иметь:
+- base seed
+- demo seed
+- test seed
+
+Опиши и реализуй clean CLI/dev scripts if possible.
+
+---
+
+# 9. Demo tenant / reset flow
+
+## 9.1. Optional but useful
+Если архитектура уже допускает demo company, сделай foundation команды/scripts:
+- create demo tenant
+- reset demo tenant data
+- reseed demo tenant
+
+## 9.2. Important
+Reset should not destroy unrelated real data.
+It must be explicit and scoped.
+
+---
+
+# 10. Observability foundation
+
+## 10.1. Logging
+Сделай structured logging foundation.
+
+Нужно логировать:
+- request start/end
+- request id / correlation id
+- auth failures
+- permission failures
+- critical workflow actions
+- telemetry ingest summaries
+- queue/worker events if present
+- errors with stack/context
+
+## 10.2. Health endpoints
+Сделай health checks:
+- GET /health
+- GET /health/full
+
+Health/full should optionally include:
+- database connectivity
+- storage connectivity (if practical)
+- queue/redis if present
+- basic app version/build info
+
+## 10.3. Correlation IDs
+Если еще нет — добавь request correlation id middleware and propagate it into logs.
+
+---
+
+# 11. Error tracking hooks
+
+## 11.1. Foundation
+Подготовь abstraction for error tracking:
+- capture exception
+- capture warning
+- attach user/company/request context
+
+Можно пока сделать provider-agnostic layer.
+If a provider already exists, integrate lightly.
+If not, create stubs/interfaces.
+
+## 11.2. Important
+Не зашивай все напрямую в один SaaS provider without abstraction.
+
+---
+
+# 12. Environment validation
+
+## 12.1. Add strict env validation
+Нужно валидировать env variables на старте:
+- database url
+- jwt secrets
+- app urls
+- storage config
+- optional resend/push config
+- telemetry ingest secrets if used
+- expo/mobile env if relevant
+
+Используй clear schema validation approach and fail fast.
+
+## 12.2. Separate env profiles
+Document and support:
+- development
+- test
+- staging
+- production
+
+---
+
+# 13. CI pipeline
+
+## 13.1. Нужен CI foundation
+Сделай pipeline, который запускает:
+- install
+- lint
+- typecheck
+- tests
+- build backend
+- build web
+- optionally mobile validation/build checks if practical
+
+## 13.2. Minimum checks
+CI must fail if:
+- lint fails
+- typecheck fails
+- tests fail
+- migrations/schema inconsistent
+- build fails
+
+## 13.3. Migration safety
+Add check that migrations are present and schema changes are not silently uncommitted.
+
+---
+
+# 14. Release readiness checklist
+
+## 14.1. Нужен documented checklist
+Создай release readiness checklist for MVP.
+
+Включи:
+- env validated
+- migrations applied
+- seed/demo verified
+- critical tests green
+- health checks green
+- auth flow verified
+- tenant isolation tests green
+- asset/rental/payment/deposit workflows verified
+- public page flow verified
+- telemetry ingest auth verified
+- mobile login/bootstrap verified
+- push/offline queue foundation smoke tested
+- backups strategy defined
+- logs and monitoring checked
+
+## 14.2. Also include manual QA checklist
+Сделай practical manual QA checklist for pre-release.
+
+---
+
+# 15. QA scenario pack
+
+## 15.1. Нужен explicit QA matrix
+Составь and preferably codify or document scenario pack for:
+- owner/admin/operator/mechanic/viewer roles
+- company-level vs branch-level access
+- happy path rental
+- blocked blacklist path
+- overdue rental path
+- maintenance path
+- incident path
+- inquiry conversion path
+- public page path
+- telemetry/device path
+- offline queue path in mobile
+
+## 15.2. Format
+Можно сделать markdown docs or qa matrix table.
+Главное — чтобы команда могла реально пройти по нему.
+
+---
+
+# 16. Performance sanity checks
+
+## 16.1. Need basic sanity tests
+Не full load testing, but basic checks for:
+- asset list
+- rental list
+- dashboard summary
+- telemetry ingest burst sanity
+- notifications list
+- live map/report endpoint
+
+## 16.2. Goal
+At least detect obviously slow queries / missing indexes.
+Document findings if real profiling not fully implemented.
+
+---
+
+# 17. Developer experience improvements
+
+## 17.1. Scripts
+Добавь clean scripts for:
+- dev
+- test
+- test:watch
+- test:integration
+- lint
+- typecheck
+- seed
+- seed:demo
+- db:migrate
+- db:reset:test
+- maybe demo:reset
+
+## 17.2. Docs
+README should explain:
+- how to run backend/web/mobile
+- how to seed data
+- how to run tests
+- how to run smoke tests
+- env expectations
+- CI basics
+
+---
+
+# 18. Security-related QA checks
+
+## 18.1. Include explicit tests/checks for:
+- auth token misuse
+- refresh token revocation
+- role escalation attempts
+- tenant boundary violations
+- branch scope violations
+- public endpoint abuse baseline
+- upload validation
+- telemetry ingest unauthorized attempts
+
+---
+
+# 19. What NOT to overbuild now
+Пока не делай:
+- huge enterprise performance lab
+- full contract testing platform
+- full chaos engineering
+- multi-region failover drills
+- exhaustive visual regression suite
+- huge synthetic monitoring system
+- production-grade mobile E2E farm
+
+Нужен pragmatic MVP quality layer.
+
+---
+
+# 20. What I want as output
+1. Test structure and chosen testing stack
+2. Unit tests for core business rules
+3. Integration/API tests for critical workflows
+4. Explicit tenant isolation test suite
+5. Web smoke/component test foundation
+6. Mobile logic test foundation
+7. Seed/demo data system
+8. Health/logging/observability foundation
+9. CI pipeline
+10. Env validation
+11. Release checklist
+12. QA scenario docs
+13. README update
+14. Short explanation of MVP quality compromises
+
+---
+
+# 21. Order of work
+Сначала:
+1. покажи proposed testing strategy by layers
+2. покажи seed/demo strategy
+3. покажи observability/CI/release plan
+4. только потом переходи к коду/config/docs
+
+Do not skip tenant isolation and workflow integrity tests.
+These are priority.

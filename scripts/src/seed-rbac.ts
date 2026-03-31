@@ -16,12 +16,15 @@ const MODULES: Record<string, string[]> = {
   platform: ["company"],
   organization: ["branch", "station"],
   crm: ["client", "inquiry", "b2b"],
-  fleet: ["asset"],
+  fleet: ["asset", "device", "battery"],
   operations: ["rental", "blacklist"],
   finance: ["payment", "deposit"],
   access: ["user", "role"],
   system: ["audit", "settings"],
   notifications: ["notification"],
+  telemetry: ["telemetry"],
+  geofencing: ["geofence"],
+  commands: ["command"],
 };
 
 function getModule(resource: string): string {
@@ -48,6 +51,11 @@ const RESOURCE_ACTIONS: Record<string, string[]> = {
   inquiry: ["create", "read", "update", "manage"],
   b2b: ["create", "read", "update", "manage"],
   notification: ["read"],
+  device: ["create", "read", "update", "changeStatus", "manage"],
+  battery: ["create", "read", "update", "manage"],
+  telemetry: ["read", "manage"],
+  geofence: ["create", "read", "update", "manage"],
+  command: ["create", "read", "manage"],
 };
 
 function allPermsFor(resources: string[]): string[] {
@@ -86,6 +94,11 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("inquiry", ["create", "read", "update"]),
     ...permsFor("b2b", ["create", "read", "update"]),
     ...permsFor("notification", ["read"]),
+    ...permsFor("device", ["create", "read", "update", "changeStatus"]),
+    ...permsFor("battery", ["create", "read", "update"]),
+    ...permsFor("telemetry", ["read"]),
+    ...permsFor("geofence", ["create", "read", "update"]),
+    ...permsFor("command", ["create", "read"]),
   ],
 
   accountant: [
@@ -111,12 +124,20 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("inquiry", ["read", "update"]),
     ...permsFor("b2b", ["read"]),
     ...permsFor("notification", ["read"]),
+    ...permsFor("device", ["read", "update", "changeStatus"]),
+    ...permsFor("battery", ["read", "update"]),
+    ...permsFor("telemetry", ["read"]),
+    ...permsFor("command", ["create", "read"]),
   ],
 
   mechanic: [
     ...permsFor("branch", ["read"]),
     ...permsFor("station", ["read"]),
     ...permsFor("asset", ["read", "update", "changeStatus"]),
+    ...permsFor("device", ["read", "update", "changeStatus"]),
+    ...permsFor("battery", ["read", "update"]),
+    ...permsFor("telemetry", ["read"]),
+    ...permsFor("command", ["create", "read"]),
   ],
 
   viewer: Object.keys(RESOURCE_ACTIONS)

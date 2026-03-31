@@ -25,6 +25,17 @@ import { inquiries } from "./inquiries";
 import { b2bRequests } from "./b2b-requests";
 import { notifications } from "./notifications";
 import { companyModules } from "./company-modules";
+import { devices } from "./devices";
+import { assetDevices } from "./asset-devices";
+import { telemetrySnapshots } from "./telemetry-snapshots";
+import { telemetryEvents } from "./telemetry-events";
+import { locationHistory } from "./location-history";
+import { batteries } from "./batteries";
+import { batteryAssignments } from "./battery-assignments";
+import { batteryEvents } from "./battery-events";
+import { geofences } from "./geofences";
+import { deviceCommands } from "./device-commands";
+import { providerApiKeys } from "./provider-api-keys";
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
   settings: many(companySettings),
@@ -202,4 +213,74 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 export const companyModulesRelations = relations(companyModules, ({ one }) => ({
   company: one(companies, { fields: [companyModules.companyId], references: [companies.id] }),
+}));
+
+export const devicesRelations = relations(devices, ({ one, many }) => ({
+  company: one(companies, { fields: [devices.companyId], references: [companies.id] }),
+  branch: one(branches, { fields: [devices.branchId], references: [branches.id] }),
+  station: one(stations, { fields: [devices.stationId], references: [stations.id] }),
+  assetBindings: many(assetDevices),
+  commands: many(deviceCommands),
+}));
+
+export const assetDevicesRelations = relations(assetDevices, ({ one }) => ({
+  company: one(companies, { fields: [assetDevices.companyId], references: [companies.id] }),
+  asset: one(assets, { fields: [assetDevices.assetId], references: [assets.id] }),
+  device: one(devices, { fields: [assetDevices.deviceId], references: [devices.id] }),
+}));
+
+export const telemetrySnapshotsRelations = relations(telemetrySnapshots, ({ one }) => ({
+  company: one(companies, { fields: [telemetrySnapshots.companyId], references: [companies.id] }),
+  asset: one(assets, { fields: [telemetrySnapshots.assetId], references: [assets.id] }),
+  device: one(devices, { fields: [telemetrySnapshots.deviceId], references: [devices.id] }),
+}));
+
+export const telemetryEventsRelations = relations(telemetryEvents, ({ one }) => ({
+  company: one(companies, { fields: [telemetryEvents.companyId], references: [companies.id] }),
+  asset: one(assets, { fields: [telemetryEvents.assetId], references: [assets.id] }),
+  device: one(devices, { fields: [telemetryEvents.deviceId], references: [devices.id] }),
+}));
+
+export const locationHistoryRelations = relations(locationHistory, ({ one }) => ({
+  company: one(companies, { fields: [locationHistory.companyId], references: [companies.id] }),
+  asset: one(assets, { fields: [locationHistory.assetId], references: [assets.id] }),
+  device: one(devices, { fields: [locationHistory.deviceId], references: [devices.id] }),
+}));
+
+export const batteriesRelations = relations(batteries, ({ one, many }) => ({
+  company: one(companies, { fields: [batteries.companyId], references: [companies.id] }),
+  branch: one(branches, { fields: [batteries.branchId], references: [branches.id] }),
+  station: one(stations, { fields: [batteries.stationId], references: [stations.id] }),
+  assignments: many(batteryAssignments),
+  events: many(batteryEvents),
+}));
+
+export const batteryAssignmentsRelations = relations(batteryAssignments, ({ one }) => ({
+  company: one(companies, { fields: [batteryAssignments.companyId], references: [companies.id] }),
+  battery: one(batteries, { fields: [batteryAssignments.batteryId], references: [batteries.id] }),
+  asset: one(assets, { fields: [batteryAssignments.assetId], references: [assets.id] }),
+  installedByUser: one(users, { fields: [batteryAssignments.installedByUserId], references: [users.id] }),
+}));
+
+export const batteryEventsRelations = relations(batteryEvents, ({ one }) => ({
+  company: one(companies, { fields: [batteryEvents.companyId], references: [companies.id] }),
+  battery: one(batteries, { fields: [batteryEvents.batteryId], references: [batteries.id] }),
+  asset: one(assets, { fields: [batteryEvents.assetId], references: [assets.id] }),
+}));
+
+export const geofencesRelations = relations(geofences, ({ one }) => ({
+  company: one(companies, { fields: [geofences.companyId], references: [companies.id] }),
+  branch: one(branches, { fields: [geofences.branchId], references: [branches.id] }),
+  station: one(stations, { fields: [geofences.stationId], references: [stations.id] }),
+}));
+
+export const deviceCommandsRelations = relations(deviceCommands, ({ one }) => ({
+  company: one(companies, { fields: [deviceCommands.companyId], references: [companies.id] }),
+  asset: one(assets, { fields: [deviceCommands.assetId], references: [assets.id] }),
+  device: one(devices, { fields: [deviceCommands.deviceId], references: [devices.id] }),
+  requestedByUser: one(users, { fields: [deviceCommands.requestedByUserId], references: [users.id] }),
+}));
+
+export const providerApiKeysRelations = relations(providerApiKeys, ({ one }) => ({
+  company: one(companies, { fields: [providerApiKeys.companyId], references: [companies.id] }),
 }));

@@ -164,3 +164,116 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "incident_created",
   "maintenance_created",
 ]);
+
+export const deviceTypeEnum = pgEnum("device_type", [
+  "gps_tracker",
+  "smart_lock",
+  "battery_bms",
+  "controller",
+  "iot_gateway",
+  "other",
+]);
+
+export const deviceStatusEnum = pgEnum("device_status", [
+  "draft",
+  "active",
+  "inactive",
+  "offline",
+  "maintenance",
+  "blocked",
+  "retired",
+]);
+
+export const bindingTypeEnum = pgEnum("binding_type", [
+  "tracker",
+  "lock",
+  "battery_bms",
+  "controller",
+  "gateway",
+  "other",
+]);
+
+export const bindingStatusEnum = pgEnum("binding_status", [
+  "active",
+  "removed",
+  "suspended",
+]);
+
+export const telemetryEventTypeEnum = pgEnum("telemetry_event_type", [
+  "location_update",
+  "online",
+  "offline",
+  "low_battery",
+  "charging_started",
+  "charging_stopped",
+  "lock_opened",
+  "lock_closed",
+  "alarm_armed",
+  "alarm_disarmed",
+  "geofence_enter",
+  "geofence_exit",
+  "unauthorized_movement",
+  "tamper_detected",
+  "battery_disconnected",
+  "battery_connected",
+  "ping",
+  "other",
+]);
+
+export const eventSeverityEnum = pgEnum("event_severity", [
+  "info",
+  "warning",
+  "critical",
+]);
+
+export const batteryStatusEnum = pgEnum("battery_status", [
+  "available",
+  "installed",
+  "charging",
+  "service",
+  "retired",
+]);
+
+export const batteryAssignmentStatusEnum = pgEnum("battery_assignment_status", [
+  "active",
+  "removed",
+]);
+
+export const batteryEventTypeEnum = pgEnum("battery_event_type", [
+  "installed",
+  "removed",
+  "charging_started",
+  "charging_stopped",
+  "low_battery",
+  "health_drop",
+  "disconnected",
+  "connected",
+  "other",
+]);
+
+export const geofenceTypeEnum = pgEnum("geofence_type", [
+  "operating_zone",
+  "no_ride_zone",
+  "return_zone",
+  "service_zone",
+  "charging_zone",
+]);
+
+export const commandTypeEnum = pgEnum("command_type", [
+  "lock",
+  "unlock",
+  "arm_alarm",
+  "disarm_alarm",
+  "locate",
+  "ping",
+  "disable",
+]);
+
+export const commandStatusEnum = pgEnum("command_status", [
+  "queued",
+  "sent",
+  "acknowledged",
+  "failed",
+  "expired",
+  "canceled",
+]);

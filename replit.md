@@ -370,5 +370,107 @@ Available modules: public_page, inquiries, b2b_requests, rentals, payments, blac
 - Platform-managed modules (telemetry, batteries) can only be toggled by superAdmin
 - Module state stored in company_modules table (companyId + moduleCode unique)
 
+## Connected Fleet Foundation
+
+### Schema (11 new tables)
+- **devices** — IoT devices (gps_tracker, smart_lock, battery_bms, controller, iot_gateway); status machine (draft→active→retired); unique on (companyId, provider, externalId) and imei
+- **asset_devices** — bindings between assets and devices; bindingType (tracker/lock/battery_bms/controller/gateway); isPrimary flag; status (active/removed/suspended)
+- **telemetry_snapshots** — append-only telemetry state (lat/lng, speed, heading, battery%, voltage, lock/alarm/online state, odometer, raw payload)
+- **telemetry_events** — meaningful events (location_update, online/offline, low_battery, lock/alarm, geofence_enter/exit, tamper, etc.); severity (info/warning/critical)
+- **location_history** — route points (lat/lng, speed, heading, recordedAt)
+- **batteries** — battery inventory; serialNumber, model, capacityWh, healthPercent, cycleCount, chargePercent, voltage; status (available/installed/charging/service/retired)
+- **battery_assignments** — battery→asset bindings; installedAt/removedAt, installedByUserId/removedByUserId
+- **battery_events** — battery lifecycle events (installed/removed/charging_started/stopped/low_battery/health_drop/disconnected/connected)
+- **geofences** — GeoJSON polygon zones; type (operating_zone/no_ride_zone/return_zone/service_zone/charging_zone); isActive flag; rules jsonb
+- **device_commands** — command queue (lock/unlock/arm_alarm/disarm_alarm/locate/ping/disable); status machine (queued→sent→acknowledged/failed/expired/canceled); expiresAt
+- **provider_api_keys** — M2M API key auth for telemetry ingest; keyHash (SHA-256), keyPrefix, isActive, lastUsedAt
+
+### Device Status Machine
+```
+draft → active / maintenance / retired
+active → inactive / offline / maintenance / blocked / retired
+inactive → active / maintenance / retired
+offline → active / inactive / maintenance / blocked
+maintenance → active / inactive / retired
+blocked → active / maintenance / retired
+retired → (terminal)
+```
+
+### Fleet API Endpoints
+
+#### Devices (requires x-company-id, JWT auth)
+- `POST /devices` — create device (device:create)
+- `GET /devices` — list devices (device:read) (?status=&deviceType=&branchId=&provider=)
+- `GET /devices/:id` — get device (device:read)
+- `PATCH /devices/:id` — update device (device:update)
+- `POST /devices/:id/change-status` — change device status (device:changeStatus)
+- `POST /devices/:id/archive` — archive device (device:update)
+- `POST /devices/:id/restore` — restore device (device:update)
+
+#### Asset-Device Bindings (requires x-company-id, JWT auth)
+- `POST /assets/:id/devices` — bind device to asset (device:update)
+- `GET /assets/:id/devices` — list active device bindings for asset (device:read)
+- `POST /assets/:id/devices/:bindingId/remove` — remove binding (device:update)
+- `POST /assets/:id/devices/:bindingId/set-primary` — set primary binding (device:update)
+
+#### Telemetry Ingest (M2M API key auth, X-API-Key header)
+- `POST /telemetry/ingest` — ingest telemetry data (resolves device by externalId/deviceId, auto-writes snapshot + location + events)
+
+#### Telemetry Read (requires x-company-id, JWT auth)
+- `GET /telemetry/assets/:id/latest` — latest snapshot for asset (telemetry:read)
+- `GET /telemetry/assets/:id/events` — events for asset (telemetry:read) (?from=&to=&eventType=&severity=&limit=&offset=)
+- `GET /telemetry/assets/:id/locations` — location history for asset (telemetry:read)
+- `GET /telemetry/devices/:id/latest` — latest snapshot for device (telemetry:read)
+- `GET /telemetry/devices/:id/events` — events for device (telemetry:read)
+
+#### Batteries (requires x-company-id, JWT auth)
+- `POST /batteries` — create battery (battery:create)
+- `GET /batteries` — list batteries (battery:read) (?status=&branchId=)
+- `GET /batteries/:id` — get battery (battery:read)
+- `PATCH /batteries/:id` — update battery (battery:update)
+- `POST /batteries/:id/archive` — archive battery (battery:update)
+- `POST /assets/:id/batteries/assign` — assign battery to asset (battery:update)
+- `POST /assets/:id/batteries/remove` — remove battery from asset (battery:update)
+- `GET /assets/:id/batteries` — get battery assignments for asset (battery:read)
+- `GET /batteries/:id/events` — get battery event log (battery:read)
+
+#### Geofences (requires x-company-id, JWT auth)
+- `POST /geofences` — create geofence (geofence:create)
+- `GET /geofences` — list geofences (geofence:read) (?type=&branchId=&isActive=)
+- `GET /geofences/:id` — get geofence (geofence:read)
+- `PATCH /geofences/:id` — update geofence (geofence:update)
+- `POST /geofences/:id/archive` — archive geofence (geofence:update)
+
+#### Commands (requires x-company-id, JWT auth)
+- `POST /devices/:id/commands` — enqueue command to device (command:create)
+- `GET /devices/:id/commands` — list commands for device (command:read)
+- `GET /commands/:id` — get command (command:read)
+- `POST /assets/:id/lock` — lock asset via bound device (command:create)
+- `POST /assets/:id/unlock` — unlock asset via bound device (command:create)
+- `POST /assets/:id/alarm/arm` — arm alarm on bound device (command:create)
+- `POST /assets/:id/alarm/disarm` — disarm alarm on bound device (command:create)
+
+#### Reports (requires x-company-id, JWT auth, telemetry:read)
+- `GET /reports/live-map` — all assets with latest telemetry positions (?branchId=&assetType=&status=)
+- `GET /reports/low-battery-assets` — assets with low battery (?threshold=)
+- `GET /reports/offline-devices` — devices not seen recently (?thresholdMinutes=)
+
+#### Provider API Keys (requires x-company-id, JWT auth, settings:manage/read)
+- `POST /provider-api-keys` — generate new API key (returns raw key once)
+- `GET /provider-api-keys` — list keys (prefix only, never full key)
+- `DELETE /provider-api-keys/:id` — revoke key
+
+### Fleet RBAC Permissions (18 new)
+- **fleet**: device:create/read/update/changeStatus/manage, battery:create/read/update/manage
+- **telemetry**: telemetry:read/manage
+- **geofencing**: geofence:create/read/update/manage
+- **commands**: command:create/read/manage
+
+### M2M Telemetry Ingest Auth
+- Provider sends `X-API-Key: pk_<64hex>` header
+- Server hashes key with SHA-256, looks up keyHash in `provider_api_keys`
+- Resolves companyId + provider — completely separate from user JWT auth
+- Key prefix stored for identification; raw key shown only once at creation
+
 ## Phase 2 (future)
-Tables to add: telemetry, devices, batteries, geofences, incidents
+Tables to add: incidents
