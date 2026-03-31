@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Users, Bike, AlertTriangle, DollarSign, TrendingUp } from "lucide-react";
+import { Building2, Users, Bike, AlertTriangle, DollarSign, TrendingUp, ShieldAlert, PauseCircle, Clock } from "lucide-react";
 
 interface OverviewMetrics {
   totalCompanies: number;
@@ -20,6 +20,9 @@ interface OverviewMetrics {
   totalRentals: number;
   totalUsers: number;
   pendingCompanies: number;
+  blockedCompanies: number;
+  suspendedCompanies: number;
+  trialCompanies: number;
 }
 
 interface BillingMetrics {
@@ -153,6 +156,54 @@ export default function DashboardPage() {
               value={overview.data?.pendingCompanies ?? 0}
               icon={AlertTriangle}
             />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tenant Status Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="h-3 w-3 rounded-full bg-green-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active</p>
+                    <p className="text-xl font-bold">{overview.data?.activeCompanies ?? 0}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <Clock className="h-4 w-4 text-blue-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Trial</p>
+                    <p className="text-xl font-bold">{overview.data?.trialCompanies ?? 0}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pending</p>
+                    <p className="text-xl font-bold">{overview.data?.pendingCompanies ?? 0}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <PauseCircle className="h-4 w-4 text-orange-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Suspended</p>
+                    <p className="text-xl font-bold">{overview.data?.suspendedCompanies ?? 0}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <ShieldAlert className="h-4 w-4 text-red-500" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Blocked</p>
+                    <p className="text-xl font-bold">{overview.data?.blockedCompanies ?? 0}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <MetricCard
               title="Monthly Revenue"
               value={formatCurrency(billing.data?.totalMrr ?? 0, billing.data?.currency)}

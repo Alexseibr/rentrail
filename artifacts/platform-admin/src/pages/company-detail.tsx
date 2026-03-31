@@ -213,6 +213,7 @@ export default function CompanyDetailPage() {
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="modules">Modules</TabsTrigger>
           <TabsTrigger value="subscription">Subscription</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
@@ -245,6 +246,51 @@ export default function CompanyDetailPage() {
                   </div>
                 ))}
               </dl>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="modules" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Enabled Modules</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Module</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Enabled At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(company.modules as Array<{ moduleCode: string; enabled: boolean; enabledAt: string }> || []).map(
+                    (mod) => (
+                      <TableRow key={mod.moduleCode}>
+                        <TableCell className="font-medium capitalize">
+                          {mod.moduleCode.replace(/_/g, " ")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={mod.enabled ? "default" : "secondary"}>
+                            {mod.enabled ? "Enabled" : "Disabled"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {mod.enabledAt ? new Date(mod.enabledAt).toLocaleDateString() : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ),
+                  )}
+                  {(!company.modules || (company.modules as Array<unknown>).length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
+                        No modules configured
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>

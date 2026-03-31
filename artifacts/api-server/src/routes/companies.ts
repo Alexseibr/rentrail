@@ -39,6 +39,8 @@ const platformListQuery = z.object({
   hasModeration: z.enum(["true", "false"]).optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
+  sortBy: z.enum(["name", "slug", "status", "country", "createdAt"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
 router.post(
@@ -75,6 +77,8 @@ router.get(
       hasModeration: req.query.hasModeration as string | undefined,
       page: req.query.page ? Number(req.query.page) : undefined,
       limit: req.query.limit ? Number(req.query.limit) : undefined,
+      sortBy: req.query.sortBy as "name" | "slug" | "status" | "country" | "createdAt" | undefined,
+      sortOrder: req.query.sortOrder as "asc" | "desc" | undefined,
     });
     res.json({ data: result });
   },

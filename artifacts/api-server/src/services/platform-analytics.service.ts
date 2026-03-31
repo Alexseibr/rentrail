@@ -16,6 +16,12 @@ export async function getOverview() {
   const [totalTenants] = await db.select({ count: count() }).from(companies);
   const [activeTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "active"));
   const [trialTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "trial"));
+  const [pendingTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "pending"));
+  const [blockedTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "blocked"));
+  const [suspendedTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "suspended"));
+  const [totalAssets] = await db.select({ count: count() }).from(assets);
+  const [totalRentals] = await db.select({ count: count() }).from(rentals);
+  const [totalUsers] = await db.select({ count: count() }).from(userCompanyMemberships);
 
   const mrrRows = await db
     .select({ price: saasPlans.price })
@@ -36,11 +42,15 @@ export async function getOverview() {
     .groupBy(saasPlans.name, saasPlans.code);
 
   return {
-    tenants: {
-      total: totalTenants?.count ?? 0,
-      active: activeTenants?.count ?? 0,
-      trial: trialTenants?.count ?? 0,
-    },
+    totalCompanies: totalTenants?.count ?? 0,
+    activeCompanies: activeTenants?.count ?? 0,
+    trialCompanies: trialTenants?.count ?? 0,
+    pendingCompanies: pendingTenants?.count ?? 0,
+    blockedCompanies: blockedTenants?.count ?? 0,
+    suspendedCompanies: suspendedTenants?.count ?? 0,
+    totalAssets: totalAssets?.count ?? 0,
+    totalRentals: totalRentals?.count ?? 0,
+    totalUsers: totalUsers?.count ?? 0,
     mrrEstimate,
     planDistribution,
   };

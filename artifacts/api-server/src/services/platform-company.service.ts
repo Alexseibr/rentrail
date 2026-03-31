@@ -14,7 +14,7 @@ import {
   companyModules,
   roles,
 } from "@workspace/db";
-import { eq, and, ilike, or, desc, count, sql, isNull } from "drizzle-orm";
+import { eq, and, ilike, or, desc, asc, count, sql, isNull } from "drizzle-orm";
 import { NotFoundError, AppError, InvalidStatusTransitionError } from "../lib/errors";
 
 type CompanyStatus = typeof companies.$inferSelect.status;
@@ -61,6 +61,8 @@ export interface PlatformCompanyListOptions {
   hasModeration?: string;
   page?: number;
   limit?: number;
+  sortBy?: "name" | "slug" | "status" | "country" | "createdAt";
+  sortOrder?: "asc" | "desc";
 }
 
 export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
@@ -124,11 +126,21 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
 
   const total = totalResult?.count ?? 0;
 
+  const sortColumnMap = {
+    name: companies.name,
+    slug: companies.slug,
+    status: companies.status,
+    country: companies.country,
+    createdAt: companies.createdAt,
+  } as const;
+  const sortCol = opts.sortBy ? sortColumnMap[opts.sortBy] : companies.createdAt;
+  const sortDir = opts.sortOrder === "asc" ? asc : desc;
+
   const rows = await db
     .select()
     .from(companies)
     .where(baseWhere ?? undefined)
-    .orderBy(desc(companies.createdAt))
+    .orderBy(sortDir(sortCol))
     .limit(limit)
     .offset(offset);
 
