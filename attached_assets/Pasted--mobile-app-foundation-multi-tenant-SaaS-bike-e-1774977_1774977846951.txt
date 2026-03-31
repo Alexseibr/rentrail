@@ -1,0 +1,644 @@
+Теперь нужно реализовать mobile app foundation для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что backend foundation уже существует:
+- auth / sessions / RBAC / memberships
+- companies / branches / stations
+- clients
+- assets
+- rentals
+- blacklist
+- payments / deposits
+- incidents / maintenance
+- inquiries / b2b requests / notifications
+- devices / batteries / telemetry / geofences / commands foundation
+- reports / dashboard endpoints
+- public settings / branding / modules
+
+## Цель этапа
+Сделать первую рабочую mobile app foundation для сотрудников/операторов компании, а не для публичных клиентов.
+
+Приоритет mobile MVP:
+- login
+- current user/session
+- company switcher
+- branch context
+- dashboard
+- assets list + asset detail
+- rentals list + rental detail + key workflow actions
+- clients basic lookup
+- inquiries list + basic processing
+- notifications
+- incidents / maintenance basic workflows
+- telemetry-aware summary screens later-ready
+- practical field UX for operators and managers
+
+Важно:
+- не делать сейчас полноценное клиентское consumer app
+- mobile app в этой фазе — это operator/staff app
+- UI должен быть role-aware, company-aware, branch-aware
+- не делать car-specific naming
+- foundation должен быть clean и ready для расширения later with QR/photo/camera/push/offline
+
+## Стек
+Используй:
+- React Native
+- Expo
+- TypeScript
+- Expo Router или React Navigation — выбери clean вариант и объясни
+- TanStack Query for server state
+- Zustand or Context for auth/app context
+- react-hook-form + zod resolver for forms
+- secure token storage через Expo SecureStore
+- clean API client layer
+- UI primitives reusable, без избыточного дизайна
+
+---
+
+# 1. Общая архитектура mobile app
+
+## 1.1. App scope
+Это staff/operator app для:
+- owner/admin/manager
+- operator
+- mechanic
+- accountant (частично)
+- viewer (read-only)
+- support if later needed
+
+## 1.2. Основные разделы
+Сделай mobile navigation foundation с основными разделами:
+
+- Dashboard
+- Assets
+- Rentals
+- Clients
+- Operations (Incidents / Maintenance / Inquiries)
+- Notifications
+- More / Settings
+
+Если выберешь bottom tabs + stacks внутри — это хороший MVP путь.
+Опиши принятое решение.
+
+## 1.3. Route/navigation structure
+Нужна clean структура экранов:
+- auth/login
+- app/dashboard
+- app/assets/list
+- app/assets/[id]
+- app/rentals/list
+- app/rentals/[id]
+- app/clients/list
+- app/clients/[id]
+- app/inquiries/list
+- app/inquiries/[id]
+- app/incidents/list
+- app/incidents/[id]
+- app/maintenance/list
+- app/maintenance/[id]
+- app/notifications
+- app/settings/context
+- app/settings/profile
+
+Можно сгруппировать иначе, но архитектура должна быть понятной.
+
+---
+
+# 2. Auth foundation
+
+## 2.1. Login screen
+Сделай screen:
+- email
+- password
+- show/hide password
+- loading state
+- error state
+
+## 2.2. Session handling
+Нужно:
+- access token
+- refresh token
+- secure storage
+- bootstrapping app on launch
+- restore session if valid
+- auto refresh
+- logout
+
+## 2.3. Current user loading
+При старте app:
+- load stored tokens
+- call /auth/me
+- load memberships
+- load permissions
+- determine active company context
+- determine active branch context if possible
+
+## 2.4. Protected navigation
+Сделай:
+- auth stack
+- app stack
+- redirect if unauthenticated
+- loading screen while bootstrapping auth
+
+---
+
+# 3. Company and branch context on mobile
+
+## 3.1. Company switcher
+Так как user может быть в нескольких companies, нужен мобильный company switcher.
+
+UX:
+- current company shown in header or settings/context screen
+- tap to switch
+- persist selected company locally
+- refetch scoped data after switch
+
+## 3.2. Branch context
+Нужен current branch selector/filter:
+- all branches if allowed
+- one branch if user restricted
+- branch change from context/settings or top filter
+
+## 3.3. API behavior
+Все API requests должны включать current company context и, где нужно, current branch context.
+
+Сделай centralized mobile API client.
+
+---
+
+# 4. Permission-aware mobile UX
+
+## 4.1. Permission gating
+Сделай hooks/helpers:
+- useHasPermission(permission)
+- useHasAnyPermission([...])
+
+Используй их для:
+- screen visibility
+- action buttons
+- workflow controls
+
+## 4.2. Mobile navigation visibility
+Скрывай или disable sections/actions if user lacks permissions.
+
+Например:
+- mechanic sees maintenance
+- operator sees rentals/assets
+- accountant sees payments if later added
+- viewer read-only
+
+---
+
+# 5. Dashboard screen
+
+## 5.1. Mobile dashboard
+Сделай dashboard screen, который использует existing backend summary endpoints.
+
+Показывай:
+- total assets
+- active rentals
+- overdue rentals
+- open incidents
+- maintenance open
+- low battery count if available
+- offline devices count if available
+- recent inquiries or alerts
+- current company / branch context
+
+## 5.2. Mobile layout
+Сделай compact cards/list sections.
+Не пытайся уместить desktop analytics.
+Это operational overview.
+
+---
+
+# 6. Assets screens
+
+## 6.1. Assets list
+Сделай mobile-friendly list:
+- search
+- quick filters by type/status
+- branch-aware results
+- pull to refresh
+- pagination or infinite loading, whichever cleanest
+
+Каждый item показывает:
+- type
+- brand/model
+- status badge
+- branch/station short info
+- battery summary if available
+- last seen / telemetry summary if available
+
+## 6.2. Asset detail screen
+Показывай:
+- asset type
+- brand/model
+- status
+- serial/internal code
+- branch/station
+- current rental/client if active
+- current device bindings summary
+- battery summary
+- latest telemetry summary
+- quick actions if permitted:
+  - change status
+  - open related rental
+  - open incidents
+  - open maintenance
+  - lock/unlock later if available
+
+## 6.3. Asset actions
+Для MVP mobile:
+- change status
+- view bindings
+- navigate to related rental/maintenance/incident
+Можно не делать полный create/edit asset form, если хочешь облегчить mobile MVP.
+Но list + detail + status action обязательны.
+
+---
+
+# 7. Rentals screens
+
+## 7.1. Rentals list
+Сделай:
+- status filters
+- quick search by client/asset
+- active/current first
+- overdue highlighted
+
+## 7.2. Rental detail
+Показывай:
+- client
+- asset
+- rental status
+- start / planned end / actual end
+- deposit summary
+- notes
+- linked payments/deposits summary if easy
+- history/status timeline if possible
+
+## 7.3. Workflow actions
+Сделай buttons according to permission + status:
+- approve
+- start
+- extend
+- return
+- cancel
+
+## 7.4. Create rental
+Для mobile MVP можно сделать simplified create rental form:
+- select client
+- select asset
+- optional rental plan
+- start/planned end
+- deposit amount
+- notes
+
+Если create flow получается тяжелым, приоритет:
+1. list
+2. detail
+3. workflow actions
+4. create
+
+Но желательно create foundation тоже сделать.
+
+---
+
+# 8. Clients screens
+
+## 8.1. Clients list
+Сделай:
+- search by name/phone/email/document
+- status filter
+- branch/company scoped results
+- tap to open detail
+
+## 8.2. Client detail
+Показывай:
+- name
+- phone
+- email
+- status
+- rating
+- blacklist summary/warning
+- latest rentals
+- payment/debt summary if available
+
+## 8.3. Minimal actions
+- create client
+- edit client basic fields
+- open rentals
+- open blacklist info if available
+
+---
+
+# 9. Inquiries screens
+
+## 9.1. Inquiries list
+Сделай:
+- filters by status/date/branch
+- badges for new/contacted/converted/rejected
+- spam/review markers if available
+
+## 9.2. Inquiry detail
+Показывай:
+- full name
+- phone/email
+- requested period
+- preferred asset/type
+- message
+- blacklist pre-check result
+- createdAt
+
+## 9.3. Actions
+- mark contacted
+- convert to client
+- convert to rental draft
+- reject
+
+Это особенно полезно для операторов “в поле”.
+
+---
+
+# 10. Incidents screens
+
+## 10.1. Incidents list
+Сделай:
+- status filter
+- severity filter
+- type filter
+- branch filter if applicable
+- highlight critical/open incidents
+
+## 10.2. Incident detail
+Показывай:
+- type
+- severity
+- status
+- related asset/client/rental
+- description
+- assigned user
+- timestamps
+
+## 10.3. Actions
+- create incident
+- update
+- escalate
+- resolve
+- close
+
+---
+
+# 11. Maintenance screens
+
+## 11.1. Maintenance list
+Сделай:
+- filter by status/type
+- branch scoped
+- highlight in_progress / waiting_parts
+
+## 11.2. Maintenance detail
+Показывай:
+- related asset
+- type
+- status
+- title/description
+- cost estimate / actual
+- scheduledAt / startedAt / completedAt
+- assigned user
+- outcome notes
+
+## 11.3. Actions
+- create maintenance
+- start
+- complete
+- cancel
+
+---
+
+# 12. Notifications screens
+
+## 12.1. Notifications list
+Сделай mobile screen:
+- unread/read state
+- title/body
+- createdAt
+- mark read
+- mark all read
+
+## 12.2. Optional UX
+Если notification data содержит route hints/entity ids, можно добавить open-related-entity action.
+Но только если это cleanly fits foundation.
+
+---
+
+# 13. Telemetry-aware screens (foundation only)
+
+## 13.1. Devices/Battery quick summaries
+Не обязательно отдельные full CRUD screens в первом mobile MVP.
+Но нужно хотя бы:
+- на asset detail показывать device/battery/lastSeen/online/battery%
+
+## 13.2. Live operations screen
+Если успеваешь, сделай simplified screen:
+- low battery assets
+- offline devices
+- recent alerts
+
+Можно использовать existing report endpoints.
+
+## 13.3. No heavy map requirement
+Полноценную карту можно отложить.
+Для mobile MVP допустим список с last coords / status.
+Если map easy, add later.
+
+---
+
+# 14. App state architecture
+
+## 14.1. Recommended split
+Сделай:
+- auth/app context in Zustand or Context
+- server data in TanStack Query
+- form state local via react-hook-form
+
+Не делай один giant global store.
+
+## 14.2. Needed mobile app state
+Хранить:
+- tokens
+- current user
+- memberships
+- permissions
+- selected companyId
+- selected branchId
+- theme/language later if needed
+
+---
+
+# 15. API layer
+
+## 15.1. Central API client
+Нужно:
+- base URL from env
+- attach access token
+- attach company/branch context headers
+- refresh token flow
+- consistent error normalization
+- unauthorized handling
+
+## 15.2. Query/mutation hooks
+Сделай organized hooks/services for:
+- auth
+- dashboard
+- assets
+- rentals
+- clients
+- inquiries
+- incidents
+- maintenance
+- notifications
+
+Можно группировать по modules.
+
+---
+
+# 16. Shared UI primitives for mobile
+
+## 16.1. Нужны reusable components
+Сделай:
+- Screen container
+- Page header / section header
+- Context pill / company-branch selector row
+- Status badge
+- Metric card
+- List item card
+- Search field
+- Filter chips
+- Empty state
+- Error state
+- Loading skeleton/spinner
+- Confirm action modal
+- Form field wrappers
+
+## 16.2. Design expectation
+UI должен быть:
+- clean
+- practical
+- not overdesigned
+- readable in field conditions
+- touch-friendly
+- role-aware
+
+---
+
+# 17. Form handling
+
+## 17.1. Use react-hook-form + zod
+Для create/edit flows:
+- client form
+- rental create / extend / return
+- incident create/update
+- maintenance create/update
+
+## 17.2. Error handling
+- field errors
+- submit errors
+- offline-like fallback message if request fails
+- loading state on submit
+
+---
+
+# 18. Offline readiness (foundation only)
+
+## 18.1. Пока не надо полноценный offline mode
+Но архитектурно не ломай возможность добавить его позже.
+
+## 18.2. Foundation rules
+- keep API layer isolated
+- isolate mutations
+- avoid tightly coupling UI to synchronous server assumptions
+- optionally add TODO/documentation hooks for future offline queue
+
+Не реализовывай full offline sync сейчас.
+
+---
+
+# 19. Mobile-specific future hooks
+
+Подготовь foundation, чтобы позже можно было добавить:
+- camera/photo upload
+- QR scan
+- barcode scan
+- push notifications
+- BLE / hardware tools
+- location permissions
+- background sync
+- offline queue
+
+Сейчас не реализовывай их полноценно, но не строй архитектуру так, чтобы потом было больно.
+
+---
+
+# 20. README/mobile docs update
+
+Добавь:
+- mobile app folder structure
+- navigation structure
+- auth/session strategy
+- company/branch context strategy
+- screens implemented
+- env vars needed
+- how to run Expo app
+- current limitations
+- what is intentionally postponed
+
+---
+
+# 21. Что НЕ делать сейчас
+Пока не реализовывай:
+- consumer client app
+- polished public rental flow
+- push notifications
+- QR scanner production polish
+- camera upload workflows
+- offline sync engine
+- BLE integrations
+- live websocket map
+- advanced charts
+- biometric auth
+
+Это позже.
+
+---
+
+# 22. Что хочу получить на выходе
+1. Mobile app shell
+2. Login screen
+3. Auth/session bootstrap
+4. Company switcher
+5. Branch context selection
+6. Dashboard screen
+7. Assets list/detail
+8. Rentals list/detail + workflow actions
+9. Clients list/detail
+10. Inquiries list/detail + actions
+11. Incidents list/detail + actions
+12. Maintenance list/detail + actions
+13. Notifications screen
+14. Shared mobile UI primitives
+15. README update
+16. Краткое описание MVP-компромиссов
+
+---
+
+# 23. Порядок работы
+Сначала:
+1. покажи mobile folder/module structure
+2. покажи navigation map
+3. опиши auth/session/context strategy
+4. опиши screen priority and MVP scope decisions
+5. только потом переходи к коду
+
+Не пытайся сделать consumer super-app.
+Сначала сделай strong operator/staff mobile foundation.
