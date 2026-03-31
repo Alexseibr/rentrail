@@ -2,9 +2,7 @@
 
 ## Overview
 
-This project is a pnpm workspace monorepo designed for a multi-tenant SaaS platform specializing in renting light electric vehicles like bikes, ebikes, scooters, and escooters. Its core purpose is to provide a comprehensive management system where each company operates as an independent tenant, managing its own branches, stations, clients, assets, and rental operations. The platform aims to streamline rental processes, manage fleet operations, handle client interactions, and provide robust administrative controls, including a sophisticated role-based access control system.
-
-The business vision is to become the leading SaaS solution for micro-mobility rental businesses, offering a scalable, secure, and feature-rich platform. It targets rapid market penetration by providing a highly customizable and efficient system that reduces operational overhead for rental companies. The project ambitions include expanding into a full-fledged connected fleet management system, integrating IoT devices for real-time telemetry, advanced battery management, and sophisticated command and control capabilities for assets.
+This project is a pnpm monorepo for a multi-tenant SaaS platform focused on renting light electric vehicles (bikes, ebikes, scooters, escooters). It provides a comprehensive management system for companies to manage branches, stations, clients, assets, and rental operations. The platform aims to streamline rental processes, manage fleets, handle client interactions, and offer robust administrative controls including role-based access. The business vision is to become the leading SaaS solution for micro-mobility rental businesses, targeting rapid market penetration by offering a scalable, secure, and customizable platform that reduces operational overhead. Future ambitions include expanding into connected fleet management with IoT integration for real-time telemetry, advanced battery management, and remote asset control.
 
 ## User Preferences
 
@@ -16,70 +14,38 @@ I like functional programming.
 
 ## System Architecture
 
-The project is built as a pnpm monorepo using Node.js 24 and TypeScript 5.9. The backend API is developed with Express 5, utilizing PostgreSQL with Drizzle ORM for data persistence. Zod is used for validation, and JWT with bcrypt secures authentication. API codegen is handled by Orval from an OpenAPI spec. The build process uses esbuild.
+The project is a pnpm monorepo using Node.js 24 and TypeScript 5.9. The backend API is built with Express 5, utilizing PostgreSQL with Drizzle ORM, Zod for validation, and JWT with bcrypt for authentication. API codegen is handled by Orval from an OpenAPI spec, and esbuild is used for the build process.
 
 ### UI/UX Decisions
-The platform includes a mobile staff application built with Expo/React Native, focusing on intuitive workflows for operators and field staff. This app uses `expo-router` for file-based routing and `@tanstack/react-query` for data fetching. Key UI/UX considerations include:
-- **Navigation:** A tab-based navigation with Dashboard, Assets, Rentals, Operations, and Settings for easy access to core functionalities.
-- **Modal Screens:** Dedicated modal screens for actions like QR/barcode scanning, incident/maintenance creation, and offline sync queue management.
-- **Offline-First Capabilities:** The mobile app incorporates an offline queue system using AsyncStorage to persist mutations and synchronize data upon reconnection, ensuring operational continuity in low-connectivity environments.
+A mobile staff application, built with Expo/React Native, provides intuitive workflows for operators. It features tab-based navigation, modal screens for specific actions (e.g., QR scanning, incident creation), and offline-first capabilities with an AsyncStorage queue for data synchronization.
+
+A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owners with management capabilities. It features:
+- **Auth:** JWT-based login with automatic token refresh, stored in-memory with localStorage persistence
+- **Dashboard:** Overview metrics from analytics and health endpoints
+- **Companies:** List/detail views with search, filtering, pagination, moderation actions (approve/block/suspend/unblock/cancel), usage and health tabs
+- **Billing:** Plans management (CRUD), subscriptions list with status filtering, invoices with mark-paid capability
+- **Global Blacklist:** CRUD with identity-based entries (name/email/phone/document), enable/disable toggling
+- **Diagnostics:** Real-time health summary, service status cards, tenant health overview with auto-refresh
+- **Analytics:** Platform-wide metrics, risk overview, top tenants by rentals and assets
+- **White Label:** Per-company white-label settings management (custom domain, branding, colors, support contacts)
+- **Routing:** wouter with sidebar navigation, `/platform-admin/` base path
+- **API Proxy:** Vite dev proxy forwards `/platform-admin/api/` to API server on port 8080
 
 ### Technical Implementations
-- **Multi-Tenancy:** Achieved by requiring an `x-company-id` header for all tenant-scoped requests and filtering all database queries by `companyId` to prevent data leakage.
-- **Authentication & Authorization:**
-    - JWT access (15min) and refresh tokens (7 days) with token rotation. Refresh tokens are SHA-256 hashed.
-    - Password hashing with bcrypt (12 rounds).
-    - Role-Based Access Control (RBAC) implemented via a permission-based system. Middleware chains (`authenticate`, `requireCompanyAccess`, `requirePermission`) validate user identity, tenant context, and specific permissions for each action, ensuring fine-grained access control without hardcoding role names in handlers. Permissions are defined at a granular `resource:action` level and grouped by modules (e.g., platform, organization, crm, fleet).
-- **Database Schema:** A robust PostgreSQL schema with 26 tables and over 100 indexes, utilizing Drizzle ORM for type-safe interactions. Key entities include companies, branches, stations, users, clients, assets, rentals, payments, and audit logs. Drizzle's `relations()` are extensively used for relational queries.
-- **Asset & Rental Status Machines:** Strict state machines enforce valid transitions for asset and rental statuses, logging every change to dedicated history tables. This ensures data integrity and provides an auditable trail of operational changes.
-- **Lead Intake:** Public-facing inquiry and B2B request forms serve as lead intake mechanisms. These leads are processed through a status machine and can be converted into clients or rental drafts, but do not directly create active rentals.
-- **Connected Fleet Foundation (IoT Integration):**
-    - **Devices:** Management of various IoT devices (GPS trackers, smart locks, BMS, controllers) with their own status machines and binding to assets.
-    - **Telemetry:** Append-only storage for real-time telemetry data (location, speed, battery, status), and event logging for significant occurrences.
-    - **Batteries:** Inventory and lifecycle management of batteries, including assignments to assets and event tracking.
-    - **Geofences:** GeoJSON-based polygonal zones for operational rules.
-    - **Device Commands:** A command queuing system for remote control of devices (lock/unlock, alarm, ping).
-    - **M2M Telemetry Ingest:** A secure mechanism for IoT providers to ingest telemetry data using API keys, separate from user authentication.
-
-### Feature Specifications
-- **Core Rental Management:** Create, list, retrieve, and manage rentals, including approval, start, extension, return, and cancellation workflows.
-- **Client Management:** Comprehensive client profiles with personal details, status, and associated blacklist entries.
-- **Asset Management:** Detailed asset tracking, including type, brand, model, serial numbers, public visibility, and operational status changes.
-- **Financial Tracking:** Payments and deposits management with various statuses and types.
-- **Blacklisting:** System to blacklist clients at branch, company, or global scope, with automated client data snapshots.
-- **Company Configuration:** Per-company settings, branding customization, and modular feature toggles.
-- **Notifications:** In-app notification system for users.
-- **Audit Logging:** Detailed audit trails for critical actions, capturing before/after states and actor information. Tenant-scoped `GET /audit-logs` endpoint with filters (entityType, action, actorUserId, from/to) and pagination.
-- **Blacklist Strongest Decision:** `checkClientBlacklist` returns `{isBlacklisted, isBlocked, strongestAction, strongestSeverity, entries}` with severity ranking (blocked_global=7 down to warning=1). Blocked clients cannot create or start rentals.
-- **Client Lifecycle:** Archive/restore support with status tracking. Archived clients cannot be updated.
-- **Branch Lifecycle:** Activate/deactivate support with status validation (no double-deactivation).
-- **Blacklist Revoke:** `POST /blacklist/:id/revoke` sets `endsAt` to now, removing blocking effect.
-- **Platform Access Model:** Separate platform-level RBAC with five platform roles (superAdmin, platformAdmin, platformSupport, platformFinance, platformRisk) stored in `platform_roles` / `platform_user_roles` tables. Platform roles are independent from tenant company memberships — a user can hold both. JWT tokens include `platformRoles: string[]` for informational purposes; `requirePlatformRole(...roles)` middleware verifies active roles from DB on every request (not JWT-only) to prevent stale privilege after revocation. All platform mutations are logged to `platform_audit_logs` with full actor/action/reason/before/after context. **Derivation policy:** `isSuperAdmin` in JWT is derived from `users.isSuperAdmin` DB column OR from the `superAdmin` platform role (`isSuperAdmin = users.isSuperAdmin || platformRoles.includes("superAdmin")`). Only the `superAdmin` platform role grants tenant-scope bypass; other platform roles (platformAdmin, platformSupport, platformFinance, platformRisk) do NOT. **Route separation:** Platform-scope company listing is at `GET /platform/companies` (gated by `requireAnyPlatformRole` middleware); tenant-scope `GET /companies` returns only user memberships with no platform bypass.
-- **Platform Companies & Tenant Moderation (Task #2):**
-    - **Company Status Flow:** `pending → active/blocked/canceled`, `trial/active → suspended/blocked/canceled`, `suspended → active/blocked/canceled`, `blocked → active` (unblock only). `canceled` is terminal.
-    - **Moderation Columns:** `moderationReasonCode`, `moderationReasonText`, `moderatedBy`, `moderatedAt` on companies table. Full history in `company_moderation_events` table (fromStatus, toStatus, reasonCode, reasonText, performedBy).
-    - **Tenant Enforcement:** `requireCompanyAccess` checks company status — `blocked`/`canceled` → 403 (`COMPANY_BLOCKED`). Suspended companies allow GET requests but block all non-GET (POST/PATCH/DELETE) with 403 (`COMPANY_SUSPENDED`) centrally in `requireCompanyAccess`. SuperAdmin bypasses all status checks.
-    - **Platform Endpoints (10):** `GET/PATCH /platform/companies/:id`, `POST /platform/companies/:id/{approve,block,unblock,suspend,cancel}`, `GET /platform/companies/:id/{usage,health}`. Moderation actions require `superAdmin`/`platformAdmin` (cancel requires `superAdmin` only).
-    - **Support Inspection (3):** `GET /platform/support/tenants/:id/{summary,audit,health}` — accessible by `superAdmin`, `platformAdmin`, `platformSupport`.
-    - **Service:** `platform-company.service.ts` — listPlatformCompanies (search/filter/pagination/counts), getPlatformCompanyDetail, moderation actions, getCompanyUsage, getCompanyHealthSummary, getTenantSummary, getTenantAuditLog, getTenantHealth.
-- **SaaS Billing Foundation (Task #3):**
-    - **Schema:** 3 new enums (`saas_billing_interval`, `saas_subscription_status`, `saas_invoice_status`) and 4 new tables (`saas_plans`, `saas_subscriptions`, `saas_invoices`, `saas_payments`) in `lib/db/src/schema/`.
-    - **Plans:** CRUD at `GET/POST /platform/billing/plans`, `PATCH /platform/billing/plans/:id`. Plans have code (unique), price (integer cents), billing interval, resource limits (maxBranches/maxStations/maxAssets/maxUsers), enabled modules, support tier, and white-label flag. Seed data: Basic ($49/mo), Pro ($149/mo), Enterprise ($499/mo).
-    - **Subscriptions:** `GET /platform/billing/subscriptions` (list with filters), `GET/PATCH /platform/billing/subscriptions/:id` (detail/update periods), `POST .../activate`, `.../past-due`, `.../cancel` (status lifecycle). Status flow: `trial → active → past_due → canceled`. `past_due → active` recovery allowed. `canceled` is terminal.
-    - **Invoices:** `GET/POST /platform/billing/invoices`, `GET /platform/billing/invoices/:id` (with payments), `POST .../issue`, `.../mark-paid`, `.../void`. Status flow: `draft → issued → paid`. `issued/overdue → paid`. Void allowed from draft/issued/overdue but not paid.
-    - **Payments:** `GET /platform/billing/payments` with company/invoice filters. Created automatically via mark-paid.
-    - **Company set-plan:** `POST /platform/companies/:id/set-plan` — assigns plan, creates subscription, updates `companies.plan` column. Requires superAdmin/platformAdmin.
-    - **Access Control:** All billing endpoints require `superAdmin`, `platformAdmin`, or `platformFinance` platform role. `set-plan` restricted to `superAdmin`/`platformAdmin` only.
-    - **Service:** `billing.service.ts` — plan CRUD, subscription lifecycle with state machine transitions, invoice lifecycle, payment queries, `getPlanLimitsForCompany`.
-    - **Audit:** All billing operations logged to `platform_audit_logs` with action prefix `billing.*`.
-    - **326 tests across 12 suites** (42 new billing tests).
-- **Platform Blacklist, White-Label, Diagnostics & Analytics (Task #4):**
-    - **Global Blacklist (6 endpoints):** `GET/POST /platform/blacklist`, `GET/PATCH /platform/blacklist/:id`, `POST .../enable`, `.../disable`. Filters: actionType, active, reasonCode, search, from/to, pagination. Roles: `superAdmin`, `platformAdmin`, `platformRisk`.
-    - **White-Label (4 endpoints):** `GET/PATCH /platform/companies/:id/white-label`, `POST .../enable`, `.../disable`. Schema: `company_white_label_settings` table with customDomain, brandNameOverride, logoUrl, coverUrl, primaryColor, secondaryColor, customSupportEmail, customSupportPhone, status (disabled/enabled/pending_verification). Plan eligibility check via `saas_plans.whiteLabelAvailable` flag. Roles: `superAdmin`, `platformAdmin`.
-    - **Diagnostics (3 endpoints):** `GET /platform/health/summary` (aggregated metrics: tenants, assets, devices, MRR, build info), `GET /platform/health/services` (all service statuses), `GET /platform/diagnostics/:serviceName` (individual service check: email, storage, queues, telemetry-ingest, mobile-push). Roles: `superAdmin`, `platformAdmin`.
-    - **Analytics (5 endpoints):** `GET /platform/analytics/{overview,tenants,billing,usage,risks}`. Overview includes MRR estimate, plan distribution. Tenants supports top-N by rentals or assets. Billing shows invoice counts, revenue collected. Usage shows per-tenant averages. Risks includes blacklist stats and incident counts. Roles: `superAdmin`, `platformAdmin`, `platformFinance`.
-    - **Cross-tenant enforcement:** `checkClientBlacklist` now resolves global blacklist entries by matching client phone/email/document against global entry snapshots, ensuring cross-tenant blocking works even when global entries have no `clientId`.
-    - **371 tests across 13 suites** (41 new Task #4 tests).
+- **Multi-Tenancy:** Enforced via an `x-company-id` header and `companyId` filtering on all database queries.
+- **Authentication & Authorization:** JWT (access/refresh tokens with rotation), bcrypt for password hashing, and a permission-based Role-Based Access Control (RBAC) system. Middleware validates user identity, tenant context, and granular permissions (`resource:action`).
+- **Database Schema:** PostgreSQL schema with 26 tables and over 100 indexes, managed by Drizzle ORM, supporting key entities like companies, assets, rentals, and users.
+- **Asset & Rental Status Machines:** Enforce valid status transitions and log changes to history tables for auditing.
+- **Lead Intake:** Public forms for inquiries, processing leads through a status machine which can convert them into clients or rental drafts.
+- **Connected Fleet Foundation (IoT Integration):** Manages IoT devices, handles real-time telemetry data (location, battery, status), tracks batteries, defines GeoJSON geofences, and queues remote device commands. A secure M2M ingestion mechanism allows IoT providers to push telemetry data.
+- **Platform Access Model:** Separate platform-level RBAC for five platform roles (superAdmin, platformAdmin, platformSupport, platformFinance, platformRisk) with independent permissions from tenant company memberships. Platform roles are verified on each request.
+- **Tenant Moderation:** Companies have a status flow (e.g., `pending`, `active`, `blocked`, `canceled`). Moderation actions are logged, and access is enforced based on company status, with SuperAdmin bypass.
+- **SaaS Billing Foundation:** Includes schema for plans, subscriptions, invoices, and payments. Plans define pricing, billing intervals, and resource limits. Subscriptions manage lifecycle states, invoices track billing, and payments record transactions. All billing operations are logged.
+- **Platform Blacklist, White-Label, Diagnostics & Analytics:**
+    - **Global Blacklist:** Manages cross-tenant client blacklisting based on phone/email/document.
+    - **White-Label:** Allows companies to customize branding (custom domains, logos, colors).
+    - **Diagnostics:** Provides endpoints for health summaries, service statuses, and individual service checks.
+    - **Analytics:** Offers aggregated data for overview, tenants, billing, usage, and risks.
 
 ## External Dependencies
 
@@ -87,54 +53,10 @@ The platform includes a mobile staff application built with Expo/React Native, f
 - **ORM:** Drizzle ORM
 - **API Framework:** Express 5
 - **Validation:** Zod
-- **Authentication:** JWT (JSON Web Tokens), bcrypt
+- **Authentication:** JWT, bcrypt
 - **API Codegen:** Orval
 - **Build Tool:** esbuild
 - **Mobile Development:** Expo SDK, React Native
 - **Data Fetching (Mobile):** @tanstack/react-query
-- **Camera/Image:** `expo-camera`, `expo-image-picker`
-- **Notifications (Mobile):** `expo-notifications`
-- **Haptics (Mobile):** `expo-haptics`
-- **Local Storage (Mobile):** AsyncStorage
-- **Object Storage:** Google Cloud Storage (GCS) (via Replit App Storage for presigned URL uploads)
-- **Testing:** Vitest 4.x, supertest
-- **CI:** GitHub Actions
-
-## Testing
-
-The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
-
-### Test Commands
-- `pnpm test` — Run all 371 tests (13 suites)
-- `pnpm test:unit` — Unit tests only (pure logic, no DB)
-- `pnpm test:api` — API integration tests (supertest against real DB)
-- `pnpm test:integration` — Integration tests (DB-backed)
-
-### Test Utilities
-- `artifacts/api-server/src/test/setup.ts` — DB cleanup helpers (`cleanDatabase` preserves roles/permissions; `cleanDatabaseFull` truncates everything)
-- `artifacts/api-server/src/test/helpers.ts` — `createTestUser`, `createTestTenant`, `assignRole`, `authHeaders`, `clearRolesCache`
-- `artifacts/api-server/src/test/app.ts` — Express app instance for supertest
-- `artifacts/api-server/src/test/seed-rbac-inline.ts` — In-process RBAC seeder for API tests (avoids slow subprocess)
-
-### Test File Naming
-- `*.unit.test.ts` — Pure unit tests
-- `*.api.test.ts` — API/E2E tests via supertest
-- `*.int.test.ts` — Integration tests with DB
-
-## Observability
-
-- **Health endpoints:** `/api/healthz` (simple), `/api/health` (uptime), `/api/health/full` (DB latency + env info)
-- **Correlation IDs:** `x-correlation-id` header injected by middleware, propagated in pino-http logs
-- **Env validation:** Strict startup validation in `artifacts/api-server/src/lib/env.ts`
-- **Error tracking:** Abstraction layer ready for Sentry/etc integration
-
-## Demo Data
-
-- `pnpm seed:demo` — Seeds 40 assets, 20 clients, 14 rentals, devices, batteries, telemetry for company `velocity-rides`
-- All demo users use password `demo1234`
-
-## CI Pipeline
-
-- `.github/workflows/ci.yml` — Lint, typecheck, test, build stages
-- `docs/release-readiness.md` — Release checklist
-- `docs/qa-scenarios.md` — QA test matrix
+- **Object Storage:** Google Cloud Storage (GCS) (via Replit App Storage)
+- **Testing:** Vitest, supertest
