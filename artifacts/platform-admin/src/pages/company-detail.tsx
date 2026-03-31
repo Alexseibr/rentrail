@@ -82,7 +82,7 @@ export default function CompanyDetailPage() {
   const { data: subscriptions } = useQuery({
     queryKey: ["company", companyId, "subscriptions"],
     queryFn: () =>
-      api<{ items: Array<Record<string, unknown>>; total: number }>(
+      api<{ items: Array<Record<string, unknown>>; pagination: { total: number; totalPages: number } }>(
         `/platform/billing/subscriptions?companyId=${companyId}`,
       ),
     enabled: !!companyId,
@@ -91,7 +91,7 @@ export default function CompanyDetailPage() {
   const { data: invoices } = useQuery({
     queryKey: ["company", companyId, "invoices"],
     queryFn: () =>
-      api<{ items: Array<Record<string, unknown>>; total: number }>(
+      api<{ items: Array<Record<string, unknown>>; pagination: { total: number; totalPages: number } }>(
         `/platform/billing/invoices?companyId=${companyId}&limit=10`,
       ),
     enabled: !!companyId,
@@ -109,7 +109,7 @@ export default function CompanyDetailPage() {
   const { data: wlSettings } = useQuery({
     queryKey: ["company", companyId, "whitelabel"],
     queryFn: () =>
-      api<Record<string, unknown>>(`/platform/white-label/${companyId}`).catch(() => null),
+      api<Record<string, unknown>>(`/platform/companies/${companyId}/white-label`).catch(() => null),
     enabled: !!companyId,
   });
 

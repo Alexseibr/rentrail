@@ -7,7 +7,8 @@ interface User {
   firstName: string;
   lastName: string;
   isSuperAdmin: boolean;
-  platformRoles?: string[];
+  platformRoles: string[];
+  memberships?: Array<{ companyId: string; roleCode: string }>;
 }
 
 interface AuthContextType {
@@ -16,6 +17,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasPlatformAccess: boolean;
+  hasTenantMemberships: boolean;
 }
 
 const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
@@ -42,16 +44,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleLogout]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const result = await api<{
+    const loginResult = await api<{
       accessToken: string;
       refreshToken: string;
-      user: User;
+      user: { id: string; email: string; firstName: string; lastName: string; isSuperAdmin: boolean };
     }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    setTokens(result.accessToken, result.refreshToken);
-    setUser(result.user);
+    setTokens(loginResult.accessToken, loginResult.refreshToken);
+
+    const profile = await api<User>("/auth/me");
+    setUser({
+      id: profile.id,
+      email: profile.email,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      isSuperAdmin: profile.isSuperAdmin,
+      platformRoles: profile.platformRoles || [],
+      memberships: profile.memberships,
+    });
   }, []);
 
   const logout = useCallback(() => {
@@ -60,9 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleLogout]);
 
   const hasPlatformAccess = checkPlatformAccess(user);
+  const hasTenantMemberships = (user?.memberships || []).length > 0;
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, hasPlatformAccess }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, hasPlatformAccess, hasTenantMemberships }}>
       {children}
     </AuthContext.Provider>
   );

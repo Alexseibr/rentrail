@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface BlacklistEntry {
   id: string;
@@ -53,8 +53,18 @@ interface ToggleConfirm {
   enable: boolean;
 }
 
+const ACTION_TYPES = [
+  { value: "warning", label: "Warning" },
+  { value: "manual_approval_only", label: "Manual Approval Only" },
+  { value: "increased_deposit", label: "Increased Deposit" },
+  { value: "restricted_access", label: "Restricted Access" },
+  { value: "blocked_branch", label: "Blocked (Branch)" },
+  { value: "blocked_company", label: "Blocked (Company)" },
+  { value: "blocked_global", label: "Blocked (Global)" },
+];
+
 const emptyForm = {
-  actionType: "ban",
+  actionType: "blocked_global",
   reasonCode: "",
   reasonText: "",
   fullNameSnapshot: "",
@@ -80,7 +90,9 @@ export default function BlacklistPage() {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (search) params.set("search", search);
       if (activeFilter !== "all") params.set("active", activeFilter);
-      return api<BlacklistEntry[]>(`/platform/blacklist?${params}`);
+      return api<{ items: BlacklistEntry[]; pagination: { total: number; totalPages: number } }>(
+        `/platform/blacklist?${params}`,
+      );
     },
   });
 
@@ -90,6 +102,17 @@ export default function BlacklistPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blacklist"] });
       setShowCreate(false);
+      setEditEntry(null);
+      setForm({ ...emptyForm });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+      api(`/platform/blacklist/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blacklist"] });
+      setEditEntry(null);
       setForm({ ...emptyForm });
     },
   });
@@ -103,10 +126,13 @@ export default function BlacklistPage() {
     },
   });
 
-  const entries = Array.isArray(data) ? data : [];
+  const entries = data?.items || [];
+  const totalPages = data?.pagination?.totalPages || 0;
+  const total = data?.pagination?.total || 0;
 
   function openEdit(entry: BlacklistEntry) {
     setEditEntry(entry);
+    setShowCreate(false);
     setForm({
       actionType: entry.actionType,
       reasonCode: entry.reasonCode,
@@ -130,6 +156,17 @@ export default function BlacklistPage() {
     if (form.documentSnapshot) body.documentSnapshot = form.documentSnapshot;
     return body;
   }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (editEntry) {
+      updateMutation.mutate({ id: editEntry.id, body: buildBody() });
+    } else {
+      createMutation.mutate(buildBody());
+    }
+  }
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="p-6 space-y-4">
@@ -185,105 +222,121 @@ export default function BlacklistPage() {
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Identity</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>
-                      <div className="space-y-0.5">
-                        {entry.fullNameSnapshot && (
-                          <div className="font-medium">{entry.fullNameSnapshot}</div>
-                        )}
-                        {entry.emailSnapshot && (
-                          <div className="text-xs text-muted-foreground">{entry.emailSnapshot}</div>
-                        )}
-                        {entry.phoneSnapshot && (
-                          <div className="text-xs text-muted-foreground">{entry.phoneSnapshot}</div>
-                        )}
-                        {entry.documentSnapshot && (
-                          <div className="text-xs text-muted-foreground">
-                            Doc: {entry.documentSnapshot}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {entry.actionType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <span className="text-sm font-medium">{entry.reasonCode}</span>
-                        {entry.reasonText && (
-                          <p className="text-xs text-muted-foreground truncate max-w-48">
-                            {entry.reasonText}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={
-                          entry.isActive
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        }
-                      >
-                        {entry.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(entry.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs"
-                          onClick={() => openEdit(entry)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() =>
-                            setToggleConfirm({
-                              id: entry.id,
-                              name: entry.fullNameSnapshot || entry.emailSnapshot || entry.id,
-                              enable: !entry.isActive,
-                            })
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Identity</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {entries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>
+                        <div className="space-y-0.5">
+                          {entry.fullNameSnapshot && (
+                            <div className="font-medium">{entry.fullNameSnapshot}</div>
+                          )}
+                          {entry.emailSnapshot && (
+                            <div className="text-xs text-muted-foreground">{entry.emailSnapshot}</div>
+                          )}
+                          {entry.phoneSnapshot && (
+                            <div className="text-xs text-muted-foreground">{entry.phoneSnapshot}</div>
+                          )}
+                          {entry.documentSnapshot && (
+                            <div className="text-xs text-muted-foreground">
+                              Doc: {entry.documentSnapshot}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {entry.actionType.replace(/_/g, " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <span className="text-sm font-medium">{entry.reasonCode}</span>
+                          {entry.reasonText && (
+                            <p className="text-xs text-muted-foreground truncate max-w-48">
+                              {entry.reasonText}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            entry.isActive
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
                           }
                         >
-                          {entry.isActive ? "Disable" : "Enable"}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {entries.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No blacklist entries found
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                          {entry.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(entry.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs"
+                            onClick={() => openEdit(entry)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() =>
+                              setToggleConfirm({
+                                id: entry.id,
+                                name: entry.fullNameSnapshot || entry.emailSnapshot || entry.id,
+                                enable: !entry.isActive,
+                              })
+                            }
+                          >
+                            {entry.isActive ? "Disable" : "Enable"}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {entries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No blacklist entries found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t">
+                  <p className="text-sm text-muted-foreground">{total} total</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm">Page {page} of {totalPages}</span>
+                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -293,13 +346,7 @@ export default function BlacklistPage() {
           <DialogHeader>
             <DialogTitle>{editEntry ? "Edit Blacklist Entry" : "Add Blacklist Entry"}</DialogTitle>
           </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              createMutation.mutate(buildBody());
-            }}
-            className="space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Action Type</Label>
@@ -311,9 +358,11 @@ export default function BlacklistPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ban">Ban</SelectItem>
-                    <SelectItem value="flag">Flag</SelectItem>
-                    <SelectItem value="restrict">Restrict</SelectItem>
+                    {ACTION_TYPES.map((at) => (
+                      <SelectItem key={at.value} value={at.value}>
+                        {at.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -368,8 +417,8 @@ export default function BlacklistPage() {
               <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setEditEntry(null); }}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Saving..." : editEntry ? "Save Changes" : "Add Entry"}
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? "Saving..." : editEntry ? "Save Changes" : "Add Entry"}
               </Button>
             </DialogFooter>
           </form>

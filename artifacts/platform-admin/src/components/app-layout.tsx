@@ -28,7 +28,7 @@ const navItems = [
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, hasTenantMemberships } = useAuth();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -44,9 +44,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {!collapsed && (
             <div className="min-w-0">
               <span className="font-semibold text-sm truncate block">Platform Admin</span>
-              <Badge variant="outline" className="text-[10px] h-4 px-1">
-                Admin Mode
-              </Badge>
+              {hasTenantMemberships && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1">
+                  Platform Admin Mode
+                </Badge>
+              )}
             </div>
           )}
           <Button

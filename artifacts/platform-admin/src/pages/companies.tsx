@@ -80,7 +80,7 @@ export default function CompaniesPage() {
       if (search) params.set("search", search);
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (planFilter !== "all") params.set("plan", planFilter);
-      return api<{ items: Company[]; total: number }>(`/platform/companies?${params}`);
+      return api<{ items: Company[]; pagination: { total: number; totalPages: number } }>(`/platform/companies?${params}`);
     },
   });
 
@@ -107,7 +107,7 @@ export default function CompaniesPage() {
     },
   });
 
-  const totalPages = data ? Math.ceil(data.total / limit) : 0;
+  const totalPages = data?.pagination?.totalPages ?? 0;
 
   return (
     <div className="p-6 space-y-4">
@@ -272,7 +272,7 @@ export default function CompaniesPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
                   <p className="text-sm text-muted-foreground">
-                    {data?.total ?? 0} total companies
+                    {data?.pagination?.total ?? 0} total companies
                   </p>
                   <div className="flex items-center gap-2">
                     <Button

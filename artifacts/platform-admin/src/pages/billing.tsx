@@ -32,6 +32,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
+interface PaginatedResponse<T> {
+  items: T[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
 function formatCurrency(amount: number, currency = "USD") {
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100);
 }
@@ -208,13 +213,13 @@ function SubscriptionsTab() {
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (statusFilter !== "all") params.set("status", statusFilter);
-      return api<{ items: Array<Record<string, unknown>>; total: number }>(
+      return api<PaginatedResponse<Record<string, unknown>>>(
         `/platform/billing/subscriptions?${params}`,
       );
     },
   });
 
-  const totalPages = data ? Math.ceil(data.total / limit) : 0;
+  const totalPages = data?.pagination?.totalPages ?? 0;
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
@@ -284,7 +289,7 @@ function SubscriptionsTab() {
           </Table>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-sm text-muted-foreground">{data?.total ?? 0} total</p>
+              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} total</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -325,7 +330,7 @@ function InvoicesTab() {
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (statusFilter !== "all") params.set("status", statusFilter);
-      return api<{ items: Array<Record<string, unknown>>; total: number }>(
+      return api<PaginatedResponse<Record<string, unknown>>>(
         `/platform/billing/invoices?${params}`,
       );
     },
@@ -346,7 +351,7 @@ function InvoicesTab() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] }),
   });
 
-  const totalPages = data ? Math.ceil(data.total / limit) : 0;
+  const totalPages = data?.pagination?.totalPages ?? 0;
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
@@ -460,7 +465,7 @@ function InvoicesTab() {
           </Table>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-sm text-muted-foreground">{data?.total ?? 0} total</p>
+              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} total</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -498,15 +503,15 @@ function PaymentsTab() {
     queryKey: ["billing", "payments", page],
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      return api<{ items: Array<Record<string, unknown>>; total: number }>(
+      return api<PaginatedResponse<Record<string, unknown>>>(
         `/platform/billing/payments?${params}`,
       );
     },
   });
 
-  const items = Array.isArray(data) ? data : (data?.items || []);
-  const total = Array.isArray(data) ? data.length : (data?.total || 0);
-  const totalPages = Math.ceil(total / limit);
+  const items = data?.items || [];
+  const total = data?.pagination?.total ?? 0;
+  const totalPages = data?.pagination?.totalPages ?? 0;
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
