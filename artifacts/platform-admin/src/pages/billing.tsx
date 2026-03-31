@@ -30,7 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface PaginatedResponse<T> {
   items: T[];
@@ -58,6 +59,7 @@ const invStatusColors: Record<string, string> = {
 function PlansTab() {
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [editPlanId, setEditPlanId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     code: "",
@@ -80,6 +82,26 @@ function PlansTab() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
+      api(`/platform/billing/plans/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["billing", "plans"] });
+      setEditPlanId(null);
+    },
+  });
+
+  function openEdit(plan: Record<string, unknown>) {
+    setEditPlanId(plan.id as string);
+    setForm({
+      name: (plan.name as string) || "",
+      code: (plan.code as string) || "",
+      price: String(((plan.price as number) || 0) / 100),
+      billingInterval: (plan.billingInterval as string) || "monthly",
+      currency: (plan.currency as string) || "USD",
+    });
+  }
+
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
   return (
@@ -100,6 +122,7 @@ function PlansTab() {
                 <TableHead>Price</TableHead>
                 <TableHead>Interval</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,11 +139,17 @@ function PlansTab() {
                       {plan.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openEdit(plan)}>
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
               {plans?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No plans created yet
                   </TableCell>
                 </TableRow>
@@ -199,11 +228,80 @@ function PlansTab() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editPlanId} onOpenChange={() => setEditPlanId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Plan</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (editPlanId) {
+                updateMutation.mutate({
+                  id: editPlanId,
+                  body: {
+                    name: form.name,
+                    price: parseInt(form.price) * 100,
+                    billingInterval: form.billingInterval,
+                  },
+                });
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label>Plan Name</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Price (whole units)</Label>
+                <Input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Billing Interval</Label>
+                <Select
+                  value={form.billingInterval}
+                  onValueChange={(v) => setForm({ ...form, billingInterval: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditPlanId(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
 function SubscriptionsTab() {
+  const [, navigate] = useLocation();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -258,7 +356,11 @@ function SubscriptionsTab() {
             </TableHeader>
             <TableBody>
               {(data?.items || []).map((sub) => (
-                <TableRow key={sub.id as string}>
+                <TableRow
+                  key={sub.id as string}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/billing/subscriptions/${sub.id}`)}
+                >
                   <TableCell className="font-medium">
                     {(sub.companyName as string) || (sub.companyId as string)}
                   </TableCell>
@@ -320,6 +422,7 @@ function SubscriptionsTab() {
 }
 
 function InvoicesTab() {
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -391,7 +494,11 @@ function InvoicesTab() {
             </TableHeader>
             <TableBody>
               {(data?.items || []).map((inv) => (
-                <TableRow key={inv.id as string}>
+                <TableRow
+                  key={inv.id as string}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/billing/invoices/${inv.id}`)}
+                >
                   <TableCell className="font-medium">
                     {(inv.companyName as string) || (inv.companyId as string)}
                   </TableCell>
@@ -497,12 +604,16 @@ function InvoicesTab() {
 
 function PaymentsTab() {
   const [page, setPage] = useState(1);
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [invoiceFilter, setInvoiceFilter] = useState("");
   const limit = 20;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["billing", "payments", page],
+    queryKey: ["billing", "payments", companyFilter, invoiceFilter, page],
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (companyFilter) params.set("companyId", companyFilter);
+      if (invoiceFilter) params.set("invoiceId", invoiceFilter);
       return api<PaginatedResponse<Record<string, unknown>>>(
         `/platform/billing/payments?${params}`,
       );
@@ -516,18 +627,33 @@ function PaymentsTab() {
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
   return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Method</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead>Date</TableHead>
-            </TableRow>
-          </TableHeader>
+    <>
+      <div className="flex items-center gap-3 mb-4">
+        <Input
+          placeholder="Filter by Company ID..."
+          value={companyFilter}
+          onChange={(e) => { setCompanyFilter(e.target.value); setPage(1); }}
+          className="max-w-xs"
+        />
+        <Input
+          placeholder="Filter by Invoice ID..."
+          value={invoiceFilter}
+          onChange={(e) => { setInvoiceFilter(e.target.value); setPage(1); }}
+          className="max-w-xs"
+        />
+      </div>
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Company</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {items.map((payment) => (
               <TableRow key={payment.id as string}>
@@ -583,8 +709,9 @@ function PaymentsTab() {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 }
 

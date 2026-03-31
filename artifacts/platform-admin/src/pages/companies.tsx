@@ -64,6 +64,8 @@ export default function CompaniesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "", email: "", country: "", currency: "USD" });
   const [setPlanTarget, setSetPlanTarget] = useState<{ id: string; name: string } | null>(null);
@@ -76,12 +78,14 @@ export default function CompaniesPage() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["companies", search, statusFilter, planFilter, page],
+    queryKey: ["companies", search, statusFilter, planFilter, page, sortBy, sortOrder],
     queryFn: () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (search) params.set("search", search);
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (planFilter !== "all") params.set("plan", planFilter);
+      if (sortBy) params.set("sortBy", sortBy);
+      if (sortOrder) params.set("sortOrder", sortOrder);
       return api<{ items: Company[]; pagination: { total: number; totalPages: number } }>(`/platform/companies?${params}`);
     },
   });
@@ -99,9 +103,9 @@ export default function CompaniesPage() {
 
   const setPlanMutation = useMutation({
     mutationFn: ({ companyId, planId }: { companyId: string; planId: string }) =>
-      api(`/platform/billing/subscriptions`, {
+      api(`/platform/companies/${companyId}/set-plan`, {
         method: "POST",
-        body: JSON.stringify({ companyId, planId }),
+        body: JSON.stringify({ planId }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
@@ -205,14 +209,36 @@ export default function CompaniesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Assets</TableHead>
-                    <TableHead>Users</TableHead>
-                    <TableHead>Country</TableHead>
-                    <TableHead>Created</TableHead>
+                    {[
+                      { key: "name", label: "Name" },
+                      { key: "slug", label: "Slug" },
+                      { key: "status", label: "Status" },
+                      { key: "", label: "Plan" },
+                      { key: "", label: "Assets" },
+                      { key: "", label: "Users" },
+                      { key: "country", label: "Country" },
+                      { key: "createdAt", label: "Created" },
+                    ].map(({ key, label }) => (
+                      <TableHead
+                        key={label}
+                        className={key ? "cursor-pointer select-none hover:text-foreground" : ""}
+                        onClick={() => {
+                          if (!key) return;
+                          if (sortBy === key) {
+                            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                          } else {
+                            setSortBy(key);
+                            setSortOrder("asc");
+                          }
+                          setPage(1);
+                        }}
+                      >
+                        {label}
+                        {sortBy === key && (
+                          <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </TableHead>
+                    ))}
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>

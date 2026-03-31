@@ -10,6 +10,8 @@ import DashboardPage from "@/pages/dashboard";
 import CompaniesPage from "@/pages/companies";
 import CompanyDetailPage from "@/pages/company-detail";
 import BillingPage from "@/pages/billing";
+import SubscriptionDetailPage from "@/pages/subscription-detail";
+import InvoiceDetailPage from "@/pages/invoice-detail";
 import BlacklistPage from "@/pages/blacklist";
 import DiagnosticsPage from "@/pages/diagnostics";
 import AnalyticsPage from "@/pages/analytics";
@@ -34,6 +36,8 @@ function AuthenticatedApp() {
         <Route path="/companies" component={CompaniesPage} />
         <Route path="/companies/:id" component={CompanyDetailPage} />
         <Route path="/billing" component={BillingPage} />
+        <Route path="/billing/subscriptions/:id" component={SubscriptionDetailPage} />
+        <Route path="/billing/invoices/:id" component={InvoiceDetailPage} />
         <Route path="/blacklist" component={BlacklistPage} />
         <Route path="/diagnostics" component={DiagnosticsPage} />
         <Route path="/analytics" component={AnalyticsPage} />
