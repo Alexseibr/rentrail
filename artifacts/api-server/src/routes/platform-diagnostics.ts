@@ -5,8 +5,6 @@ import { requirePlatformRole } from "../middlewares/platform-authorize";
 import { validate } from "../middlewares/validate";
 import { createPlatformAuditLog } from "../lib/platform-audit";
 import * as diagService from "../services/platform-diagnostics.service";
-import { AppError } from "../lib/errors";
-
 const router = Router();
 
 const adminRoles = requirePlatformRole("superAdmin", "platformAdmin");
@@ -63,8 +61,7 @@ router.get(
   adminRoles,
   validate({ params: serviceNameParams }),
   async (req, res) => {
-    const status = diagService.getServiceStatus(req.params.serviceName);
-    if (!status) throw new AppError(404, "Unknown service", "SERVICE_NOT_FOUND");
+    const status = diagService.getServiceStatus(req.params.serviceName)!;
     await createPlatformAuditLog(req, {
       action: "platform.diagnostics.check",
       entityType: "service",

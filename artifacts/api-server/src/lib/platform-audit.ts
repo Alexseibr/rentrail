@@ -8,6 +8,7 @@ interface PlatformAuditParams {
   targetCompanyId?: string | null;
   before?: unknown;
   after?: unknown;
+  metadata?: Record<string, unknown> | null;
   reasonCode?: string | null;
   reasonText?: string | null;
 }
@@ -27,7 +28,7 @@ export async function createPlatformAuditLog(
     entityId: params.entityId ?? null,
     targetCompanyId: params.targetCompanyId ?? null,
     before: params.before ?? null,
-    after: params.after ?? null,
+    after: params.metadata ? { ...(params.after as object ?? {}), _metadata: params.metadata } : (params.after ?? null),
     reasonCode: params.reasonCode ?? null,
     reasonText: params.reasonText ?? null,
     ip: req.ip ?? null,
