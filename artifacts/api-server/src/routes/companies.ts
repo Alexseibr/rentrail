@@ -5,6 +5,7 @@ import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import { requirePlatformRole, requireAnyPlatformRole } from "../middlewares/platform-authorize";
 import * as companyService from "../services/company.service";
+import * as platformCompanyService from "../services/platform-company.service";
 import { createAuditLog } from "../lib/audit";
 import { createPlatformAuditLog } from "../lib/platform-audit";
 
@@ -24,6 +25,19 @@ const createCompanySchema = z.object({
 
 const updateCompanySchema = createCompanySchema.partial();
 const idParams = z.object({ id: z.string().uuid() });
+
+const moderationActionSchema = z.object({
+  reasonCode: z.string().min(1),
+  reasonText: z.string().optional(),
+});
+
+const companyStatusValues = ["pending", "trial", "active", "past_due", "suspended", "blocked", "canceled"] as const;
+const platformListQuery = z.object({
+  search: z.string().optional(),
+  status: z.enum(companyStatusValues).optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
 
 router.post(
   "/companies",
@@ -46,13 +60,210 @@ router.get(
   "/platform/companies",
   authenticate,
   requireAnyPlatformRole,
+  validate({ query: platformListQuery }),
   async (req, res) => {
     await createPlatformAuditLog(req, {
       action: "company.list_all",
       entityType: "company",
     });
-    const companies = await companyService.listCompanies();
-    res.json({ data: companies });
+    const result = await platformCompanyService.listPlatformCompanies({
+      search: req.query.search as string | undefined,
+      status: req.query.status as string | undefined,
+      page: req.query.page ? Number(req.query.page) : undefined,
+      limit: req.query.limit ? Number(req.query.limit) : undefined,
+    });
+    res.json({ data: result });
+  },
+);
+
+router.get(
+  "/platform/companies/:id",
+  authenticate,
+  requireAnyPlatformRole,
+  validate({ params: idParams }),
+  async (req, res) => {
+    const detail = await platformCompanyService.getPlatformCompanyDetail(req.params.id);
+    await createPlatformAuditLog(req, {
+      action: "company.detail",
+      entityType: "company",
+      entityId: detail.id,
+      targetCompanyId: detail.id,
+    });
+    res.json({ data: detail });
+  },
+);
+
+router.patch(
+  "/platform/companies/:id",
+  authenticate,
+  requirePlatformRole("superAdmin", "platformAdmin"),
+  validate({ params: idParams, body: updateCompanySchema }),
+  async (req, res) => {
+    const old = await companyService.getCompany(req.params.id);
+    const company = await companyService.updateCompany(req.params.id, req.body);
+    await createPlatformAuditLog(req, {
+      action: "company.update",
+      entityType: "company",
+      entityId: company.id,
+      targetCompanyId: company.id,
+      before: old,
+      after: company,
+    });
+    res.json({ data: company });
+  },
+);
+
+router.post(
+  "/platform/companies/:id/approve",
+  authenticate,
+  requirePlatformRole("superAdmin", "platformAdmin"),
+  validate({ params: idParams, body: moderationActionSchema }),
+  async (req, res) => {
+    const { updated, previousStatus } = await platformCompanyService.approveCompany(
+      req.params.id,
+      { ...req.body, performedBy: req.user!.userId },
+    );
+    await createPlatformAuditLog(req, {
+      action: "company.approve",
+      entityType: "company",
+      entityId: updated.id,
+      targetCompanyId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
+      reasonCode: req.body.reasonCode,
+      reasonText: req.body.reasonText,
+    });
+    res.json({ data: updated });
+  },
+);
+
+router.post(
+  "/platform/companies/:id/block",
+  authenticate,
+  requirePlatformRole("superAdmin", "platformAdmin"),
+  validate({ params: idParams, body: moderationActionSchema }),
+  async (req, res) => {
+    const { updated, previousStatus } = await platformCompanyService.blockCompany(
+      req.params.id,
+      { ...req.body, performedBy: req.user!.userId },
+    );
+    await createPlatformAuditLog(req, {
+      action: "company.block",
+      entityType: "company",
+      entityId: updated.id,
+      targetCompanyId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
+      reasonCode: req.body.reasonCode,
+      reasonText: req.body.reasonText,
+    });
+    res.json({ data: updated });
+  },
+);
+
+router.post(
+  "/platform/companies/:id/unblock",
+  authenticate,
+  requirePlatformRole("superAdmin", "platformAdmin"),
+  validate({ params: idParams, body: moderationActionSchema }),
+  async (req, res) => {
+    const { updated, previousStatus } = await platformCompanyService.unblockCompany(
+      req.params.id,
+      { ...req.body, performedBy: req.user!.userId },
+    );
+    await createPlatformAuditLog(req, {
+      action: "company.unblock",
+      entityType: "company",
+      entityId: updated.id,
+      targetCompanyId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
+      reasonCode: req.body.reasonCode,
+      reasonText: req.body.reasonText,
+    });
+    res.json({ data: updated });
+  },
+);
+
+router.post(
+  "/platform/companies/:id/suspend",
+  authenticate,
+  requirePlatformRole("superAdmin", "platformAdmin"),
+  validate({ params: idParams, body: moderationActionSchema }),
+  async (req, res) => {
+    const { updated, previousStatus } = await platformCompanyService.suspendCompany(
+      req.params.id,
+      { ...req.body, performedBy: req.user!.userId },
+    );
+    await createPlatformAuditLog(req, {
+      action: "company.suspend",
+      entityType: "company",
+      entityId: updated.id,
+      targetCompanyId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
+      reasonCode: req.body.reasonCode,
+      reasonText: req.body.reasonText,
+    });
+    res.json({ data: updated });
+  },
+);
+
+router.post(
+  "/platform/companies/:id/cancel",
+  authenticate,
+  requirePlatformRole("superAdmin"),
+  validate({ params: idParams, body: moderationActionSchema }),
+  async (req, res) => {
+    const { updated, previousStatus } = await platformCompanyService.cancelCompany(
+      req.params.id,
+      { ...req.body, performedBy: req.user!.userId },
+    );
+    await createPlatformAuditLog(req, {
+      action: "company.cancel",
+      entityType: "company",
+      entityId: updated.id,
+      targetCompanyId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
+      reasonCode: req.body.reasonCode,
+      reasonText: req.body.reasonText,
+    });
+    res.json({ data: updated });
+  },
+);
+
+router.get(
+  "/platform/companies/:id/usage",
+  authenticate,
+  requireAnyPlatformRole,
+  validate({ params: idParams }),
+  async (req, res) => {
+    await createPlatformAuditLog(req, {
+      action: "company.usage",
+      entityType: "company",
+      entityId: req.params.id,
+      targetCompanyId: req.params.id,
+    });
+    const usage = await platformCompanyService.getCompanyUsage(req.params.id);
+    res.json({ data: usage });
+  },
+);
+
+router.get(
+  "/platform/companies/:id/health",
+  authenticate,
+  requireAnyPlatformRole,
+  validate({ params: idParams }),
+  async (req, res) => {
+    await createPlatformAuditLog(req, {
+      action: "company.health",
+      entityType: "company",
+      entityId: req.params.id,
+      targetCompanyId: req.params.id,
+    });
+    const health = await platformCompanyService.getCompanyHealthSummary(req.params.id);
+    res.json({ data: health });
   },
 );
 

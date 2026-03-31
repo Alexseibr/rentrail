@@ -266,7 +266,9 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${platformSupportUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.items).toBeDefined();
+      expect(Array.isArray(res.body.data.items)).toBe(true);
+      expect(res.body.data.pagination).toBeDefined();
     });
 
     it("regular user cannot access platform company listing", async () => {

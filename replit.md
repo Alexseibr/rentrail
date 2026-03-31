@@ -55,6 +55,13 @@ The platform includes a mobile staff application built with Expo/React Native, f
 - **Branch Lifecycle:** Activate/deactivate support with status validation (no double-deactivation).
 - **Blacklist Revoke:** `POST /blacklist/:id/revoke` sets `endsAt` to now, removing blocking effect.
 - **Platform Access Model:** Separate platform-level RBAC with five platform roles (superAdmin, platformAdmin, platformSupport, platformFinance, platformRisk) stored in `platform_roles` / `platform_user_roles` tables. Platform roles are independent from tenant company memberships — a user can hold both. JWT tokens include `platformRoles: string[]` for informational purposes; `requirePlatformRole(...roles)` middleware verifies active roles from DB on every request (not JWT-only) to prevent stale privilege after revocation. All platform mutations are logged to `platform_audit_logs` with full actor/action/reason/before/after context. **Derivation policy:** `isSuperAdmin` in JWT is derived from `users.isSuperAdmin` DB column OR from the `superAdmin` platform role (`isSuperAdmin = users.isSuperAdmin || platformRoles.includes("superAdmin")`). Only the `superAdmin` platform role grants tenant-scope bypass; other platform roles (platformAdmin, platformSupport, platformFinance, platformRisk) do NOT. **Route separation:** Platform-scope company listing is at `GET /platform/companies` (gated by `requireAnyPlatformRole` middleware); tenant-scope `GET /companies` returns only user memberships with no platform bypass.
+- **Platform Companies & Tenant Moderation (Task #2):**
+    - **Company Status Flow:** `pending → active/blocked/canceled`, `trial/active → suspended/blocked/canceled`, `suspended → active/blocked/canceled`, `blocked → active` (unblock only). `canceled` is terminal.
+    - **Moderation Columns:** `moderationReasonCode`, `moderationReasonText`, `moderatedBy`, `moderatedAt` on companies table. Full history in `company_moderation_events` table (fromStatus, toStatus, reasonCode, reasonText, performedBy).
+    - **Tenant Enforcement:** `requireCompanyAccess` checks company status — `blocked`/`canceled` → 403 (`COMPANY_BLOCKED`). Suspended companies allow GET requests but block all non-GET (POST/PATCH/DELETE) with 403 (`COMPANY_SUSPENDED`) centrally in `requireCompanyAccess`. SuperAdmin bypasses all status checks.
+    - **Platform Endpoints (10):** `GET/PATCH /platform/companies/:id`, `POST /platform/companies/:id/{approve,block,unblock,suspend,cancel}`, `GET /platform/companies/:id/{usage,health}`. Moderation actions require `superAdmin`/`platformAdmin` (cancel requires `superAdmin` only).
+    - **Support Inspection (3):** `GET /platform/support/tenants/:id/{summary,audit,health}` — accessible by `superAdmin`, `platformAdmin`, `platformSupport`.
+    - **Service:** `platform-company.service.ts` — listPlatformCompanies (search/filter/pagination/counts), getPlatformCompanyDetail, moderation actions, getCompanyUsage, getCompanyHealthSummary, getTenantSummary, getTenantAuditLog, getTenantHealth.
 
 ## External Dependencies
 
@@ -80,7 +87,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
 
 ### Test Commands
-- `pnpm test` — Run all 239 tests (10 suites)
+- `pnpm test` — Run all 276 tests (11 suites)
 - `pnpm test:unit` — Unit tests only (pure logic, no DB)
 - `pnpm test:api` — API integration tests (supertest against real DB)
 - `pnpm test:integration` — Integration tests (DB-backed)

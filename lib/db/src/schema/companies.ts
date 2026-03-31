@@ -2,6 +2,7 @@ import { pgTable, uuid, varchar, text, timestamp, index } from "drizzle-orm/pg-c
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { companyStatusEnum } from "./enums";
+import { users } from "./users";
 
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -15,6 +16,10 @@ export const companies = pgTable("companies", {
   timezone: varchar("timezone", { length: 100 }).default("UTC").notNull(),
   logoUrl: text("logo_url"),
   status: companyStatusEnum("status").default("pending").notNull(),
+  moderationReasonCode: varchar("moderation_reason_code", { length: 100 }),
+  moderationReasonText: text("moderation_reason_text"),
+  moderatedBy: uuid("moderated_by").references(() => users.id),
+  moderatedAt: timestamp("moderated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [

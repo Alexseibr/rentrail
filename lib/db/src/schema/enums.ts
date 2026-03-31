@@ -5,6 +5,7 @@ export const companyStatusEnum = pgEnum("company_status", [
   "trial",
   "active",
   "past_due",
+  "suspended",
   "blocked",
   "canceled",
 ]);

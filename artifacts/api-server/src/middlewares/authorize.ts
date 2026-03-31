@@ -1,10 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
-import { db, rolePermissions, permissions, userCompanyMemberships, userBranchMemberships, roles } from "@workspace/db";
+import { db, rolePermissions, permissions, userCompanyMemberships, userBranchMemberships, roles, companies } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
-import { ForbiddenError, UnauthorizedError } from "../lib/errors";
+import { ForbiddenError, UnauthorizedError, AppError } from "../lib/errors";
 
 export interface TenantContext {
   companyId: string;
+  companyStatus?: string;
   branchId?: string;
   membership: {
     roleId: string;
@@ -21,6 +22,9 @@ declare global {
   }
 }
 
+const COMPANY_BLOCKED_STATUSES = ["blocked", "canceled"];
+const COMPANY_SUSPENDED_STATUS = "suspended";
+
 async function loadRolePermissions(roleId: string): Promise<Set<string>> {
   const rows = await db
     .select({ code: permissions.code })
@@ -29,6 +33,20 @@ async function loadRolePermissions(roleId: string): Promise<Set<string>> {
     .where(eq(rolePermissions.roleId, roleId));
 
   return new Set(rows.map((r) => r.code));
+}
+
+async function checkCompanyStatus(companyId: string): Promise<string> {
+  const [company] = await db
+    .select({ status: companies.status })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
+
+  if (!company) {
+    throw new ForbiddenError("Company not found");
+  }
+
+  return company.status;
 }
 
 export function requireCompanyAccess(req: Request, _res: Response, next: NextFunction): void {
@@ -52,6 +70,12 @@ export function requireCompanyAccess(req: Request, _res: Response, next: NextFun
   }
 
   (async () => {
+    const companyStatus = await checkCompanyStatus(companyId);
+
+    if (COMPANY_BLOCKED_STATUSES.includes(companyStatus)) {
+      throw new AppError(403, `Company is ${companyStatus}. Access denied.`, "COMPANY_BLOCKED");
+    }
+
     const [membership] = await db
       .select({
         roleId: userCompanyMemberships.roleId,
@@ -78,8 +102,13 @@ export function requireCompanyAccess(req: Request, _res: Response, next: NextFun
 
     const perms = await loadRolePermissions(membership.roleId);
 
+    if (companyStatus === COMPANY_SUSPENDED_STATUS && req.method !== "GET") {
+      throw new AppError(403, "Company is suspended. Write operations are disabled.", "COMPANY_SUSPENDED");
+    }
+
     req.tenant = {
       companyId,
+      companyStatus,
       membership: {
         roleId: membership.roleId,
         roleCode: membership.roleCode,
@@ -89,6 +118,19 @@ export function requireCompanyAccess(req: Request, _res: Response, next: NextFun
 
     next();
   })().catch(next);
+}
+
+export function rejectIfSuspended(req: Request, _res: Response, next: NextFunction): void {
+  if (req.user?.isSuperAdmin) {
+    next();
+    return;
+  }
+
+  if (req.tenant?.companyStatus === COMPANY_SUSPENDED_STATUS) {
+    throw new AppError(403, "Company is suspended. Write operations are disabled.", "COMPANY_SUSPENDED");
+  }
+
+  next();
 }
 
 export function requireSuperAdmin(req: Request, _res: Response, next: NextFunction): void {

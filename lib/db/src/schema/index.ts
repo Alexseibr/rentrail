@@ -40,4 +40,5 @@ export * from "./attachments";
 export * from "./push-device-tokens";
 export * from "./platform-roles";
 export * from "./platform-audit-logs";
+export * from "./company-moderation-events";
 export * from "./relations";
