@@ -23,9 +23,6 @@ const MODULES: Record<string, string[]> = {
   system: ["audit", "settings"],
 };
 
-const RESOURCES = Object.values(MODULES).flat();
-const ACTIONS = ["create", "read", "update", "delete", "manage"];
-
 function getModule(resource: string): string {
   for (const [mod, resources] of Object.entries(MODULES)) {
     if (resources.includes(resource)) return mod;
@@ -33,22 +30,88 @@ function getModule(resource: string): string {
   return "system";
 }
 
+const RESOURCE_ACTIONS: Record<string, string[]> = {
+  company: ["read", "update", "manage"],
+  branch: ["create", "read", "update", "delete", "manage"],
+  station: ["create", "read", "update", "delete", "manage"],
+  client: ["create", "read", "update", "delete", "manage"],
+  asset: ["create", "read", "update", "delete", "changeStatus", "manage"],
+  rental: ["create", "read", "update", "approve", "start", "extend", "complete", "cancel", "manage"],
+  blacklist: ["create", "read", "update", "check", "manage"],
+  payment: ["create", "read", "refund", "manage"],
+  deposit: ["create", "read", "update", "manage"],
+  user: ["create", "read", "update", "delete", "manage"],
+  role: ["read", "manage"],
+  audit: ["read"],
+  settings: ["read", "update", "manage"],
+};
+
+function allPermsFor(resources: string[]): string[] {
+  return resources.flatMap((r) => (RESOURCE_ACTIONS[r] || []).map((a) => `${r}:${a}`));
+}
+
+function permsFor(resource: string, actions: string[]): string[] {
+  return actions.map((a) => `${resource}:${a}`);
+}
+
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  owner: RESOURCES.flatMap((r) => ACTIONS.map((a) => `${r}:${a}`)),
-  admin: RESOURCES.flatMap((r) =>
-    ACTIONS.filter((a) => a !== "delete" || !["company", "role"].includes(r)).map((a) => `${r}:${a}`),
+  owner: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) => actions.map((a) => `${r}:${a}`)),
+
+  admin: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) =>
+    actions
+      .filter((a) => {
+        if (r === "company" && a === "manage") return false;
+        if (r === "role" && a === "manage") return false;
+        return true;
+      })
+      .map((a) => `${r}:${a}`),
   ),
-  manager: ["branch", "station", "client", "asset", "rental", "blacklist"]
-    .flatMap((r) => ["create", "read", "update"].map((a) => `${r}:${a}`))
-    .concat(["payment:read", "deposit:read", "user:read", "audit:read"]),
-  accountant: ["payment", "deposit"]
-    .flatMap((r) => ACTIONS.map((a) => `${r}:${a}`))
-    .concat(["rental:read", "client:read", "company:read", "branch:read", "audit:read"]),
-  operator: ["client", "asset", "rental"]
-    .flatMap((r) => ["create", "read", "update"].map((a) => `${r}:${a}`))
-    .concat(["branch:read", "station:read", "blacklist:read", "payment:read"]),
-  mechanic: ["asset:read", "asset:update", "branch:read", "station:read"],
-  viewer: RESOURCES.map((r) => `${r}:read`),
+
+  manager: [
+    ...permsFor("branch", ["read", "update"]),
+    ...permsFor("station", ["create", "read", "update"]),
+    ...permsFor("client", ["create", "read", "update"]),
+    ...permsFor("asset", ["create", "read", "update", "changeStatus"]),
+    ...permsFor("rental", ["create", "read", "update", "approve", "start", "extend", "complete", "cancel"]),
+    ...permsFor("blacklist", ["create", "read", "update", "check"]),
+    ...permsFor("payment", ["read"]),
+    ...permsFor("deposit", ["read"]),
+    ...permsFor("user", ["read"]),
+    ...permsFor("audit", ["read"]),
+    ...permsFor("settings", ["read"]),
+  ],
+
+  accountant: [
+    ...permsFor("company", ["read"]),
+    ...permsFor("branch", ["read"]),
+    ...permsFor("client", ["read"]),
+    ...permsFor("rental", ["read"]),
+    ...permsFor("payment", ["create", "read", "refund"]),
+    ...permsFor("deposit", ["create", "read", "update"]),
+    ...permsFor("audit", ["read"]),
+    ...permsFor("settings", ["read"]),
+  ],
+
+  operator: [
+    ...permsFor("branch", ["read"]),
+    ...permsFor("station", ["read"]),
+    ...permsFor("client", ["create", "read", "update"]),
+    ...permsFor("asset", ["read", "update", "changeStatus"]),
+    ...permsFor("rental", ["create", "read", "update", "start", "extend", "complete"]),
+    ...permsFor("blacklist", ["read", "check"]),
+    ...permsFor("payment", ["read"]),
+    ...permsFor("deposit", ["read"]),
+  ],
+
+  mechanic: [
+    ...permsFor("branch", ["read"]),
+    ...permsFor("station", ["read"]),
+    ...permsFor("asset", ["read", "update", "changeStatus"]),
+  ],
+
+  viewer: Object.keys(RESOURCE_ACTIONS)
+    .filter((r) => RESOURCE_ACTIONS[r].includes("read"))
+    .map((r) => `${r}:read`),
 };
 
 async function seed() {
@@ -67,10 +130,10 @@ async function seed() {
   console.log("Seeding permissions...");
 
   const permMap = new Map<string, string>();
-  for (const resource of RESOURCES) {
-    for (const action of ACTIONS) {
+  for (const [resource, actions] of Object.entries(RESOURCE_ACTIONS)) {
+    const module = getModule(resource);
+    for (const action of actions) {
       const code = `${resource}:${action}`;
-      const module = getModule(resource);
 
       const existing = await db
         .select()
@@ -105,17 +168,18 @@ async function seed() {
     const roleId = roleMap.get(roleCode);
     if (!roleId) continue;
 
+    let mapped = 0;
     for (const code of permCodes) {
       const permId = permMap.get(code);
       if (!permId) continue;
 
       try {
         await db.insert(rolePermissions).values({ roleId, permissionId: permId });
+        mapped++;
       } catch {
-        // Already exists
       }
     }
-    console.log(`  Mapped ${permCodes.length} permissions to role: ${roleCode}`);
+    console.log(`  Mapped ${mapped} new / ${permCodes.length} total permissions to role: ${roleCode}`);
   }
 
   console.log("RBAC seed complete!");

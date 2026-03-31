@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireRole, requirePermission } from "../middlewares/authorize";
+import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as branchService from "../services/branch.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -24,7 +24,8 @@ const idParams = z.object({ id: z.string().uuid() });
 router.post(
   "/branches",
   authenticate,
-  requireRole("superAdmin", "owner", "admin"),
+  requireCompanyAccess,
+  requirePermission("branch:create"),
   validate({ body: createBranchSchema }),
   async (req, res) => {
     const branch = await branchService.createBranch({
@@ -47,7 +48,8 @@ router.post(
 router.get(
   "/branches",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "mechanic", "viewer"),
+  requireCompanyAccess,
+  requirePermission("branch:read"),
   async (req, res) => {
     const branches = await branchService.listBranches(req.tenant!.companyId);
     res.json({ data: branches });
@@ -57,7 +59,8 @@ router.get(
 router.get(
   "/branches/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "mechanic", "viewer"),
+  requireCompanyAccess,
+  requirePermission("branch:read"),
   validate({ params: idParams }),
   async (req, res) => {
     const branch = await branchService.getBranch(req.params.id, req.tenant!.companyId);
@@ -68,7 +71,8 @@ router.get(
 router.patch(
   "/branches/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin"),
+  requireCompanyAccess,
+  requirePermission("branch:update"),
   validate({ params: idParams, body: updateBranchSchema }),
   async (req, res) => {
     const old = await branchService.getBranch(req.params.id, req.tenant!.companyId);

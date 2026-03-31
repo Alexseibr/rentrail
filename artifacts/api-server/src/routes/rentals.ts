@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireRole } from "../middlewares/authorize";
+import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as rentalService from "../services/rental.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -21,19 +21,14 @@ const createRentalSchema = z.object({
 });
 
 const idParams = z.object({ id: z.string().uuid() });
-
-const extendSchema = z.object({
-  newEndDate: z.string(),
-});
-
-const cancelSchema = z.object({
-  reason: z.string().optional(),
-});
+const extendSchema = z.object({ newEndDate: z.string() });
+const cancelSchema = z.object({ reason: z.string().optional() });
 
 router.post(
   "/rentals",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
+  requireCompanyAccess,
+  requirePermission("rental:create"),
   validate({ body: createRentalSchema }),
   async (req, res) => {
     const rental = await rentalService.createRental({
@@ -59,7 +54,8 @@ router.post(
 router.get(
   "/rentals",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "viewer"),
+  requireCompanyAccess,
+  requirePermission("rental:read"),
   async (req, res) => {
     const status = req.query.status as string | undefined;
     const rentals = await rentalService.listRentals(req.tenant!.companyId, status);
@@ -70,7 +66,8 @@ router.get(
 router.get(
   "/rentals/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "viewer"),
+  requireCompanyAccess,
+  requirePermission("rental:read"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.getRental(req.params.id, req.tenant!.companyId);
@@ -81,7 +78,8 @@ router.get(
 router.post(
   "/rentals/:id/approve",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager"),
+  requireCompanyAccess,
+  requirePermission("rental:approve"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.approveRental(req.params.id, req.tenant!.companyId, req.user!.userId);
@@ -100,7 +98,8 @@ router.post(
 router.post(
   "/rentals/:id/start",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
+  requireCompanyAccess,
+  requirePermission("rental:start"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.startRental(req.params.id, req.tenant!.companyId, req.user!.userId);
@@ -119,7 +118,8 @@ router.post(
 router.post(
   "/rentals/:id/extend",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
+  requireCompanyAccess,
+  requirePermission("rental:extend"),
   validate({ params: idParams, body: extendSchema }),
   async (req, res) => {
     const rental = await rentalService.extendRental(
@@ -143,7 +143,8 @@ router.post(
 router.post(
   "/rentals/:id/complete",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
+  requireCompanyAccess,
+  requirePermission("rental:complete"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.completeRental(req.params.id, req.tenant!.companyId, req.user!.userId);
@@ -162,7 +163,8 @@ router.post(
 router.post(
   "/rentals/:id/cancel",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager"),
+  requireCompanyAccess,
+  requirePermission("rental:cancel"),
   validate({ params: idParams, body: cancelSchema }),
   async (req, res) => {
     const rental = await rentalService.cancelRental(

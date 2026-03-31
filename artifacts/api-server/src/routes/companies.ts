@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireRole } from "../middlewares/authorize";
+import { requireSuperAdmin, requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as companyService from "../services/company.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -21,18 +21,14 @@ const createCompanySchema = z.object({
 });
 
 const updateCompanySchema = createCompanySchema.partial();
-
 const idParams = z.object({ id: z.string().uuid() });
 
 router.post(
   "/companies",
   authenticate,
+  requireSuperAdmin,
   validate({ body: createCompanySchema }),
   async (req, res) => {
-    if (!req.user!.isSuperAdmin) {
-      res.status(403).json({ error: "Only superAdmin can create companies" });
-      return;
-    }
     const company = await companyService.createCompany(req.body);
     await createAuditLog({
       companyId: company.id,
@@ -64,15 +60,10 @@ router.get(
 router.get(
   "/companies/:id",
   authenticate,
+  requireCompanyAccess,
+  requirePermission("company:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    if (!req.user!.isSuperAdmin) {
-      const hasAccess = await companyService.userHasCompanyAccess(req.user!.userId, req.params.id);
-      if (!hasAccess) {
-        res.status(403).json({ error: "No access to this company" });
-        return;
-      }
-    }
     const company = await companyService.getCompany(req.params.id);
     res.json({ data: company });
   },
@@ -81,9 +72,14 @@ router.get(
 router.patch(
   "/companies/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin"),
+  requireCompanyAccess,
+  requirePermission("company:update"),
   validate({ params: idParams, body: updateCompanySchema }),
   async (req, res) => {
+    if (!req.user!.isSuperAdmin && req.params.id !== req.tenant!.companyId) {
+      res.status(403).json({ error: { code: "FORBIDDEN", message: "Cannot update a different company" } });
+      return;
+    }
     const old = await companyService.getCompany(req.params.id);
     const company = await companyService.updateCompany(req.params.id, req.body);
     await createAuditLog({

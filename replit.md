@@ -145,12 +145,32 @@ All Drizzle `relations()` defined for every table — enables relational queries
 ## Multi-Tenant Architecture
 
 - Every tenant-scoped request requires `x-company-id` header
-- `requireCompany` middleware — extracts tenant context
-- `requireRole` middleware — checks user's role code in the target company, validates membership status is "active"
-- `requirePermission` middleware — checks granular permission code (e.g. `asset:create`)
-- `requireBranch` middleware — extracts branch context from `x-branch-id`
-- `requireBranchAccess` middleware — validates user has branch membership (owner/admin bypass)
 - All queries filter by `companyId` — no cross-tenant data leakage
+
+### Access Control Middleware (permission-based, NOT hardcoded role names)
+
+Routes use a reusable middleware chain — no role names in handlers:
+
+```
+authenticate → requireCompanyAccess → requirePermission("asset:create")
+```
+
+- **`authenticate`** — validates JWT, sets `req.user` (userId, email, isSuperAdmin)
+- **`requireCompanyAccess`** — validates `x-company-id`, loads membership + role + all permissions into `req.tenant.permissions` (Set<string>). One DB query per request, cached in context.
+- **`requirePermission("code")`** — checks the loaded Set (zero DB queries). Accepts one or more codes (all must match).
+- **`requireAnyPermission("a", "b")`** — at least one must match.
+- **`requireSuperAdmin`** — platform-level operations (e.g., create company).
+- **`requireBranchAccess()`** — validates branch membership; owner/admin bypass.
+
+### Permission Resolution
+- **superAdmin** → bypasses all checks (platform-level)
+- **owner** → all permissions on all resources (57 total)
+- **admin** → all except company:manage, role:manage (55)
+- **manager** → branch/station/client/asset/rental/blacklist CRUD + granular ops (29)
+- **accountant** → payment/deposit full + read access to related resources (12)
+- **operator** → client/asset/rental CRUD + start/extend/complete + changeStatus (19)
+- **mechanic** → asset read/update/changeStatus + branch/station read (5)
+- **viewer** → read-only on all resources (13)
 
 ## API Endpoints (all under /api)
 
@@ -158,8 +178,10 @@ All Drizzle `relations()` defined for every table — enables relational queries
 - `POST /auth/register` — register user
 - `POST /auth/login` — login, get tokens + mustChangePassword flag
 - `POST /auth/refresh` — refresh tokens (token rotation, reuse detection)
-- `POST /auth/logout` — logout (session revocation)
+- `POST /auth/logout` — logout (current session revocation)
+- `POST /auth/logout-all` — revoke all sessions
 - `GET /auth/me` — current user + company memberships + branch memberships
+- `GET /auth/permissions` — effective permissions for current user + company (requires x-company-id)
 
 ### Companies
 - `POST /companies` — create company (status defaults to "pending")
@@ -227,15 +249,27 @@ overdue → return_requested / completed / defaulted
 return_requested → completed
 completed, canceled, defaulted — terminal states
 
-## Permission Modules
-- platform: company
-- organization: branch, station
-- crm: client
-- fleet: asset
-- operations: rental, blacklist
-- finance: payment, deposit
-- access: user, role
-- system: audit, settings
+## Permissions (resource:action)
+
+### By Module
+- **platform**: company:read, company:update, company:manage
+- **organization**: branch:create/read/update/delete/manage, station:create/read/update/delete/manage
+- **crm**: client:create/read/update/delete/manage
+- **fleet**: asset:create/read/update/delete/changeStatus/manage
+- **operations**: rental:create/read/update/approve/start/extend/complete/cancel/manage, blacklist:create/read/update/check/manage
+- **finance**: payment:create/read/refund/manage, deposit:create/read/update/manage
+- **access**: user:create/read/update/delete/manage, role:read/manage
+- **system**: audit:read, settings:read/update/manage
+
+### Granular Actions (beyond CRUD)
+- `asset:changeStatus` — change asset operational status
+- `rental:approve` — approve pending rental
+- `rental:start` — activate rental
+- `rental:extend` — extend active rental
+- `rental:complete` — complete rental
+- `rental:cancel` — cancel rental
+- `blacklist:check` — check client against blacklist
+- `payment:refund` — process payment refund
 
 ## Phase 2 (future)
 Tables to add: telemetry, devices, batteries, geofences, incidents, notifications

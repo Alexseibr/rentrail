@@ -1,5 +1,5 @@
 import { db, companies, userCompanyMemberships, type InsertCompany } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { NotFoundError, ConflictError } from "../lib/errors";
 
 export async function createCompany(data: InsertCompany) {
@@ -65,7 +65,11 @@ export async function userHasCompanyAccess(userId: string, companyId: string): P
     .select({ id: userCompanyMemberships.id })
     .from(userCompanyMemberships)
     .where(
-      eq(userCompanyMemberships.userId, userId),
+      and(
+        eq(userCompanyMemberships.userId, userId),
+        eq(userCompanyMemberships.companyId, companyId),
+        eq(userCompanyMemberships.status, "active"),
+      ),
     )
     .limit(1);
 

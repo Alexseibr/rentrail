@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireRole } from "../middlewares/authorize";
+import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as stationService from "../services/station.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -25,7 +25,8 @@ const idParams = z.object({ id: z.string().uuid() });
 router.post(
   "/stations",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager"),
+  requireCompanyAccess,
+  requirePermission("station:create"),
   validate({ body: createStationSchema }),
   async (req, res) => {
     const station = await stationService.createStation({
@@ -48,7 +49,8 @@ router.post(
 router.get(
   "/stations",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
+  requireCompanyAccess,
+  requirePermission("station:read"),
   async (req, res) => {
     const branchId = req.query.branchId as string | undefined;
     const stations = await stationService.listStations(req.tenant!.companyId, branchId);
@@ -59,7 +61,8 @@ router.get(
 router.get(
   "/stations/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
+  requireCompanyAccess,
+  requirePermission("station:read"),
   validate({ params: idParams }),
   async (req, res) => {
     const station = await stationService.getStation(req.params.id, req.tenant!.companyId);
@@ -70,7 +73,8 @@ router.get(
 router.patch(
   "/stations/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager"),
+  requireCompanyAccess,
+  requirePermission("station:update"),
   validate({ params: idParams, body: updateStationSchema }),
   async (req, res) => {
     const old = await stationService.getStation(req.params.id, req.tenant!.companyId);

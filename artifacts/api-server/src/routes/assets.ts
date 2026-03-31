@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireRole } from "../middlewares/authorize";
+import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as assetService from "../services/asset.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -41,7 +41,8 @@ const changeStatusSchema = z.object({
 router.post(
   "/assets",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
+  requireCompanyAccess,
+  requirePermission("asset:create"),
   validate({ body: createAssetSchema }),
   async (req, res) => {
     const asset = await assetService.createAsset({
@@ -64,7 +65,8 @@ router.post(
 router.get(
   "/assets",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
+  requireCompanyAccess,
+  requirePermission("asset:read"),
   async (req, res) => {
     const { branchId, status } = req.query as { branchId?: string; status?: string };
     const assets = await assetService.listAssets(req.tenant!.companyId, branchId, status);
@@ -75,7 +77,8 @@ router.get(
 router.get(
   "/assets/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
+  requireCompanyAccess,
+  requirePermission("asset:read"),
   validate({ params: idParams }),
   async (req, res) => {
     const asset = await assetService.getAsset(req.params.id, req.tenant!.companyId);
@@ -86,7 +89,8 @@ router.get(
 router.patch(
   "/assets/:id",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic"),
+  requireCompanyAccess,
+  requirePermission("asset:update"),
   validate({ params: idParams, body: updateAssetSchema }),
   async (req, res) => {
     const old = await assetService.getAsset(req.params.id, req.tenant!.companyId);
@@ -108,7 +112,8 @@ router.patch(
 router.post(
   "/assets/:id/status",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic"),
+  requireCompanyAccess,
+  requirePermission("asset:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
     const asset = await assetService.changeAssetStatus(
@@ -121,7 +126,7 @@ router.post(
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
-      action: "status_change",
+      action: "changeStatus",
       entityType: "asset",
       entityId: asset.id,
       after: { status: req.body.status },

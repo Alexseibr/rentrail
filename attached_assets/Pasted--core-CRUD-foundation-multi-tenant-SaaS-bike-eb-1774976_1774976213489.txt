@@ -1,0 +1,587 @@
+Теперь нужно реализовать core CRUD foundation для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Считать, что уже готовы:
+- schema и migrations
+- auth
+- sessions
+- memberships
+- RBAC
+- company/branch guards
+- audit service
+- base Express app
+- Zod validation
+- Drizzle repositories foundation
+
+## Цель
+Построить первую рабочую бизнес-часть backend:
+- companies
+- branches
+- stations
+- clients
+- assets
+- rentals
+- blacklist
+
+Очень важно:
+- все операции должны быть tenant-safe
+- company/branch access должен строго проверяться
+- history/status transitions должны логироваться
+- audit logs должны сохраняться
+- никакой single-tenant логики
+- никакой car-specific модели
+
+---
+
+# 1. Общие требования к реализации
+
+## 1.1. Архитектура
+Для каждого домена используй структуру уровня:
+- route/controller
+- validator (Zod DTO)
+- service
+- repository
+- mapper/serializer, если нужно
+
+Route handlers должны быть тонкими.
+Бизнес-логика должна быть в service layer.
+Доступ к БД — через repository layer или аккуратный data-access слой.
+
+## 1.2. Tenant safety
+Все list/get/update/create операции должны учитывать:
+- company context
+- branch scope
+- permissions
+- membership restrictions
+
+Нельзя доверять companyId/branchId из запроса без проверки.
+
+## 1.3. Soft delete
+Где это уместно, используй archivedAt / soft-delete.
+Не удаляй бизнес-сущности физически без необходимости.
+
+## 1.4. Audit logging
+После create/update/status change/logical delete нужно писать audit record через reusable audit service.
+
+---
+
+# 2. Company module
+
+## 2.1. Нужные операции
+Реализуй:
+- GET /companies/me
+- PATCH /companies/me
+
+Если нужно:
+- GET /companies/:id только для superAdmin или owner/admin в рамках membership
+- POST /platform/companies можно оставить платформенному модулю позже, если foundation уже есть
+
+## 2.2. Что можно редактировать
+- name
+- legalName
+- email
+- phone
+- country
+- currency
+- timezone
+- basic settings
+
+Не давай через обычный tenant endpoint менять:
+- subscription status
+- system flags
+- platform moderation fields
+
+## 2.3. Access rules
+- owner/admin company-level могут обновлять
+- viewer — только читать
+- superAdmin — полный доступ
+
+---
+
+# 3. Branch module
+
+## 3.1. CRUD
+Реализуй:
+- POST /branches
+- GET /branches
+- GET /branches/:id
+- PATCH /branches/:id
+- POST /branches/:id/archive (или logical delete)
+- POST /branches/:id/restore (optional)
+
+## 3.2. Правила доступа
+- create/update/archive branch только при company-level access и нужном permission
+- branch должен принадлежать current company
+- list branches — только branches доступной компании
+- если пользователь ограничен branch memberships, опиши правило:
+  либо он видит все branches компании при company role,
+  либо только доступные branches при branch-scoped role
+
+## 3.3. Поля
+- name
+- city
+- country
+- timezone
+- address
+- status
+
+---
+
+# 4. Station module
+
+## 4.1. CRUD
+Реализуй:
+- POST /stations
+- GET /stations
+- GET /stations/:id
+- PATCH /stations/:id
+- POST /stations/:id/archive
+- POST /stations/:id/restore (optional)
+
+## 4.2. Правила
+- station всегда принадлежит branch и company
+- branchId должен быть валидирован внутри company
+- list stations должен фильтроваться по company и optionally branch
+- branch-scoped пользователь не должен видеть станции чужих филиалов
+
+## 4.3. Поля
+- name
+- type
+- address
+- lat
+- lng
+- status
+- branchId
+
+---
+
+# 5. Client module
+
+## 5.1. CRUD
+Реализуй:
+- POST /clients
+- GET /clients
+- GET /clients/:id
+- PATCH /clients/:id
+- POST /clients/:id/archive
+- POST /clients/:id/restore (optional)
+
+## 5.2. List/filter/search
+Сделай базовые фильтры:
+- search по fullName / phone / email / documentNumber
+- status
+- archived / active
+- pagination
+- sort by createdAt desc по умолчанию
+
+## 5.3. Access rules
+- list/read/update/create только в рамках company
+- если branch restrictions нужны для клиентов, опиши принятое решение:
+  либо clients company-wide,
+  либо можно добавить createdInBranchId / homeBranchId позже
+- на этом этапе можно оставить clients как company-level сущность, но решение должно быть осознанным и описанным
+
+## 5.4. Важная бизнес-логика
+При создании/обновлении клиента:
+- нормализуй phone
+- optionally normalize email
+- проверяй blacklist matches
+- не блокируй создание автоматически, но возвращай flags/warnings, если есть match
+- document uniqueness глобально не навязывай, но можно проверить в рамках company
+
+## 5.5. Дополнительные endpoints
+Реализуй:
+- GET /clients/:id/rentals
+- GET /clients/:id/payments (если payments foundation уже есть на нужном уровне)
+
+---
+
+# 6. Asset module
+
+Это критичный модуль. Центральная сущность системы — asset.
+
+## 6.1. CRUD
+Реализуй:
+- POST /assets
+- GET /assets
+- GET /assets/:id
+- PATCH /assets/:id
+- POST /assets/:id/archive
+- POST /assets/:id/restore (optional)
+- POST /assets/:id/change-status
+
+## 6.2. Asset types
+Поддержи:
+- bike
+- ebike
+- scooter
+- escooter
+
+## 6.3. List/filter/search
+Сделай фильтры:
+- assetType
+- status
+- branchId
+- stationId
+- isPublic
+- search по serialNumber / internalCode / qrCode / brand / model
+- pagination
+- default sort by createdAt desc
+
+## 6.4. Правила доступа
+- asset всегда принадлежит company
+- asset закреплен за branch
+- station, если указан, должен принадлежать тому же branch/company
+- branch-scoped пользователь видит только свои branch assets
+- company-level owner/admin/manager могут видеть все assets компании
+
+## 6.5. Status transitions
+Нельзя просто PATCH status без правил.
+Сделай отдельный service method и endpoint:
+- POST /assets/:id/change-status
+
+Допустимые статусы:
+- draft
+- available
+- reserved
+- awaiting_pickup
+- rented
+- overdue
+- charging
+- maintenance
+- blocked
+- lost
+- stolen
+- retired
+
+## 6.6. Asset status history
+Каждое изменение статуса должно создавать запись в asset_status_history:
+- assetId
+- companyId
+- fromStatus
+- toStatus
+- reason
+- changedByUserId
+- createdAt
+
+## 6.7. Минимальные бизнес-валидации
+- serialNumber unique within company
+- qrCode unique within company, если задан
+- stationId нельзя указать вне branch/company
+- retired asset нельзя перевести обратно без явного policy решения; если решишь разрешить — опиши это
+- archived asset нельзя использовать в новых rentals
+
+---
+
+# 7. Rental module
+
+Это второй критичный модуль.
+
+## 7.1. CRUD / workflow
+Реализуй:
+- POST /rentals
+- GET /rentals
+- GET /rentals/:id
+- PATCH /rentals/:id
+- POST /rentals/:id/approve
+- POST /rentals/:id/start
+- POST /rentals/:id/extend
+- POST /rentals/:id/return
+- POST /rentals/:id/cancel
+
+Не делай просто generic update status endpoint для rentals.
+Нужны явные workflow actions.
+
+## 7.2. Rental statuses
+- draft
+- pending_approval
+- awaiting_payment
+- awaiting_pickup
+- active
+- extended
+- overdue
+- return_requested
+- completed
+- canceled
+- disputed
+- defaulted
+
+## 7.3. Create rental
+При создании rental:
+- валидируй company/branch/station scope
+- client должен принадлежать company
+- asset должен принадлежать company и branch
+- asset не должен быть archived
+- asset не должен быть в incompatible status
+- клиент должен пройти blacklist check
+- сохрани tariffSnapshot
+- сохрани depositAmount
+- rentalPlan, если указан, должен принадлежать company
+
+## 7.4. Rental rules
+Нужно заложить базовые правила:
+- нельзя создать новую активную rental на asset, который уже в active/awaiting_pickup/overdue rental
+- нельзя начать rental для blocked/lost/stolen/retired asset
+- нельзя start rental для blacklisted client, если actionType = blocked_*
+- для warning/manual_approval_only/increased_deposit — вернуть policy flags
+
+## 7.5. Workflow actions
+### approve rental
+- draft/pending_approval -> awaiting_payment или awaiting_pickup, в зависимости от политики
+- логировать status history
+
+### start rental
+- только если rental в допустимом статусе
+- asset status должен перейти в rented
+- создать rental status history
+- создать asset status history
+- audit log
+
+### extend rental
+- обновить plannedEndAt
+- опционально сохранить extension reason
+- status может остаться active или перейти в extended — выбери clean rule и опиши
+
+### return rental
+- зафиксировать actualEndAt
+- returnedToStationId
+- notes / return summary
+- rental status -> completed
+- asset status -> available / maintenance / charging в зависимости от payload
+- логировать status history
+- учесть, что станция возврата должна принадлежать company и быть доступной
+
+### cancel rental
+- только в допустимых статусах
+- rental status -> canceled
+- asset status откатить корректно, если нужно
+
+## 7.6. Rental list filters
+Сделай:
+- status
+- clientId
+- assetId
+- branchId
+- stationId
+- date range
+- pagination
+- default sort by createdAt desc
+
+## 7.7. Rental status history
+Каждый переход:
+- rentalId
+- companyId
+- fromStatus
+- toStatus
+- reason
+- changedByUserId
+- createdAt
+
+---
+
+# 8. Blacklist module
+
+## 8.1. CRUD
+Реализуй:
+- POST /blacklist
+- GET /blacklist
+- GET /blacklist/:id
+- PATCH /blacklist/:id
+- POST /blacklist/check
+
+## 8.2. Scope model
+Поддержи:
+- branch
+- company
+- global
+
+## 8.3. Action types
+- warning
+- manual_approval_only
+- increased_deposit
+- restricted_access
+- blocked_branch
+- blocked_company
+- blocked_global
+
+## 8.4. Access rules
+- global entries могут создавать/редактировать только superAdmin/platform-level role
+- company entries — owner/admin/manager с нужным permission
+- branch entries — branch-capable roles в доступном branch
+- list blacklist должен фильтроваться по scope и company context
+
+## 8.5. Check endpoint
+POST /blacklist/check должен уметь принимать:
+- fullName optional
+- phone optional
+- email optional
+- documentNumber optional
+- birthday optional
+- clientId optional
+- companyId context
+- branchId optional
+
+И возвращать:
+- exact matches
+- matched scopes
+- effective decision
+- reasons
+- recommended action
+
+## 8.6. Effective decision logic
+Нужен helper/service, который определяет итог:
+- если есть global blocked_global -> hard block
+- если есть company blocked_company -> hard block
+- если есть branch blocked_branch -> block in branch
+- если только warning/manual/increased_deposit -> вернуть restriction flags
+- если есть несколько записей — выбрать strongest action
+
+## 8.7. Нормализация
+Перед сохранением/check:
+- normalize phone
+- normalize email
+- trim name/document fields
+
+---
+
+# 9. Repositories / query rules
+
+## 9.1. Все repository queries должны быть tenant-aware
+Пример:
+- getAssetById(companyId, assetId)
+- listAssets(companyId, filters, allowedBranchIds?)
+- getRentalById(companyId, rentalId)
+
+Не делай repository methods, которые получают id и читают запись без company scope.
+
+## 9.2. Pagination
+Сделай единый reusable pagination helper:
+- page
+- pageSize
+- limit/offset
+- total count
+- items
+
+## 9.3. Search
+Сделай базовый reusable search strategy без избыточной сложности.
+ILIKE acceptable for foundation.
+
+---
+
+# 10. Validation (Zod)
+
+Для всех endpoints нужны отдельные DTO schemas.
+
+Особенно:
+- create/update branch
+- create/update station
+- create/update client
+- create/update asset
+- change asset status
+- create rental
+- approve/start/extend/return/cancel rental
+- create/update blacklist entry
+- blacklist check request
+
+Validation должна быть строгой, но без overengineering.
+
+---
+
+# 11. Audit integration
+
+После каждой важной операции писать audit record:
+- entityType
+- entityId
+- action
+- before
+- after
+- actorUserId
+- companyId
+- branchId if relevant
+- ip
+- userAgent
+
+Минимум логировать:
+- branch created/updated/archived
+- station created/updated/archived
+- client created/updated/archived
+- asset created/updated/archived/status changed
+- rental created/approved/started/extended/returned/canceled
+- blacklist entry created/updated
+
+---
+
+# 12. Error model
+
+Нужны clean domain errors:
+- NotFoundError
+- ValidationError
+- ConflictError
+- UnauthorizedError
+- ForbiddenError
+- TenantAccessError
+- BranchAccessError
+- InvalidStatusTransitionError
+- BlacklistBlockedError
+- AssetUnavailableError
+
+Не возвращай сырые SQL ошибки наружу.
+
+---
+
+# 13. README / docs
+Обнови README:
+- какие модули реализованы
+- как выбирать company context
+- как работают branch restrictions
+- что считается company-level vs branch-level entity
+- список новых endpoint'ов
+- какие workflow actions есть у rentals и assets
+
+---
+
+# 14. Что НЕ делать сейчас
+Пока не реализовывай:
+- payment provider integration
+- email notifications
+- public website
+- telemetry ingest
+- device commands
+- battery management
+- incidents full module
+- advanced reporting
+- mobile app
+
+Это позже.
+
+---
+
+# 15. Что хочу получить на выходе
+1. Routes/controllers/services/repositories для:
+   - branches
+   - stations
+   - clients
+   - assets
+   - rentals
+   - blacklist
+2. Zod DTO schemas
+3. Tenant-safe list/get/create/update/archive logic
+4. Asset status history
+5. Rental status history
+6. Effective blacklist check service
+7. Audit calls
+8. README update
+9. Примеры response payloads
+10. Если видишь спорные бизнес-правила — кратко опиши принятые решения
+
+---
+
+# 16. Порядок реализации
+Сначала:
+1. покажи module map
+2. покажи endpoint list
+3. опиши business rules по asset/rental transitions
+4. потом переходи к коду
+
+Не срезай tenant isolation ради скорости.
+Не делай generic unsafe CRUD.
+Если где-то нужен осознанный компромисс для MVP — явно укажи его.

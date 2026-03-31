@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireRole } from "../middlewares/authorize";
+import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as blacklistService from "../services/blacklist.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -37,7 +37,8 @@ const checkBlacklistSchema = z.object({
 router.post(
   "/blacklist",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager"),
+  requireCompanyAccess,
+  requirePermission("blacklist:create"),
   validate({ body: createBlacklistSchema }),
   async (req, res) => {
     const entry = await blacklistService.createBlacklistEntry({
@@ -63,7 +64,8 @@ router.post(
 router.get(
   "/blacklist",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator", "viewer"),
+  requireCompanyAccess,
+  requirePermission("blacklist:read"),
   async (req, res) => {
     const entries = await blacklistService.listBlacklistEntries(req.tenant!.companyId);
     res.json({ data: entries });
@@ -73,7 +75,8 @@ router.get(
 router.post(
   "/blacklist/check",
   authenticate,
-  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
+  requireCompanyAccess,
+  requirePermission("blacklist:check"),
   validate({ body: checkBlacklistSchema }),
   async (req, res) => {
     const result = await blacklistService.checkClientBlacklist(

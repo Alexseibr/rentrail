@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
+import { requireCompanyAccess } from "../middlewares/authorize";
 import * as authService from "../services/auth.service";
 
 const router: IRouter = Router();
@@ -47,9 +48,25 @@ router.post("/auth/logout", authenticate, async (req, res) => {
   res.json({ data: { message: "Logged out" } });
 });
 
+router.post("/auth/logout-all", authenticate, async (req, res) => {
+  await authService.logout(req.user!.userId);
+  res.json({ data: { message: "All sessions revoked" } });
+});
+
 router.get("/auth/me", authenticate, async (req, res) => {
   const user = await authService.getCurrentUser(req.user!.userId);
   res.json({ data: user });
+});
+
+router.get("/auth/permissions", authenticate, requireCompanyAccess, async (req, res) => {
+  const perms = Array.from(req.tenant!.permissions);
+  res.json({
+    data: {
+      companyId: req.tenant!.companyId,
+      roleCode: req.tenant!.membership.roleCode,
+      permissions: perms,
+    },
+  });
 });
 
 export default router;
