@@ -299,3 +299,9 @@ export const saasInvoiceStatusEnum = pgEnum("saas_invoice_status", [
   "void",
   "overdue",
 ]);
+
+export const whiteLabelStatusEnum = pgEnum("white_label_status", [
+  "disabled",
+  "enabled",
+  "pending_verification",
+]);

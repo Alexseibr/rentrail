@@ -28,6 +28,10 @@ import storageRouter from "./storage";
 import platformAuditRouter from "./platform-audit";
 import platformSupportRouter from "./platform-support";
 import platformBillingRouter from "./platform-billing";
+import platformBlacklistRouter from "./platform-blacklist";
+import platformWhiteLabelRouter from "./platform-white-label";
+import platformDiagnosticsRouter from "./platform-diagnostics";
+import platformAnalyticsRouter from "./platform-analytics";
 import auditLogsRouter from "./audit-logs";
 
 const router: IRouter = Router();
@@ -61,6 +65,10 @@ router.use(storageRouter);
 router.use(platformAuditRouter);
 router.use(platformSupportRouter);
 router.use(platformBillingRouter);
+router.use(platformBlacklistRouter);
+router.use(platformWhiteLabelRouter);
+router.use(platformDiagnosticsRouter);
+router.use(platformAnalyticsRouter);
 router.use(auditLogsRouter);
 
 export default router;

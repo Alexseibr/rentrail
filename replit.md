@@ -73,6 +73,12 @@ The platform includes a mobile staff application built with Expo/React Native, f
     - **Service:** `billing.service.ts` — plan CRUD, subscription lifecycle with state machine transitions, invoice lifecycle, payment queries, `getPlanLimitsForCompany`.
     - **Audit:** All billing operations logged to `platform_audit_logs` with action prefix `billing.*`.
     - **326 tests across 12 suites** (42 new billing tests).
+- **Platform Blacklist, White-Label, Diagnostics & Analytics (Task #4):**
+    - **Global Blacklist (6 endpoints):** `GET/POST /platform/blacklist`, `GET/PATCH /platform/blacklist/:id`, `POST .../enable`, `.../disable`. Filters: actionType, active, reasonCode, search, from/to, pagination. Roles: `superAdmin`, `platformAdmin`, `platformRisk`.
+    - **White-Label (4 endpoints):** `GET/PATCH /platform/companies/:id/white-label`, `POST .../enable`, `.../disable`. Schema: `company_white_label_settings` table with customDomain, brandNameOverride, logoUrl, coverUrl, primaryColor, secondaryColor, customSupportEmail, customSupportPhone, status (disabled/enabled/pending_verification). Plan eligibility check via `saas_plans.whiteLabelAvailable` flag. Roles: `superAdmin`, `platformAdmin`.
+    - **Diagnostics (3 endpoints):** `GET /platform/health/summary` (aggregated metrics: tenants, assets, devices, MRR, build info), `GET /platform/health/services` (all service statuses), `GET /platform/diagnostics/:serviceName` (individual service check: email, storage, queues, telemetry-ingest, mobile-push). Roles: `superAdmin`, `platformAdmin`.
+    - **Analytics (5 endpoints):** `GET /platform/analytics/{overview,tenants,billing,usage,risks}`. Overview includes MRR estimate, plan distribution. Tenants supports top-N by rentals or assets. Billing shows invoice counts, revenue collected. Usage shows per-tenant averages. Risks includes blacklist stats and incident counts. Roles: `superAdmin`, `platformAdmin`, `platformFinance`.
+    - **366 tests across 13 suites** (36 new Task #4 tests).
 
 ## External Dependencies
 
@@ -98,7 +104,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
 
 ### Test Commands
-- `pnpm test` — Run all 326 tests (12 suites)
+- `pnpm test` — Run all 366 tests (13 suites)
 - `pnpm test:unit` — Unit tests only (pure logic, no DB)
 - `pnpm test:api` — API integration tests (supertest against real DB)
 - `pnpm test:integration` — Integration tests (DB-backed)
