@@ -242,6 +242,9 @@ export async function createSubscriptionForCompany(
   if (!company) throw new NotFoundError("Company not found");
 
   const plan = await getPlan(planId);
+  if (!plan.isActive) {
+    throw new AppError(422, "Cannot assign an inactive plan", "PLAN_INACTIVE");
+  }
 
   return db.transaction(async (tx) => {
     await tx
@@ -402,6 +405,10 @@ export async function markInvoicePaid(invoiceId: string, payment?: { amount: num
   const detail = await getInvoiceDetail(invoiceId);
   if (detail.status !== "issued" && detail.status !== "overdue") {
     throw new AppError(422, `Cannot mark invoice as paid from status '${detail.status}'`, "INVALID_STATUS_TRANSITION");
+  }
+
+  if (payment && payment.amount !== detail.amount) {
+    throw new AppError(422, `Payment amount (${payment.amount}) must match invoice amount (${detail.amount})`, "PAYMENT_AMOUNT_MISMATCH");
   }
 
   const updated = await db.transaction(async (tx) => {

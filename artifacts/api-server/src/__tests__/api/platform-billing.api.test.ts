@@ -537,6 +537,82 @@ describe("Platform Billing", () => {
     });
   });
 
+  describe("plan limits for company", () => {
+    it("company usage endpoint reflects plan limits after set-plan", async () => {
+      const tenant = await createTestTenant({ companyName: "Plan Limits Co" });
+      const planRes = await request(testApp)
+        .post("/api/platform/billing/plans")
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({
+          name: "Limits Test Plan",
+          code: `limits-test-${Date.now()}`,
+          price: 2900,
+          maxBranches: 3,
+          maxStations: 8,
+          maxAssets: 75,
+          maxUsers: 7,
+        });
+
+      await request(testApp)
+        .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ planId: planRes.body.data.id });
+
+      const usageRes = await request(testApp)
+        .get(`/api/platform/companies/${tenant.company.id}/usage`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`);
+
+      expect(usageRes.status).toBe(200);
+      expect(usageRes.body.data.plan).toBeDefined();
+      expect(typeof usageRes.body.data.plan).toBe("string");
+      expect(usageRes.body.data.plan).not.toBe("none");
+    });
+  });
+
+  describe("inactive plan guard", () => {
+    it("cannot assign an inactive plan to a company", async () => {
+      const planRes = await request(testApp)
+        .post("/api/platform/billing/plans")
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ name: "Soon Inactive", code: `inactive-${Date.now()}`, price: 100 });
+
+      await request(testApp)
+        .patch(`/api/platform/billing/plans/${planRes.body.data.id}`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ isActive: false });
+
+      const tenant = await createTestTenant({ companyName: "Inactive Plan Co" });
+      const res = await request(testApp)
+        .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ planId: planRes.body.data.id });
+
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe("PLAN_INACTIVE");
+    });
+  });
+
+  describe("payment amount validation", () => {
+    it("rejects payment with mismatched amount", async () => {
+      const createRes = await request(testApp)
+        .post("/api/platform/billing/invoices")
+        .set("Authorization", `Bearer ${platformFinance.token}`)
+        .send({ companyId: tenantA.company.id, amount: 5000 });
+
+      await request(testApp)
+        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/issue`)
+        .set("Authorization", `Bearer ${platformFinance.token}`);
+
+      const res = await request(testApp)
+        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/mark-paid`)
+        .set("Authorization", `Bearer ${platformFinance.token}`)
+        .send({ amount: 3000, method: "card" });
+
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe("PAYMENT_AMOUNT_MISMATCH");
+    });
+  });
+
   describe("permission checks", () => {
     it("regular user cannot access billing endpoints", async () => {
       const res = await request(testApp)
