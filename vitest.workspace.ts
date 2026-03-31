@@ -31,6 +31,7 @@ export default defineWorkspace([
       globals: true,
       testTimeout: 30000,
       hookTimeout: 60000,
+      fileParallelism: false,
       sequence: { concurrent: false },
     },
   },

@@ -1,5 +1,5 @@
-import { db, users, companies, branches, stations, roles, permissions, rolePermissions, userCompanyMemberships, userBranchMemberships } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, users, companies, branches, stations, roles, permissions, rolePermissions, userCompanyMemberships, userBranchMemberships, clients, assets } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { signAccessToken } from "../lib/jwt";
 import type { AccessTokenPayload } from "../lib/jwt";
@@ -134,4 +134,38 @@ export function authHeaders(token: string, companyId?: string, branchId?: string
   if (companyId) headers["x-company-id"] = companyId;
   if (branchId) headers["x-branch-id"] = branchId;
   return headers;
+}
+
+export async function createTestClient(companyId: string, opts?: { fullName?: string; phone?: string; email?: string }) {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const [client] = await db
+    .insert(clients)
+    .values({
+      companyId,
+      fullName: opts?.fullName ?? `Client ${suffix}`,
+      phone: opts?.phone ?? `+1${suffix.replace(/\D/g, "").slice(0, 10).padEnd(10, "0")}`,
+      email: opts?.email ?? `client-${suffix}@test.com`,
+    })
+    .returning();
+  return client;
+}
+
+export async function createTestAsset(
+  companyId: string,
+  branchId: string,
+  opts?: { stationId?: string; assetType?: string; status?: string; internalCode?: string },
+) {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const [asset] = await db
+    .insert(assets)
+    .values({
+      companyId,
+      branchId,
+      stationId: opts?.stationId ?? null,
+      assetType: (opts?.assetType ?? "bike") as "bike" | "ebike" | "scooter" | "escooter",
+      status: (opts?.status ?? "available") as any,
+      internalCode: opts?.internalCode ?? `ASSET-${suffix}`,
+    })
+    .returning();
+  return asset;
 }

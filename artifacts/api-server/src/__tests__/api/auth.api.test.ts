@@ -1,21 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
 import { cleanDatabase } from "../../test/setup";
 
 describe("Auth API", () => {
   beforeAll(async () => {
-    await cleanDatabase();
   });
 
   afterAll(async () => {
-    await cleanDatabase();
   });
 
   const testEmail = `auth-test-${Date.now()}@test.com`;
   const testPassword = "SecurePass123!";
-  let accessToken: string;
-  let refreshToken: string;
 
   describe("POST /api/auth/register", () => {
     it("creates a new user", async () => {
@@ -58,6 +54,14 @@ describe("Auth API", () => {
 
       expect(res.status).toBeGreaterThanOrEqual(400);
     });
+
+    it("rejects missing required fields", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/register")
+        .send({ email: "incomplete@test.com" });
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+    });
   });
 
   describe("POST /api/auth/login", () => {
@@ -69,9 +73,8 @@ describe("Auth API", () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveProperty("accessToken");
       expect(res.body.data).toHaveProperty("refreshToken");
-
-      accessToken = res.body.data.accessToken;
-      refreshToken = res.body.data.refreshToken;
+      expect(typeof res.body.data.accessToken).toBe("string");
+      expect(typeof res.body.data.refreshToken).toBe("string");
     });
 
     it("rejects wrong password", async () => {
@@ -89,13 +92,30 @@ describe("Auth API", () => {
 
       expect(res.status).toBe(401);
     });
+
+    it("rejects empty body", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/login")
+        .send({});
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+    });
   });
 
   describe("GET /api/auth/me", () => {
+    let freshToken: string;
+
+    beforeAll(async () => {
+      const res = await request(testApp)
+        .post("/api/auth/login")
+        .send({ email: testEmail, password: testPassword });
+      freshToken = res.body.data.accessToken;
+    });
+
     it("returns current user with valid token", async () => {
       const res = await request(testApp)
         .get("/api/auth/me")
-        .set("Authorization", `Bearer ${accessToken}`);
+        .set("Authorization", `Bearer ${freshToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.email).toBe(testEmail);
@@ -113,13 +133,41 @@ describe("Auth API", () => {
 
       expect(res.status).toBe(401);
     });
+
+    it("rejects malformed authorization header", async () => {
+      const res = await request(testApp)
+        .get("/api/auth/me")
+        .set("Authorization", "NotBearer something");
+
+      expect(res.status).toBe(401);
+    });
+
+    it("rejects expired/tampered token", async () => {
+      const parts = freshToken.split(".");
+      const tamperedToken = parts[0] + "." + parts[1] + ".invalidsignature";
+
+      const res = await request(testApp)
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${tamperedToken}`);
+
+      expect(res.status).toBe(401);
+    });
   });
 
   describe("POST /api/auth/refresh", () => {
+    let loginRefreshToken: string;
+
+    beforeAll(async () => {
+      const res = await request(testApp)
+        .post("/api/auth/login")
+        .send({ email: testEmail, password: testPassword });
+      loginRefreshToken = res.body.data.refreshToken;
+    });
+
     it("returns new tokens with valid refresh token", async () => {
       const res = await request(testApp)
         .post("/api/auth/refresh")
-        .send({ refreshToken });
+        .send({ refreshToken: loginRefreshToken });
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveProperty("accessToken");
@@ -132,6 +180,31 @@ describe("Auth API", () => {
         .send({ refreshToken: "invalid-refresh-token" });
 
       expect(res.status).toBeGreaterThanOrEqual(400);
+    });
+
+    it("rejects empty body", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/refresh")
+        .send({});
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+    });
+
+    it("rotated refresh token invalidates previous one", async () => {
+      const login = await request(testApp)
+        .post("/api/auth/login")
+        .send({ email: testEmail, password: testPassword });
+      const rt1 = login.body.data.refreshToken;
+
+      const refresh1 = await request(testApp)
+        .post("/api/auth/refresh")
+        .send({ refreshToken: rt1 });
+      expect(refresh1.status).toBe(200);
+
+      const reuse = await request(testApp)
+        .post("/api/auth/refresh")
+        .send({ refreshToken: rt1 });
+      expect(reuse.status).toBeGreaterThanOrEqual(400);
     });
   });
 
@@ -148,6 +221,51 @@ describe("Auth API", () => {
         .set("Authorization", `Bearer ${token}`);
 
       expect(res.status).toBe(200);
+    });
+
+    it("rejects logout without token", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/logout");
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("session security", () => {
+    it("refresh token is invalidated after logout", async () => {
+      const loginRes = await request(testApp)
+        .post("/api/auth/login")
+        .send({ email: testEmail, password: testPassword });
+
+      const { accessToken: at, refreshToken: rt } = loginRes.body.data;
+
+      await request(testApp)
+        .post("/api/auth/logout")
+        .set("Authorization", `Bearer ${at}`);
+
+      const refreshRes = await request(testApp)
+        .post("/api/auth/refresh")
+        .send({ refreshToken: rt });
+
+      expect(refreshRes.status).toBeGreaterThanOrEqual(400);
+    });
+
+    it("access token still works (stateless JWT) after logout", async () => {
+      const loginRes = await request(testApp)
+        .post("/api/auth/login")
+        .send({ email: testEmail, password: testPassword });
+
+      const { accessToken: at } = loginRes.body.data;
+
+      await request(testApp)
+        .post("/api/auth/logout")
+        .set("Authorization", `Bearer ${at}`);
+
+      const meRes = await request(testApp)
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${at}`);
+
+      expect(meRes.status).toBe(200);
     });
   });
 });

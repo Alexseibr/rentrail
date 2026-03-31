@@ -75,7 +75,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
 
 ### Test Commands
-- `pnpm test` — Run all 135 tests (7 suites)
+- `pnpm test` — Run all 179 tests (8 suites)
 - `pnpm test:unit` — Unit tests only (pure logic, no DB)
 - `pnpm test:api` — API integration tests (supertest against real DB)
 - `pnpm test:integration` — Integration tests (DB-backed)

@@ -2,56 +2,66 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
 import { cleanDatabase } from "../../test/setup";
-import { createTestUser, createTestTenant, assignRole, authHeaders, clearRolesCache } from "../../test/helpers";
+import {
+  createTestUser,
+  createTestTenant,
+  createTestClient,
+  createTestAsset,
+  assignRole,
+  authHeaders,
+  clearRolesCache,
+  type TestUser,
+  type TestTenant,
+} from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 
 describe("Multi-Tenant Isolation", () => {
-  let userA: Awaited<ReturnType<typeof createTestUser>>;
-  let userB: Awaited<ReturnType<typeof createTestUser>>;
-  let superAdmin: Awaited<ReturnType<typeof createTestUser>>;
-  let tenantA: Awaited<ReturnType<typeof createTestTenant>>;
-  let tenantB: Awaited<ReturnType<typeof createTestTenant>>;
+  let userA: TestUser;
+  let userB: TestUser;
+  let superAdmin: TestUser;
+  let tenantA: TestTenant;
+  let tenantB: TestTenant;
+
+  let assetA: Awaited<ReturnType<typeof createTestAsset>>;
+  let assetB: Awaited<ReturnType<typeof createTestAsset>>;
+  let clientA: Awaited<ReturnType<typeof createTestClient>>;
+  let clientB: Awaited<ReturnType<typeof createTestClient>>;
 
   beforeAll(async () => {
-    await cleanDatabase();
     clearRolesCache();
-
     await seedRolesAndPermissions();
 
-    tenantA = await createTestTenant({ companyName: "Company Alpha", slug: "alpha" });
-    tenantB = await createTestTenant({ companyName: "Company Beta", slug: "beta" });
+    tenantA = await createTestTenant({ companyName: "Company Alpha" });
+    tenantB = await createTestTenant({ companyName: "Company Beta" });
 
-    userA = await createTestUser({ email: "user-a@alpha.com" });
-    userB = await createTestUser({ email: "user-b@beta.com" });
-    superAdmin = await createTestUser({ email: "super@admin.com", isSuperAdmin: true });
+    userA = await createTestUser({ email: `iso-a-${Date.now()}@test.com` });
+    userB = await createTestUser({ email: `iso-b-${Date.now()}@test.com` });
+    superAdmin = await createTestUser({ email: `iso-super-${Date.now()}@test.com`, isSuperAdmin: true });
 
     await assignRole(userA.id, tenantA.company.id, "admin");
     await assignRole(userB.id, tenantB.company.id, "admin");
+
+    assetA = await createTestAsset(tenantA.company.id, tenantA.branch.id, { stationId: tenantA.station.id });
+    assetB = await createTestAsset(tenantB.company.id, tenantB.branch.id, { stationId: tenantB.station.id });
+    clientA = await createTestClient(tenantA.company.id);
+    clientB = await createTestClient(tenantB.company.id);
   }, 30000);
 
-  afterAll(async () => {
-    await cleanDatabase();
-  });
-
-  describe("company-level isolation", () => {
-    let assetIdA: string;
-
+  describe("company-level isolation — assets", () => {
     it("user A can create asset in company A", async () => {
       const res = await request(testApp)
         .post("/api/assets")
         .set(authHeaders(userA.token, tenantA.company.id))
         .send({
-          assetType: "bike",
+          assetType: "ebike",
           branchId: tenantA.branch.id,
-          stationId: tenantA.station.id,
-          internalCode: "ALPHA-001",
+          internalCode: "ALPHA-NEW-001",
         });
 
       expect(res.status).toBe(201);
-      assetIdA = res.body.data.id;
     });
 
-    it("user B cannot access company A context", async () => {
+    it("user B cannot list company A assets via company A header", async () => {
       const res = await request(testApp)
         .get("/api/assets")
         .set(authHeaders(userB.token, tenantA.company.id));
@@ -59,27 +69,102 @@ describe("Multi-Tenant Isolation", () => {
       expect(res.status).toBe(403);
     });
 
-    it("user B cannot read company A assets via their own company", async () => {
+    it("user B listing own company does not see company A assets", async () => {
       const res = await request(testApp)
         .get("/api/assets")
         .set(authHeaders(userB.token, tenantB.company.id));
 
       expect(res.status).toBe(200);
       const assetIds = (res.body.data || []).map((a: { id: string }) => a.id);
-      expect(assetIds).not.toContain(assetIdA);
+      expect(assetIds).not.toContain(assetA.id);
+      expect(assetIds).toContain(assetB.id);
     });
 
-    it("user A cannot access company B context", async () => {
+    it("user B cannot read company A asset by ID (IDOR)", async () => {
       const res = await request(testApp)
-        .get("/api/assets")
-        .set(authHeaders(userA.token, tenantB.company.id));
+        .get(`/api/assets/${assetA.id}`)
+        .set(authHeaders(userB.token, tenantB.company.id));
 
-      expect(res.status).toBe(403);
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("user B cannot update company A asset by ID", async () => {
+      const res = await request(testApp)
+        .patch(`/api/assets/${assetA.id}`)
+        .set(authHeaders(userB.token, tenantB.company.id))
+        .send({ notes: "hacked" });
+
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("user B cannot change status of company A asset", async () => {
+      const res = await request(testApp)
+        .post(`/api/assets/${assetA.id}/status`)
+        .set(authHeaders(userB.token, tenantB.company.id))
+        .send({ status: "maintenance", reason: "hacked" });
+
+      expect([403, 404]).toContain(res.status);
     });
   });
 
-  describe("superAdmin override", () => {
-    it("superAdmin can access company A assets", async () => {
+  describe("company-level isolation — rentals", () => {
+    it("user B cannot create rental using company A client/asset", async () => {
+      const res = await request(testApp)
+        .post("/api/rentals")
+        .set(authHeaders(userB.token, tenantB.company.id))
+        .send({
+          clientId: clientA.id,
+          assetId: assetA.id,
+          branchId: tenantA.branch.id,
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    let rentalIdA: string;
+    it("user A can create rental in company A", async () => {
+      const res = await request(testApp)
+        .post("/api/rentals")
+        .set(authHeaders(userA.token, tenantA.company.id))
+        .send({
+          clientId: clientA.id,
+          assetId: assetA.id,
+          branchId: tenantA.branch.id,
+        });
+
+      expect(res.status).toBe(201);
+      rentalIdA = res.body.data.id;
+    });
+
+    it("user B cannot read company A rental by ID", async () => {
+      const res = await request(testApp)
+        .get(`/api/rentals/${rentalIdA}`)
+        .set(authHeaders(userB.token, tenantB.company.id));
+
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("user B cannot approve company A rental", async () => {
+      const res = await request(testApp)
+        .post(`/api/rentals/${rentalIdA}/approve`)
+        .set(authHeaders(userB.token, tenantB.company.id));
+
+      expect([403, 404]).toContain(res.status);
+    });
+
+    it("user B listing own company rentals does not see company A rental", async () => {
+      const res = await request(testApp)
+        .get("/api/rentals")
+        .set(authHeaders(userB.token, tenantB.company.id));
+
+      expect(res.status).toBe(200);
+      const ids = (res.body.data || []).map((r: { id: string }) => r.id);
+      expect(ids).not.toContain(rentalIdA);
+    });
+  });
+
+  describe("superAdmin cross-tenant access", () => {
+    it("superAdmin can list company A assets", async () => {
       const res = await request(testApp)
         .get("/api/assets")
         .set(authHeaders(superAdmin.token, tenantA.company.id));
@@ -87,16 +172,16 @@ describe("Multi-Tenant Isolation", () => {
       expect(res.status).toBe(200);
     });
 
-    it("superAdmin can access company B assets", async () => {
+    it("superAdmin can list company B rentals", async () => {
       const res = await request(testApp)
-        .get("/api/assets")
+        .get("/api/rentals")
         .set(authHeaders(superAdmin.token, tenantB.company.id));
 
       expect(res.status).toBe(200);
     });
   });
 
-  describe("missing company context", () => {
+  describe("missing / invalid context", () => {
     it("request without x-company-id is rejected", async () => {
       const res = await request(testApp)
         .get("/api/assets")
@@ -104,15 +189,21 @@ describe("Multi-Tenant Isolation", () => {
 
       expect(res.status).toBe(403);
     });
-  });
 
-  describe("unauthorized access", () => {
     it("unauthenticated request is rejected", async () => {
       const res = await request(testApp)
         .get("/api/assets")
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(401);
+    });
+
+    it("request with non-existent company id is rejected", async () => {
+      const res = await request(testApp)
+        .get("/api/assets")
+        .set(authHeaders(userA.token, "00000000-0000-0000-0000-000000000000"));
+
+      expect(res.status).toBe(403);
     });
   });
 });
