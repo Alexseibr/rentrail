@@ -47,7 +47,7 @@ router.get(
   authenticate,
   async (req, res) => {
     const dbPlatformRoles = req.platformUser?.platformRoles ?? [];
-    if (req.user!.isSuperAdmin || dbPlatformRoles.length > 0) {
+    if (dbPlatformRoles.length > 0) {
       await createPlatformAuditLog(req, {
         action: "company.list_all",
         entityType: "company",

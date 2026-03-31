@@ -269,6 +269,21 @@ describe("Platform Access Model", () => {
       expect(Array.isArray(res.body.data)).toBe(true);
     });
 
+    it("isSuperAdmin without platform role cannot list all companies", async () => {
+      const legacyAdmin = await createTestUser({ isSuperAdmin: true });
+      const regularNonPlatform = await createTestUser({});
+
+      const legacyRes = await request(testApp)
+        .get("/api/companies")
+        .set("Authorization", `Bearer ${legacyAdmin.token}`);
+
+      const regularRes = await request(testApp)
+        .get("/api/companies")
+        .set("Authorization", `Bearer ${regularNonPlatform.token}`);
+
+      expect(legacyRes.body.data).toEqual(regularRes.body.data);
+    });
+
     it("company creation is logged to platform audit log", async () => {
       const ts = Date.now();
       await request(testApp)
