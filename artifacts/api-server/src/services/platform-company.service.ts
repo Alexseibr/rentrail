@@ -358,14 +358,6 @@ export async function cancelCompany(companyId: string, input: ModerationActionIn
   return performModerationAction(companyId, "canceled", "cancel", input);
 }
 
-const DEFAULT_PLAN_LIMITS: Record<string, number> = {
-  branches: -1,
-  stations: -1,
-  assets: -1,
-  users: -1,
-  rentals: -1,
-};
-
 export async function getCompanyUsage(companyId: string) {
   const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
   if (!company) throw new NotFoundError("Company not found");
