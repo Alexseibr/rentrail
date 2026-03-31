@@ -2,9 +2,11 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireSuperAdmin, requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import { requirePlatformRole } from "../middlewares/platform-authorize";
 import * as companyService from "../services/company.service";
 import { createAuditLog } from "../lib/audit";
+import { createPlatformAuditLog } from "../lib/platform-audit";
 
 const router: IRouter = Router();
 
@@ -26,18 +28,15 @@ const idParams = z.object({ id: z.string().uuid() });
 router.post(
   "/companies",
   authenticate,
-  requireSuperAdmin,
+  requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ body: createCompanySchema }),
   async (req, res) => {
     const company = await companyService.createCompany(req.body);
-    await createAuditLog({
-      companyId: company.id,
-      actorUserId: req.user!.userId,
-      action: "create",
+    await createPlatformAuditLog(req, {
+      action: "company.create",
       entityType: "company",
       entityId: company.id,
       after: company,
-      req,
     });
     res.status(201).json({ data: company });
   },
@@ -47,7 +46,8 @@ router.get(
   "/companies",
   authenticate,
   async (req, res) => {
-    if (req.user!.isSuperAdmin) {
+    const hasPlatformRole = (req.user!.platformRoles ?? []).length > 0;
+    if (req.user!.isSuperAdmin || hasPlatformRole) {
       const companies = await companyService.listCompanies();
       res.json({ data: companies });
       return;

@@ -204,6 +204,72 @@ describe("Platform Access Model", () => {
     });
   });
 
+  describe("platform routes use requirePlatformRole (not isSuperAdmin)", () => {
+    it("superAdmin can create a company", async () => {
+      const ts = Date.now();
+      const res = await request(testApp)
+        .post("/api/companies")
+        .set("Authorization", `Bearer ${superAdminUser.token}`)
+        .send({ name: `Test Co ${ts}`, slug: `test-co-${ts}` });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.name).toBe(`Test Co ${ts}`);
+    });
+
+    it("platformAdmin can create a company", async () => {
+      const ts = Date.now();
+      const res = await request(testApp)
+        .post("/api/companies")
+        .set("Authorization", `Bearer ${platformAdminUser.token}`)
+        .send({ name: `Admin Co ${ts}`, slug: `admin-co-${ts}` });
+
+      expect(res.status).toBe(201);
+    });
+
+    it("platformSupport cannot create a company", async () => {
+      const res = await request(testApp)
+        .post("/api/companies")
+        .set("Authorization", `Bearer ${platformSupportUser.token}`)
+        .send({ name: "Blocked Co", slug: "blocked-co" });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("regular user cannot create a company", async () => {
+      const res = await request(testApp)
+        .post("/api/companies")
+        .set("Authorization", `Bearer ${regularUser.token}`)
+        .send({ name: "No Access Co", slug: "no-access-co" });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("platform user can list all companies", async () => {
+      const res = await request(testApp)
+        .get("/api/companies")
+        .set("Authorization", `Bearer ${platformSupportUser.token}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+    });
+
+    it("company creation is logged to platform audit log", async () => {
+      const ts = Date.now();
+      await request(testApp)
+        .post("/api/companies")
+        .set("Authorization", `Bearer ${superAdminUser.token}`)
+        .send({ name: `Audited Co ${ts}`, slug: `audited-co-${ts}` });
+
+      const logsRes = await request(testApp)
+        .get("/api/platform/audit-logs?action=company.create")
+        .set("Authorization", `Bearer ${superAdminUser.token}`);
+
+      expect(logsRes.status).toBe(200);
+      expect(logsRes.body.data.items.length).toBeGreaterThanOrEqual(1);
+      expect(logsRes.body.data.items[0].action).toBe("company.create");
+    });
+  });
+
   describe("platform role does NOT grant tenant superAdmin bypass", () => {
     it("platformAdmin cannot access tenant assets without company membership", async () => {
       const { createTestTenant } = await import("../../test/helpers");

@@ -85,10 +85,11 @@ router.patch(
   requirePermission("settings:update"),
   validate({ body: updateModulesSchema }),
   async (req, res) => {
+    const hasPlatformRole = (req.user!.platformRoles ?? []).length > 0;
     const modules = await moduleService.updateCompanyModules(
       req.tenant!.companyId,
       req.body,
-      req.user!.isSuperAdmin,
+      req.user!.isSuperAdmin || hasPlatformRole,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

@@ -7,6 +7,18 @@ interface ValidationSchemas {
   query?: z.ZodType;
 }
 
+interface ZodIssue {
+  path: (string | number)[];
+  message: string;
+}
+
+function formatIssues(issues: ZodIssue[]) {
+  return issues.map((i) => ({
+    path: i.path.join("."),
+    message: i.message,
+  }));
+}
+
 export function validate(schemas: ValidationSchemas) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (schemas.body) {
@@ -14,10 +26,7 @@ export function validate(schemas: ValidationSchemas) {
       if (!result.success) {
         res.status(400).json({
           error: "Validation failed",
-          details: result.error.issues.map((i: any) => ({
-            path: i.path.join("."),
-            message: i.message,
-          })),
+          details: formatIssues(result.error.issues),
         });
         return;
       }
@@ -28,10 +37,7 @@ export function validate(schemas: ValidationSchemas) {
       if (!result.success) {
         res.status(400).json({
           error: "Validation failed",
-          details: result.error.issues.map((i: any) => ({
-            path: i.path.join("."),
-            message: i.message,
-          })),
+          details: formatIssues(result.error.issues),
         });
         return;
       }
@@ -42,10 +48,7 @@ export function validate(schemas: ValidationSchemas) {
       if (!result.success) {
         res.status(400).json({
           error: "Validation failed",
-          details: result.error.issues.map((i: any) => ({
-            path: i.path.join("."),
-            message: i.message,
-          })),
+          details: formatIssues(result.error.issues),
         });
         return;
       }
