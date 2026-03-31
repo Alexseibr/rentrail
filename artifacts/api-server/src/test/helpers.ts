@@ -76,7 +76,7 @@ export async function createTestUser(opts: {
   const payload: AccessTokenPayload = {
     userId: user.id,
     email: user.email,
-    isSuperAdmin: user.isSuperAdmin,
+    isSuperAdmin: user.isSuperAdmin || assignedRoleCodes.includes("superAdmin"),
     platformRoles: assignedRoleCodes,
   };
   const token = signAccessToken(payload);

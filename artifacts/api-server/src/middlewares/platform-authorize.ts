@@ -44,3 +44,22 @@ export function requirePlatformRole(...allowedRoles: string[]) {
     next();
   };
 }
+
+export function requireAnyPlatformRole(req: Request, _res: Response, next: NextFunction): void {
+  if (!req.user) {
+    throw new UnauthorizedError();
+  }
+
+  const dbRoles = req.platformUser?.platformRoles ?? [];
+
+  if (dbRoles.length === 0) {
+    throw new ForbiddenError("Platform access required");
+  }
+
+  req.platformContext = {
+    platformRoles: dbRoles,
+    activePlatformRole: dbRoles[0],
+  };
+
+  next();
+}

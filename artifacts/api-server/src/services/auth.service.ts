@@ -102,7 +102,7 @@ export async function login(
   const accessToken = signAccessToken({
     userId: user.id,
     email: user.email,
-    isSuperAdmin: user.isSuperAdmin,
+    isSuperAdmin: user.isSuperAdmin || platformRoles.includes("superAdmin"),
     platformRoles,
   });
 
@@ -197,7 +197,7 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
   const accessToken = signAccessToken({
     userId: user.id,
     email: user.email,
-    isSuperAdmin: user.isSuperAdmin,
+    isSuperAdmin: user.isSuperAdmin || userPlatformRoles.includes("superAdmin"),
     platformRoles: userPlatformRoles,
   });
 

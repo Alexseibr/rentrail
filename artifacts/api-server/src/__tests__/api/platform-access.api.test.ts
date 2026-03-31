@@ -260,28 +260,30 @@ describe("Platform Access Model", () => {
       expect(res.status).toBe(403);
     });
 
-    it("platform user can list all companies", async () => {
+    it("platform user can list all companies via platform endpoint", async () => {
       const res = await request(testApp)
-        .get("/api/companies")
+        .get("/api/platform/companies")
         .set("Authorization", `Bearer ${platformSupportUser.token}`);
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
     });
 
-    it("isSuperAdmin without platform role cannot list all companies", async () => {
-      const legacyAdmin = await createTestUser({ isSuperAdmin: true });
-      const regularNonPlatform = await createTestUser({});
+    it("regular user cannot access platform company listing", async () => {
+      const res = await request(testApp)
+        .get("/api/platform/companies")
+        .set("Authorization", `Bearer ${regularUser.token}`);
 
-      const legacyRes = await request(testApp)
+      expect(res.status).toBe(403);
+    });
+
+    it("GET /companies returns only user memberships (no platform bypass)", async () => {
+      const res = await request(testApp)
         .get("/api/companies")
-        .set("Authorization", `Bearer ${legacyAdmin.token}`);
+        .set("Authorization", `Bearer ${regularUser.token}`);
 
-      const regularRes = await request(testApp)
-        .get("/api/companies")
-        .set("Authorization", `Bearer ${regularNonPlatform.token}`);
-
-      expect(legacyRes.body.data).toEqual(regularRes.body.data);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
 
     it("company creation is logged to platform audit log", async () => {
@@ -299,9 +301,23 @@ describe("Platform Access Model", () => {
       expect(logsRes.body.data.items.length).toBeGreaterThanOrEqual(1);
       expect(logsRes.body.data.items[0].action).toBe("company.create");
     });
+
+    it("platform company listing is audited", async () => {
+      await request(testApp)
+        .get("/api/platform/companies")
+        .set("Authorization", `Bearer ${platformAdminUser.token}`);
+
+      const logsRes = await request(testApp)
+        .get("/api/platform/audit-logs?action=company.list_all")
+        .set("Authorization", `Bearer ${superAdminUser.token}`);
+
+      expect(logsRes.status).toBe(200);
+      expect(logsRes.body.data.items.length).toBeGreaterThanOrEqual(1);
+      expect(logsRes.body.data.items[0].action).toBe("company.list_all");
+    });
   });
 
-  describe("platform role does NOT grant tenant superAdmin bypass", () => {
+  describe("non-superAdmin platform roles do NOT grant tenant bypass", () => {
     it("platformAdmin cannot access tenant assets without company membership", async () => {
       const { createTestTenant } = await import("../../test/helpers");
       const tenant = await createTestTenant();
@@ -336,6 +352,34 @@ describe("Platform Access Model", () => {
         .set("x-company-id", tenant.company.id);
 
       expect(res.status).toBe(403);
+    });
+  });
+
+  describe("superAdmin platform role derives isSuperAdmin for tenant bypass", () => {
+    it("superAdmin platform role user gets isSuperAdmin=true in JWT", async () => {
+      const loginRes = await request(testApp)
+        .post("/api/auth/login")
+        .send({ email: superAdminUser.email, password: "TestPass123!" });
+
+      expect(loginRes.status).toBe(200);
+
+      const token = loginRes.body.data.accessToken;
+      const [, payloadB64] = token.split(".");
+      const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
+      expect(payload.isSuperAdmin).toBe(true);
+      expect(payload.platformRoles).toContain("superAdmin");
+    });
+
+    it("superAdmin platform role can access tenant assets via isSuperAdmin bypass", async () => {
+      const { createTestTenant } = await import("../../test/helpers");
+      const tenant = await createTestTenant();
+
+      const res = await request(testApp)
+        .get("/api/assets")
+        .set("Authorization", `Bearer ${superAdminUser.token}`)
+        .set("x-company-id", tenant.company.id);
+
+      expect(res.status).toBe(200);
     });
   });
 

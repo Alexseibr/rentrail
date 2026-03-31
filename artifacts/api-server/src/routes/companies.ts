@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
-import { requirePlatformRole } from "../middlewares/platform-authorize";
+import { requirePlatformRole, requireAnyPlatformRole } from "../middlewares/platform-authorize";
 import * as companyService from "../services/company.service";
 import { createAuditLog } from "../lib/audit";
 import { createPlatformAuditLog } from "../lib/platform-audit";
@@ -43,19 +43,23 @@ router.post(
 );
 
 router.get(
+  "/platform/companies",
+  authenticate,
+  requireAnyPlatformRole,
+  async (req, res) => {
+    await createPlatformAuditLog(req, {
+      action: "company.list_all",
+      entityType: "company",
+    });
+    const companies = await companyService.listCompanies();
+    res.json({ data: companies });
+  },
+);
+
+router.get(
   "/companies",
   authenticate,
   async (req, res) => {
-    const dbPlatformRoles = req.platformUser?.platformRoles ?? [];
-    if (dbPlatformRoles.length > 0) {
-      await createPlatformAuditLog(req, {
-        action: "company.list_all",
-        entityType: "company",
-      });
-      const companies = await companyService.listCompanies();
-      res.json({ data: companies });
-      return;
-    }
     const companies = await companyService.listUserCompanies(req.user!.userId);
     res.json({ data: companies });
   },
