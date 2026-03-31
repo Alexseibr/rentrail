@@ -30,7 +30,21 @@ const createAssetSchema = z.object({
   notes: z.string().optional(),
 });
 
-const updateAssetSchema = createAssetSchema.partial();
+const updateAssetSchema = z.object({
+  branchId: z.string().uuid().optional(),
+  stationId: z.string().uuid().optional(),
+  assetType: z.enum(assetTypeValues).optional(),
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  serialNumber: z.string().optional(),
+  internalCode: z.string().optional(),
+  qrCode: z.string().optional(),
+  purchasePrice: z.string().optional(),
+  currentValue: z.string().optional(),
+  isPublic: z.boolean().optional(),
+  notes: z.string().optional(),
+});
+
 const idParams = z.object({ id: z.string().uuid() });
 
 const changeStatusSchema = z.object({
@@ -133,6 +147,58 @@ router.post(
       req,
     });
     res.json({ data: asset });
+  },
+);
+
+router.post(
+  "/assets/:id/archive",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("asset:delete"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const asset = await assetService.archiveAsset(req.params.id, req.tenant!.companyId);
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "archive",
+      entityType: "asset",
+      entityId: asset.id,
+      req,
+    });
+    res.json({ data: asset });
+  },
+);
+
+router.post(
+  "/assets/:id/restore",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("asset:delete"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const asset = await assetService.restoreAsset(req.params.id, req.tenant!.companyId);
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "restore",
+      entityType: "asset",
+      entityId: asset.id,
+      req,
+    });
+    res.json({ data: asset });
+  },
+);
+
+router.get(
+  "/assets/:id/status-history",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("asset:read"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const history = await assetService.getAssetStatusHistory(req.params.id, req.tenant!.companyId);
+    res.json({ data: history });
   },
 );
 

@@ -38,3 +38,23 @@ export class ValidationError extends AppError {
     super(422, message, "VALIDATION_ERROR");
   }
 }
+
+export class InvalidStatusTransitionError extends AppError {
+  constructor(from: string, to: string, entity = "entity") {
+    super(422, `Cannot transition ${entity} from '${from}' to '${to}'`, "INVALID_STATUS_TRANSITION");
+  }
+}
+
+export class AssetUnavailableError extends AppError {
+  constructor(message = "Asset is not available for this operation") {
+    super(422, message, "ASSET_UNAVAILABLE");
+  }
+}
+
+export class BlacklistBlockedError extends AppError {
+  public flags: { action: string; reason: string }[];
+  constructor(message = "Client is blacklisted", flags: { action: string; reason: string }[] = []) {
+    super(422, message, "BLACKLIST_BLOCKED");
+    this.flags = flags;
+  }
+}

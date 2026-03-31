@@ -1,0 +1,641 @@
+Теперь нужно реализовать следующий слой для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter:
+
+1. public website foundation
+2. public company page /p/:slug
+3. inquiry / lead flow
+4. B2B request flow
+5. company branding/settings
+6. notifications foundation
+7. feature flags / enabled modules foundation
+
+Считать, что уже готовы:
+- schema and migrations for core modules
+- auth / RBAC / memberships
+- CRUD foundation for branches / stations / clients / assets / rentals / blacklist
+- payments / deposits / incidents / maintenance / reports foundation
+- audit service
+- tenant-safe repositories
+- Zod validation foundation
+
+Важно:
+- сейчас не делать full frontend landing production-polish
+- сначала сделать clean backend foundation + minimal public endpoints + data model + internal workflows
+- public flows должны быть безопасны, rate-limited и tenant-aware
+- company public visibility должна управляться настройками компании
+- не делай car-specific naming
+- не делай пока telemetry/mobile/device integration
+
+---
+
+# 1. Общая цель этапа
+
+Нужно, чтобы каждая компания платформы могла:
+- иметь публичную страницу по slug
+- показывать бренд, описание, контакты, города/станции, доступный транспорт
+- принимать публичные заявки на аренду
+- принимать B2B заявки от компаний
+- управлять branding и public settings из кабинета
+- получать базовые internal notifications по событиям
+
+---
+
+# 2. Company branding and public settings
+
+## 2.1. Расширь company settings / branding model
+Если таблицы уже существуют частично — доработай их.
+
+Нужно хранить:
+- logoUrl nullable
+- coverImageUrl nullable
+- primaryColor nullable
+- secondaryColor nullable
+- publicTitle nullable
+- publicDescription nullable
+- publicPhone nullable
+- publicEmail nullable
+- publicCity nullable
+- publicAddress nullable
+- websiteUrl nullable
+- socialLinks jsonb nullable
+- publicEnabled boolean
+- publicSlug unique
+- publicShowAssets boolean
+- publicShowPricing boolean
+- publicShowStations boolean
+- publicShowB2BForm boolean
+- publicShowInquiryForm boolean
+- publicTermsText nullable
+- brandingUpdatedAt nullable
+
+Если логичнее разделить:
+- company_settings
+- company_branding
+то сделай clean split и объясни решение.
+
+## 2.2. Access rules
+Обновлять branding/public settings могут:
+- owner
+- admin
+- manager, если у него есть permission
+- superAdmin
+
+## 2.3. Endpoints
+Реализуй:
+- GET /companies/me/public-settings
+- PATCH /companies/me/public-settings
+- GET /companies/me/branding
+- PATCH /companies/me/branding
+
+Если считаешь, что branding и public settings лучше объединить в один endpoint — можно, но структура должна быть чистой.
+
+---
+
+# 3. Public company page
+
+## 3.1. URL pattern
+Публичная страница компании:
+- GET /public/companies/:slug
+или
+- GET /p/:slug
+
+Выбери один pattern и используй consistently.
+Если backend и frontend разделены, backend может отдавать JSON API для public page.
+
+## 3.2. Что должна возвращать public page
+Если publicEnabled = true, вернуть:
+- company public identity
+- title / description
+- logo / cover
+- contact info
+- public city / address
+- visible stations, если включено
+- visible assets summary, если включено
+- pricing summary, если включено
+- inquiry form availability
+- B2B form availability
+
+## 3.3. Public assets visibility
+Публично можно показывать только assets, которые:
+- belong to company
+- isPublic = true
+- not archived
+- status in allowed visible statuses (например available / reserved maybe, depending on policy)
+
+Сделай clean policy helper для public visibility.
+
+## 3.4. Public stations visibility
+Показывать только станции компании, которые:
+- не archived
+- имеют public visibility, если решишь ввести такой флаг
+- либо по умолчанию все active stations, если publicShowStations = true
+
+---
+
+# 4. Public catalog / visible assets endpoint
+
+## 4.1. Endpoint
+Сделай:
+- GET /public/companies/:slug/assets
+
+С фильтрами:
+- assetType
+- branchId optional
+- stationId optional
+- search
+- pagination
+
+## 4.2. Что возвращать
+Только safe public fields:
+- id
+- assetType
+- brand
+- model
+- public title/summary if exists
+- photo urls, если foundation уже есть
+- status simplified for public use
+- price summary if available from rental plans or public listing
+- branch/station short info if allowed
+
+Не возвращай internal costs, QR, serials, notes, internal codes.
+
+## 4.3. Public asset card policy
+Если у asset пока нет отдельного public listing model, предложи минимальный foundation:
+- asset_public_listings table
+или
+- public fields inside assets for MVP
+Выбери clean MVP path и объясни решение.
+
+---
+
+# 5. Public stations endpoint
+
+## 5.1. Endpoint
+Сделай:
+- GET /public/companies/:slug/stations
+
+## 5.2. Что возвращать
+- station id
+- name
+- type
+- address
+- lat/lng
+- branch short info
+- working hours if available
+- contact if later available
+
+Только если company public settings разрешают.
+
+---
+
+# 6. Inquiry / lead flow (B2C)
+
+## 6.1. Назначение
+Публичный пользователь может оставить заявку на аренду.
+
+Это не должно автоматически создавать active rental.
+Это lead / inquiry intake flow.
+
+## 6.2. Нужна отдельная сущность
+Создай foundation table, например:
+- inquiries
+
+Поля:
+- id
+- companyId
+- branchId nullable
+- stationId nullable
+- source = public_inquiry
+- status
+- fullName
+- phone
+- email nullable
+- assetType nullable
+- preferredAssetId nullable
+- requestedStartAt nullable
+- requestedEndAt nullable
+- message nullable
+- blacklistCheckResult jsonb nullable
+- createdAt
+- updatedAt
+- processedByUserId nullable
+- convertedClientId nullable
+- convertedRentalId nullable
+
+## 6.3. Inquiry statuses
+Поддержи:
+- new
+- in_review
+- contacted
+- converted
+- rejected
+- spam
+- archived
+
+## 6.4. Endpoint
+Сделай публичный endpoint:
+- POST /public/companies/:slug/inquiries
+
+И внутренние:
+- GET /inquiries
+- GET /inquiries/:id
+- PATCH /inquiries/:id
+- POST /inquiries/:id/mark-contacted
+- POST /inquiries/:id/convert-to-client
+- POST /inquiries/:id/convert-to-rental-draft
+- POST /inquiries/:id/reject
+
+## 6.5. Business rules
+При создании inquiry:
+- company must be publicEnabled
+- inquiry form must be enabled
+- slug must resolve to active company
+- normalize phone/email
+- perform blacklist pre-check and save result
+- do not auto-block submission unless it is clearly hard-blocked and policy says so
+- rate limit required
+- audit for internal processing actions only
+
+## 6.6. Conversion flow
+Нужны helpers:
+- convert inquiry -> client
+- optionally create rental draft from inquiry
+Не создавать дубли без проверки по phone/email/document when possible.
+
+---
+
+# 7. B2B request flow
+
+## 7.1. Назначение
+Компании должны иметь публичную форму для B2B запросов:
+- нужно 5/10/20/100 bikes or scooters
+- нужен парк под доставку
+- нужен корпоративный тариф
+- нужна аренда под филиал/даркстор
+
+## 7.2. Отдельная сущность
+Создай table:
+- b2b_requests
+
+Поля:
+- id
+- companyId
+- source = public_b2b
+- status
+- companyName
+- contactPerson
+- phone
+- email
+- city nullable
+- requestedFleetSize nullable
+- assetTypes jsonb nullable
+- message nullable
+- createdAt
+- updatedAt
+- assignedToUserId nullable
+- processedByUserId nullable
+- notesInternal nullable
+
+## 7.3. B2B statuses
+Поддержи:
+- new
+- in_review
+- contacted
+- negotiating
+- converted
+- rejected
+- archived
+
+## 7.4. Endpoints
+Публичный:
+- POST /public/companies/:slug/b2b-request
+
+Внутренние:
+- GET /b2b-requests
+- GET /b2b-requests/:id
+- PATCH /b2b-requests/:id
+- POST /b2b-requests/:id/mark-contacted
+- POST /b2b-requests/:id/convert
+- POST /b2b-requests/:id/reject
+
+## 7.5. Правила
+- только если company publicShowB2BForm = true
+- rate limit required
+- normalize phone/email
+- internal audit on processing actions
+- later this can convert into account/client/company-partner, but now just foundation
+
+---
+
+# 8. Internal notifications foundation
+
+## 8.1. Цель
+Пока без реальной email dispatch системы нужно сделать notification foundation:
+- in-app/internal notifications table
+- basic notification creation helpers
+- optional email-ready payload stubs for later
+
+## 8.2. Table
+Если еще нет, создай:
+- notifications
+
+Поля:
+- id
+- companyId nullable
+- branchId nullable
+- userId
+- type
+- title
+- body
+- data jsonb nullable
+- readAt nullable
+- createdAt
+
+## 8.3. Notification types
+Поддержи минимум:
+- inquiry_created
+- inquiry_assigned
+- inquiry_converted
+- b2b_request_created
+- b2b_request_assigned
+- payment_created
+- payment_paid
+- rental_started
+- rental_overdue
+- incident_created
+- maintenance_created
+
+## 8.4. Endpoints
+Реализуй:
+- GET /notifications
+- POST /notifications/:id/read
+- POST /notifications/read-all
+
+## 8.5. Creation helpers
+Сделай notification service methods для:
+- onInquiryCreated
+- onB2BRequestCreated
+- onRentalStarted
+- onPaymentPaid
+- onIncidentCreated
+- onMaintenanceCreated
+
+Пока достаточно internal DB notifications.
+Не надо пока реальной email отправки.
+
+---
+
+# 9. Notification delivery stubs for future email
+
+## 9.1. Подготовка к email
+Сделай clean abstraction:
+- notification event created
+- optional delivery channels later
+- email stub payload builder
+
+Но не интегрируй сейчас реальный provider.
+
+## 9.2. Event design
+Если хочешь, сделай lightweight internal event helpers, но не overengineer.
+Нужно только заложить путь, чтобы позже можно было легко подключить email/SMS/push.
+
+---
+
+# 10. Feature flags / enabled modules foundation
+
+## 10.1. Зачем
+Платформа будет SaaS, и у компаний должны быть:
+- включенные модули
+- ограничения по плану
+- возможность включать public page, B2B flow, future telemetry, etc.
+
+## 10.2. Foundation model
+Если еще нет, создай что-то clean:
+- company_enabled_modules
+или
+- enabledModules jsonb в company_settings, если хочешь MVP path
+
+Но лучше отдельная сущность, если это не слишком утяжеляет.
+
+## 10.3. Module examples
+Поддержи foundation для модулей:
+- public_page
+- inquiries
+- b2b_requests
+- rentals
+- payments
+- blacklist
+- incidents
+- maintenance
+- telemetry
+- batteries
+- notifications
+
+## 10.4. Rules
+- company может использовать endpoint/feature только если модуль включен
+- superAdmin может override
+- owner/admin with permission can view enabled modules
+- actual activation can be driven by SaaS plan later
+
+## 10.5. Endpoints
+Минимум:
+- GET /companies/me/modules
+- PATCH /companies/me/modules
+или platform-controlled variant if you want stricter SaaS governance
+
+Опиши clearly, какие модули управляются компанией, а какие платформой.
+
+---
+
+# 11. Public safety and anti-spam rules
+
+## 11.1. Rate limits
+Обязательно rate limit на:
+- public inquiries
+- public b2b requests
+- public page heavy endpoints if needed
+
+## 11.2. Validation
+Zod validation для public payloads:
+- name length
+- phone normalization
+- email validation
+- message size limit
+
+## 11.3. Abuse handling
+Если payload явно suspicious:
+- allow soft rejection
+- mark as spam
+- do not create noisy internal notifications for obvious spam if you choose to filter
+Опиши simple rule, не overengineer.
+
+---
+
+# 12. Public API / endpoint list
+
+## Public
+- GET /public/companies/:slug
+- GET /public/companies/:slug/assets
+- GET /public/companies/:slug/stations
+- POST /public/companies/:slug/inquiries
+- POST /public/companies/:slug/b2b-request
+
+## Tenant internal
+- GET /companies/me/public-settings
+- PATCH /companies/me/public-settings
+- GET /companies/me/branding
+- PATCH /companies/me/branding
+
+- GET /inquiries
+- GET /inquiries/:id
+- PATCH /inquiries/:id
+- POST /inquiries/:id/mark-contacted
+- POST /inquiries/:id/convert-to-client
+- POST /inquiries/:id/convert-to-rental-draft
+- POST /inquiries/:id/reject
+
+- GET /b2b-requests
+- GET /b2b-requests/:id
+- PATCH /b2b-requests/:id
+- POST /b2b-requests/:id/mark-contacted
+- POST /b2b-requests/:id/convert
+- POST /b2b-requests/:id/reject
+
+- GET /notifications
+- POST /notifications/:id/read
+- POST /notifications/read-all
+
+- GET /companies/me/modules
+- PATCH /companies/me/modules
+
+---
+
+# 13. Business rules and scope rules
+
+## 13.1. Inquiries
+- belong to company
+- optionally linked to branch/station
+- processed only by tenant users with proper permissions
+- visible only inside tenant
+
+## 13.2. B2B requests
+- belong to company
+- internal processing only by tenant users with proper permissions
+
+## 13.3. Notifications
+- tenant-safe
+- only target users can read their notifications
+- company users cannot read notifications of another user unless you intentionally add admin visibility later; for now keep it simple and private per user
+
+## 13.4. Public page
+- accessible only if company publicEnabled
+- hidden if company blocked/canceled or public disabled
+- do not leak internal IDs and internal operational data
+
+---
+
+# 14. Repository/service rules
+
+## 14.1. Public repositories
+Slug lookup must be safe:
+- only active/eligible companies
+- only public enabled
+- return minimal public-safe data
+
+## 14.2. Internal repositories
+All internal inquiries/b2b/notifications queries must be company-scoped.
+
+## 14.3. Conversions
+Inquiry conversion helpers must:
+- check duplicates
+- create client safely
+- optionally create rental draft
+- update inquiry status accordingly
+
+---
+
+# 15. Validation (Zod)
+
+Сделай отдельные DTO schemas для:
+- patch public settings
+- patch branding
+- create public inquiry
+- update inquiry
+- convert inquiry
+- create public b2b request
+- update b2b request
+- mark notification read
+- patch company modules
+
+---
+
+# 16. Audit logging
+
+Логируй:
+- branding/public settings updated
+- inquiry processed actions
+- inquiry converted
+- b2b request processed actions
+- company modules updated
+
+Public anonymous submissions не обязательно писать в audit как actor-based change, но internal handling обязательно.
+
+---
+
+# 17. README update
+
+Добавь:
+- public company page flow
+- how slug/public settings work
+- how inquiries work
+- how b2b requests work
+- notifications foundation
+- enabled modules foundation
+- public endpoint notes and rate limits
+
+---
+
+# 18. Что НЕ делать сейчас
+Пока не реализовывай:
+- polished frontend landing pages
+- CMS builder
+- SEO optimizations
+- real email sending
+- SMS
+- push notifications
+- PDF brochures
+- telemetry map on public page
+- online payments from public page
+- full CRM pipeline
+- advanced spam scoring
+
+Это позже.
+
+---
+
+# 19. Что хочу получить на выходе
+1. Data model additions if needed:
+   - inquiries
+   - b2b_requests
+   - notifications
+   - company modules / enabled modules
+   - any branding/public settings additions
+2. Routes/controllers/services/repositories
+3. Public endpoints
+4. Internal processing endpoints
+5. Notification service foundation
+6. Feature/module guard foundation
+7. README update
+8. Краткое описание принятых MVP-компромиссов
+
+---
+
+# 20. Порядок работы
+Сначала:
+1. покажи какие таблицы/fields нужно добавить
+2. покажи endpoint map
+3. опиши business rules for public visibility and inquiry conversion
+4. только потом переходи к коду
+
+Не делай public flow как прямое создание active rental.
+Это lead/inquiry intake layer.
+Если где-то нужен MVP-компромисс — опиши его явно.

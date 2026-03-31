@@ -208,21 +208,25 @@ authenticate → requireCompanyAccess → requirePermission("asset:create")
 - `PATCH /clients/:id` — update client
 
 ### Assets (requires x-company-id)
-- `POST /assets` — create asset
+- `POST /assets` — create asset (default status=draft)
 - `GET /assets` — list assets (?branchId=&status=)
 - `GET /assets/:id` — get asset
-- `PATCH /assets/:id` — update asset
-- `POST /assets/:id/status` — change asset status
+- `PATCH /assets/:id` — update asset fields (status NOT changeable via PATCH)
+- `POST /assets/:id/status` — change asset status (enforces transition rules)
+- `POST /assets/:id/archive` — soft-delete asset
+- `POST /assets/:id/restore` — restore archived asset
+- `GET /assets/:id/status-history` — get asset status change log
 
 ### Rentals (requires x-company-id)
-- `POST /rentals` — create rental (with tariffSnapshot, issuedByUserId)
+- `POST /rentals` — create rental (validates asset availability, checks blacklist, prevents duplicate active rental)
 - `GET /rentals` — list rentals (?status=)
 - `GET /rentals/:id` — get rental
-- `POST /rentals/:id/approve` — approve rental
-- `POST /rentals/:id/start` — start rental
-- `POST /rentals/:id/extend` — extend rental
-- `POST /rentals/:id/complete` — complete rental
-- `POST /rentals/:id/cancel` — cancel rental
+- `GET /rentals/:id/status-history` — get rental status change log
+- `POST /rentals/:id/approve` — approve rental (draft/pending→awaiting_payment)
+- `POST /rentals/:id/start` — start rental (awaiting_pickup→active, sets asset to rented, re-checks blacklist)
+- `POST /rentals/:id/extend` — extend rental (active/extended→extended, updates plannedEndAt)
+- `POST /rentals/:id/return` — return rental (active/extended/overdue/return_requested→completed, sets actualEndAt, optional returnedToStationId, optional assetReturnStatus)
+- `POST /rentals/:id/cancel` — cancel rental (rolls back asset status if was active/extended/overdue)
 
 ### Blacklist (requires x-company-id)
 - `POST /blacklist` — create entry (auto-snapshots client data)
@@ -238,8 +242,28 @@ authenticate → requireCompanyAccess → requirePermission("asset:create")
 - Codegen: `pnpm --filter @workspace/api-spec run codegen`
 - Typecheck: `pnpm run typecheck`
 
+## Asset Status Machine
+```
+draft → available / maintenance / retired
+available → reserved / awaiting_pickup / rented / charging / maintenance / blocked / lost / stolen / retired
+reserved → available / awaiting_pickup / canceled / maintenance / blocked
+awaiting_pickup → rented / available / canceled / maintenance / blocked
+rented → available / overdue / charging / maintenance / lost / stolen
+overdue → available / charging / maintenance / blocked / lost / stolen / defaulted
+charging → available / maintenance
+maintenance → available / retired / blocked
+blocked → available / maintenance / retired
+lost → available / retired
+stolen → available / retired
+retired → (terminal, no transitions out)
+```
+- Status changes only via `POST /assets/:id/status` (PATCH ignores status field)
+- Archived assets cannot change status
+- Every transition logged to `asset_status_history`
+
 ## Rental Status Machine
-draft → pending_approval / awaiting_payment / canceled
+```
+draft → pending_approval / awaiting_payment / awaiting_pickup / canceled
 pending_approval → awaiting_payment / awaiting_pickup / canceled
 awaiting_payment → awaiting_pickup / canceled
 awaiting_pickup → active / canceled
@@ -248,6 +272,18 @@ extended → overdue / return_requested / completed / canceled
 overdue → return_requested / completed / defaulted
 return_requested → completed
 completed, canceled, defaulted — terminal states
+```
+- Transitions enforced by workflow action endpoints (approve/start/extend/return/cancel)
+- No free PATCH of status — each action validates preconditions
+- Every transition logged to `rental_status_history`
+
+### Rental Workflow Actions
+- **create**: validates asset availability, prevents duplicate active rental on same asset, checks blacklist (hard block or warning flags)
+- **approve**: draft/pending → awaiting_payment
+- **start**: awaiting_pickup → active; sets asset→rented; re-checks blacklist at start time
+- **extend**: active/extended → extended; updates plannedEndAt
+- **return**: active/extended/overdue/return_requested → completed; sets actualEndAt; validates returnedToStationId; sets asset to available/maintenance/charging
+- **cancel**: from any non-terminal status; rolls back asset to available if was active/extended/overdue
 
 ## Permissions (resource:action)
 

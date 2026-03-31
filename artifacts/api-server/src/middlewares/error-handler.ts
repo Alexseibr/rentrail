@@ -4,12 +4,14 @@ import { ZodError } from "zod/v4";
 
 export const errorHandler: ErrorRequestHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {
-    res.status(err.statusCode).json({
-      error: {
-        code: err.code,
-        message: err.message,
-      },
-    });
+    const body: Record<string, unknown> = {
+      code: err.code,
+      message: err.message,
+    };
+    if ("flags" in err && Array.isArray((err as { flags: unknown[] }).flags)) {
+      body.flags = (err as { flags: unknown[] }).flags;
+    }
+    res.status(err.statusCode).json({ error: body });
     return;
   }
 
