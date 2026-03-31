@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
 import { createTestUser, createTestTenant, assignRole } from "../../test/helpers";
-import { db, companies } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, companies, platformAuditLogs } from "@workspace/db";
+import { eq, and, desc } from "drizzle-orm";
 
 type CompanyStatus = typeof companies.$inferSelect.status;
 
@@ -218,6 +218,24 @@ describe("Platform Moderation", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe("blocked");
+    });
+
+    it("creates platform audit log for moderation action", async () => {
+      const logs = await db
+        .select()
+        .from(platformAuditLogs)
+        .where(
+          and(
+            eq(platformAuditLogs.targetCompanyId, targetCompanyId),
+            eq(platformAuditLogs.action, "company.block"),
+          ),
+        )
+        .orderBy(desc(platformAuditLogs.createdAt))
+        .limit(1);
+
+      expect(logs.length).toBe(1);
+      expect(logs[0].entityType).toBe("company");
+      expect(logs[0].actorUserId).toBe(platformAdmin.id);
     });
 
     it("unblocks a blocked company", async () => {
