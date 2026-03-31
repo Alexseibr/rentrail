@@ -89,7 +89,7 @@ export default function DashboardPage() {
   const unpaidInvoices = useQuery({
     queryKey: ["dashboard", "unpaid-invoices"],
     queryFn: () =>
-      api<{ items: Array<Record<string, unknown>>; total: number }>(
+      api<{ items: Array<Record<string, unknown>>; pagination: { total: number; totalPages: number } }>(
         "/platform/billing/invoices?status=issued&limit=5",
       ),
   });
@@ -97,7 +97,7 @@ export default function DashboardPage() {
   const recentCompanies = useQuery({
     queryKey: ["dashboard", "recent-companies"],
     queryFn: () =>
-      api<{ items: Array<Record<string, unknown>>; total: number }>(
+      api<{ items: Array<Record<string, unknown>>; pagination: { total: number; totalPages: number } }>(
         "/platform/companies?status=pending&limit=5",
       ),
   });
@@ -275,9 +275,9 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="text-base">
                   Unpaid Invoices
-                  {(unpaidInvoices.data?.total ?? 0) > 0 && (
+                  {(unpaidInvoices.data?.pagination?.total ?? 0) > 0 && (
                     <Badge variant="destructive" className="ml-2">
-                      {unpaidInvoices.data?.total}
+                      {unpaidInvoices.data?.pagination?.total}
                     </Badge>
                   )}
                 </CardTitle>
@@ -323,9 +323,9 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="text-base">
                   Pending Signups
-                  {(recentCompanies.data?.total ?? 0) > 0 && (
+                  {(recentCompanies.data?.pagination?.total ?? 0) > 0 && (
                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 ml-2">
-                      {recentCompanies.data?.total}
+                      {recentCompanies.data?.pagination?.total}
                     </Badge>
                   )}
                 </CardTitle>
