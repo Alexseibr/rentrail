@@ -100,6 +100,15 @@ describe("Platform Moderation", () => {
       expect(res.body.data.items.length).toBeLessThanOrEqual(2);
     });
 
+    it("filters by hasModeration flag", async () => {
+      const res = await request(testApp)
+        .get("/api/platform/companies?hasModeration=true")
+        .set("Authorization", `Bearer ${platformAdmin.token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.items).toBeDefined();
+    });
+
     it("regular user cannot list platform companies", async () => {
       const res = await request(testApp)
         .get("/api/platform/companies")
@@ -124,6 +133,8 @@ describe("Platform Moderation", () => {
       expect(Array.isArray(res.body.data.owners)).toBe(true);
       expect(res.body.data.moderationHistory).toBeDefined();
       expect(Array.isArray(res.body.data.recentActivity)).toBe(true);
+      expect(Array.isArray(res.body.data.modules)).toBe(true);
+      expect(res.body.data).toHaveProperty("subscription");
     });
 
     it("returns correct owner contact shape", async () => {
@@ -295,6 +306,54 @@ describe("Platform Moderation", () => {
         .send({ reasonCode: "test", reasonText: "Attempt to reactivate canceled" });
 
       expect(res.status).toBe(422);
+    });
+  });
+
+  describe("action-specific source-state guards", () => {
+    it("unblock rejects from pending status (transition allowed, but action is wrong)", async () => {
+      const tenant = await createTestTenant({ companyName: "Guard Unblock Pending Co" });
+      await forceCompanyStatus(tenant.company.id, "pending");
+      const res = await request(testApp)
+        .post(`/api/platform/companies/${tenant.company.id}/unblock`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ reasonCode: "test", reasonText: "Should fail: unblock only from blocked" });
+
+      expect(res.status).toBe(409);
+    });
+
+    it("unblock rejects from suspended status (transition allowed, but action is wrong)", async () => {
+      const tenant = await createTestTenant({ companyName: "Guard Unblock Suspended Co" });
+      await forceCompanyStatus(tenant.company.id, "suspended");
+      const res = await request(testApp)
+        .post(`/api/platform/companies/${tenant.company.id}/unblock`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ reasonCode: "test", reasonText: "Should fail: unblock only from blocked" });
+
+      expect(res.status).toBe(409);
+    });
+
+    it("approve rejects from suspended status (transition allowed, but action is wrong)", async () => {
+      const tenant = await createTestTenant({ companyName: "Guard Approve Suspended Co" });
+      await forceCompanyStatus(tenant.company.id, "suspended");
+      const sa = await createTestUser({ platformRoleCodes: ["superAdmin"] });
+      const res = await request(testApp)
+        .post(`/api/platform/companies/${tenant.company.id}/approve`)
+        .set("Authorization", `Bearer ${sa.token}`)
+        .send({ reasonCode: "test", reasonText: "Should fail: approve only from pending/trial" });
+
+      expect(res.status).toBe(409);
+    });
+
+    it("approve rejects from blocked status (blocked→active allowed, but approve is wrong action)", async () => {
+      const tenant = await createTestTenant({ companyName: "Guard Approve Blocked Co" });
+      await forceCompanyStatus(tenant.company.id, "blocked");
+      const sa = await createTestUser({ platformRoleCodes: ["superAdmin"] });
+      const res = await request(testApp)
+        .post(`/api/platform/companies/${tenant.company.id}/approve`)
+        .set("Authorization", `Bearer ${sa.token}`)
+        .send({ reasonCode: "test", reasonText: "Should fail: approve only from pending/trial" });
+
+      expect(res.status).toBe(409);
     });
   });
 

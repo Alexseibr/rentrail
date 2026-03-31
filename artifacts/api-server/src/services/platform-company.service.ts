@@ -11,6 +11,7 @@ import {
   auditLogs,
   companyModerationEvents,
   blacklistEntries,
+  companyModules,
   roles,
 } from "@workspace/db";
 import { eq, and, ilike, or, desc, count, sql, isNull } from "drizzle-orm";
@@ -28,16 +29,35 @@ const MODERATION_TRANSITIONS: Record<string, string[]> = {
   canceled: [],
 };
 
-function validateModerationTransition(from: string, to: string) {
+const ACTION_ALLOWED_FROM: Record<string, string[]> = {
+  approve: ["pending", "trial"],
+  block: ["pending", "trial", "active", "past_due", "suspended"],
+  unblock: ["blocked"],
+  suspend: ["trial", "active", "past_due"],
+  cancel: ["pending", "trial", "active", "past_due", "suspended", "blocked"],
+};
+
+function validateModerationTransition(from: string, to: string, action?: string) {
   const allowed = MODERATION_TRANSITIONS[from];
   if (!allowed || !allowed.includes(to)) {
     throw new InvalidStatusTransitionError(from, to, "company");
+  }
+  if (action) {
+    const actionAllowed = ACTION_ALLOWED_FROM[action];
+    if (actionAllowed && !actionAllowed.includes(from)) {
+      throw new AppError(
+        409,
+        `Action '${action}' is not allowed from status '${from}'`,
+        "INVALID_ACTION_FOR_STATUS",
+      );
+    }
   }
 }
 
 export interface PlatformCompanyListOptions {
   search?: string;
   status?: string;
+  hasModeration?: string;
   page?: number;
   limit?: number;
 }
@@ -53,11 +73,38 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
     conditions.push(eq(companies.status, opts.status as CompanyStatus));
   }
 
+  if (opts.hasModeration === "true") {
+    conditions.push(sql`${companies.moderatedAt} IS NOT NULL` as ReturnType<typeof eq>);
+  }
+
+  let ownerCompanyIds: string[] | undefined;
+  if (opts.search) {
+    const ownerMatches = await db
+      .select({ companyId: userCompanyMemberships.companyId })
+      .from(userCompanyMemberships)
+      .innerJoin(users, eq(users.id, userCompanyMemberships.userId))
+      .innerJoin(roles, eq(roles.id, userCompanyMemberships.roleId))
+      .where(
+        and(
+          eq(roles.code, "owner"),
+          or(
+            ilike(users.firstName, `%${opts.search}%`),
+            ilike(users.lastName, `%${opts.search}%`),
+            ilike(users.email, `%${opts.search}%`),
+          ),
+        ),
+      );
+    ownerCompanyIds = ownerMatches.map((m) => m.companyId);
+  }
+
   const searchConditions = opts.search
     ? or(
         ilike(companies.name, `%${opts.search}%`),
         ilike(companies.slug, `%${opts.search}%`),
         ilike(companies.email, `%${opts.search}%`),
+        ...(ownerCompanyIds && ownerCompanyIds.length > 0
+          ? [sql`${companies.id} = ANY(${ownerCompanyIds})` as ReturnType<typeof eq>]
+          : []),
       )
     : undefined;
 
@@ -201,6 +248,15 @@ export async function getPlatformCompanyDetail(companyId: string) {
     .orderBy(desc(auditLogs.createdAt))
     .limit(5);
 
+  const enabledModules = await db
+    .select({
+      moduleCode: companyModules.moduleCode,
+      enabled: companyModules.enabled,
+      enabledAt: companyModules.enabledAt,
+    })
+    .from(companyModules)
+    .where(eq(companyModules.companyId, companyId));
+
   return {
     ...company,
     owners: ownerMembers.map((o) => ({
@@ -218,6 +274,8 @@ export async function getPlatformCompanyDetail(companyId: string) {
       activeRentals: activeRentalCount?.count ?? 0,
       blacklistEntries: blacklistCount?.count ?? 0,
     },
+    modules: enabledModules,
+    subscription: null,
     moderationHistory,
     recentActivity,
   };
@@ -243,7 +301,7 @@ async function performModerationAction(
 
   if (!company) throw new NotFoundError("Company not found");
 
-  validateModerationTransition(company.status, targetStatus);
+  validateModerationTransition(company.status, targetStatus, actionName);
 
   const result = await db.transaction(async (tx) => {
     const [updated] = await tx
