@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { UnauthorizedError, ForbiddenError } from "../lib/errors";
+import { loadUserPlatformRoles } from "../lib/platform-roles";
 
 export interface PlatformContext {
   platformRoles: string[];
@@ -20,27 +21,29 @@ export function requirePlatformRole(...allowedRoles: string[]) {
       throw new UnauthorizedError();
     }
 
-    const userPlatformRoles: string[] = req.user.platformRoles ?? [];
+    (async () => {
+      const dbRoles = await loadUserPlatformRoles(req.user!.userId);
 
-    if (userPlatformRoles.length === 0) {
-      throw new ForbiddenError("Platform access required");
-    }
-
-    if (allowedRoles.length > 0) {
-      const hasAllowed = allowedRoles.some((role) => userPlatformRoles.includes(role));
-      if (!hasAllowed) {
-        throw new ForbiddenError("Insufficient platform role");
+      if (dbRoles.length === 0) {
+        throw new ForbiddenError("Platform access required");
       }
-    }
 
-    const activePlatformRole =
-      allowedRoles.find((r) => userPlatformRoles.includes(r)) ?? userPlatformRoles[0];
+      if (allowedRoles.length > 0) {
+        const hasAllowed = allowedRoles.some((role) => dbRoles.includes(role));
+        if (!hasAllowed) {
+          throw new ForbiddenError("Insufficient platform role");
+        }
+      }
 
-    req.platformContext = {
-      platformRoles: userPlatformRoles,
-      activePlatformRole,
-    };
+      const activePlatformRole =
+        allowedRoles.find((r) => dbRoles.includes(r)) ?? dbRoles[0];
 
-    next();
+      req.platformContext = {
+        platformRoles: dbRoles,
+        activePlatformRole,
+      };
+
+      next();
+    })().catch(next);
   };
 }
