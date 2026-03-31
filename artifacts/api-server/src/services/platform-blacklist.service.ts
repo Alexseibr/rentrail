@@ -1,12 +1,19 @@
-import { db, blacklistEntries } from "@workspace/db";
-import { eq, and, desc, count, sql, ilike, or, gte, lte, isNull } from "drizzle-orm";
-import { NotFoundError, AppError } from "../lib/errors";
+import { db, blacklistEntries, type BlacklistEntry } from "@workspace/db";
+import { eq, and, desc, count, sql, ilike, or, gte, lte } from "drizzle-orm";
+import { NotFoundError } from "../lib/errors";
+
+type ActionType = BlacklistEntry["actionType"];
+type ScopeType = BlacklistEntry["scopeType"];
 
 export interface GlobalBlacklistListOptions {
-  actionType?: string;
+  actionType?: ActionType;
   active?: boolean;
   reasonCode?: string;
   search?: string;
+  phone?: string;
+  email?: string;
+  document?: string;
+  fullName?: string;
   from?: Date;
   to?: Date;
   page?: number;
@@ -18,11 +25,16 @@ export async function listGlobalBlacklistEntries(opts: GlobalBlacklistListOption
   const limit = Math.min(opts.limit ?? 20, 100);
   const offset = (page - 1) * limit;
 
-  const conditions: ReturnType<typeof eq>[] = [eq(blacklistEntries.scopeType, "global")];
-  if (opts.actionType) conditions.push(eq(blacklistEntries.actionType, opts.actionType as any));
+  const conditions: ReturnType<typeof eq>[] = [eq(blacklistEntries.scopeType, "global" as ScopeType)];
+  if (opts.actionType) conditions.push(eq(blacklistEntries.actionType, opts.actionType));
   if (opts.reasonCode) conditions.push(eq(blacklistEntries.reasonCode, opts.reasonCode));
   if (opts.from) conditions.push(gte(blacklistEntries.createdAt, opts.from));
   if (opts.to) conditions.push(lte(blacklistEntries.createdAt, opts.to));
+
+  if (opts.phone) conditions.push(ilike(blacklistEntries.phoneSnapshot, `%${opts.phone}%`));
+  if (opts.email) conditions.push(ilike(blacklistEntries.emailSnapshot, `%${opts.email}%`));
+  if (opts.document) conditions.push(ilike(blacklistEntries.documentSnapshot, `%${opts.document}%`));
+  if (opts.fullName) conditions.push(ilike(blacklistEntries.fullNameSnapshot, `%${opts.fullName}%`));
 
   if (opts.active === true) {
     conditions.push(
@@ -69,7 +81,7 @@ export async function getGlobalBlacklistEntry(id: string) {
   const [entry] = await db
     .select()
     .from(blacklistEntries)
-    .where(and(eq(blacklistEntries.id, id), eq(blacklistEntries.scopeType, "global")))
+    .where(and(eq(blacklistEntries.id, id), eq(blacklistEntries.scopeType, "global" as ScopeType)))
     .limit(1);
 
   if (!entry) throw new NotFoundError("Global blacklist entry not found");
@@ -77,7 +89,7 @@ export async function getGlobalBlacklistEntry(id: string) {
 }
 
 export async function createGlobalBlacklistEntry(input: {
-  actionType: string;
+  actionType: ActionType;
   reasonCode: string;
   reasonText?: string;
   fullNameSnapshot?: string;
@@ -91,11 +103,11 @@ export async function createGlobalBlacklistEntry(input: {
   const [entry] = await db
     .insert(blacklistEntries)
     .values({
-      scopeType: "global",
+      scopeType: "global" as ScopeType,
       companyId: null,
       branchId: null,
       clientId: null,
-      actionType: input.actionType as any,
+      actionType: input.actionType,
       reasonCode: input.reasonCode,
       reasonText: input.reasonText ?? null,
       fullNameSnapshot: input.fullNameSnapshot ?? null,
@@ -112,7 +124,7 @@ export async function createGlobalBlacklistEntry(input: {
 }
 
 export async function updateGlobalBlacklistEntry(id: string, input: Partial<{
-  actionType: string;
+  actionType: ActionType;
   reasonCode: string;
   reasonText: string | null;
   fullNameSnapshot: string | null;
@@ -123,9 +135,19 @@ export async function updateGlobalBlacklistEntry(id: string, input: Partial<{
 }>) {
   const existing = await getGlobalBlacklistEntry(id);
 
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (input.actionType !== undefined) updateData.actionType = input.actionType;
+  if (input.reasonCode !== undefined) updateData.reasonCode = input.reasonCode;
+  if (input.reasonText !== undefined) updateData.reasonText = input.reasonText;
+  if (input.fullNameSnapshot !== undefined) updateData.fullNameSnapshot = input.fullNameSnapshot;
+  if (input.phoneSnapshot !== undefined) updateData.phoneSnapshot = input.phoneSnapshot;
+  if (input.emailSnapshot !== undefined) updateData.emailSnapshot = input.emailSnapshot;
+  if (input.documentSnapshot !== undefined) updateData.documentSnapshot = input.documentSnapshot;
+  if (input.endsAt !== undefined) updateData.endsAt = input.endsAt;
+
   const [updated] = await db
     .update(blacklistEntries)
-    .set({ ...input, updatedAt: new Date() } as any)
+    .set(updateData)
     .where(eq(blacklistEntries.id, id))
     .returning();
 

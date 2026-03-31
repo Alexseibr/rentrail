@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
-import { createTestUser, createTestTenant } from "../../test/helpers";
-import { db, saasPlans, saasSubscriptions } from "@workspace/db";
+import { createTestUser, createTestTenant, createTestClient } from "../../test/helpers";
+import { db, saasPlans, saasSubscriptions, blacklistEntries } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { checkClientBlacklist } from "../../services/blacklist.service";
 
 let platformAdmin: { token: string; id: string };
 let platformRisk: { token: string; id: string };
@@ -142,6 +143,22 @@ describe("Platform Global Blacklist", () => {
       .set("Authorization", `Bearer ${platformFinance.token}`);
     expect(res.status).toBe(403);
   });
+
+  it("filters by phone field", async () => {
+    const res = await request(testApp)
+      .get("/api/platform/blacklist?phone=1234567890")
+      .set("Authorization", `Bearer ${platformRisk.token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("filters by email field", async () => {
+    const res = await request(testApp)
+      .get("/api/platform/blacklist?email=john@fraud")
+      .set("Authorization", `Bearer ${platformRisk.token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe("Platform White-Label", () => {
@@ -235,6 +252,13 @@ describe("Platform White-Label", () => {
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(404);
   });
+
+  it("returns 404 for enable on non-existent company", async () => {
+    const res = await request(testApp)
+      .post("/api/platform/companies/00000000-0000-0000-0000-000000000000/white-label/enable")
+      .set("Authorization", `Bearer ${platformAdmin.token}`);
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("Platform Diagnostics", () => {
@@ -284,6 +308,19 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/diagnostics/invalid-service")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(422);
+  });
+
+  it("returns tenant health list", async () => {
+    const res = await request(testApp)
+      .get("/api/platform/health/tenants")
+      .set("Authorization", `Bearer ${platformAdmin.token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeInstanceOf(Array);
+    if (res.body.data.length > 0) {
+      expect(res.body.data[0]).toHaveProperty("healthStatus");
+      expect(res.body.data[0]).toHaveProperty("assets");
+      expect(res.body.data[0]).toHaveProperty("devices");
+    }
   });
 
   it("platformFinance cannot access diagnostics", async () => {
@@ -368,5 +405,40 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/overview")
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(403);
+  });
+});
+
+describe("Global blacklist cross-tenant enforcement", () => {
+  it("global entry matched by phone/email/document blocks tenant client", async () => {
+    const uniquePhone = `+1-cross-${Date.now()}`;
+    const uniqueEmail = `cross-${Date.now()}@test.com`;
+    const uniqueDoc = `DOC-CROSS-${Date.now()}`;
+
+    const client = await createTestClient(companyId, {
+      fullName: "Cross Tenant Victim",
+      phone: uniquePhone,
+      email: uniqueEmail,
+    });
+
+    await db.insert(blacklistEntries).values({
+      scopeType: "global",
+      companyId: null,
+      branchId: null,
+      clientId: null,
+      actionType: "blocked_global",
+      reasonCode: "cross-tenant-fraud",
+      phoneSnapshot: uniquePhone,
+      emailSnapshot: uniqueEmail,
+      documentSnapshot: uniqueDoc,
+      fullNameSnapshot: "Cross Tenant Victim",
+      startsAt: new Date(),
+      createdByUserId: platformRisk.id,
+    });
+
+    const decision = await checkClientBlacklist(client.id, companyId);
+    expect(decision.isBlacklisted).toBe(true);
+    expect(decision.isBlocked).toBe(true);
+    expect(decision.strongestAction).toBe("blocked_global");
+    expect(decision.entries.some((e) => e.scopeType === "global")).toBe(true);
   });
 });

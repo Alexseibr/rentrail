@@ -58,6 +58,43 @@ export async function getPlatformHealthSummary() {
   };
 }
 
+export async function getTenantHealthList() {
+  const rows = await db
+    .select({
+      id: companies.id,
+      name: companies.name,
+      slug: companies.slug,
+      status: companies.status,
+      plan: companies.plan,
+      createdAt: companies.createdAt,
+    })
+    .from(companies)
+    .orderBy(companies.name);
+
+  const enriched = [];
+  for (const row of rows) {
+    const [assetCount] = await db.select({ count: count() }).from(assets).where(eq(assets.companyId, row.id));
+    const [deviceCount] = await db.select({ count: count() }).from(devices).where(eq(devices.companyId, row.id));
+    const [offlineCount] = await db.select({ count: count() }).from(devices).where(and(eq(devices.companyId, row.id), eq(devices.status, "offline")));
+
+    let healthStatus: "healthy" | "degraded" | "unhealthy" = "healthy";
+    const totalDevices = deviceCount?.count ?? 0;
+    const offlineDevices = offlineCount?.count ?? 0;
+    if (totalDevices > 0 && offlineDevices / totalDevices > 0.5) healthStatus = "unhealthy";
+    else if (totalDevices > 0 && offlineDevices / totalDevices > 0.2) healthStatus = "degraded";
+
+    enriched.push({
+      ...row,
+      assets: assetCount?.count ?? 0,
+      devices: totalDevices,
+      offlineDevices,
+      healthStatus,
+    });
+  }
+
+  return enriched;
+}
+
 export function getServiceStatus(serviceName: string) {
   const serviceStubs: Record<string, { name: string; status: string; message: string; lastChecked: string }> = {
     email: { name: "Email Service", status: "not_configured", message: "Email integration not configured", lastChecked: new Date().toISOString() },

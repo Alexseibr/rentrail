@@ -38,6 +38,11 @@ router.get(
     const metric = (req.query.metric as "rentals" | "assets") ?? "rentals";
     const limit = req.query.limit ? Number(req.query.limit) : 10;
     const data = await analyticsService.getTopTenants(metric, limit);
+    await createPlatformAuditLog(req, {
+      action: "platform.analytics.tenants",
+      entityType: "platform",
+      metadata: { metric, limit },
+    });
     res.json({ data });
   },
 );
@@ -62,6 +67,10 @@ router.get(
   analyticsRoles,
   async (req, res) => {
     const data = await analyticsService.getUsageMetrics();
+    await createPlatformAuditLog(req, {
+      action: "platform.analytics.usage",
+      entityType: "platform",
+    });
     res.json({ data });
   },
 );

@@ -76,7 +76,13 @@ export interface BlacklistDecision {
 export async function checkClientBlacklist(clientId: string, companyId: string, branchId?: string): Promise<BlacklistDecision> {
   const now = new Date();
 
-  const entries = await db
+  const [client] = await db
+    .select({ phone: clients.phone, email: clients.email, documentNumber: clients.documentNumber })
+    .from(clients)
+    .where(eq(clients.id, clientId))
+    .limit(1);
+
+  const clientScopedEntries = await db
     .select()
     .from(blacklistEntries)
     .where(
@@ -89,7 +95,36 @@ export async function checkClientBlacklist(clientId: string, companyId: string, 
       ),
     );
 
-  const activeEntries = entries.filter((e) => {
+  const globalIdentityConditions: ReturnType<typeof eq>[] = [];
+  if (client?.phone) globalIdentityConditions.push(eq(blacklistEntries.phoneSnapshot, client.phone));
+  if (client?.email) globalIdentityConditions.push(eq(blacklistEntries.emailSnapshot, client.email));
+  if (client?.documentNumber) globalIdentityConditions.push(eq(blacklistEntries.documentSnapshot, client.documentNumber));
+
+  let globalEntries: typeof clientScopedEntries = [];
+  if (globalIdentityConditions.length > 0) {
+    globalEntries = await db
+      .select()
+      .from(blacklistEntries)
+      .where(
+        and(
+          eq(blacklistEntries.scopeType, "global"),
+          or(...globalIdentityConditions),
+          or(
+            isNull(blacklistEntries.endsAt),
+            gt(blacklistEntries.endsAt, now),
+          ),
+        ),
+      );
+  }
+
+  const seenIds = new Set<string>();
+  const allEntries = [...clientScopedEntries, ...globalEntries].filter((e) => {
+    if (seenIds.has(e.id)) return false;
+    seenIds.add(e.id);
+    return true;
+  });
+
+  const activeEntries = allEntries.filter((e) => {
     if (e.startsAt > now) return false;
 
     if (e.scopeType === "global") return true;

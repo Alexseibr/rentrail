@@ -23,6 +23,10 @@ const listQuery = z.object({
   active: z.enum(["true", "false"]).optional(),
   reasonCode: z.string().optional(),
   search: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  document: z.string().optional(),
+  fullName: z.string().optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
 });
@@ -62,6 +66,10 @@ router.get(
       active: req.query.active === "true" ? true : req.query.active === "false" ? false : undefined,
       reasonCode: req.query.reasonCode as string | undefined,
       search: req.query.search as string | undefined,
+      phone: req.query.phone as string | undefined,
+      email: req.query.email as string | undefined,
+      document: req.query.document as string | undefined,
+      fullName: req.query.fullName as string | undefined,
       from: req.query.from ? new Date(req.query.from as string) : undefined,
       to: req.query.to ? new Date(req.query.to as string) : undefined,
       page: req.query.page ? Number(req.query.page) : undefined,
@@ -98,6 +106,11 @@ router.get(
   validate({ params: idParams }),
   async (req, res) => {
     const entry = await platformBlacklistService.getGlobalBlacklistEntry(req.params.id);
+    await createPlatformAuditLog(req, {
+      action: "platform.blacklist.view",
+      entityType: "blacklist_entry",
+      entityId: entry.id,
+    });
     res.json({ data: entry });
   },
 );

@@ -30,11 +30,29 @@ router.get(
 );
 
 router.get(
+  "/platform/health/tenants",
+  authenticate,
+  adminRoles,
+  async (req, res) => {
+    const tenants = await diagService.getTenantHealthList();
+    await createPlatformAuditLog(req, {
+      action: "platform.health.tenants",
+      entityType: "platform",
+    });
+    res.json({ data: tenants });
+  },
+);
+
+router.get(
   "/platform/health/services",
   authenticate,
   adminRoles,
   async (req, res) => {
     const services = diagService.getAllServiceStatuses();
+    await createPlatformAuditLog(req, {
+      action: "platform.health.services",
+      entityType: "platform",
+    });
     res.json({ data: services });
   },
 );
