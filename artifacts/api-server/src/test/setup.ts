@@ -6,6 +6,7 @@ const PRESERVED_TABLES = new Set([
   "roles",
   "permissions",
   "role_permissions",
+  "platform_roles",
 ]);
 
 export async function cleanDatabase() {

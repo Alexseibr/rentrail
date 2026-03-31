@@ -1,4 +1,4 @@
-import { db, users, companies, branches, stations, roles, permissions, rolePermissions, userCompanyMemberships, userBranchMemberships, clients, assets } from "@workspace/db";
+import { db, users, companies, branches, stations, roles, permissions, rolePermissions, userCompanyMemberships, userBranchMemberships, clients, assets, platformRoles, platformUserRoles } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { signAccessToken } from "../lib/jwt";
@@ -41,6 +41,7 @@ export async function createTestUser(opts: {
   isSuperAdmin?: boolean;
   firstName?: string;
   lastName?: string;
+  platformRoleCodes?: string[];
 }): Promise<TestUser> {
   const email = opts.email ?? `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`;
   const password = opts.password ?? "TestPass123!";
@@ -57,10 +58,26 @@ export async function createTestUser(opts: {
     })
     .returning();
 
+  const assignedRoleCodes: string[] = [];
+  if (opts.platformRoleCodes && opts.platformRoleCodes.length > 0) {
+    for (const code of opts.platformRoleCodes) {
+      const [role] = await db.select().from(platformRoles).where(eq(platformRoles.code, code)).limit(1);
+      if (role) {
+        await db.insert(platformUserRoles).values({
+          userId: user.id,
+          platformRoleId: role.id,
+          isActive: true,
+        });
+        assignedRoleCodes.push(code);
+      }
+    }
+  }
+
   const payload: AccessTokenPayload = {
     userId: user.id,
     email: user.email,
     isSuperAdmin: user.isSuperAdmin,
+    platformRoles: assignedRoleCodes,
   };
   const token = signAccessToken(payload);
 

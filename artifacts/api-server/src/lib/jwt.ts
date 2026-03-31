@@ -5,6 +5,7 @@ export interface AccessTokenPayload {
   userId: string;
   email: string;
   isSuperAdmin: boolean;
+  platformRoles: string[];
 }
 
 export interface RefreshTokenPayload {

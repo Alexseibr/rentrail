@@ -38,4 +38,6 @@ export * from "./device-commands";
 export * from "./provider-api-keys";
 export * from "./attachments";
 export * from "./push-device-tokens";
+export * from "./platform-roles";
+export * from "./platform-audit-logs";
 export * from "./relations";

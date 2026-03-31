@@ -36,6 +36,8 @@ import { batteryEvents } from "./battery-events";
 import { geofences } from "./geofences";
 import { deviceCommands } from "./device-commands";
 import { providerApiKeys } from "./provider-api-keys";
+import { platformRoles, platformUserRoles } from "./platform-roles";
+import { platformAuditLogs } from "./platform-audit-logs";
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
   settings: many(companySettings),
@@ -283,4 +285,19 @@ export const deviceCommandsRelations = relations(deviceCommands, ({ one }) => ({
 
 export const providerApiKeysRelations = relations(providerApiKeys, ({ one }) => ({
   company: one(companies, { fields: [providerApiKeys.companyId], references: [companies.id] }),
+}));
+
+export const platformRolesRelations = relations(platformRoles, ({ many }) => ({
+  userRoles: many(platformUserRoles),
+}));
+
+export const platformUserRolesRelations = relations(platformUserRoles, ({ one }) => ({
+  user: one(users, { fields: [platformUserRoles.userId], references: [users.id] }),
+  platformRole: one(platformRoles, { fields: [platformUserRoles.platformRoleId], references: [platformRoles.id] }),
+  grantedByUser: one(users, { fields: [platformUserRoles.grantedBy], references: [users.id] }),
+}));
+
+export const platformAuditLogsRelations = relations(platformAuditLogs, ({ one }) => ({
+  actorUser: one(users, { fields: [platformAuditLogs.actorUserId], references: [users.id] }),
+  targetCompany: one(companies, { fields: [platformAuditLogs.targetCompanyId], references: [companies.id] }),
 }));

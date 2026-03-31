@@ -50,6 +50,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 - **Company Configuration:** Per-company settings, branding customization, and modular feature toggles.
 - **Notifications:** In-app notification system for users.
 - **Audit Logging:** Detailed audit trails for critical actions, capturing before/after states and actor information.
+- **Platform Access Model:** Separate platform-level RBAC with five platform roles (superAdmin, platformAdmin, platformSupport, platformFinance, platformRisk) stored in `platform_roles` / `platform_user_roles` tables. Platform roles are independent from tenant company memberships — a user can hold both. JWT tokens include `platformRoles: string[]`. `requirePlatformRole(...roles)` middleware protects platform endpoints. All platform actions are logged to `platform_audit_logs` with full actor/action/reason/before/after context.
 
 ## External Dependencies
 
@@ -75,7 +76,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
 
 ### Test Commands
-- `pnpm test` — Run all 179 tests (8 suites)
+- `pnpm test` — Run all 198 tests (9 suites)
 - `pnpm test:unit` — Unit tests only (pure logic, no DB)
 - `pnpm test:api` — API integration tests (supertest against real DB)
 - `pnpm test:integration` — Integration tests (DB-backed)

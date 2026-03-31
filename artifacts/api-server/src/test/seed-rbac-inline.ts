@@ -1,4 +1,4 @@
-import { db, roles, permissions, rolePermissions } from "@workspace/db";
+import { db, roles, permissions, rolePermissions, platformRoles } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
 const SYSTEM_ROLES = [
@@ -192,6 +192,21 @@ export async function seedRolesAndPermissions() {
       if (existing.length === 0) {
         await db.insert(rolePermissions).values({ roleId, permissionId: permId });
       }
+    }
+  }
+
+  const PLATFORM_ROLES = [
+    { code: "superAdmin", name: "Super Admin", description: "Full platform access with all capabilities" },
+    { code: "platformAdmin", name: "Platform Admin", description: "Platform administration and tenant management" },
+    { code: "platformSupport", name: "Platform Support", description: "Read-only tenant inspection and support tools" },
+    { code: "platformFinance", name: "Platform Finance", description: "SaaS billing, invoices, and subscription management" },
+    { code: "platformRisk", name: "Platform Risk", description: "Global blacklist and risk management" },
+  ];
+
+  for (const role of PLATFORM_ROLES) {
+    const existing = await db.select().from(platformRoles).where(eq(platformRoles.code, role.code)).limit(1);
+    if (existing.length === 0) {
+      await db.insert(platformRoles).values(role);
     }
   }
 }

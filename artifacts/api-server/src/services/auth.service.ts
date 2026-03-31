@@ -6,6 +6,7 @@ import { eq, and, isNull } from "drizzle-orm";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { config } from "../lib/config";
 import { ConflictError, UnauthorizedError, NotFoundError } from "../lib/errors";
+import { loadUserPlatformRoles } from "../lib/platform-roles";
 
 function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -81,6 +82,8 @@ export async function login(
     throw new UnauthorizedError("Invalid email or password");
   }
 
+  const platformRoles = await loadUserPlatformRoles(user.id);
+
   const rawRefreshToken = uuidv4();
   const refreshTokenHash = hashToken(rawRefreshToken);
   const expiresAt = new Date(Date.now() + config.jwt.refreshExpiresInMs);
@@ -100,6 +103,7 @@ export async function login(
     userId: user.id,
     email: user.email,
     isSuperAdmin: user.isSuperAdmin,
+    platformRoles,
   });
 
   const refreshToken = signRefreshToken({
@@ -169,6 +173,8 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
     throw new UnauthorizedError("User not found");
   }
 
+  const userPlatformRoles = await loadUserPlatformRoles(user.id);
+
   const newRawToken = uuidv4();
   const newTokenHash = hashToken(newRawToken);
   const expiresAt = new Date(Date.now() + config.jwt.refreshExpiresInMs);
@@ -192,6 +198,7 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
     userId: user.id,
     email: user.email,
     isSuperAdmin: user.isSuperAdmin,
+    platformRoles: userPlatformRoles,
   });
 
   const newRefreshToken = signRefreshToken({
@@ -264,9 +271,12 @@ export async function getCurrentUser(userId: string) {
     .innerJoin(roles, eq(roles.id, userBranchMemberships.roleId))
     .where(eq(userBranchMemberships.userId, userId));
 
+  const userPlatformRoles = await loadUserPlatformRoles(userId);
+
   return {
     ...user,
     memberships,
     branchMemberships,
+    platformRoles: userPlatformRoles,
   };
 }

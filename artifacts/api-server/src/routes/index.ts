@@ -25,6 +25,7 @@ import scanRouter from "./scan";
 import pushTokensRouter from "./push-tokens";
 import attachmentsRouter from "./attachments";
 import storageRouter from "./storage";
+import platformAuditRouter from "./platform-audit";
 
 const router: IRouter = Router();
 
@@ -54,5 +55,6 @@ router.use(scanRouter);
 router.use(pushTokensRouter);
 router.use(attachmentsRouter);
 router.use(storageRouter);
+router.use(platformAuditRouter);
 
 export default router;
