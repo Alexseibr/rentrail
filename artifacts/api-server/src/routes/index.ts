@@ -27,6 +27,7 @@ import attachmentsRouter from "./attachments";
 import storageRouter from "./storage";
 import platformAuditRouter from "./platform-audit";
 import platformSupportRouter from "./platform-support";
+import platformBillingRouter from "./platform-billing";
 import auditLogsRouter from "./audit-logs";
 
 const router: IRouter = Router();
@@ -59,6 +60,7 @@ router.use(attachmentsRouter);
 router.use(storageRouter);
 router.use(platformAuditRouter);
 router.use(platformSupportRouter);
+router.use(platformBillingRouter);
 router.use(auditLogsRouter);
 
 export default router;

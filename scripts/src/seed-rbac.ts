@@ -1,4 +1,4 @@
-import { db, roles, permissions, rolePermissions, platformRoles } from "@workspace/db";
+import { db, roles, permissions, rolePermissions, platformRoles, saasPlans } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const SYSTEM_ROLES = [
@@ -230,6 +230,69 @@ async function seed() {
       console.log(`  Created platform role: ${role.code}`);
     } else {
       console.log(`  Platform role exists: ${role.code}`);
+    }
+  }
+
+  console.log("Seeding SaaS plans...");
+
+  const SAAS_PLANS = [
+    {
+      name: "Basic",
+      code: "basic",
+      description: "For small operators getting started",
+      price: 4900,
+      currency: "USD",
+      billingInterval: "monthly" as const,
+      maxBranches: 2,
+      maxStations: 5,
+      maxAssets: 50,
+      maxUsers: 5,
+      limits: { rentalsPerMonth: 500, apiCallsPerDay: 5000 },
+      enabledModules: ["organization", "crm", "fleet", "operations"],
+      supportTier: "standard",
+      whiteLabelAvailable: false,
+    },
+    {
+      name: "Pro",
+      code: "pro",
+      description: "For growing rental businesses",
+      price: 14900,
+      currency: "USD",
+      billingInterval: "monthly" as const,
+      maxBranches: 10,
+      maxStations: 50,
+      maxAssets: 500,
+      maxUsers: 25,
+      limits: { rentalsPerMonth: 5000, apiCallsPerDay: 50000 },
+      enabledModules: ["organization", "crm", "fleet", "operations", "finance", "telemetry", "geofencing", "commands"],
+      supportTier: "priority",
+      whiteLabelAvailable: false,
+    },
+    {
+      name: "Enterprise",
+      code: "enterprise",
+      description: "Unlimited scale with full platform capabilities",
+      price: 49900,
+      currency: "USD",
+      billingInterval: "monthly" as const,
+      maxBranches: -1,
+      maxStations: -1,
+      maxAssets: -1,
+      maxUsers: -1,
+      limits: { rentalsPerMonth: -1, apiCallsPerDay: -1 },
+      enabledModules: ["organization", "crm", "fleet", "operations", "finance", "telemetry", "geofencing", "commands", "notifications"],
+      supportTier: "dedicated",
+      whiteLabelAvailable: true,
+    },
+  ];
+
+  for (const plan of SAAS_PLANS) {
+    const existing = await db.select().from(saasPlans).where(eq(saasPlans.code, plan.code)).limit(1);
+    if (existing.length === 0) {
+      await db.insert(saasPlans).values(plan);
+      console.log(`  Created SaaS plan: ${plan.code} ($${(plan.price / 100).toFixed(2)}/mo)`);
+    } else {
+      console.log(`  SaaS plan exists: ${plan.code}`);
     }
   }
 

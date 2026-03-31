@@ -62,6 +62,17 @@ The platform includes a mobile staff application built with Expo/React Native, f
     - **Platform Endpoints (10):** `GET/PATCH /platform/companies/:id`, `POST /platform/companies/:id/{approve,block,unblock,suspend,cancel}`, `GET /platform/companies/:id/{usage,health}`. Moderation actions require `superAdmin`/`platformAdmin` (cancel requires `superAdmin` only).
     - **Support Inspection (3):** `GET /platform/support/tenants/:id/{summary,audit,health}` — accessible by `superAdmin`, `platformAdmin`, `platformSupport`.
     - **Service:** `platform-company.service.ts` — listPlatformCompanies (search/filter/pagination/counts), getPlatformCompanyDetail, moderation actions, getCompanyUsage, getCompanyHealthSummary, getTenantSummary, getTenantAuditLog, getTenantHealth.
+- **SaaS Billing Foundation (Task #3):**
+    - **Schema:** 3 new enums (`saas_billing_interval`, `saas_subscription_status`, `saas_invoice_status`) and 4 new tables (`saas_plans`, `saas_subscriptions`, `saas_invoices`, `saas_payments`) in `lib/db/src/schema/`.
+    - **Plans:** CRUD at `GET/POST /platform/billing/plans`, `PATCH /platform/billing/plans/:id`. Plans have code (unique), price (integer cents), billing interval, resource limits (maxBranches/maxStations/maxAssets/maxUsers), enabled modules, support tier, and white-label flag. Seed data: Basic ($49/mo), Pro ($149/mo), Enterprise ($499/mo).
+    - **Subscriptions:** `GET /platform/billing/subscriptions` (list with filters), `GET/PATCH /platform/billing/subscriptions/:id` (detail/update periods), `POST .../activate`, `.../past-due`, `.../cancel` (status lifecycle). Status flow: `trial → active → past_due → canceled`. `past_due → active` recovery allowed. `canceled` is terminal.
+    - **Invoices:** `GET/POST /platform/billing/invoices`, `GET /platform/billing/invoices/:id` (with payments), `POST .../issue`, `.../mark-paid`, `.../void`. Status flow: `draft → issued → paid`. `issued/overdue → paid`. Void allowed from draft/issued/overdue but not paid.
+    - **Payments:** `GET /platform/billing/payments` with company/invoice filters. Created automatically via mark-paid.
+    - **Company set-plan:** `POST /platform/companies/:id/set-plan` — assigns plan, creates subscription, updates `companies.plan` column. Requires superAdmin/platformAdmin.
+    - **Access Control:** All billing endpoints require `superAdmin`, `platformAdmin`, or `platformFinance` platform role. `set-plan` restricted to `superAdmin`/`platformAdmin` only.
+    - **Service:** `billing.service.ts` — plan CRUD, subscription lifecycle with state machine transitions, invoice lifecycle, payment queries, `getPlanLimitsForCompany`.
+    - **Audit:** All billing operations logged to `platform_audit_logs` with action prefix `billing.*`.
+    - **321 tests across 12 suites** (37 new billing tests).
 
 ## External Dependencies
 
@@ -87,7 +98,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
 
 ### Test Commands
-- `pnpm test` — Run all 276 tests (11 suites)
+- `pnpm test` — Run all 321 tests (12 suites)
 - `pnpm test:unit` — Unit tests only (pure logic, no DB)
 - `pnpm test:api` — API integration tests (supertest against real DB)
 - `pnpm test:integration` — Integration tests (DB-backed)

@@ -278,3 +278,24 @@ export const commandStatusEnum = pgEnum("command_status", [
   "expired",
   "canceled",
 ]);
+
+export const saasBillingIntervalEnum = pgEnum("saas_billing_interval", [
+  "monthly",
+  "quarterly",
+  "yearly",
+]);
+
+export const saasSubscriptionStatusEnum = pgEnum("saas_subscription_status", [
+  "trial",
+  "active",
+  "past_due",
+  "canceled",
+]);
+
+export const saasInvoiceStatusEnum = pgEnum("saas_invoice_status", [
+  "draft",
+  "issued",
+  "paid",
+  "void",
+  "overdue",
+]);
