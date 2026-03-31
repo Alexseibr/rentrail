@@ -280,6 +280,8 @@ describe("Platform Diagnostics", () => {
     expect(res.body.data.devices).toBeDefined();
     expect(res.body.data.build).toBeDefined();
     expect(typeof res.body.data.build.uptime).toBe("number");
+    expect(res.body.data.services).toBeInstanceOf(Array);
+    expect(res.body.data.services.length).toBe(5);
   });
 
   it("returns all service statuses", async () => {

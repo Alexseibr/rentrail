@@ -49,6 +49,7 @@ export async function getPlatformHealthSummary() {
       offline: offlineDevices?.count ?? 0,
     },
     mrrEstimate,
+    services: getAllServiceStatuses(),
     build: {
       version: process.env.APP_VERSION ?? "dev",
       nodeVersion: process.version,
@@ -59,6 +60,25 @@ export async function getPlatformHealthSummary() {
 }
 
 export async function getTenantHealthList() {
+  const assetCounts = db
+    .select({
+      companyId: assets.companyId,
+      count: count().as("asset_count"),
+    })
+    .from(assets)
+    .groupBy(assets.companyId)
+    .as("asset_counts");
+
+  const deviceCounts = db
+    .select({
+      companyId: devices.companyId,
+      total: count().as("device_total"),
+      offline: sql<number>`COUNT(*) FILTER (WHERE ${devices.status} = 'offline')`.as("device_offline"),
+    })
+    .from(devices)
+    .groupBy(devices.companyId)
+    .as("device_counts");
+
   const rows = await db
     .select({
       id: companies.id,
@@ -67,32 +87,22 @@ export async function getTenantHealthList() {
       status: companies.status,
       plan: companies.plan,
       createdAt: companies.createdAt,
+      assets: sql<number>`COALESCE(${assetCounts.count}, 0)`.mapWith(Number),
+      devices: sql<number>`COALESCE(${deviceCounts.total}, 0)`.mapWith(Number),
+      offlineDevices: sql<number>`COALESCE(${deviceCounts.offline}, 0)`.mapWith(Number),
     })
     .from(companies)
+    .leftJoin(assetCounts, eq(assetCounts.companyId, companies.id))
+    .leftJoin(deviceCounts, eq(deviceCounts.companyId, companies.id))
     .orderBy(companies.name);
 
-  const enriched = [];
-  for (const row of rows) {
-    const [assetCount] = await db.select({ count: count() }).from(assets).where(eq(assets.companyId, row.id));
-    const [deviceCount] = await db.select({ count: count() }).from(devices).where(eq(devices.companyId, row.id));
-    const [offlineCount] = await db.select({ count: count() }).from(devices).where(and(eq(devices.companyId, row.id), eq(devices.status, "offline")));
-
+  return rows.map((row) => {
     let healthStatus: "healthy" | "degraded" | "unhealthy" = "healthy";
-    const totalDevices = deviceCount?.count ?? 0;
-    const offlineDevices = offlineCount?.count ?? 0;
-    if (totalDevices > 0 && offlineDevices / totalDevices > 0.5) healthStatus = "unhealthy";
-    else if (totalDevices > 0 && offlineDevices / totalDevices > 0.2) healthStatus = "degraded";
+    if (row.devices > 0 && row.offlineDevices / row.devices > 0.5) healthStatus = "unhealthy";
+    else if (row.devices > 0 && row.offlineDevices / row.devices > 0.2) healthStatus = "degraded";
 
-    enriched.push({
-      ...row,
-      assets: assetCount?.count ?? 0,
-      devices: totalDevices,
-      offlineDevices,
-      healthStatus,
-    });
-  }
-
-  return enriched;
+    return { ...row, healthStatus };
+  });
 }
 
 export function getServiceStatus(serviceName: string) {
