@@ -21,6 +21,9 @@ import geofencesRouter from "./geofences";
 import commandsRouter from "./commands";
 import reportsRouter from "./reports";
 import providerApiKeysRouter from "./provider-api-keys";
+import scanRouter from "./scan";
+import pushTokensRouter from "./push-tokens";
+import attachmentsRouter from "./attachments";
 
 const router: IRouter = Router();
 
@@ -46,5 +49,8 @@ router.use(geofencesRouter);
 router.use(commandsRouter);
 router.use(reportsRouter);
 router.use(providerApiKeysRouter);
+router.use(scanRouter);
+router.use(pushTokensRouter);
+router.use(attachmentsRouter);
 
 export default router;

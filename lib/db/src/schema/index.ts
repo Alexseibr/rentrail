@@ -36,4 +36,6 @@ export * from "./battery-events";
 export * from "./geofences";
 export * from "./device-commands";
 export * from "./provider-api-keys";
+export * from "./attachments";
+export * from "./push-device-tokens";
 export * from "./relations";
