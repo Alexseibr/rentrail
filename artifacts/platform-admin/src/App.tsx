@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { AppLayout } from "@/components/app-layout";
 import LoginPage from "@/pages/login";
+import AccessDeniedPage from "@/pages/access-denied";
 import DashboardPage from "@/pages/dashboard";
 import CompaniesPage from "@/pages/companies";
 import CompanyDetailPage from "@/pages/company-detail";
@@ -44,7 +45,7 @@ function AuthenticatedApp() {
 }
 
 function AppRouter() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, hasPlatformAccess } = useAuth();
 
   if (isLoading) {
     return (
@@ -56,6 +57,10 @@ function AppRouter() {
 
   if (!user) {
     return <LoginPage />;
+  }
+
+  if (!hasPlatformAccess) {
+    return <AccessDeniedPage />;
   }
 
   return <AuthenticatedApp />;

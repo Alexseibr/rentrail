@@ -15,9 +15,18 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  hasPlatformAccess: boolean;
 }
 
+const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
+
 const AuthContext = createContext<AuthContextType | null>(null);
+
+function checkPlatformAccess(user: User | null): boolean {
+  if (!user) return false;
+  if (user.isSuperAdmin) return true;
+  return (user.platformRoles || []).some((r) => PLATFORM_ROLES.includes(r));
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -26,20 +35,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLogout = useCallback(() => {
     clearTokens();
     setUser(null);
-    localStorage.removeItem("pa_session");
+    try { sessionStorage.removeItem("pa_session"); } catch {}
   }, []);
 
   useEffect(() => {
     setAuthExpiredHandler(handleLogout);
-    const saved = localStorage.getItem("pa_session");
-    if (saved) {
-      try {
+    try {
+      const saved = sessionStorage.getItem("pa_session");
+      if (saved) {
         const session = JSON.parse(saved);
         setTokens(session.accessToken, session.refreshToken);
         setUser(session.user);
-      } catch {
-        localStorage.removeItem("pa_session");
       }
+    } catch {
+      sessionStorage.removeItem("pa_session");
     }
     setIsLoading(false);
   }, [handleLogout]);
@@ -55,14 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setTokens(result.accessToken, result.refreshToken);
     setUser(result.user);
-    localStorage.setItem(
-      "pa_session",
-      JSON.stringify({
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-        user: result.user,
-      }),
-    );
+    try {
+      sessionStorage.setItem(
+        "pa_session",
+        JSON.stringify({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: result.user,
+        }),
+      );
+    } catch {}
   }, []);
 
   const logout = useCallback(() => {
@@ -70,8 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     handleLogout();
   }, [handleLogout]);
 
+  const hasPlatformAccess = checkPlatformAccess(user);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, hasPlatformAccess }}>
       {children}
     </AuthContext.Provider>
   );

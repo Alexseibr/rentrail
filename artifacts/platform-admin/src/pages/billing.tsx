@@ -340,6 +340,12 @@ function InvoicesTab() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] }),
   });
 
+  const voidMutation = useMutation({
+    mutationFn: (id: string) =>
+      api(`/platform/billing/invoices/${id}/void`, { method: "POST" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] }),
+  });
+
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
@@ -401,21 +407,45 @@ function InvoicesTab() {
                       : "-"}
                   </TableCell>
                   <TableCell>
-                    {inv.status === "issued" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          markPaidMutation.mutate({
-                            id: inv.id as string,
-                            amount: inv.amount as number,
-                          })
-                        }
-                        disabled={markPaidMutation.isPending}
-                      >
-                        Mark Paid
-                      </Button>
-                    )}
+                    <div className="flex gap-1">
+                      {inv.status === "issued" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              markPaidMutation.mutate({
+                                id: inv.id as string,
+                                amount: inv.amount as number,
+                              })
+                            }
+                            disabled={markPaidMutation.isPending}
+                          >
+                            Mark Paid
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => voidMutation.mutate(inv.id as string)}
+                            disabled={voidMutation.isPending}
+                          >
+                            Void
+                          </Button>
+                        </>
+                      )}
+                      {inv.status === "draft" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => voidMutation.mutate(inv.id as string)}
+                          disabled={voidMutation.isPending}
+                        >
+                          Void
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -460,12 +490,105 @@ function InvoicesTab() {
   );
 }
 
+function PaymentsTab() {
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["billing", "payments", page],
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      return api<{ items: Array<Record<string, unknown>>; total: number }>(
+        `/platform/billing/payments?${params}`,
+      );
+    },
+  });
+
+  const items = Array.isArray(data) ? data : (data?.items || []);
+  const total = Array.isArray(data) ? data.length : (data?.total || 0);
+  const totalPages = Math.ceil(total / limit);
+
+  if (isLoading) return <Skeleton className="h-48 w-full" />;
+
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Company</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Method</TableHead>
+              <TableHead>Reference</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((payment) => (
+              <TableRow key={payment.id as string}>
+                <TableCell className="font-medium">
+                  {(payment.companyName as string) || (payment.companyId as string) || "-"}
+                </TableCell>
+                <TableCell>
+                  {formatCurrency(payment.amount as number, payment.currency as string)}
+                </TableCell>
+                <TableCell className="capitalize">{(payment.method as string) || "-"}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {(payment.reference as string) || "-"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {payment.createdAt
+                    ? new Date(payment.createdAt as string).toLocaleDateString()
+                    : "-"}
+                </TableCell>
+              </TableRow>
+            ))}
+            {items.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  No payments found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <p className="text-sm text-muted-foreground">{total} total</p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm">
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function BillingPage() {
   return (
     <div className="p-6 space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
-        <p className="text-muted-foreground">Manage plans, subscriptions, and invoices</p>
+        <p className="text-muted-foreground">Manage plans, subscriptions, invoices, and payments</p>
       </div>
 
       <Tabs defaultValue="plans">
@@ -473,6 +596,7 @@ export default function BillingPage() {
           <TabsTrigger value="plans">Plans</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
         <TabsContent value="plans">
           <PlansTab />
@@ -482,6 +606,9 @@ export default function BillingPage() {
         </TabsContent>
         <TabsContent value="invoices">
           <InvoicesTab />
+        </TabsContent>
+        <TabsContent value="payments">
+          <PaymentsTab />
         </TabsContent>
       </Tabs>
     </div>

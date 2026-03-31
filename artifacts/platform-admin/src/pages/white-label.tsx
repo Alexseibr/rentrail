@@ -209,7 +209,7 @@ export default function WhiteLabelPage() {
                   <div key={key} className="space-y-1">
                     <Label className="text-xs">{label}</Label>
                     <Input
-                      value={editForm[key] ?? (wlSettings as Record<string, unknown>)[key] as string ?? ""}
+                      value={editForm[key] ?? (wlSettings[key as keyof WhiteLabelSettings] as string) ?? ""}
                       onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
                       placeholder={placeholder}
                     />
