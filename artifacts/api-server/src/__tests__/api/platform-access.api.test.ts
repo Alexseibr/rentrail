@@ -5,6 +5,22 @@ import { createTestUser, authHeaders } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, platformAuditLogs } from "@workspace/db";
 
+interface AuditLogItem {
+  id: string;
+  actorUserId: string;
+  actorEmail: string;
+  actorFirstName: string;
+  actorLastName: string;
+  platformRole: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  targetCompanyId: string | null;
+  reasonCode: string | null;
+  reasonText: string | null;
+  createdAt: string;
+}
+
 const testApp = app;
 
 describe("Platform Access Model", () => {
@@ -170,7 +186,7 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.every((l: any) => l.action === "company.block")).toBe(true);
+      expect(res.body.data.items.every((l: AuditLogItem) => l.action === "company.block")).toBe(true);
     });
 
     it("filters by entityType", async () => {
@@ -179,7 +195,7 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.every((l: any) => l.entityType === "subscription")).toBe(true);
+      expect(res.body.data.items.every((l: AuditLogItem) => l.entityType === "subscription")).toBe(true);
     });
 
     it("filters by actorUserId", async () => {
@@ -188,7 +204,7 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.every((l: any) => l.actorUserId === platformAdminUser.id)).toBe(true);
+      expect(res.body.data.items.every((l: AuditLogItem) => l.actorUserId === platformAdminUser.id)).toBe(true);
     });
 
     it("includes actor details in response", async () => {
