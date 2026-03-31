@@ -6,11 +6,14 @@ import {
   assets,
   users,
   rentals,
+  clients,
   userCompanyMemberships,
   auditLogs,
   companyModerationEvents,
+  blacklistEntries,
+  roles,
 } from "@workspace/db";
-import { eq, and, sql, ilike, or, desc, count } from "drizzle-orm";
+import { eq, and, ilike, or, desc, count, sql, isNull } from "drizzle-orm";
 import { NotFoundError, AppError, InvalidStatusTransitionError } from "../lib/errors";
 
 type CompanyStatus = typeof companies.$inferSelect.status;
@@ -146,11 +149,38 @@ export async function getPlatformCompanyDetail(companyId: string) {
   const [stationCount] = await db.select({ count: count() }).from(stations).where(eq(stations.companyId, companyId));
   const [assetCount] = await db.select({ count: count() }).from(assets).where(eq(assets.companyId, companyId));
   const [userCount] = await db.select({ count: count() }).from(userCompanyMemberships).where(eq(userCompanyMemberships.companyId, companyId));
+  const [clientCount] = await db.select({ count: count() }).from(clients).where(eq(clients.companyId, companyId));
   const [rentalCount] = await db.select({ count: count() }).from(rentals).where(eq(rentals.companyId, companyId));
   const [activeRentalCount] = await db
     .select({ count: count() })
     .from(rentals)
     .where(and(eq(rentals.companyId, companyId), eq(rentals.status, "active")));
+  const [blacklistCount] = await db.select({ count: count() }).from(blacklistEntries).where(eq(blacklistEntries.companyId, companyId));
+
+  const ownerRole = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.code, "owner"))
+    .limit(1);
+
+  let ownerMembers: { userId: string; email: string; firstName: string; lastName: string }[] = [];
+  if (ownerRole.length > 0) {
+    ownerMembers = await db
+      .select({
+        userId: userCompanyMemberships.userId,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(userCompanyMemberships)
+      .innerJoin(users, eq(users.id, userCompanyMemberships.userId))
+      .where(
+        and(
+          eq(userCompanyMemberships.companyId, companyId),
+          eq(userCompanyMemberships.roleId, ownerRole[0].id),
+        ),
+      );
+  }
 
   const moderationHistory = await db
     .select()
@@ -159,17 +189,37 @@ export async function getPlatformCompanyDetail(companyId: string) {
     .orderBy(desc(companyModerationEvents.createdAt))
     .limit(10);
 
+  const recentActivity = await db
+    .select({
+      action: auditLogs.action,
+      entityType: auditLogs.entityType,
+      entityId: auditLogs.entityId,
+      createdAt: auditLogs.createdAt,
+    })
+    .from(auditLogs)
+    .where(eq(auditLogs.companyId, companyId))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(5);
+
   return {
     ...company,
+    owners: ownerMembers.map((o) => ({
+      userId: o.userId,
+      email: o.email,
+      name: `${o.firstName} ${o.lastName}`,
+    })),
     counts: {
       branches: branchCount?.count ?? 0,
       stations: stationCount?.count ?? 0,
       assets: assetCount?.count ?? 0,
       users: userCount?.count ?? 0,
+      clients: clientCount?.count ?? 0,
       rentals: rentalCount?.count ?? 0,
       activeRentals: activeRentalCount?.count ?? 0,
+      blacklistEntries: blacklistCount?.count ?? 0,
     },
     moderationHistory,
+    recentActivity,
   };
 }
 
@@ -284,11 +334,27 @@ export async function getCompanyHealthSummary(companyId: string) {
     .where(eq(rentals.companyId, companyId))
     .groupBy(rentals.status);
 
+  const now = new Date();
+  const [activeBlacklistCount] = await db
+    .select({ count: count() })
+    .from(blacklistEntries)
+    .where(
+      and(
+        eq(blacklistEntries.companyId, companyId),
+        sql`${blacklistEntries.startsAt} <= ${now}`,
+        or(
+          isNull(blacklistEntries.endsAt),
+          sql`${blacklistEntries.endsAt} > ${now}`,
+        ),
+      ),
+    );
+
   const overdueRentals = rentalsByStatus.find((r) => r.status === "overdue")?.count ?? 0;
   const disputedRentals = rentalsByStatus.find((r) => r.status === "disputed")?.count ?? 0;
   const lostAssets = assetsByStatus.find((a) => a.status === "lost")?.count ?? 0;
   const stolenAssets = assetsByStatus.find((a) => a.status === "stolen")?.count ?? 0;
   const maintenanceAssets = assetsByStatus.find((a) => a.status === "maintenance")?.count ?? 0;
+  const blockedAssets = assetsByStatus.find((a) => a.status === "blocked")?.count ?? 0;
 
   return {
     companyId,
@@ -296,11 +362,17 @@ export async function getCompanyHealthSummary(companyId: string) {
     status: company.status,
     assets: {
       byStatus: Object.fromEntries(assetsByStatus.map((a) => [a.status, a.count])),
-      issues: { lost: lostAssets, stolen: stolenAssets, maintenance: maintenanceAssets },
+      issues: { lost: lostAssets, stolen: stolenAssets, maintenance: maintenanceAssets, blocked: blockedAssets },
     },
     rentals: {
       byStatus: Object.fromEntries(rentalsByStatus.map((r) => [r.status, r.count])),
       issues: { overdue: overdueRentals, disputed: disputedRentals },
+    },
+    incidents: {
+      activeBlacklistEntries: activeBlacklistCount?.count ?? 0,
+      lostOrStolenAssets: lostAssets + stolenAssets,
+      overdueRentals,
+      disputedRentals,
     },
   };
 }

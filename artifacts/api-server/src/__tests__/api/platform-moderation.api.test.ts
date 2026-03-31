@@ -5,6 +5,8 @@ import { createTestUser, createTestTenant, assignRole } from "../../test/helpers
 import { db, companies } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
+type CompanyStatus = typeof companies.$inferSelect.status;
+
 interface TenantContext {
   company: { id: string; name: string; slug: string };
   branch: { id: string };
@@ -18,8 +20,8 @@ let regularUser: { token: string; id: string };
 let tenantA: TenantContext;
 let tenantOwnerToken: string;
 
-async function forceCompanyStatus(companyId: string, status: string) {
-  await db.update(companies).set({ status: status as any }).where(eq(companies.id, companyId));
+async function forceCompanyStatus(companyId: string, status: CompanyStatus) {
+  await db.update(companies).set({ status }).where(eq(companies.id, companyId));
 }
 
 beforeAll(async () => {
@@ -61,7 +63,7 @@ describe("Platform Moderation", () => {
         .get("/api/platform/companies")
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
-      const company = res.body.data.items.find((c: any) => c.id === tenantA.company.id);
+      const company = res.body.data.items.find((c: { id: string }) => c.id === tenantA.company.id);
       expect(company).toBeDefined();
       expect(company.counts).toBeDefined();
       expect(typeof company.counts.branches).toBe("number");
@@ -85,7 +87,7 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.some((c: any) => c.id === tenantA.company.id)).toBe(true);
+      expect(res.body.data.items.some((c: { id: string }) => c.id === tenantA.company.id)).toBe(true);
     });
 
     it("supports pagination params", async () => {
@@ -108,7 +110,7 @@ describe("Platform Moderation", () => {
   });
 
   describe("platform company detail", () => {
-    it("returns full detail with counts and moderation history", async () => {
+    it("returns full detail with counts, owners, and moderation history", async () => {
       const res = await request(testApp)
         .get(`/api/platform/companies/${tenantA.company.id}`)
         .set("Authorization", `Bearer ${platformAdmin.token}`);
@@ -116,7 +118,38 @@ describe("Platform Moderation", () => {
       expect(res.status).toBe(200);
       expect(res.body.data.name).toBe("Moderation Test Co");
       expect(res.body.data.counts).toBeDefined();
+      expect(typeof res.body.data.counts.clients).toBe("number");
+      expect(typeof res.body.data.counts.blacklistEntries).toBe("number");
+      expect(res.body.data.owners).toBeDefined();
+      expect(Array.isArray(res.body.data.owners)).toBe(true);
       expect(res.body.data.moderationHistory).toBeDefined();
+      expect(Array.isArray(res.body.data.recentActivity)).toBe(true);
+    });
+
+    it("returns correct owner contact shape", async () => {
+      const res = await request(testApp)
+        .get(`/api/platform/companies/${tenantA.company.id}`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`);
+
+      expect(res.status).toBe(200);
+      for (const owner of res.body.data.owners) {
+        expect(owner).toHaveProperty("userId");
+        expect(owner).toHaveProperty("email");
+        expect(owner).toHaveProperty("name");
+      }
+    });
+
+    it("returns correct recent activity shape", async () => {
+      const res = await request(testApp)
+        .get(`/api/platform/companies/${tenantA.company.id}`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`);
+
+      expect(res.status).toBe(200);
+      for (const event of res.body.data.recentActivity) {
+        expect(event).toHaveProperty("action");
+        expect(event).toHaveProperty("entityType");
+        expect(event).toHaveProperty("createdAt");
+      }
     });
 
     it("returns 404 for nonexistent company", async () => {
@@ -151,7 +184,7 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${targetCompanyId}/approve`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ reasonCode: "verified" });
+        .send({ reasonCode: "verified", reasonText: "Retry approval" });
 
       expect(res.status).toBe(422);
     });
@@ -219,7 +252,7 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/suspend`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ reasonCode: "test" });
+        .send({ reasonCode: "test", reasonText: "Suspension test" });
 
       expect(res.status).toBe(422);
     });
@@ -238,7 +271,7 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${targetCompanyId}/cancel`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ reasonCode: "requested" });
+        .send({ reasonCode: "requested", reasonText: "Cancellation attempt" });
 
       expect(res.status).toBe(403);
     });
@@ -259,7 +292,7 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${targetCompanyId}/approve`)
         .set("Authorization", `Bearer ${sa.token}`)
-        .send({ reasonCode: "test" });
+        .send({ reasonCode: "test", reasonText: "Attempt to reactivate canceled" });
 
       expect(res.status).toBe(422);
     });
@@ -393,7 +426,7 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/approve`)
         .set("Authorization", `Bearer ${platformFinance.token}`)
-        .send({ reasonCode: "test" });
+        .send({ reasonCode: "test", reasonText: "Finance role test" });
 
       expect(res.status).toBe(403);
     });
@@ -408,7 +441,7 @@ describe("Platform Moderation", () => {
       const modRes = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/approve`)
         .set("Authorization", `Bearer ${platformSupport.token}`)
-        .send({ reasonCode: "test" });
+        .send({ reasonCode: "test", reasonText: "Support role test" });
       expect(modRes.status).toBe(403);
     });
 
@@ -437,7 +470,7 @@ describe("Platform Moderation", () => {
   });
 
   describe("company health endpoint", () => {
-    it("returns health summary", async () => {
+    it("returns health summary with incidents", async () => {
       const res = await request(testApp)
         .get(`/api/platform/companies/${tenantA.company.id}/health`)
         .set("Authorization", `Bearer ${platformAdmin.token}`);
@@ -445,7 +478,14 @@ describe("Platform Moderation", () => {
       expect(res.status).toBe(200);
       expect(res.body.data.companyId).toBe(tenantA.company.id);
       expect(res.body.data.assets).toBeDefined();
+      expect(res.body.data.assets.issues).toBeDefined();
+      expect(typeof res.body.data.assets.issues.blocked).toBe("number");
       expect(res.body.data.rentals).toBeDefined();
+      expect(res.body.data.incidents).toBeDefined();
+      expect(typeof res.body.data.incidents.activeBlacklistEntries).toBe("number");
+      expect(typeof res.body.data.incidents.lostOrStolenAssets).toBe("number");
+      expect(typeof res.body.data.incidents.overdueRentals).toBe("number");
+      expect(typeof res.body.data.incidents.disputedRentals).toBe("number");
     });
   });
 

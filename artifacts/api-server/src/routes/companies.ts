@@ -28,7 +28,7 @@ const idParams = z.object({ id: z.string().uuid() });
 
 const moderationActionSchema = z.object({
   reasonCode: z.string().min(1),
-  reasonText: z.string().optional(),
+  reasonText: z.string().min(1),
 });
 
 const companyStatusValues = ["pending", "trial", "active", "past_due", "suspended", "blocked", "canceled"] as const;
