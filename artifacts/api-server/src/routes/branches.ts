@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompany } from "../middlewares/authorize";
+import { requireRole, requirePermission } from "../middlewares/authorize";
 import * as branchService from "../services/branch.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -24,7 +24,7 @@ const idParams = z.object({ id: z.string().uuid() });
 router.post(
   "/branches",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin"),
   validate({ body: createBranchSchema }),
   async (req, res) => {
     const branch = await branchService.createBranch({
@@ -33,11 +33,11 @@ router.post(
     });
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "create",
       entityType: "branch",
       entityId: branch.id,
-      newValues: branch,
+      after: branch,
       req,
     });
     res.status(201).json({ data: branch });
@@ -47,7 +47,7 @@ router.post(
 router.get(
   "/branches",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "mechanic", "viewer"),
   async (req, res) => {
     const branches = await branchService.listBranches(req.tenant!.companyId);
     res.json({ data: branches });
@@ -57,7 +57,7 @@ router.get(
 router.get(
   "/branches/:id",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "mechanic", "viewer"),
   validate({ params: idParams }),
   async (req, res) => {
     const branch = await branchService.getBranch(req.params.id, req.tenant!.companyId);
@@ -68,19 +68,19 @@ router.get(
 router.patch(
   "/branches/:id",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin"),
   validate({ params: idParams, body: updateBranchSchema }),
   async (req, res) => {
     const old = await branchService.getBranch(req.params.id, req.tenant!.companyId);
     const branch = await branchService.updateBranch(req.params.id, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "update",
       entityType: "branch",
       entityId: branch.id,
-      oldValues: old,
-      newValues: branch,
+      before: old,
+      after: branch,
       req,
     });
     res.json({ data: branch });

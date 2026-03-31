@@ -43,7 +43,7 @@ router.post("/auth/refresh", validate({ body: refreshSchema }), async (req, res)
 });
 
 router.post("/auth/logout", authenticate, async (req, res) => {
-  await authService.logout(req.user!.userId, "");
+  await authService.logout(req.user!.userId);
   res.json({ data: { message: "Logged out" } });
 });
 

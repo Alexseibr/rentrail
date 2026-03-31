@@ -1,4 +1,4 @@
-import { db, companies, type InsertCompany } from "@workspace/db";
+import { db, companies, userCompanyMemberships, type InsertCompany } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { NotFoundError, ConflictError } from "../lib/errors";
 
@@ -45,4 +45,29 @@ export async function updateCompany(id: string, data: Partial<InsertCompany>) {
 
 export async function listCompanies() {
   return db.select().from(companies);
+}
+
+export async function listUserCompanies(userId: string) {
+  const memberships = await db
+    .select({ companyId: userCompanyMemberships.companyId })
+    .from(userCompanyMemberships)
+    .where(eq(userCompanyMemberships.userId, userId));
+
+  if (memberships.length === 0) return [];
+
+  const companyIds = memberships.map((m) => m.companyId);
+  const result = await db.select().from(companies);
+  return result.filter((c) => companyIds.includes(c.id));
+}
+
+export async function userHasCompanyAccess(userId: string, companyId: string): Promise<boolean> {
+  const [membership] = await db
+    .select({ id: userCompanyMemberships.id })
+    .from(userCompanyMemberships)
+    .where(
+      eq(userCompanyMemberships.userId, userId),
+    )
+    .limit(1);
+
+  return !!membership;
 }

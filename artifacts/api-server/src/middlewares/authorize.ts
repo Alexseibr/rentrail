@@ -1,13 +1,14 @@
 import type { Request, Response, NextFunction } from "express";
-import { db, rolePermissions, permissions, userCompanyMemberships, roles } from "@workspace/db";
+import { db, rolePermissions, permissions, userCompanyMemberships, userBranchMemberships, roles } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { ForbiddenError, UnauthorizedError } from "../lib/errors";
 
 export interface TenantContext {
   companyId: string;
+  branchId?: string;
   membership: {
     roleId: string;
-    roleName: string;
+    roleCode: string;
   };
 }
 
@@ -27,7 +28,7 @@ export function requireCompany(req: Request, _res: Response, next: NextFunction)
   if (!req.user) {
     throw new UnauthorizedError();
   }
-  req.tenant = { companyId, membership: { roleId: "", roleName: "" } };
+  req.tenant = { companyId, membership: { roleId: "", roleCode: "" } };
   next();
 }
 
@@ -38,10 +39,9 @@ export function requireRole(...allowedRoles: string[]) {
     }
 
     if (req.user.isSuperAdmin) {
-      req.tenant = req.tenant || { companyId: req.headers["x-company-id"] as string || "", membership: { roleId: "", roleName: "superAdmin" } };
-      if (req.tenant) {
-        req.tenant.membership = { roleId: "", roleName: "superAdmin" };
-      }
+      const companyId = req.headers["x-company-id"] as string || "";
+      req.tenant = req.tenant || { companyId, membership: { roleId: "", roleCode: "superAdmin" } };
+      req.tenant.membership = { roleId: "", roleCode: "superAdmin" };
       next();
       return;
     }
@@ -54,7 +54,8 @@ export function requireRole(...allowedRoles: string[]) {
     const membership = await db
       .select({
         roleId: userCompanyMemberships.roleId,
-        roleName: roles.name,
+        roleCode: roles.code,
+        status: userCompanyMemberships.status,
       })
       .from(userCompanyMemberships)
       .innerJoin(roles, eq(roles.id, userCompanyMemberships.roleId))
@@ -70,16 +71,21 @@ export function requireRole(...allowedRoles: string[]) {
       throw new ForbiddenError("No membership in this company");
     }
 
-    const userRole = membership[0];
-    if (!allowedRoles.includes(userRole.roleName)) {
+    const userMembership = membership[0];
+
+    if (userMembership.status !== "active") {
+      throw new ForbiddenError("Company membership is not active");
+    }
+
+    if (!allowedRoles.includes(userMembership.roleCode)) {
       throw new ForbiddenError("Insufficient role permissions");
     }
 
     req.tenant = {
       companyId,
       membership: {
-        roleId: userRole.roleId,
-        roleName: userRole.roleName,
+        roleId: userMembership.roleId,
+        roleCode: userMembership.roleCode,
       },
     };
 
@@ -87,7 +93,73 @@ export function requireRole(...allowedRoles: string[]) {
   };
 }
 
-export function requirePermission(resource: string, action: string) {
+export function requireBranch(req: Request, _res: Response, next: NextFunction): void {
+  if (!req.user) {
+    throw new UnauthorizedError();
+  }
+  if (!req.tenant) {
+    throw new ForbiddenError("Tenant context not set");
+  }
+
+  if (req.user.isSuperAdmin) {
+    next();
+    return;
+  }
+
+  const branchId = req.headers["x-branch-id"] as string;
+  if (branchId) {
+    req.tenant.branchId = branchId;
+  }
+
+  next();
+}
+
+export function requireBranchAccess() {
+  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user || !req.tenant) {
+      throw new UnauthorizedError();
+    }
+
+    if (req.user.isSuperAdmin) {
+      next();
+      return;
+    }
+
+    const roleCode = req.tenant.membership.roleCode;
+    if (["owner", "admin"].includes(roleCode)) {
+      next();
+      return;
+    }
+
+    const branchId = req.tenant.branchId || req.headers["x-branch-id"] as string || req.body?.branchId;
+    if (!branchId) {
+      next();
+      return;
+    }
+
+    const branchMembership = await db
+      .select({ id: userBranchMemberships.id })
+      .from(userBranchMemberships)
+      .where(
+        and(
+          eq(userBranchMemberships.userId, req.user.userId),
+          eq(userBranchMemberships.companyId, req.tenant.companyId),
+          eq(userBranchMemberships.branchId, branchId),
+          eq(userBranchMemberships.status, "active"),
+        ),
+      )
+      .limit(1);
+
+    if (branchMembership.length === 0) {
+      throw new ForbiddenError("No access to this branch");
+    }
+
+    req.tenant.branchId = branchId;
+    next();
+  };
+}
+
+export function requirePermission(permissionCode: string) {
   return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     if (!req.user) {
       throw new UnauthorizedError();
@@ -109,14 +181,13 @@ export function requirePermission(resource: string, action: string) {
       .where(
         and(
           eq(rolePermissions.roleId, req.tenant.membership.roleId),
-          eq(permissions.resource, resource),
-          eq(permissions.action, action),
+          eq(permissions.code, permissionCode),
         ),
       )
       .limit(1);
 
     if (result.length === 0) {
-      throw new ForbiddenError(`Missing permission: ${resource}:${action}`);
+      throw new ForbiddenError(`Missing permission: ${permissionCode}`);
     }
 
     next();

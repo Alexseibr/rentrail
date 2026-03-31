@@ -1,4 +1,4 @@
-import { db, rentals, rentalStatusHistory, assets, type InsertRental } from "@workspace/db";
+import { db, rentals, rentalStatusHistory, assets, clients, branches, type InsertRental } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 
@@ -28,11 +28,42 @@ function validateStatusTransition(currentStatus: string, newStatus: string) {
   }
 }
 
+async function validateRentalOwnership(companyId: string, clientId: string, assetId: string, branchId?: string | null) {
+  const [client] = await db
+    .select({ id: clients.id })
+    .from(clients)
+    .where(and(eq(clients.id, clientId), eq(clients.companyId, companyId)))
+    .limit(1);
+  if (!client) {
+    throw new AppError(400, "Client does not belong to this company", "INVALID_CLIENT");
+  }
+
+  const [asset] = await db
+    .select({ id: assets.id })
+    .from(assets)
+    .where(and(eq(assets.id, assetId), eq(assets.companyId, companyId)))
+    .limit(1);
+  if (!asset) {
+    throw new AppError(400, "Asset does not belong to this company", "INVALID_ASSET");
+  }
+
+  if (branchId) {
+    const [branch] = await db
+      .select({ id: branches.id })
+      .from(branches)
+      .where(and(eq(branches.id, branchId), eq(branches.companyId, companyId)))
+      .limit(1);
+    if (!branch) {
+      throw new AppError(400, "Branch does not belong to this company", "INVALID_BRANCH");
+    }
+  }
+}
+
 async function changeRentalStatus(
   rentalId: string,
   companyId: string,
   newStatus: string,
-  changedBy?: string,
+  changedByUserId?: string,
   reason?: string,
 ) {
   const [rental] = await db
@@ -52,11 +83,11 @@ async function changeRentalStatus(
     updatedAt: new Date(),
   };
 
-  if (newStatus === "active" && !rental.startDate) {
-    updateData.startDate = new Date();
+  if (newStatus === "active" && !rental.startAt) {
+    updateData.startAt = new Date();
   }
   if (newStatus === "completed" || newStatus === "canceled") {
-    updateData.actualEndDate = new Date();
+    updateData.actualEndAt = new Date();
   }
 
   const [updated] = await db
@@ -66,10 +97,11 @@ async function changeRentalStatus(
     .returning();
 
   await db.insert(rentalStatusHistory).values({
+    companyId,
     rentalId,
-    previousStatus: rental.status,
-    newStatus: newStatus as typeof rental.status,
-    changedBy: changedBy ?? null,
+    fromStatus: rental.status,
+    toStatus: newStatus as typeof rental.status,
+    changedByUserId: changedByUserId ?? null,
     reason: reason ?? null,
   });
 
@@ -90,11 +122,14 @@ async function changeRentalStatus(
 }
 
 export async function createRental(data: InsertRental) {
+  await validateRentalOwnership(data.companyId, data.clientId, data.assetId, data.branchId);
+
   const [rental] = await db.insert(rentals).values(data).returning();
 
   await db.insert(rentalStatusHistory).values({
+    companyId: rental.companyId,
     rentalId: rental.id,
-    newStatus: rental.status,
+    toStatus: rental.status,
     reason: "Rental created",
   });
 
@@ -151,17 +186,18 @@ export async function extendRental(id: string, companyId: string, newEndDate: Da
     .update(rentals)
     .set({
       status: "extended",
-      expectedEndDate: newEndDate,
+      plannedEndAt: newEndDate,
       updatedAt: new Date(),
     })
     .where(eq(rentals.id, id))
     .returning();
 
   await db.insert(rentalStatusHistory).values({
+    companyId,
     rentalId: id,
-    previousStatus: rental.status,
-    newStatus: "extended",
-    changedBy: userId ?? null,
+    fromStatus: rental.status,
+    toStatus: "extended",
+    changedByUserId: userId ?? null,
     reason: `Extended to ${newEndDate.toISOString()}`,
   });
 

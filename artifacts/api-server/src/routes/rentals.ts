@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompany } from "../middlewares/authorize";
+import { requireRole } from "../middlewares/authorize";
 import * as rentalService from "../services/rental.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -14,10 +14,9 @@ const createRentalSchema = z.object({
   clientId: z.string().uuid(),
   assetId: z.string().uuid(),
   rentalPlanId: z.string().uuid().optional(),
-  totalPrice: z.string().optional(),
   depositAmount: z.string().optional(),
-  startDate: z.string().optional(),
-  expectedEndDate: z.string().optional(),
+  startAt: z.string().optional(),
+  plannedEndAt: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -34,23 +33,23 @@ const cancelSchema = z.object({
 router.post(
   "/rentals",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
   validate({ body: createRentalSchema }),
   async (req, res) => {
     const rental = await rentalService.createRental({
       ...req.body,
       companyId: req.tenant!.companyId,
-      createdBy: req.user!.userId,
-      startDate: req.body.startDate ? new Date(req.body.startDate) : null,
-      expectedEndDate: req.body.expectedEndDate ? new Date(req.body.expectedEndDate) : null,
+      issuedByUserId: req.user!.userId,
+      startAt: req.body.startAt ? new Date(req.body.startAt) : null,
+      plannedEndAt: req.body.plannedEndAt ? new Date(req.body.plannedEndAt) : null,
     });
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "create",
       entityType: "rental",
       entityId: rental.id,
-      newValues: rental,
+      after: rental,
       req,
     });
     res.status(201).json({ data: rental });
@@ -60,7 +59,7 @@ router.post(
 router.get(
   "/rentals",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "viewer"),
   async (req, res) => {
     const status = req.query.status as string | undefined;
     const rentals = await rentalService.listRentals(req.tenant!.companyId, status);
@@ -71,7 +70,7 @@ router.get(
 router.get(
   "/rentals/:id",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "accountant", "operator", "viewer"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.getRental(req.params.id, req.tenant!.companyId);
@@ -82,13 +81,13 @@ router.get(
 router.post(
   "/rentals/:id/approve",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.approveRental(req.params.id, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "approve",
       entityType: "rental",
       entityId: rental.id,
@@ -101,13 +100,13 @@ router.post(
 router.post(
   "/rentals/:id/start",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.startRental(req.params.id, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "start",
       entityType: "rental",
       entityId: rental.id,
@@ -120,7 +119,7 @@ router.post(
 router.post(
   "/rentals/:id/extend",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
   validate({ params: idParams, body: extendSchema }),
   async (req, res) => {
     const rental = await rentalService.extendRental(
@@ -131,7 +130,7 @@ router.post(
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "extend",
       entityType: "rental",
       entityId: rental.id,
@@ -144,13 +143,13 @@ router.post(
 router.post(
   "/rentals/:id/complete",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
   validate({ params: idParams }),
   async (req, res) => {
     const rental = await rentalService.completeRental(req.params.id, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "complete",
       entityType: "rental",
       entityId: rental.id,
@@ -163,7 +162,7 @@ router.post(
 router.post(
   "/rentals/:id/cancel",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager"),
   validate({ params: idParams, body: cancelSchema }),
   async (req, res) => {
     const rental = await rentalService.cancelRental(
@@ -174,7 +173,7 @@ router.post(
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "cancel",
       entityType: "rental",
       entityId: rental.id,

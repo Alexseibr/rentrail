@@ -1,5 +1,6 @@
-import { pgTable, uuid, varchar, text, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, text, timestamp, index } from "drizzle-orm/pg-core";
 import { companies } from "./companies";
+import { branchStatusEnum } from "./enums";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -9,14 +10,17 @@ export const branches = pgTable("branches", {
   name: varchar("name", { length: 255 }).notNull(),
   city: varchar("city", { length: 100 }),
   country: varchar("country", { length: 100 }),
+  timezone: varchar("timezone", { length: 100 }),
   address: text("address"),
   phone: varchar("phone", { length: 50 }),
   email: varchar("email", { length: 255 }),
-  timezone: varchar("timezone", { length: 100 }),
-  isActive: boolean("is_active").default(true).notNull(),
+  status: branchStatusEnum("status").default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  index("branches_company_idx").on(t.companyId),
+  index("branches_status_idx").on(t.status),
+]);
 
 export const insertBranchSchema = createInsertSchema(branches).omit({
   id: true,

@@ -1,0 +1,584 @@
+Теперь нужно перейти к проектированию и реализации database layer для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Стек:
+- PostgreSQL
+- Drizzle ORM
+- TypeScript
+
+Задача: спроектировать и реализовать первую версию schema.ts / table modules / migrations так, чтобы база сразу была пригодна для:
+- multi-tenant SaaS
+- company -> branch -> station hierarchy
+- RBAC
+- clients
+- assets
+- rentals
+- blacklist
+- audit
+- дальнейшего расширения под telemetry, battery, payments integrations, mobile apps
+
+## Важно
+Не делай car-based schema.
+Центральная сущность — asset.
+
+Нужно заложить правильную tenant model:
+- все бизнес-сущности должны быть привязаны минимум к companyId
+- где нужно — branchId
+- где нужно — stationId
+
+## Что нужно сделать
+
+### 1. Спроектируй таблицы первой версии
+
+#### Platform / Tenant structure
+- companies
+- company_settings
+- branches
+- stations
+
+#### Access / RBAC
+- users
+- roles
+- permissions
+- role_permissions
+- user_company_memberships
+- user_branch_memberships
+- sessions
+
+#### Clients
+- clients
+
+#### Assets
+- assets
+- asset_status_history
+
+#### Rentals
+- rental_plans
+- rentals
+- rental_status_history
+
+#### Finance foundation
+- payments
+- deposits
+
+#### Blacklist
+- blacklist_entries
+
+#### Audit
+- audit_logs
+
+## 2. Для каждой таблицы определи
+- primary key
+- foreign keys
+- nullable / not null
+- createdAt / updatedAt
+- soft delete where appropriate
+- indexes
+- unique constraints
+
+## 3. Обязательные enum'ы
+
+### assetType
+- bike
+- ebike
+- scooter
+- escooter
+
+### assetStatus
+- draft
+- available
+- reserved
+- awaiting_pickup
+- rented
+- overdue
+- charging
+- maintenance
+- blocked
+- lost
+- stolen
+- retired
+
+### rentalType
+- hourly
+- daily
+- weekly
+- monthly
+- subscription
+
+### rentalStatus
+- draft
+- pending_approval
+- awaiting_payment
+- awaiting_pickup
+- active
+- extended
+- overdue
+- return_requested
+- completed
+- canceled
+- disputed
+- defaulted
+
+### membershipStatus
+- invited
+- active
+- suspended
+- disabled
+
+### companyStatus
+- pending
+- trial
+- active
+- past_due
+- blocked
+- canceled
+
+### blacklistScope
+- branch
+- company
+- global
+
+### blacklistActionType
+- warning
+- manual_approval_only
+- increased_deposit
+- restricted_access
+- blocked_branch
+- blocked_company
+- blocked_global
+
+### paymentStatus
+- pending
+- authorized
+- paid
+- failed
+- refunded
+- partially_refunded
+- chargeback
+
+### paymentType
+- rental_payment
+- deposit_hold
+- deposit_release
+- fine
+- refund
+- adjustment
+- manual_charge
+
+## 4. Ключевые требования к модели данных
+
+### companies
+Должна хранить:
+- id
+- name
+- slug
+- legalName
+- email
+- phone
+- country
+- currency
+- timezone
+- status
+- createdAt
+- updatedAt
+
+Slug должен быть unique.
+
+### branches
+Должна быть привязана к companyId.
+Поля:
+- id
+- companyId
+- name
+- city
+- country
+- timezone
+- address
+- status
+- createdAt
+- updatedAt
+
+Индекс по companyId.
+
+### stations
+Привязка:
+- companyId
+- branchId
+
+Поля:
+- id
+- companyId
+- branchId
+- name
+- type
+- address
+- lat
+- lng
+- status
+- createdAt
+- updatedAt
+
+Индексы:
+- companyId
+- branchId
+- composite (companyId, branchId)
+
+### users
+Поля:
+- id
+- email
+- phone nullable
+- passwordHash
+- firstName
+- lastName
+- isSuperAdmin
+- mustChangePassword
+- twoFactorEnabled
+- createdAt
+- updatedAt
+
+Email unique.
+Phone index.
+
+### roles
+Нужны встроенные роли:
+- superAdmin
+- owner
+- admin
+- manager
+- accountant
+- operator
+- mechanic
+- viewer
+
+Хранить:
+- id
+- code
+- name
+- isSystem
+- createdAt
+
+### permissions
+Хранить:
+- id
+- code
+- name
+- module
+- createdAt
+
+Code unique.
+
+### role_permissions
+Связь many-to-many:
+- roleId
+- permissionId
+
+Composite unique.
+
+### user_company_memberships
+Поля:
+- id
+- userId
+- companyId
+- roleId
+- status
+- createdAt
+- updatedAt
+
+Один пользователь может быть в нескольких компаниях.
+Индекс по userId и companyId.
+Composite unique:
+- (userId, companyId, roleId) или, если решишь одну активную роль на компанию, объясни решение.
+
+### user_branch_memberships
+Поля:
+- id
+- userId
+- companyId
+- branchId
+- roleId
+- status
+- createdAt
+- updatedAt
+
+Индексы:
+- userId
+- companyId
+- branchId
+
+### sessions
+Поля:
+- id
+- userId
+- refreshTokenHash
+- userAgent
+- ip
+- expiresAt
+- revokedAt nullable
+- createdAt
+
+Индекс по userId.
+
+### clients
+Поля:
+- id
+- companyId
+- fullName
+- phone
+- email nullable
+- birthday nullable
+- documentType nullable
+- documentNumber nullable
+- notes nullable
+- status
+- rating default 0
+- createdAt
+- updatedAt
+- archivedAt nullable
+
+Индексы:
+- companyId
+- phone
+- documentNumber
+- composite (companyId, phone)
+- composite (companyId, documentNumber)
+
+### assets
+Поля:
+- id
+- companyId
+- branchId
+- stationId nullable
+- assetType
+- brand
+- model
+- serialNumber
+- internalCode
+- qrCode
+- status
+- purchasePrice nullable
+- currentValue nullable
+- isPublic default false
+- notes nullable
+- createdAt
+- updatedAt
+- archivedAt nullable
+
+Индексы:
+- companyId
+- branchId
+- stationId
+- status
+- assetType
+- serialNumber
+- qrCode
+- composite (companyId, serialNumber) unique
+- composite (companyId, qrCode) unique
+- composite (companyId, branchId, status)
+
+### asset_status_history
+Поля:
+- id
+- companyId
+- assetId
+- fromStatus nullable
+- toStatus
+- reason nullable
+- changedByUserId nullable
+- createdAt
+
+Индексы:
+- assetId
+- companyId
+
+### rental_plans
+Поля:
+- id
+- companyId
+- name
+- rentalType
+- price
+- currency
+- depositAmount nullable
+- billingInterval nullable
+- isActive
+- createdAt
+- updatedAt
+
+Индекс по companyId.
+
+### rentals
+Поля:
+- id
+- companyId
+- branchId
+- stationId nullable
+- clientId
+- assetId
+- rentalPlanId nullable
+- status
+- tariffSnapshot jsonb
+- depositAmount nullable
+- startAt nullable
+- plannedEndAt nullable
+- actualEndAt nullable
+- issuedByUserId nullable
+- returnedToStationId nullable
+- notes nullable
+- createdAt
+- updatedAt
+
+Индексы:
+- companyId
+- branchId
+- clientId
+- assetId
+- status
+- startAt
+- plannedEndAt
+- composite (companyId, status)
+- composite (companyId, clientId, status)
+- composite (companyId, assetId, status)
+
+### rental_status_history
+Поля:
+- id
+- companyId
+- rentalId
+- fromStatus nullable
+- toStatus
+- reason nullable
+- changedByUserId nullable
+- createdAt
+
+### payments
+Поля:
+- id
+- companyId
+- branchId nullable
+- clientId nullable
+- rentalId nullable
+- type
+- status
+- amount
+- currency
+- provider nullable
+- providerPaymentId nullable
+- metadata jsonb nullable
+- paidAt nullable
+- createdAt
+- updatedAt
+
+Индексы:
+- companyId
+- rentalId
+- clientId
+- status
+- type
+- paidAt
+
+### deposits
+Поля:
+- id
+- companyId
+- clientId
+- rentalId nullable
+- amount
+- currency
+- status
+- heldAt nullable
+- releasedAt nullable
+- notes nullable
+- createdAt
+- updatedAt
+
+Если считаешь, что deposits лучше моделировать через payments + ledger, можешь оставить deposits как отдельную таблицу foundation-уровня, но поясни решение в комментарии.
+
+### blacklist_entries
+Нужно поддержать 3 scope:
+- branch
+- company
+- global
+
+Поля:
+- id
+- companyId nullable
+- branchId nullable
+- scopeType
+- scopeId nullable
+- subjectType
+- clientId nullable
+- userId nullable
+- fullNameSnapshot nullable
+- phoneSnapshot nullable
+- emailSnapshot nullable
+- documentSnapshot nullable
+- actionType
+- reasonCode
+- reasonText nullable
+- startsAt
+- endsAt nullable
+- createdByUserId nullable
+- createdAt
+- updatedAt
+
+Индексы:
+- scopeType
+- companyId
+- branchId
+- clientId
+- phoneSnapshot
+- documentSnapshot
+- composite (scopeType, companyId, branchId)
+- composite (companyId, phoneSnapshot)
+- composite (companyId, documentSnapshot)
+
+### audit_logs
+Поля:
+- id
+- companyId nullable
+- branchId nullable
+- actorUserId nullable
+- entityType
+- entityId
+- action
+- before jsonb nullable
+- after jsonb nullable
+- metadata jsonb nullable
+- ip nullable
+- userAgent nullable
+- createdAt
+
+Индексы:
+- companyId
+- actorUserId
+- entityType
+- entityId
+- createdAt
+
+## 5. Очень важно
+Сделай отдельные reusable helper columns:
+- id
+- timestamps
+- archivedAt
+если это упростит schema
+
+## 6. Что нужно на выходе
+Я хочу получить:
+1. файл(ы) Drizzle schema
+2. enum definitions
+3. relations
+4. миграции
+5. seed для system roles
+6. seed для базовых permissions
+7. краткое пояснение по индексам и ограничениям
+8. рекомендации, какие таблицы можно будет добавить во 2-й фазе (telemetry, devices, batteries, geofences, incidents, notifications)
+
+## 7. Порядок работы
+Сначала:
+1. перечисли таблицы и связи
+2. покажи proposed schema design
+3. только потом пиши код schema.ts и миграции
+
+Не упрощай multi-tenant модель.
+Не убирай branchId/stationId там, где они понадобятся позже.
+Не используй car-specific naming.

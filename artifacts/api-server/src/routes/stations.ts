@@ -2,20 +2,21 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompany } from "../middlewares/authorize";
+import { requireRole } from "../middlewares/authorize";
 import * as stationService from "../services/station.service";
 import { createAuditLog } from "../lib/audit";
 
 const router: IRouter = Router();
 
+const stationTypes = ["hub", "pickup_point", "service_center", "warehouse"] as const;
+
 const createStationSchema = z.object({
   branchId: z.string().uuid(),
   name: z.string().min(1),
+  type: z.enum(stationTypes).optional(),
   address: z.string().optional(),
-  latitude: z.string().optional(),
-  longitude: z.string().optional(),
-  capacity: z.string().optional(),
-  contactPhone: z.string().optional(),
+  lat: z.string().optional(),
+  lng: z.string().optional(),
 });
 
 const updateStationSchema = createStationSchema.partial();
@@ -24,7 +25,7 @@ const idParams = z.object({ id: z.string().uuid() });
 router.post(
   "/stations",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager"),
   validate({ body: createStationSchema }),
   async (req, res) => {
     const station = await stationService.createStation({
@@ -33,11 +34,11 @@ router.post(
     });
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "create",
       entityType: "station",
       entityId: station.id,
-      newValues: station,
+      after: station,
       req,
     });
     res.status(201).json({ data: station });
@@ -47,7 +48,7 @@ router.post(
 router.get(
   "/stations",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
   async (req, res) => {
     const branchId = req.query.branchId as string | undefined;
     const stations = await stationService.listStations(req.tenant!.companyId, branchId);
@@ -58,7 +59,7 @@ router.get(
 router.get(
   "/stations/:id",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
   validate({ params: idParams }),
   async (req, res) => {
     const station = await stationService.getStation(req.params.id, req.tenant!.companyId);
@@ -69,19 +70,19 @@ router.get(
 router.patch(
   "/stations/:id",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager"),
   validate({ params: idParams, body: updateStationSchema }),
   async (req, res) => {
     const old = await stationService.getStation(req.params.id, req.tenant!.companyId);
     const station = await stationService.updateStation(req.params.id, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "update",
       entityType: "station",
       entityId: station.id,
-      oldValues: old,
-      newValues: station,
+      before: old,
+      after: station,
       req,
     });
     res.json({ data: station });

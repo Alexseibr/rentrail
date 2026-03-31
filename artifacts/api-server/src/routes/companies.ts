@@ -12,14 +12,10 @@ const createCompanySchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1),
   legalName: z.string().optional(),
-  taxId: z.string().optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
-  website: z.string().optional(),
   logoUrl: z.string().optional(),
   country: z.string().optional(),
-  city: z.string().optional(),
-  address: z.string().optional(),
   currency: z.string().optional(),
   timezone: z.string().optional(),
 });
@@ -33,14 +29,18 @@ router.post(
   authenticate,
   validate({ body: createCompanySchema }),
   async (req, res) => {
+    if (!req.user!.isSuperAdmin) {
+      res.status(403).json({ error: "Only superAdmin can create companies" });
+      return;
+    }
     const company = await companyService.createCompany(req.body);
     await createAuditLog({
       companyId: company.id,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "create",
       entityType: "company",
       entityId: company.id,
-      newValues: company,
+      after: company,
       req,
     });
     res.status(201).json({ data: company });
@@ -50,8 +50,13 @@ router.post(
 router.get(
   "/companies",
   authenticate,
-  async (_req, res) => {
-    const companies = await companyService.listCompanies();
+  async (req, res) => {
+    if (req.user!.isSuperAdmin) {
+      const companies = await companyService.listCompanies();
+      res.json({ data: companies });
+      return;
+    }
+    const companies = await companyService.listUserCompanies(req.user!.userId);
     res.json({ data: companies });
   },
 );
@@ -61,6 +66,13 @@ router.get(
   authenticate,
   validate({ params: idParams }),
   async (req, res) => {
+    if (!req.user!.isSuperAdmin) {
+      const hasAccess = await companyService.userHasCompanyAccess(req.user!.userId, req.params.id);
+      if (!hasAccess) {
+        res.status(403).json({ error: "No access to this company" });
+        return;
+      }
+    }
     const company = await companyService.getCompany(req.params.id);
     res.json({ data: company });
   },
@@ -69,18 +81,19 @@ router.get(
 router.patch(
   "/companies/:id",
   authenticate,
+  requireRole("superAdmin", "owner", "admin"),
   validate({ params: idParams, body: updateCompanySchema }),
   async (req, res) => {
     const old = await companyService.getCompany(req.params.id);
     const company = await companyService.updateCompany(req.params.id, req.body);
     await createAuditLog({
       companyId: company.id,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "update",
       entityType: "company",
       entityId: company.id,
-      oldValues: old,
-      newValues: company,
+      before: old,
+      after: company,
       req,
     });
     res.json({ data: company });

@@ -1,0 +1,434 @@
+Теперь нужно реализовать auth и access control foundation для новой multi-tenant SaaS-платформы аренды bike / ebike / scooter / escooter.
+
+Стек:
+- Express 5
+- TypeScript
+- PostgreSQL
+- Drizzle ORM
+- Zod
+- JWT access + refresh tokens
+
+Уже предполагается, что schema и migrations созданы для:
+- users
+- roles
+- permissions
+- role_permissions
+- user_company_memberships
+- user_branch_memberships
+- sessions
+- audit_logs
+- companies
+- branches
+- stations
+- clients
+- assets
+- rentals
+- blacklist_entries
+
+## Цель
+Построить чистый и расширяемый auth/access foundation, который:
+- поддерживает multiple company memberships
+- поддерживает multiple branch memberships
+- реализует RBAC на основе roles + permissions
+- учитывает tenant isolation
+- позволяет безопасно загружать current user context
+- готов к дальнейшим tenant-safe CRUD модулям
+
+---
+
+## Что нужно реализовать
+
+# 1. Auth module
+
+## 1.1. Register
+Сделай базовый сценарий регистрации пользователя.
+
+Нужно:
+- email
+- password
+- firstName
+- lastName
+- optional phone
+
+Требования:
+- email unique
+- password hash
+- валидация через Zod
+- не логировать пароль
+- сразу создавать user
+
+Если архитектурно лучше разделить public self-registration и invite-based employee creation — опиши это и реализуй foundation так, чтобы потом можно было легко расширить.
+
+## 1.2. Login
+Сделай login по email + password.
+
+Требования:
+- проверка password hash
+- отказ при неверных данных
+- возврат:
+  - access token
+  - refresh token
+  - basic user payload
+- создать session с refreshTokenHash
+- хранить userAgent и ip
+- поддержать mustChangePassword
+- подготовить место для 2FA, но пока можно не включать полный flow
+
+## 1.3. Refresh token
+Сделай endpoint refresh:
+- принимает refresh token
+- проверяет session
+- rotation refresh token
+- ревокация старого refresh token
+- создает новый refresh token
+- выдает новый access token
+
+## 1.4. Logout
+Сделай logout:
+- revoke current session
+- опционально logout all sessions endpoint, если это не сильно усложняет foundation
+
+## 1.5. Current user
+Сделай endpoint:
+- GET /auth/me
+
+Он должен возвращать:
+- user profile
+- memberships
+- available companies
+- available branches
+- global role flags (например superAdmin)
+
+---
+
+# 2. Session model
+
+Нужно использовать таблицу sessions.
+
+Требования:
+- refreshToken хранить только как hash
+- expiresAt
+- revokedAt
+- ip
+- userAgent
+- createdAt
+
+Сделай helper/service для:
+- createSession
+- rotateSession
+- revokeSession
+- revokeAllUserSessions
+
+---
+
+# 3. JWT strategy
+
+Нужно реализовать:
+- short-lived access token
+- longer-lived refresh token
+
+Требования:
+- access token содержит:
+  - userId
+  - isSuperAdmin
+  - optionally active company/branch context, если решишь так сделать
+- refresh token не должен использоваться как источник бизнес-контекста
+- секреты только через env
+- продумай token payload аккуратно, без лишних чувствительных данных
+
+---
+
+# 4. Membership loading
+
+Очень важно:
+один пользователь может быть:
+- в нескольких компаниях
+- в нескольких филиалах
+- с разными ролями
+
+Нужно реализовать загрузку memberships:
+- company memberships
+- branch memberships
+- role codes
+- permissions
+
+Сделай service, который собирает user access context:
+- user
+- company memberships
+- branch memberships
+- permissions map
+
+---
+
+# 5. RBAC foundation
+
+## 5.1. Встроенные роли
+Поддержи системные роли:
+- superAdmin
+- owner
+- admin
+- manager
+- accountant
+- operator
+- mechanic
+- viewer
+
+Важно:
+superAdmin — платформенный уровень.
+Остальные роли — company/branch level через memberships.
+
+## 5.2. Permissions
+Используй таблицы:
+- permissions
+- role_permissions
+
+Не хардкодь всю логику в if role === admin.
+Нужен permission-based middleware.
+
+## 5.3. Authorizer middleware
+Сделай middleware вида:
+- requireAuth
+- requireSuperAdmin
+- requirePermission(permissionCode)
+- requireAnyPermission([...])
+- requireCompanyAccess
+- requireBranchAccess
+
+---
+
+# 6. Tenant-aware request context
+
+Очень важно реализовать request context правильно.
+
+Нужно, чтобы после auth middleware в request было доступно:
+- current user
+- isSuperAdmin
+- memberships
+- effective company context
+- effective branch context
+- permissions
+
+Нужно продумать способ выбора active tenant context.
+
+## Вариант
+Можно использовать headers/query/path/context selection:
+- x-company-id
+- x-branch-id
+
+Но обязательно валидировать, что пользователь реально имеет доступ к этим company/branch.
+
+Если предложишь более чистый способ — опиши его.
+
+---
+
+# 7. Company access guard
+
+Нужен guard/middleware:
+- проверяет, что пользователь имеет membership в companyId
+- либо является superAdmin
+- загружает effective company membership в request context
+
+Нужно учитывать:
+- companyId может приходить из route params, body, query или header
+- предложи единый clean pattern, как это лучше стандартизировать
+
+---
+
+# 8. Branch access guard
+
+Нужен guard/middleware:
+- проверяет доступ к конкретному branchId
+- branch должен принадлежать выбранной company
+- пользователь должен иметь branch membership или company-wide access, если роль это допускает
+- superAdmin может обходить проверку
+
+Если считаешь, что owner/admin/manager компании должны иметь implicit доступ ко всем филиалам компании, опиши и реализуй это явно.
+
+---
+
+# 9. Permission resolution rules
+
+Нужно явно определить правила:
+
+Пример:
+- superAdmin -> all permissions
+- owner/admin company-level -> broad company permissions + implicit all branches
+- branchManager/operator/mechanic/viewer -> только разрешенные branch memberships
+- accountant -> company finance scope, branch scope по логике memberships
+
+Если нужно, введи helper:
+- resolveEffectivePermissions(user, companyId, branchId)
+
+---
+
+# 10. Audit middleware / audit service
+
+Нужно сделать foundation для audit logging.
+
+Логировать:
+- actorUserId
+- companyId
+- branchId
+- entityType
+- entityId
+- action
+- before
+- after
+- metadata
+- ip
+- userAgent
+
+Сейчас достаточно сделать reusable audit service и удобный способ вызывать его из CRUD сервисов.
+Не нужно пока делать магию на все запросы автоматически, если это даст слишком много шума.
+Но должен быть готовый foundation.
+
+---
+
+# 11. Seeds
+
+Нужно создать seed scripts для:
+- system roles
+- base permissions
+- role_permissions mapping
+
+## Минимальный набор permissions
+Сделай базовый набор, например:
+- companies.read
+- companies.update
+- branches.read
+- branches.create
+- branches.update
+- stations.read
+- stations.create
+- stations.update
+- clients.read
+- clients.create
+- clients.update
+- assets.read
+- assets.create
+- assets.update
+- assets.changeStatus
+- rentals.read
+- rentals.create
+- rentals.update
+- rentals.approve
+- rentals.start
+- rentals.extend
+- rentals.complete
+- rentals.cancel
+- blacklist.read
+- blacklist.create
+- blacklist.update
+- payments.read
+- payments.create
+- payments.refund
+- audit.read
+
+Сделай role_permissions mapping в разумном виде.
+Не давай viewer прав на запись.
+
+---
+
+# 12. API endpoints, которые нужно реализовать сейчас
+
+## Auth
+- POST /auth/register
+- POST /auth/login
+- POST /auth/refresh
+- POST /auth/logout
+- POST /auth/logout-all (optional)
+- GET /auth/me
+
+## Membership / access debugging
+- GET /auth/memberships
+- GET /auth/permissions
+
+Если нужно, можешь объединить часть этого в /auth/me, но ответ должен быть удобным для frontend.
+
+---
+
+# 13. Структура кода
+
+Сделай clean module structure, например:
+- modules/auth
+- modules/access
+- modules/users
+- modules/audit
+- middleware
+- services
+- repositories
+- validators
+- utils
+
+Или предложи свою, но она должна быть:
+- модульная
+- масштабируемая
+- без жирных route handlers
+
+---
+
+# 14. Validation
+
+Для всех auth endpoints:
+- отдельные Zod schemas
+- DTO typing
+- consistent error responses
+
+---
+
+# 15. Error handling
+
+Сделай нормальные ошибки для:
+- invalid credentials
+- unauthorized
+- forbidden
+- invalid refresh token
+- revoked session
+- expired session
+- no company access
+- no branch access
+- missing permission
+
+---
+
+# 16. Что НЕ делать сейчас
+Пока не реализовывай:
+- password reset emails
+- TOTP full flow
+- SSO
+- OAuth social login
+- mobile-specific auth
+- advanced impersonation
+- platform support session takeover
+
+Это позже.
+
+---
+
+# 17. Что хочу получить на выходе
+1. Auth module
+2. Session service
+3. JWT utilities
+4. Membership loader
+5. RBAC / permission middleware
+6. Company guard
+7. Branch guard
+8. Seed scripts roles + permissions + role_permissions
+9. README section:
+   - как запускать
+   - как логиниться
+   - как выбирать company/branch context
+10. Примеры endpoint responses
+
+---
+
+# 18. Порядок реализации
+Сначала:
+1. опиши access model
+2. опиши, как будет выбираться active company/branch context
+3. покажи структуру модулей
+4. потом реализуй auth, sessions, memberships, RBAC middleware
+5. только потом endpoint handlers
+
+Не упрощай multi-tenant модель до single-company assumptions.
+Если увидишь спорный момент в branch/company scope — опиши решение в комментарии и README.

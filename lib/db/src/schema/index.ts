@@ -1,3 +1,4 @@
+export * from "./enums";
 export * from "./companies";
 export * from "./company-settings";
 export * from "./branches";
@@ -19,3 +20,4 @@ export * from "./payments";
 export * from "./deposits";
 export * from "./blacklist-entries";
 export * from "./audit-logs";
+export * from "./relations";

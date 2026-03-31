@@ -1,13 +1,40 @@
-import { db, assets, assetStatusHistory, type InsertAsset } from "@workspace/db";
+import { db, assets, assetStatusHistory, branches, stations, type InsertAsset } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
-import { NotFoundError } from "../lib/errors";
+import { NotFoundError, AppError } from "../lib/errors";
+
+async function validateOwnership(companyId: string, branchId?: string, stationId?: string | null) {
+  if (branchId) {
+    const [branch] = await db
+      .select({ id: branches.id })
+      .from(branches)
+      .where(and(eq(branches.id, branchId), eq(branches.companyId, companyId)))
+      .limit(1);
+    if (!branch) {
+      throw new AppError(400, "Branch does not belong to this company", "INVALID_BRANCH");
+    }
+  }
+
+  if (stationId) {
+    const [station] = await db
+      .select({ id: stations.id })
+      .from(stations)
+      .where(and(eq(stations.id, stationId), eq(stations.companyId, companyId)))
+      .limit(1);
+    if (!station) {
+      throw new AppError(400, "Station does not belong to this company", "INVALID_STATION");
+    }
+  }
+}
 
 export async function createAsset(data: InsertAsset) {
+  await validateOwnership(data.companyId, data.branchId, data.stationId);
+
   const [asset] = await db.insert(assets).values(data).returning();
 
   await db.insert(assetStatusHistory).values({
+    companyId: asset.companyId,
     assetId: asset.id,
-    newStatus: asset.status,
+    toStatus: asset.status,
     reason: "Asset created",
   });
 
@@ -28,6 +55,10 @@ export async function getAsset(id: string, companyId: string) {
 }
 
 export async function updateAsset(id: string, companyId: string, data: Partial<InsertAsset>) {
+  if (data.branchId || data.stationId) {
+    await validateOwnership(companyId, data.branchId, data.stationId);
+  }
+
   const [asset] = await db
     .update(assets)
     .set({ ...data, updatedAt: new Date() })
@@ -44,7 +75,7 @@ export async function changeAssetStatus(
   id: string,
   companyId: string,
   newStatus: string,
-  changedBy?: string,
+  changedByUserId?: string,
   reason?: string,
 ) {
   const [current] = await db
@@ -64,10 +95,11 @@ export async function changeAssetStatus(
     .returning();
 
   await db.insert(assetStatusHistory).values({
+    companyId,
     assetId: id,
-    previousStatus: current.status,
-    newStatus: newStatus as typeof current.status,
-    changedBy: changedBy ?? null,
+    fromStatus: current.status,
+    toStatus: newStatus as typeof current.status,
+    changedByUserId: changedByUserId ?? null,
     reason: reason ?? null,
   });
 

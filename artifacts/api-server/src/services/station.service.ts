@@ -1,8 +1,22 @@
-import { db, stations, type InsertStation } from "@workspace/db";
+import { db, stations, branches, type InsertStation } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
-import { NotFoundError } from "../lib/errors";
+import { NotFoundError, AppError } from "../lib/errors";
+
+async function validateBranchOwnership(branchId: string, companyId: string) {
+  const [branch] = await db
+    .select({ id: branches.id })
+    .from(branches)
+    .where(and(eq(branches.id, branchId), eq(branches.companyId, companyId)))
+    .limit(1);
+
+  if (!branch) {
+    throw new AppError(400, "Branch does not belong to this company", "INVALID_BRANCH");
+  }
+}
 
 export async function createStation(data: InsertStation) {
+  await validateBranchOwnership(data.branchId, data.companyId);
+
   const [station] = await db.insert(stations).values(data).returning();
   return station;
 }
@@ -21,6 +35,10 @@ export async function getStation(id: string, companyId: string) {
 }
 
 export async function updateStation(id: string, companyId: string, data: Partial<InsertStation>) {
+  if (data.branchId) {
+    await validateBranchOwnership(data.branchId, companyId);
+  }
+
   const [station] = await db
     .update(stations)
     .set({ ...data, updatedAt: new Date() })

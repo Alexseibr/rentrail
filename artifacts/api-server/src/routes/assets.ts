@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompany } from "../middlewares/authorize";
+import { requireRole } from "../middlewares/authorize";
 import * as assetService from "../services/asset.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -15,7 +15,7 @@ const assetStatusValues = [
 ] as const;
 
 const createAssetSchema = z.object({
-  branchId: z.string().uuid().optional(),
+  branchId: z.string().uuid(),
   stationId: z.string().uuid().optional(),
   assetType: z.enum(assetTypeValues),
   brand: z.string().optional(),
@@ -41,7 +41,7 @@ const changeStatusSchema = z.object({
 router.post(
   "/assets",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator"),
   validate({ body: createAssetSchema }),
   async (req, res) => {
     const asset = await assetService.createAsset({
@@ -50,11 +50,11 @@ router.post(
     });
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "create",
       entityType: "asset",
       entityId: asset.id,
-      newValues: asset,
+      after: asset,
       req,
     });
     res.status(201).json({ data: asset });
@@ -64,7 +64,7 @@ router.post(
 router.get(
   "/assets",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
   async (req, res) => {
     const { branchId, status } = req.query as { branchId?: string; status?: string };
     const assets = await assetService.listAssets(req.tenant!.companyId, branchId, status);
@@ -75,7 +75,7 @@ router.get(
 router.get(
   "/assets/:id",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic", "viewer"),
   validate({ params: idParams }),
   async (req, res) => {
     const asset = await assetService.getAsset(req.params.id, req.tenant!.companyId);
@@ -86,19 +86,19 @@ router.get(
 router.patch(
   "/assets/:id",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic"),
   validate({ params: idParams, body: updateAssetSchema }),
   async (req, res) => {
     const old = await assetService.getAsset(req.params.id, req.tenant!.companyId);
     const asset = await assetService.updateAsset(req.params.id, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "update",
       entityType: "asset",
       entityId: asset.id,
-      oldValues: old,
-      newValues: asset,
+      before: old,
+      after: asset,
       req,
     });
     res.json({ data: asset });
@@ -108,7 +108,7 @@ router.patch(
 router.post(
   "/assets/:id/status",
   authenticate,
-  requireCompany,
+  requireRole("superAdmin", "owner", "admin", "manager", "operator", "mechanic"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
     const asset = await assetService.changeAssetStatus(
@@ -120,11 +120,11 @@ router.post(
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
-      userId: req.user!.userId,
+      actorUserId: req.user!.userId,
       action: "status_change",
       entityType: "asset",
       entityId: asset.id,
-      newValues: { status: req.body.status },
+      after: { status: req.body.status },
       req,
     });
     res.json({ data: asset });
