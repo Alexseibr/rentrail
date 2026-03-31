@@ -46,8 +46,13 @@ router.get(
   "/companies",
   authenticate,
   async (req, res) => {
-    const hasPlatformRole = (req.user!.platformRoles ?? []).length > 0;
-    if (req.user!.isSuperAdmin || hasPlatformRole) {
+    if (req.user!.isSuperAdmin) {
+      const companies = await companyService.listCompanies();
+      res.json({ data: companies });
+      return;
+    }
+    const dbPlatformRoles = req.platformUser?.platformRoles ?? [];
+    if (dbPlatformRoles.length > 0) {
       const companies = await companyService.listCompanies();
       res.json({ data: companies });
       return;

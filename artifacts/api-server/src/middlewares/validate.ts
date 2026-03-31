@@ -7,52 +7,16 @@ interface ValidationSchemas {
   query?: z.ZodType;
 }
 
-interface ZodIssue {
-  path: (string | number)[];
-  message: string;
-}
-
-function formatIssues(issues: ZodIssue[]) {
-  return issues.map((i) => ({
-    path: i.path.join("."),
-    message: i.message,
-  }));
-}
-
 export function validate(schemas: ValidationSchemas) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     if (schemas.body) {
-      const result = schemas.body.safeParse(req.body);
-      if (!result.success) {
-        res.status(400).json({
-          error: "Validation failed",
-          details: formatIssues(result.error.issues),
-        });
-        return;
-      }
-      req.body = result.data;
+      req.body = schemas.body.parse(req.body);
     }
     if (schemas.params) {
-      const result = schemas.params.safeParse(req.params);
-      if (!result.success) {
-        res.status(400).json({
-          error: "Validation failed",
-          details: formatIssues(result.error.issues),
-        });
-        return;
-      }
-      req.params = result.data;
+      req.params = schemas.params.parse(req.params);
     }
     if (schemas.query) {
-      const result = schemas.query.safeParse(req.query);
-      if (!result.success) {
-        res.status(400).json({
-          error: "Validation failed",
-          details: formatIssues(result.error.issues),
-        });
-        return;
-      }
-      req.query = result.data;
+      req.query = schemas.query.parse(req.query);
     }
     next();
   };
