@@ -57,6 +57,7 @@ function validateModerationTransition(from: string, to: string, action?: string)
 export interface PlatformCompanyListOptions {
   search?: string;
   status?: string;
+  plan?: string;
   hasModeration?: string;
   page?: number;
   limit?: number;
@@ -75,6 +76,10 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
 
   if (opts.hasModeration === "true") {
     conditions.push(sql`${companies.moderatedAt} IS NOT NULL` as ReturnType<typeof eq>);
+  }
+
+  if (opts.plan) {
+    conditions.push(sql`${companies.plan} = ${opts.plan}` as ReturnType<typeof eq>);
   }
 
   let ownerCompanyIds: string[] | undefined;
@@ -353,6 +358,14 @@ export async function cancelCompany(companyId: string, input: ModerationActionIn
   return performModerationAction(companyId, "canceled", "cancel", input);
 }
 
+const DEFAULT_PLAN_LIMITS: Record<string, number> = {
+  branches: -1,
+  stations: -1,
+  assets: -1,
+  users: -1,
+  rentals: -1,
+};
+
 export async function getCompanyUsage(companyId: string) {
   const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
   if (!company) throw new NotFoundError("Company not found");
@@ -363,15 +376,18 @@ export async function getCompanyUsage(companyId: string) {
   const [userCount] = await db.select({ count: count() }).from(userCompanyMemberships).where(eq(userCompanyMemberships.companyId, companyId));
   const [rentalCount] = await db.select({ count: count() }).from(rentals).where(eq(rentals.companyId, companyId));
 
+  const limits = { ...DEFAULT_PLAN_LIMITS };
+
   return {
     companyId,
     companyName: company.name,
+    plan: company.plan ?? "none",
     resources: {
-      branches: branchCount?.count ?? 0,
-      stations: stationCount?.count ?? 0,
-      assets: assetCount?.count ?? 0,
-      users: userCount?.count ?? 0,
-      rentals: rentalCount?.count ?? 0,
+      branches: { current: branchCount?.count ?? 0, limit: limits.branches },
+      stations: { current: stationCount?.count ?? 0, limit: limits.stations },
+      assets: { current: assetCount?.count ?? 0, limit: limits.assets },
+      users: { current: userCount?.count ?? 0, limit: limits.users },
+      rentals: { current: rentalCount?.count ?? 0, limit: limits.rentals },
     },
   };
 }

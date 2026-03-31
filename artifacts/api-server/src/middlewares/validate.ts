@@ -16,7 +16,8 @@ export function validate(schemas: ValidationSchemas) {
       req.params = schemas.params.parse(req.params);
     }
     if (schemas.query) {
-      schemas.query.parse(req.query);
+      const parsed = schemas.query.parse(req.query);
+      Object.assign(req.query, parsed);
     }
     next();
   };

@@ -35,6 +35,7 @@ const companyStatusValues = ["pending", "trial", "active", "past_due", "suspende
 const platformListQuery = z.object({
   search: z.string().optional(),
   status: z.enum(companyStatusValues).optional(),
+  plan: z.string().optional(),
   hasModeration: z.enum(["true", "false"]).optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
@@ -70,6 +71,7 @@ router.get(
     const result = await platformCompanyService.listPlatformCompanies({
       search: req.query.search as string | undefined,
       status: req.query.status as string | undefined,
+      plan: req.query.plan as string | undefined,
       hasModeration: req.query.hasModeration as string | undefined,
       page: req.query.page ? Number(req.query.page) : undefined,
       limit: req.query.limit ? Number(req.query.limit) : undefined,

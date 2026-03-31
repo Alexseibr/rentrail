@@ -523,8 +523,12 @@ describe("Platform Moderation", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.companyId).toBe(tenantA.company.id);
+      expect(res.body.data.plan).toBeDefined();
       expect(res.body.data.resources).toBeDefined();
-      expect(typeof res.body.data.resources.branches).toBe("number");
+      expect(res.body.data.resources.branches).toHaveProperty("current");
+      expect(res.body.data.resources.branches).toHaveProperty("limit");
+      expect(typeof res.body.data.resources.branches.current).toBe("number");
+      expect(typeof res.body.data.resources.branches.limit).toBe("number");
     });
   });
 

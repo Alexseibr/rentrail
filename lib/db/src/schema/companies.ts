@@ -15,6 +15,7 @@ export const companies = pgTable("companies", {
   currency: varchar("currency", { length: 10 }).default("USD").notNull(),
   timezone: varchar("timezone", { length: 100 }).default("UTC").notNull(),
   logoUrl: text("logo_url"),
+  plan: varchar("plan", { length: 50 }),
   status: companyStatusEnum("status").default("pending").notNull(),
   moderationReasonCode: varchar("moderation_reason_code", { length: 100 }),
   moderationReasonText: text("moderation_reason_text"),
