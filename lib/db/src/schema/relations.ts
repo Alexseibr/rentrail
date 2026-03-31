@@ -20,9 +20,15 @@ import { payments } from "./payments";
 import { deposits } from "./deposits";
 import { blacklistEntries } from "./blacklist-entries";
 import { auditLogs } from "./audit-logs";
+import { companyBranding } from "./company-branding";
+import { inquiries } from "./inquiries";
+import { b2bRequests } from "./b2b-requests";
+import { notifications } from "./notifications";
+import { companyModules } from "./company-modules";
 
-export const companiesRelations = relations(companies, ({ many }) => ({
+export const companiesRelations = relations(companies, ({ one, many }) => ({
   settings: many(companySettings),
+  branding: one(companyBranding, { fields: [companies.id], references: [companyBranding.companyId] }),
   branches: many(branches),
   stations: many(stations),
   companyMemberships: many(userCompanyMemberships),
@@ -34,6 +40,9 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   deposits: many(deposits),
   blacklistEntries: many(blacklistEntries),
   auditLogs: many(auditLogs),
+  inquiries: many(inquiries),
+  b2bRequests: many(b2bRequests),
+  modules: many(companyModules),
 }));
 
 export const companySettingsRelations = relations(companySettings, ({ one }) => ({
@@ -165,4 +174,32 @@ export const blacklistEntriesRelations = relations(blacklistEntries, ({ one }) =
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   company: one(companies, { fields: [auditLogs.companyId], references: [companies.id] }),
   actorUser: one(users, { fields: [auditLogs.actorUserId], references: [users.id] }),
+}));
+
+export const companyBrandingRelations = relations(companyBranding, ({ one }) => ({
+  company: one(companies, { fields: [companyBranding.companyId], references: [companies.id] }),
+}));
+
+export const inquiriesRelations = relations(inquiries, ({ one }) => ({
+  company: one(companies, { fields: [inquiries.companyId], references: [companies.id] }),
+  branch: one(branches, { fields: [inquiries.branchId], references: [branches.id] }),
+  station: one(stations, { fields: [inquiries.stationId], references: [stations.id] }),
+  processedByUser: one(users, { fields: [inquiries.processedByUserId], references: [users.id] }),
+  convertedClient: one(clients, { fields: [inquiries.convertedClientId], references: [clients.id] }),
+  convertedRental: one(rentals, { fields: [inquiries.convertedRentalId], references: [rentals.id] }),
+}));
+
+export const b2bRequestsRelations = relations(b2bRequests, ({ one }) => ({
+  company: one(companies, { fields: [b2bRequests.companyId], references: [companies.id] }),
+  assignedToUser: one(users, { fields: [b2bRequests.assignedToUserId], references: [users.id] }),
+  processedByUser: one(users, { fields: [b2bRequests.processedByUserId], references: [users.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  company: one(companies, { fields: [notifications.companyId], references: [companies.id] }),
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const companyModulesRelations = relations(companyModules, ({ one }) => ({
+  company: one(companies, { fields: [companyModules.companyId], references: [companies.id] }),
 }));

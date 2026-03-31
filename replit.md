@@ -70,7 +70,7 @@ workspace/
 └── tsconfig.json
 ```
 
-## Database Schema (21 tables, 100+ indexes)
+## Database Schema (26 tables, 100+ indexes)
 
 ### Enums (lib/db/src/schema/enums.ts)
 - companyStatus: pending, trial, active, past_due, blocked, canceled
@@ -88,6 +88,9 @@ workspace/
 - depositStatus: held, partially_released, released, forfeited
 - blacklistScope: branch, company, global
 - blacklistActionType: warning, manual_approval_only, increased_deposit, restricted_access, blocked_branch, blocked_company, blocked_global
+- inquiryStatus: new, in_review, contacted, converted, rejected, spam, archived
+- b2bRequestStatus: new, in_review, contacted, negotiating, converted, rejected, archived
+- notificationType: inquiry_created, inquiry_assigned, inquiry_converted, b2b_request_created, b2b_request_assigned, payment_created, payment_paid, rental_started, rental_overdue, incident_created, maintenance_created
 
 ### Tables
 
@@ -124,6 +127,17 @@ workspace/
 
 #### Safety
 - **blacklist_entries** — scopeType (branch/company/global), client snapshots (fullNameSnapshot, phoneSnapshot, emailSnapshot, documentSnapshot), actionType, reasonCode, startsAt/endsAt
+
+#### Lead Intake
+- **inquiries** — public rental inquiries; fullName, phone, email, assetType, preferredAssetId, requestedStartAt/EndAt, message, blacklistCheckResult jsonb; status machine (new→in_review→contacted→converted/rejected/spam→archived); convertedClientId, convertedRentalId tracking
+- **b2b_requests** — B2B partnership inquiries; companyName, contactPerson, phone, email, city, requestedFleetSize, assetTypes jsonb, message; status machine (new→in_review→contacted→negotiating→converted/rejected→archived); assignedToUserId, notesInternal
+
+#### Company Config
+- **company_branding** — public page config per company (1:1); logo, colors, contact info, social links, publicEnabled flag, publicShow* toggles for assets/pricing/stations/forms
+- **company_modules** — feature flags per company; moduleCode + enabled; unique on (companyId, moduleCode)
+
+#### Notifications
+- **notifications** — in-app notifications per user; type enum, title, body, data jsonb, readAt
 
 #### Audit
 - **audit_logs** — actorUserId, before/after jsonb, metadata jsonb, branchId, ip, userAgent
@@ -233,6 +247,41 @@ authenticate → requireCompanyAccess → requirePermission("asset:create")
 - `GET /blacklist` — list entries
 - `POST /blacklist/check` — check client against blacklist
 
+### Public (no auth, rate-limited)
+- `GET /public/companies/:slug` — public company page (requires publicEnabled)
+- `GET /public/companies/:slug/assets` — public asset list (requires publicShowAssets)
+- `GET /public/companies/:slug/stations` — public station list (requires publicShowStations)
+- `POST /public/companies/:slug/inquiries` — submit rental inquiry (lead intake only)
+- `POST /public/companies/:slug/b2b-request` — submit B2B partnership request
+
+### Inquiries (requires x-company-id)
+- `GET /inquiries` — list inquiries (?status=)
+- `GET /inquiries/:id` — get inquiry
+- `PATCH /inquiries/:id` — update inquiry fields
+- `POST /inquiries/:id/mark-contacted` — mark inquiry as contacted
+- `POST /inquiries/:id/convert-to-client` — create/find client from inquiry
+- `POST /inquiries/:id/convert-to-rental-draft` — create rental draft from converted inquiry
+- `POST /inquiries/:id/reject` — reject inquiry
+
+### B2B Requests (requires x-company-id)
+- `GET /b2b-requests` — list B2B requests (?status=)
+- `GET /b2b-requests/:id` — get B2B request
+- `PATCH /b2b-requests/:id` — update notes/assignment
+- `POST /b2b-requests/:id/mark-contacted` — mark as contacted
+- `POST /b2b-requests/:id/convert` — convert B2B request
+- `POST /b2b-requests/:id/reject` — reject B2B request
+
+### Notifications
+- `GET /notifications` — list user notifications (optional x-company-id filter)
+- `POST /notifications/:id/read` — mark notification as read
+- `POST /notifications/read-all` — mark all notifications as read
+
+### Company Settings (requires x-company-id)
+- `GET /companies/me/branding` — get company branding
+- `PATCH /companies/me/branding` — update branding + public page config
+- `GET /companies/me/modules` — get feature modules
+- `PATCH /companies/me/modules` — enable/disable modules
+
 ## Running
 
 - Dev server: `pnpm --filter @workspace/api-server run dev`
@@ -290,12 +339,13 @@ completed, canceled, defaulted — terminal states
 ### By Module
 - **platform**: company:read, company:update, company:manage
 - **organization**: branch:create/read/update/delete/manage, station:create/read/update/delete/manage
-- **crm**: client:create/read/update/delete/manage
+- **crm**: client:create/read/update/delete/manage, inquiry:create/read/update/manage, b2b:create/read/update/manage
 - **fleet**: asset:create/read/update/delete/changeStatus/manage
 - **operations**: rental:create/read/update/approve/start/extend/complete/cancel/manage, blacklist:create/read/update/check/manage
 - **finance**: payment:create/read/refund/manage, deposit:create/read/update/manage
 - **access**: user:create/read/update/delete/manage, role:read/manage
 - **system**: audit:read, settings:read/update/manage
+- **notifications**: notification:read
 
 ### Granular Actions (beyond CRUD)
 - `asset:changeStatus` — change asset operational status
@@ -307,5 +357,18 @@ completed, canceled, defaulted — terminal states
 - `blacklist:check` — check client against blacklist
 - `payment:refund` — process payment refund
 
+## Lead Intake Rules
+- Public inquiry/B2B forms are **lead intake only** — they do NOT create active rentals
+- `convertToClient` creates or finds an existing client by phone
+- `convertToRentalDraft` creates a draft rental (status=draft) — NOT an active rental
+- Inquiry conversion requires client to exist first (convert-to-client before convert-to-rental-draft)
+- Blacklist check runs at inquiry creation if phone matches existing client
+- Public endpoints only accessible when company has `publicEnabled=true` and is not blocked/canceled
+
+## Company Modules
+Available modules: public_page, inquiries, b2b_requests, rentals, payments, blacklist, incidents, maintenance, telemetry, batteries, notifications
+- Platform-managed modules (telemetry, batteries) can only be toggled by superAdmin
+- Module state stored in company_modules table (companyId + moduleCode unique)
+
 ## Phase 2 (future)
-Tables to add: telemetry, devices, batteries, geofences, incidents, notifications
+Tables to add: telemetry, devices, batteries, geofences, incidents

@@ -15,12 +15,13 @@ const SYSTEM_ROLES = [
 const MODULES: Record<string, string[]> = {
   platform: ["company"],
   organization: ["branch", "station"],
-  crm: ["client"],
+  crm: ["client", "inquiry", "b2b"],
   fleet: ["asset"],
   operations: ["rental", "blacklist"],
   finance: ["payment", "deposit"],
   access: ["user", "role"],
   system: ["audit", "settings"],
+  notifications: ["notification"],
 };
 
 function getModule(resource: string): string {
@@ -44,6 +45,9 @@ const RESOURCE_ACTIONS: Record<string, string[]> = {
   role: ["read", "manage"],
   audit: ["read"],
   settings: ["read", "update", "manage"],
+  inquiry: ["create", "read", "update", "manage"],
+  b2b: ["create", "read", "update", "manage"],
+  notification: ["read"],
 };
 
 function allPermsFor(resources: string[]): string[] {
@@ -79,6 +83,9 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("user", ["read"]),
     ...permsFor("audit", ["read"]),
     ...permsFor("settings", ["read"]),
+    ...permsFor("inquiry", ["create", "read", "update"]),
+    ...permsFor("b2b", ["create", "read", "update"]),
+    ...permsFor("notification", ["read"]),
   ],
 
   accountant: [
@@ -101,6 +108,9 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("blacklist", ["read", "check"]),
     ...permsFor("payment", ["read"]),
     ...permsFor("deposit", ["read"]),
+    ...permsFor("inquiry", ["read", "update"]),
+    ...permsFor("b2b", ["read"]),
+    ...permsFor("notification", ["read"]),
   ],
 
   mechanic: [

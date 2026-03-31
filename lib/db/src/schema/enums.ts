@@ -130,3 +130,37 @@ export const blacklistActionTypeEnum = pgEnum("blacklist_action_type", [
   "blocked_company",
   "blocked_global",
 ]);
+
+export const inquiryStatusEnum = pgEnum("inquiry_status", [
+  "new",
+  "in_review",
+  "contacted",
+  "converted",
+  "rejected",
+  "spam",
+  "archived",
+]);
+
+export const b2bRequestStatusEnum = pgEnum("b2b_request_status", [
+  "new",
+  "in_review",
+  "contacted",
+  "negotiating",
+  "converted",
+  "rejected",
+  "archived",
+]);
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "inquiry_created",
+  "inquiry_assigned",
+  "inquiry_converted",
+  "b2b_request_created",
+  "b2b_request_assigned",
+  "payment_created",
+  "payment_paid",
+  "rental_started",
+  "rental_overdue",
+  "incident_created",
+  "maintenance_created",
+]);
