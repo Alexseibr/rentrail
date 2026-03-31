@@ -91,4 +91,44 @@ router.patch(
   },
 );
 
+router.post(
+  "/clients/:id/archive",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("client:update"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const client = await clientService.archiveClient(req.params.id, req.tenant!.companyId);
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "archive",
+      entityType: "client",
+      entityId: client.id,
+      req,
+    });
+    res.json({ data: client });
+  },
+);
+
+router.post(
+  "/clients/:id/restore",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("client:update"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const client = await clientService.restoreClient(req.params.id, req.tenant!.companyId);
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "restore",
+      entityType: "client",
+      entityId: client.id,
+      req,
+    });
+    res.json({ data: client });
+  },
+);
+
 export default router;

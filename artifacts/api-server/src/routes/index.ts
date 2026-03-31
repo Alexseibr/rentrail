@@ -26,6 +26,7 @@ import pushTokensRouter from "./push-tokens";
 import attachmentsRouter from "./attachments";
 import storageRouter from "./storage";
 import platformAuditRouter from "./platform-audit";
+import auditLogsRouter from "./audit-logs";
 
 const router: IRouter = Router();
 
@@ -56,5 +57,6 @@ router.use(pushTokensRouter);
 router.use(attachmentsRouter);
 router.use(storageRouter);
 router.use(platformAuditRouter);
+router.use(auditLogsRouter);
 
 export default router;

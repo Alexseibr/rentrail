@@ -1,6 +1,6 @@
 import { db, blacklistEntries, clients, type InsertBlacklistEntry } from "@workspace/db";
 import { eq, and, or, isNull, gt } from "drizzle-orm";
-import { NotFoundError } from "../lib/errors";
+import { NotFoundError, AppError } from "../lib/errors";
 
 export async function createBlacklistEntry(data: InsertBlacklistEntry & { clientId?: string; companyId?: string }) {
   if (data.clientId && data.companyId) {
@@ -29,11 +29,11 @@ export async function listBlacklistEntries(companyId: string) {
     .where(eq(blacklistEntries.companyId, companyId));
 }
 
-export async function getBlacklistEntry(id: string) {
+export async function getBlacklistEntry(id: string, companyId: string) {
   const [entry] = await db
     .select()
     .from(blacklistEntries)
-    .where(eq(blacklistEntries.id, id))
+    .where(and(eq(blacklistEntries.id, id), eq(blacklistEntries.companyId, companyId)))
     .limit(1);
 
   if (!entry) {
@@ -42,7 +42,38 @@ export async function getBlacklistEntry(id: string) {
   return entry;
 }
 
-export async function checkClientBlacklist(clientId: string, companyId: string, branchId?: string) {
+export async function revokeBlacklistEntry(id: string, companyId: string) {
+  const [entry] = await db
+    .update(blacklistEntries)
+    .set({ endsAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(blacklistEntries.id, id), eq(blacklistEntries.companyId, companyId)))
+    .returning();
+
+  if (!entry) {
+    throw new NotFoundError("Blacklist entry not found");
+  }
+  return entry;
+}
+
+const ACTION_SEVERITY: Record<string, number> = {
+  blocked_global: 7,
+  blocked_company: 6,
+  blocked_branch: 5,
+  restricted_access: 4,
+  increased_deposit: 3,
+  manual_approval_only: 2,
+  warning: 1,
+};
+
+export interface BlacklistDecision {
+  isBlacklisted: boolean;
+  strongestAction: string | null;
+  strongestSeverity: number;
+  isBlocked: boolean;
+  entries: typeof blacklistEntries.$inferSelect[];
+}
+
+export async function checkClientBlacklist(clientId: string, companyId: string, branchId?: string): Promise<BlacklistDecision> {
   const now = new Date();
 
   const entries = await db
@@ -68,8 +99,24 @@ export async function checkClientBlacklist(clientId: string, companyId: string, 
     return false;
   });
 
+  let strongestAction: string | null = null;
+  let strongestSeverity = 0;
+
+  for (const entry of activeEntries) {
+    const severity = ACTION_SEVERITY[entry.actionType] ?? 0;
+    if (severity > strongestSeverity) {
+      strongestSeverity = severity;
+      strongestAction = entry.actionType;
+    }
+  }
+
+  const isBlocked = strongestSeverity >= 5;
+
   return {
     isBlacklisted: activeEntries.length > 0,
+    strongestAction,
+    strongestSeverity,
+    isBlocked,
     entries: activeEntries,
   };
 }

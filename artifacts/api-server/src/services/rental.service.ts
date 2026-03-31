@@ -1,7 +1,7 @@
 import { db, rentals, rentalStatusHistory, assets, assetStatusHistory, clients, branches, stations, type InsertRental } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import { NotFoundError, AppError, InvalidStatusTransitionError, AssetUnavailableError, BlacklistBlockedError } from "../lib/errors";
-import { checkClientBlacklist } from "./blacklist.service";
+import { checkClientBlacklist, type BlacklistDecision } from "./blacklist.service";
 
 type RentalStatus = typeof rentals.$inferSelect.status;
 type AssetStatus = typeof assets.$inferSelect.status;
@@ -167,18 +167,17 @@ export async function createRental(data: InsertRental, userId?: string) {
   const blacklistResult = await checkClientBlacklist(data.clientId, data.companyId, data.branchId ?? undefined);
   let blacklistWarnings: { action: string; reason: string }[] = [];
 
-  if (blacklistResult.isBlacklisted) {
+  if (blacklistResult.isBlocked) {
     const hardBlocks = blacklistResult.entries.filter(e =>
       BLOCKING_BLACKLIST_ACTIONS.includes(e.actionType),
     );
+    throw new BlacklistBlockedError(
+      "Client is blocked and cannot rent",
+      hardBlocks.map(e => ({ action: e.actionType, reason: e.reasonText ?? e.reasonCode })),
+    );
+  }
 
-    if (hardBlocks.length > 0) {
-      throw new BlacklistBlockedError(
-        "Client is blocked and cannot rent",
-        hardBlocks.map(e => ({ action: e.actionType, reason: e.reasonText ?? e.reasonCode })),
-      );
-    }
-
+  if (blacklistResult.isBlacklisted) {
     blacklistWarnings = blacklistResult.entries.map(e => ({
       action: e.actionType,
       reason: e.reasonText ?? e.reasonCode,
@@ -210,11 +209,11 @@ export async function approveRental(id: string, companyId: string, userId?: stri
   const [updated] = await db
     .update(rentals)
     .set({ status: targetStatus, updatedAt: new Date() })
-    .where(eq(rentals.id, id))
+    .where(and(eq(rentals.id, id), eq(rentals.companyId, companyId)))
     .returning();
 
   await writeRentalStatusHistory(companyId, id, rental.status, targetStatus, userId, "Rental approved");
-  return updated;
+  return { updated, previousStatus: rental.status };
 }
 
 export async function startRental(id: string, companyId: string, userId?: string) {
@@ -233,26 +232,24 @@ export async function startRental(id: string, companyId: string, userId?: string
   }
 
   const blacklistResult = await checkClientBlacklist(rental.clientId, companyId, rental.branchId ?? undefined);
-  if (blacklistResult.isBlacklisted) {
+  if (blacklistResult.isBlocked) {
     const hardBlocks = blacklistResult.entries.filter(e => BLOCKING_BLACKLIST_ACTIONS.includes(e.actionType));
-    if (hardBlocks.length > 0) {
-      throw new BlacklistBlockedError(
-        "Client was blacklisted after rental creation and cannot start rental",
-        hardBlocks.map(e => ({ action: e.actionType, reason: e.reasonText ?? e.reasonCode })),
-      );
-    }
+    throw new BlacklistBlockedError(
+      "Client was blacklisted after rental creation and cannot start rental",
+      hardBlocks.map(e => ({ action: e.actionType, reason: e.reasonText ?? e.reasonCode })),
+    );
   }
 
   const [updated] = await db
     .update(rentals)
     .set({ status: "active", startAt: rental.startAt ?? new Date(), updatedAt: new Date() })
-    .where(eq(rentals.id, id))
+    .where(and(eq(rentals.id, id), eq(rentals.companyId, companyId)))
     .returning();
 
   await writeRentalStatusHistory(companyId, id, rental.status, "active", userId, "Rental started");
   await setAssetStatus(rental.assetId, "rented", companyId, userId, `Rental ${id} started`);
 
-  return updated;
+  return { updated, previousStatus: rental.status };
 }
 
 export async function extendRental(id: string, companyId: string, newEndDate: Date, userId?: string, reason?: string) {
@@ -266,7 +263,7 @@ export async function extendRental(id: string, companyId: string, newEndDate: Da
       plannedEndAt: newEndDate,
       updatedAt: new Date(),
     })
-    .where(eq(rentals.id, id))
+    .where(and(eq(rentals.id, id), eq(rentals.companyId, companyId)))
     .returning();
 
   await writeRentalStatusHistory(
@@ -274,7 +271,7 @@ export async function extendRental(id: string, companyId: string, newEndDate: Da
     reason ?? `Extended to ${newEndDate.toISOString()}`,
   );
 
-  return updated;
+  return { updated, previousStatus: rental.status };
 }
 
 export interface ReturnRentalPayload {
@@ -313,7 +310,7 @@ export async function returnRental(id: string, companyId: string, payload: Retur
   const [updated] = await db
     .update(rentals)
     .set(updateData)
-    .where(eq(rentals.id, id))
+    .where(and(eq(rentals.id, id), eq(rentals.companyId, companyId)))
     .returning();
 
   await writeRentalStatusHistory(companyId, id, rental.status, "completed", userId, "Rental returned");
@@ -321,7 +318,7 @@ export async function returnRental(id: string, companyId: string, payload: Retur
   const assetStatus = payload.assetReturnStatus ?? "available";
   await setAssetStatus(rental.assetId, assetStatus, companyId, userId, `Rental ${id} returned`);
 
-  return updated;
+  return { updated, previousStatus: rental.status };
 }
 
 export async function cancelRental(id: string, companyId: string, userId?: string, reason?: string) {
@@ -331,7 +328,7 @@ export async function cancelRental(id: string, companyId: string, userId?: strin
   const [updated] = await db
     .update(rentals)
     .set({ status: "canceled" as RentalStatus, actualEndAt: new Date(), updatedAt: new Date() })
-    .where(eq(rentals.id, id))
+    .where(and(eq(rentals.id, id), eq(rentals.companyId, companyId)))
     .returning();
 
   await writeRentalStatusHistory(companyId, id, rental.status, "canceled", userId, reason ?? "Rental canceled");
@@ -341,7 +338,7 @@ export async function cancelRental(id: string, companyId: string, userId?: strin
     await setAssetStatus(rental.assetId, "available", companyId, userId, `Rental ${id} canceled`);
   }
 
-  return updated;
+  return { updated, previousStatus: rental.status };
 }
 
 export async function getRentalStatusHistory(rentalId: string, companyId: string) {

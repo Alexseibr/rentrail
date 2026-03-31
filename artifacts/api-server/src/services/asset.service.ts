@@ -128,7 +128,7 @@ export async function changeAssetStatus(
   const [updated] = await db
     .update(assets)
     .set({ status: newStatus as AssetStatus, updatedAt: new Date() })
-    .where(eq(assets.id, id))
+    .where(and(eq(assets.id, id), eq(assets.companyId, companyId)))
     .returning();
 
   await db.insert(assetStatusHistory).values({
@@ -169,7 +169,7 @@ export async function restoreAsset(id: string, companyId: string) {
   const [asset] = await db
     .update(assets)
     .set({ archivedAt: null, updatedAt: new Date() })
-    .where(eq(assets.id, id))
+    .where(and(eq(assets.id, id), eq(assets.companyId, companyId)))
     .returning();
 
   return asset;

@@ -49,7 +49,11 @@ The platform includes a mobile staff application built with Expo/React Native, f
 - **Blacklisting:** System to blacklist clients at branch, company, or global scope, with automated client data snapshots.
 - **Company Configuration:** Per-company settings, branding customization, and modular feature toggles.
 - **Notifications:** In-app notification system for users.
-- **Audit Logging:** Detailed audit trails for critical actions, capturing before/after states and actor information.
+- **Audit Logging:** Detailed audit trails for critical actions, capturing before/after states and actor information. Tenant-scoped `GET /audit-logs` endpoint with filters (entityType, action, actorUserId, from/to) and pagination.
+- **Blacklist Strongest Decision:** `checkClientBlacklist` returns `{isBlacklisted, isBlocked, strongestAction, strongestSeverity, entries}` with severity ranking (blocked_global=7 down to warning=1). Blocked clients cannot create or start rentals.
+- **Client Lifecycle:** Archive/restore support with status tracking. Archived clients cannot be updated.
+- **Branch Lifecycle:** Activate/deactivate support with status validation (no double-deactivation).
+- **Blacklist Revoke:** `POST /blacklist/:id/revoke` sets `endsAt` to now, removing blocking effect.
 - **Platform Access Model:** Separate platform-level RBAC with five platform roles (superAdmin, platformAdmin, platformSupport, platformFinance, platformRisk) stored in `platform_roles` / `platform_user_roles` tables. Platform roles are independent from tenant company memberships — a user can hold both. JWT tokens include `platformRoles: string[]` for informational purposes; `requirePlatformRole(...roles)` middleware verifies active roles from DB on every request (not JWT-only) to prevent stale privilege after revocation. All platform mutations are logged to `platform_audit_logs` with full actor/action/reason/before/after context. **Derivation policy:** `isSuperAdmin` in JWT is derived from `users.isSuperAdmin` DB column OR from the `superAdmin` platform role (`isSuperAdmin = users.isSuperAdmin || platformRoles.includes("superAdmin")`). Only the `superAdmin` platform role grants tenant-scope bypass; other platform roles (platformAdmin, platformSupport, platformFinance, platformRisk) do NOT. **Route separation:** Platform-scope company listing is at `GET /platform/companies` (gated by `requireAnyPlatformRole` middleware); tenant-scope `GET /companies` returns only user memberships with no platform bypass.
 
 ## External Dependencies
@@ -76,7 +80,7 @@ The platform includes a mobile staff application built with Expo/React Native, f
 The project uses Vitest with a workspace configuration (`vitest.workspace.ts`) defining 4 projects: `api-unit`, `api-integration`, `api-e2e`, `mobile-unit`.
 
 ### Test Commands
-- `pnpm test` — Run all 216 tests (10 suites)
+- `pnpm test` — Run all 239 tests (10 suites)
 - `pnpm test:unit` — Unit tests only (pure logic, no DB)
 - `pnpm test:api` — API integration tests (supertest against real DB)
 - `pnpm test:integration` — Integration tests (DB-backed)

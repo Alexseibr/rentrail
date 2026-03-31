@@ -139,6 +139,7 @@ export async function assignRole(userId: string, companyId: string, roleCode: st
       userId,
       companyId,
       branchId,
+      roleId,
       status: "active",
     });
   }

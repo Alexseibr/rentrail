@@ -34,6 +34,8 @@ const checkBlacklistSchema = z.object({
   branchId: z.string().uuid().optional(),
 });
 
+const idParams = z.object({ id: z.string().uuid() });
+
 router.post(
   "/blacklist",
   authenticate,
@@ -55,6 +57,7 @@ router.post(
       entityType: "blacklist_entry",
       entityId: entry.id,
       after: entry,
+      metadata: { scopeType: entry.scopeType, actionType: entry.actionType },
       req,
     });
     res.status(201).json({ data: entry });
@@ -72,6 +75,41 @@ router.get(
   },
 );
 
+router.get(
+  "/blacklist/:id",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("blacklist:read"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const entry = await blacklistService.getBlacklistEntry(req.params.id, req.tenant!.companyId);
+    res.json({ data: entry });
+  },
+);
+
+router.post(
+  "/blacklist/:id/revoke",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("blacklist:create"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const before = await blacklistService.getBlacklistEntry(req.params.id, req.tenant!.companyId);
+    const entry = await blacklistService.revokeBlacklistEntry(req.params.id, req.tenant!.companyId);
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "revoke",
+      entityType: "blacklist_entry",
+      entityId: entry.id,
+      before: { endsAt: before.endsAt, actionType: before.actionType },
+      after: { endsAt: entry.endsAt },
+      req,
+    });
+    res.json({ data: entry });
+  },
+);
+
 router.post(
   "/blacklist/check",
   authenticate,
@@ -84,7 +122,23 @@ router.post(
       req.tenant!.companyId,
       req.body.branchId,
     );
-    res.json({ data: result });
+    res.json({
+      data: {
+        isBlacklisted: result.isBlacklisted,
+        isBlocked: result.isBlocked,
+        strongestAction: result.strongestAction,
+        strongestSeverity: result.strongestSeverity,
+        entries: result.entries.map(e => ({
+          id: e.id,
+          scopeType: e.scopeType,
+          actionType: e.actionType,
+          reasonCode: e.reasonCode,
+          reasonText: e.reasonText,
+          startsAt: e.startsAt,
+          endsAt: e.endsAt,
+        })),
+      },
+    });
   },
 );
 

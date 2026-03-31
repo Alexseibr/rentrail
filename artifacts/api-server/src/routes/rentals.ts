@@ -108,16 +108,18 @@ router.post(
   requirePermission("rental:approve"),
   validate({ params: idParams }),
   async (req, res) => {
-    const rental = await rentalService.approveRental(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const { updated, previousStatus } = await rentalService.approveRental(req.params.id, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
       action: "approve",
       entityType: "rental",
-      entityId: rental.id,
+      entityId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
       req,
     });
-    res.json({ data: rental });
+    res.json({ data: updated });
   },
 );
 
@@ -128,16 +130,18 @@ router.post(
   requirePermission("rental:start"),
   validate({ params: idParams }),
   async (req, res) => {
-    const rental = await rentalService.startRental(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const { updated, previousStatus } = await rentalService.startRental(req.params.id, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
       action: "start",
       entityType: "rental",
-      entityId: rental.id,
+      entityId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
       req,
     });
-    res.json({ data: rental });
+    res.json({ data: updated });
   },
 );
 
@@ -148,7 +152,7 @@ router.post(
   requirePermission("rental:extend"),
   validate({ params: idParams, body: extendSchema }),
   async (req, res) => {
-    const rental = await rentalService.extendRental(
+    const { updated, previousStatus } = await rentalService.extendRental(
       req.params.id,
       req.tenant!.companyId,
       new Date(req.body.newEndDate),
@@ -160,10 +164,12 @@ router.post(
       actorUserId: req.user!.userId,
       action: "extend",
       entityType: "rental",
-      entityId: rental.id,
+      entityId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status, plannedEndAt: updated.plannedEndAt },
       req,
     });
-    res.json({ data: rental });
+    res.json({ data: updated });
   },
 );
 
@@ -174,7 +180,7 @@ router.post(
   requirePermission("rental:complete"),
   validate({ params: idParams, body: returnSchema }),
   async (req, res) => {
-    const rental = await rentalService.returnRental(
+    const { updated, previousStatus } = await rentalService.returnRental(
       req.params.id,
       req.tenant!.companyId,
       req.body,
@@ -185,10 +191,12 @@ router.post(
       actorUserId: req.user!.userId,
       action: "return",
       entityType: "rental",
-      entityId: rental.id,
+      entityId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status, actualEndAt: updated.actualEndAt },
       req,
     });
-    res.json({ data: rental });
+    res.json({ data: updated });
   },
 );
 
@@ -199,7 +207,7 @@ router.post(
   requirePermission("rental:cancel"),
   validate({ params: idParams, body: cancelSchema }),
   async (req, res) => {
-    const rental = await rentalService.cancelRental(
+    const { updated, previousStatus } = await rentalService.cancelRental(
       req.params.id,
       req.tenant!.companyId,
       req.user!.userId,
@@ -210,10 +218,13 @@ router.post(
       actorUserId: req.user!.userId,
       action: "cancel",
       entityType: "rental",
-      entityId: rental.id,
+      entityId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
+      metadata: req.body.reason ? { reason: req.body.reason } : undefined,
       req,
     });
-    res.json({ data: rental });
+    res.json({ data: updated });
   },
 );
 

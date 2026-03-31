@@ -130,6 +130,7 @@ router.post(
   requirePermission("asset:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
+    const before = await assetService.getAsset(req.params.id, req.tenant!.companyId);
     const asset = await assetService.changeAssetStatus(
       req.params.id,
       req.tenant!.companyId,
@@ -143,7 +144,9 @@ router.post(
       action: "changeStatus",
       entityType: "asset",
       entityId: asset.id,
+      before: { status: before.status },
       after: { status: req.body.status },
+      metadata: req.body.reason ? { reason: req.body.reason } : undefined,
       req,
     });
     res.json({ data: asset });

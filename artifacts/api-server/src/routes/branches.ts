@@ -91,4 +91,48 @@ router.patch(
   },
 );
 
+router.post(
+  "/branches/:id/deactivate",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("branch:update"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const { branch, previousStatus } = await branchService.deactivateBranch(req.params.id, req.tenant!.companyId);
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "deactivate",
+      entityType: "branch",
+      entityId: branch.id,
+      before: { status: previousStatus },
+      after: { status: branch.status },
+      req,
+    });
+    res.json({ data: branch });
+  },
+);
+
+router.post(
+  "/branches/:id/activate",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("branch:update"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const { branch, previousStatus } = await branchService.activateBranch(req.params.id, req.tenant!.companyId);
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "activate",
+      entityType: "branch",
+      entityId: branch.id,
+      before: { status: previousStatus },
+      after: { status: branch.status },
+      req,
+    });
+    res.json({ data: branch });
+  },
+);
+
 export default router;
