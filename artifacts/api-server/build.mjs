@@ -103,6 +103,21 @@ async function buildAll() {
     ],
     sourcemap: "linked",
     plugins: [
+      {
+        name: "resolve-zod-v4",
+        setup(build) {
+          build.onResolve({ filter: /^zod\/v4$/ }, (args) => {
+            const req = createRequire(
+              args.resolveDir
+                ? path.join(args.resolveDir, "__placeholder.js")
+                : import.meta.url
+            );
+            const zodMain = req.resolve("zod");
+            const zodDir = path.dirname(zodMain);
+            return { path: path.join(zodDir, "v4", "index.js") };
+          });
+        },
+      },
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],

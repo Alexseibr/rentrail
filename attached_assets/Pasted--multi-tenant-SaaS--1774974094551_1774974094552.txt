@@ -1,0 +1,307 @@
+Нужно начать разработку новой multi-tenant SaaS-платформы для аренды велосипедов, электровелосипедов, самокатов и электросамокатов для доставки и городской мобильности.
+
+Важно: не пытайся сразу сделать весь продукт. Сначала нужно заложить правильный foundation проекта: архитектуру, базовую схему данных, auth, multi-tenant, роли, компании, филиалы, станции, клиентов, транспорт и аренды.
+
+## Цель
+Построить с нуля web-first SaaS-платформу, где:
+- каждая компания является отдельным tenant
+- внутри компании есть филиалы по городам
+- внутри филиалов есть станции / точки выдачи / хабы
+- есть сотрудники с ролями и доступами
+- есть клиенты / курьеры
+- есть транспорт: bike, ebike, scooter, escooter
+- есть аренды, платежи, депозиты, blacklist, incidents, maintenance
+- в будущем будут mobile apps, telemetry, smart lock, battery monitoring, geofence, alarm
+
+## Стек
+Используй следующий стек:
+- Monorepo на pnpm workspaces
+- Backend: Node.js + TypeScript + Express 5
+- Database: PostgreSQL
+- ORM: Drizzle ORM
+- Validation: Zod
+- Auth: JWT access + refresh tokens
+- Frontend admin/web: React + Vite + TailwindCSS + shadcn/ui
+- Object storage: S3-compatible
+- Архитектура должна быть модульной и готовой к росту
+
+## Важно
+Не делай car-based модель.
+Центральная сущность системы — не автомобиль, а asset / transport unit.
+
+Поддерживаемые типы транспорта:
+- bike
+- ebike
+- scooter
+- escooter
+
+Сразу проектируй систему как multi-tenant SaaS, а не как single-company app.
+
+## Что нужно сделать на первом этапе
+Сделай только foundation v1:
+
+### 1. Создай структуру монорепозитория
+Пример:
+- artifacts/api-server
+- artifacts/admin-panel
+- lib/db
+- lib/shared
+
+Или аналогичную, но логичную и чистую.
+
+### 2. Настрой backend-проект
+Нужно:
+- Express 5 + TypeScript
+- базовая модульная структура
+- env config
+- health endpoint
+- error handler
+- request logging
+- base middlewares
+- Zod validation layer
+
+### 3. Настрой Drizzle + PostgreSQL
+Создай initial schema и миграции.
+
+На первом этапе нужны таблицы:
+
+#### Platform / SaaS
+- companies
+- company_settings
+- branches
+- stations
+
+#### Access
+- users
+- roles
+- permissions
+- role_permissions
+- user_company_memberships
+- user_branch_memberships
+- sessions
+
+#### Clients
+- clients
+
+#### Assets
+- assets
+- asset_status_history
+
+#### Rentals
+- rental_plans
+- rentals
+- rental_status_history
+
+#### Finance
+- payments
+- deposits
+
+#### Blacklist
+- blacklist_entries
+
+#### Audit
+- audit_logs
+
+### 4. Заложи правильные ключевые поля
+У всех tenant-сущностей должны быть companyId, где требуется branchId и stationId.
+
+### 5. Реализуй auth foundation
+Нужно:
+- регистрация пользователя
+- логин
+- refresh token
+- logout
+- current user endpoint
+- membership loading
+- middleware для tenant-aware доступа
+
+### 6. Реализуй RBAC foundation
+Нужны встроенные роли:
+- superAdmin
+- owner
+- admin
+- manager
+- accountant
+- operator
+- mechanic
+- viewer
+
+Сделай базовую permission model и middleware authorizer.
+
+### 7. Реализуй Company / Branch / Station foundation
+API:
+- create company
+- get company
+- update company
+- create branch
+- list branches
+- create station
+- list stations
+
+### 8. Реализуй Clients foundation
+API:
+- create client
+- list clients
+- get client
+- update client
+
+### 9. Реализуй Assets foundation
+Центральная сущность: asset
+
+Поля:
+- id
+- companyId
+- branchId
+- stationId
+- assetType
+- brand
+- model
+- serialNumber
+- internalCode
+- qrCode
+- status
+- purchasePrice
+- currentValue
+- isPublic
+- createdAt
+
+Asset types enum:
+- bike
+- ebike
+- scooter
+- escooter
+
+Asset statuses enum:
+- draft
+- available
+- reserved
+- awaiting_pickup
+- rented
+- overdue
+- charging
+- maintenance
+- blocked
+- lost
+- stolen
+- retired
+
+API:
+- create asset
+- list assets
+- get asset
+- update asset
+- change asset status
+
+### 10. Реализуй Rentals foundation
+Rental types:
+- hourly
+- daily
+- weekly
+- monthly
+- subscription
+
+Rental statuses:
+- draft
+- pending_approval
+- awaiting_payment
+- awaiting_pickup
+- active
+- extended
+- overdue
+- return_requested
+- completed
+- canceled
+- disputed
+- defaulted
+
+API:
+- create rental
+- list rentals
+- get rental
+- approve rental
+- start rental
+- extend rental
+- complete rental
+- cancel rental
+
+### 11. Реализуй Blacklist foundation
+Нужно сразу поддержать уровни:
+- branch
+- company
+- global
+
+Action types:
+- warning
+- manual_approval_only
+- increased_deposit
+- restricted_access
+- blocked_branch
+- blocked_company
+- blocked_global
+
+API:
+- create blacklist entry
+- list blacklist entries
+- check subject against blacklist
+
+### 12. Реализуй Audit foundation
+Логируй:
+- кто создал/изменил company
+- branch
+- station
+- client
+- asset
+- rental
+- blacklist entry
+
+## Что НЕ делать сейчас
+Пока не реализовывай:
+- mobile app
+- telemetry ingestion
+- smart lock integration
+- battery management
+- geofences
+- payments gateway integration
+- public website
+- advanced reporting
+- notifications
+- investor portal
+- B2B portal
+
+Это будет позже.
+
+## Качество кода
+Требования:
+- строгая типизация
+- чистая модульная архитектура
+- DTO через Zod
+- сервисный слой
+- роуты тонкие
+- доступ tenant-safe
+- без хардкода companyId
+- без упрощений, которые сломают multi-tenant модель позже
+
+## Что хочу получить в результате первой итерации
+1. Полную структуру проекта
+2. Настроенный backend
+3. Drizzle schema + migrations
+4. Seed встроенных ролей и permissions
+5. Рабочий auth
+6. CRUD для companies / branches / stations / clients / assets / rentals / blacklist
+7. README с инструкцией запуска
+8. Postman collection или список endpoint'ов
+9. Краткое описание архитектуры по папкам
+
+## Формат работы
+Сначала:
+1. предложи структуру проекта
+2. перечисли сущности и связи
+3. создай schema
+4. создай миграции
+5. настрой auth и RBAC
+6. только потом переходи к CRUD и endpoint'ам
+
+Не перескакивай сразу к UI.
+Сначала backend foundation.
+
+Если в процессе увидишь архитектурные риски — опиши их и предложи более чистое решение, прежде чем писать дальше.
