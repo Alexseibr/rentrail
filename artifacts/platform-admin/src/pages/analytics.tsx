@@ -37,14 +37,39 @@ interface RiskMetrics {
   pastDueSubscriptions: number;
 }
 
+interface BillingMetrics {
+  totalMrr: number;
+  totalRevenue: number;
+  activeSubscriptions: number;
+  trialSubscriptions: number;
+  pastDueSubscriptions: number;
+  currency: string;
+  planDistribution?: Array<{ planName: string; count: number }>;
+}
+
 interface TopTenant {
   companyId: string;
   companyName: string;
   value: number;
 }
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount / 100);
+function formatCurrency(amount: number, currency = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100);
+}
+
+function BarSegment({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{value} ({pct}%)</span>
+      </div>
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
 }
 
 export default function AnalyticsPage() {
@@ -63,6 +88,11 @@ export default function AnalyticsPage() {
     queryFn: () => api<RiskMetrics>("/platform/analytics/risks"),
   });
 
+  const billing = useQuery({
+    queryKey: ["analytics", "billing"],
+    queryFn: () => api<BillingMetrics>("/platform/analytics/billing"),
+  });
+
   const topByRentals = useQuery({
     queryKey: ["analytics", "tenants", "rentals"],
     queryFn: () =>
@@ -73,11 +103,6 @@ export default function AnalyticsPage() {
     queryKey: ["analytics", "tenants", "assets"],
     queryFn: () =>
       api<TopTenant[]>("/platform/analytics/tenants?metric=assets&limit=10"),
-  });
-
-  const billing = useQuery({
-    queryKey: ["analytics", "billing"],
-    queryFn: () => api<Record<string, unknown>>("/platform/analytics/billing"),
   });
 
   return (
@@ -129,7 +154,10 @@ export default function AnalyticsPage() {
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground">MRR</p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency((billing.data?.totalMrr as number) ?? 0)}
+                  {formatCurrency(billing.data?.totalMrr ?? 0, billing.data?.currency)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Total revenue: {formatCurrency(billing.data?.totalRevenue ?? 0, billing.data?.currency)}
                 </p>
               </CardContent>
             </Card>
@@ -137,37 +165,109 @@ export default function AnalyticsPage() {
         )}
       </div>
 
-      {risks.data && (
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Risk Overview</CardTitle>
+            <CardTitle className="text-base">Revenue & Subscriptions</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold">{risks.data.blacklistedEntries}</p>
-                <p className="text-xs text-muted-foreground">Blacklist Entries</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{risks.data.activeBlacklisted}</p>
-                <p className="text-xs text-muted-foreground">Active Blacklisted</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{risks.data.blockedCompanies}</p>
-                <p className="text-xs text-muted-foreground">Blocked Companies</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{risks.data.suspendedCompanies}</p>
-                <p className="text-xs text-muted-foreground">Suspended Companies</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-orange-600">{risks.data.pastDueSubscriptions}</p>
-                <p className="text-xs text-muted-foreground">Past Due Subs</p>
-              </div>
-            </div>
+          <CardContent className="space-y-4">
+            {billing.isLoading ? (
+              <Skeleton className="h-32 w-full" />
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold">{billing.data?.activeSubscriptions ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Active</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">{billing.data?.trialSubscriptions ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Trial</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-orange-600">{billing.data?.pastDueSubscriptions ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Past Due</p>
+                  </div>
+                </div>
+                {billing.data?.planDistribution && billing.data.planDistribution.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-sm font-medium">Plan Distribution</p>
+                    {billing.data.planDistribution.map((p) => {
+                      const total = billing.data!.activeSubscriptions + billing.data!.trialSubscriptions;
+                      return (
+                        <BarSegment
+                          key={p.planName}
+                          label={p.planName}
+                          value={p.count}
+                          total={total}
+                          color="bg-primary"
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+                {(!billing.data?.planDistribution || billing.data.planDistribution.length === 0) && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <p className="text-sm font-medium">Subscription Breakdown</p>
+                    <BarSegment
+                      label="Active"
+                      value={billing.data?.activeSubscriptions ?? 0}
+                      total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
+                      color="bg-green-500"
+                    />
+                    <BarSegment
+                      label="Trial"
+                      value={billing.data?.trialSubscriptions ?? 0}
+                      total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
+                      color="bg-blue-500"
+                    />
+                    <BarSegment
+                      label="Past Due"
+                      value={billing.data?.pastDueSubscriptions ?? 0}
+                      total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
+                      color="bg-orange-500"
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
-      )}
+
+        {risks.data && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Risk Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-bold">{risks.data.blacklistedEntries}</p>
+                  <p className="text-xs text-muted-foreground">Total Blacklist</p>
+                </div>
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
+                  <p className="text-2xl font-bold text-red-600">{risks.data.activeBlacklisted}</p>
+                  <p className="text-xs text-muted-foreground">Active Blacklisted</p>
+                </div>
+                <div className="rounded-lg border p-3 text-center">
+                  <p className="text-2xl font-bold">{risks.data.blockedCompanies}</p>
+                  <p className="text-xs text-muted-foreground">Blocked Companies</p>
+                </div>
+                <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-center">
+                  <p className="text-2xl font-bold text-orange-600">{risks.data.suspendedCompanies}</p>
+                  <p className="text-xs text-muted-foreground">Suspended Companies</p>
+                </div>
+              </div>
+              <BarSegment
+                label="Past Due Subscriptions"
+                value={risks.data.pastDueSubscriptions}
+                total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + risks.data.pastDueSubscriptions}
+                color="bg-red-500"
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

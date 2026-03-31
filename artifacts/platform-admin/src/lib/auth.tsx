@@ -30,27 +30,15 @@ function checkPlatformAccess(user: User | null): boolean {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = useCallback(() => {
     clearTokens();
     setUser(null);
-    try { sessionStorage.removeItem("pa_session"); } catch {}
   }, []);
 
   useEffect(() => {
     setAuthExpiredHandler(handleLogout);
-    try {
-      const saved = sessionStorage.getItem("pa_session");
-      if (saved) {
-        const session = JSON.parse(saved);
-        setTokens(session.accessToken, session.refreshToken);
-        setUser(session.user);
-      }
-    } catch {
-      sessionStorage.removeItem("pa_session");
-    }
-    setIsLoading(false);
   }, [handleLogout]);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -64,16 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setTokens(result.accessToken, result.refreshToken);
     setUser(result.user);
-    try {
-      sessionStorage.setItem(
-        "pa_session",
-        JSON.stringify({
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-          user: result.user,
-        }),
-      );
-    } catch {}
   }, []);
 
   const logout = useCallback(() => {

@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +42,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         <div className="flex items-center gap-2 border-b px-4 h-14">
           {!collapsed && (
-            <span className="font-semibold text-sm truncate">Platform Admin</span>
+            <div className="min-w-0">
+              <span className="font-semibold text-sm truncate block">Platform Admin</span>
+              <Badge variant="outline" className="text-[10px] h-4 px-1">
+                Admin Mode
+              </Badge>
+            </div>
           )}
           <Button
             variant="ghost"

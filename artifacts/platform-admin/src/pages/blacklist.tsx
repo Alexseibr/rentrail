@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 
 interface BlacklistEntry {
   id: string;
@@ -46,21 +47,31 @@ interface BlacklistEntry {
   createdAt: string;
 }
 
+interface ToggleConfirm {
+  id: string;
+  name: string;
+  enable: boolean;
+}
+
+const emptyForm = {
+  actionType: "ban",
+  reasonCode: "",
+  reasonText: "",
+  fullNameSnapshot: "",
+  phoneSnapshot: "",
+  emailSnapshot: "",
+  documentSnapshot: "",
+};
+
 export default function BlacklistPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({
-    actionType: "ban",
-    reasonCode: "",
-    reasonText: "",
-    fullNameSnapshot: "",
-    phoneSnapshot: "",
-    emailSnapshot: "",
-    documentSnapshot: "",
-  });
+  const [editEntry, setEditEntry] = useState<BlacklistEntry | null>(null);
+  const [form, setForm] = useState({ ...emptyForm });
+  const [toggleConfirm, setToggleConfirm] = useState<ToggleConfirm | null>(null);
   const limit = 20;
 
   const { data, isLoading } = useQuery({
@@ -79,25 +90,46 @@ export default function BlacklistPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blacklist"] });
       setShowCreate(false);
-      setForm({
-        actionType: "ban",
-        reasonCode: "",
-        reasonText: "",
-        fullNameSnapshot: "",
-        phoneSnapshot: "",
-        emailSnapshot: "",
-        documentSnapshot: "",
-      });
+      setForm({ ...emptyForm });
     },
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, enable }: { id: string; enable: boolean }) =>
       api(`/platform/blacklist/${id}/${enable ? "enable" : "disable"}`, { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blacklist"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blacklist"] });
+      setToggleConfirm(null);
+    },
   });
 
   const entries = Array.isArray(data) ? data : [];
+
+  function openEdit(entry: BlacklistEntry) {
+    setEditEntry(entry);
+    setForm({
+      actionType: entry.actionType,
+      reasonCode: entry.reasonCode,
+      reasonText: entry.reasonText || "",
+      fullNameSnapshot: entry.fullNameSnapshot || "",
+      phoneSnapshot: entry.phoneSnapshot || "",
+      emailSnapshot: entry.emailSnapshot || "",
+      documentSnapshot: entry.documentSnapshot || "",
+    });
+  }
+
+  function buildBody() {
+    const body: Record<string, unknown> = {
+      actionType: form.actionType,
+      reasonCode: form.reasonCode,
+    };
+    if (form.reasonText) body.reasonText = form.reasonText;
+    if (form.fullNameSnapshot) body.fullNameSnapshot = form.fullNameSnapshot;
+    if (form.phoneSnapshot) body.phoneSnapshot = form.phoneSnapshot;
+    if (form.emailSnapshot) body.emailSnapshot = form.emailSnapshot;
+    if (form.documentSnapshot) body.documentSnapshot = form.documentSnapshot;
+    return body;
+  }
 
   return (
     <div className="p-6 space-y-4">
@@ -106,7 +138,7 @@ export default function BlacklistPage() {
           <h1 className="text-2xl font-bold tracking-tight">Global Blacklist</h1>
           <p className="text-muted-foreground">Manage platform-wide blacklist entries</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
+        <Button onClick={() => { setShowCreate(true); setEditEntry(null); setForm({ ...emptyForm }); }}>
           <Plus className="h-4 w-4 mr-2" />
           Add Entry
         </Button>
@@ -216,19 +248,30 @@ export default function BlacklistPage() {
                       {new Date(entry.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          toggleMutation.mutate({
-                            id: entry.id,
-                            enable: !entry.isActive,
-                          })
-                        }
-                        disabled={toggleMutation.isPending}
-                      >
-                        {entry.isActive ? "Disable" : "Enable"}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => openEdit(entry)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() =>
+                            setToggleConfirm({
+                              id: entry.id,
+                              name: entry.fullNameSnapshot || entry.emailSnapshot || entry.id,
+                              enable: !entry.isActive,
+                            })
+                          }
+                        >
+                          {entry.isActive ? "Disable" : "Enable"}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -245,24 +288,15 @@ export default function BlacklistPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+      <Dialog open={showCreate || !!editEntry} onOpenChange={() => { setShowCreate(false); setEditEntry(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Blacklist Entry</DialogTitle>
+            <DialogTitle>{editEntry ? "Edit Blacklist Entry" : "Add Blacklist Entry"}</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              const body: Record<string, unknown> = {
-                actionType: form.actionType,
-                reasonCode: form.reasonCode,
-              };
-              if (form.reasonText) body.reasonText = form.reasonText;
-              if (form.fullNameSnapshot) body.fullNameSnapshot = form.fullNameSnapshot;
-              if (form.phoneSnapshot) body.phoneSnapshot = form.phoneSnapshot;
-              if (form.emailSnapshot) body.emailSnapshot = form.emailSnapshot;
-              if (form.documentSnapshot) body.documentSnapshot = form.documentSnapshot;
-              createMutation.mutate(body);
+              createMutation.mutate(buildBody());
             }}
             className="space-y-4"
           >
@@ -331,14 +365,51 @@ export default function BlacklistPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+              <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setEditEntry(null); }}>
                 Cancel
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Adding..." : "Add Entry"}
+                {createMutation.isPending ? "Saving..." : editEntry ? "Save Changes" : "Add Entry"}
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!toggleConfirm} onOpenChange={() => setToggleConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {toggleConfirm?.enable ? "Enable" : "Disable"} Blacklist Entry
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to {toggleConfirm?.enable ? "enable" : "disable"} the blacklist
+              entry for <strong>{toggleConfirm?.name}</strong>?
+              {toggleConfirm?.enable
+                ? " This will block matching identities across all tenants."
+                : " This will allow matching identities to use the platform again."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToggleConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant={toggleConfirm?.enable ? "destructive" : "default"}
+              disabled={toggleMutation.isPending}
+              onClick={() => {
+                if (toggleConfirm) {
+                  toggleMutation.mutate({ id: toggleConfirm.id, enable: toggleConfirm.enable });
+                }
+              }}
+            >
+              {toggleMutation.isPending
+                ? "Processing..."
+                : toggleConfirm?.enable
+                  ? "Enable (Block)"
+                  : "Disable (Allow)"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

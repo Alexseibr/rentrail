@@ -3,6 +3,14 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Building2, Users, Bike, AlertTriangle, DollarSign, TrendingUp } from "lucide-react";
 
 interface OverviewMetrics {
@@ -73,6 +81,30 @@ export default function DashboardPage() {
   const health = useQuery({
     queryKey: ["health", "summary"],
     queryFn: () => api<HealthSummary>("/platform/health/summary"),
+  });
+
+  const unpaidInvoices = useQuery({
+    queryKey: ["dashboard", "unpaid-invoices"],
+    queryFn: () =>
+      api<{ items: Array<Record<string, unknown>>; total: number }>(
+        "/platform/billing/invoices?status=issued&limit=5",
+      ),
+  });
+
+  const recentCompanies = useQuery({
+    queryKey: ["dashboard", "recent-companies"],
+    queryFn: () =>
+      api<{ items: Array<Record<string, unknown>>; total: number }>(
+        "/platform/companies?status=pending&limit=5",
+      ),
+  });
+
+  const recentAudit = useQuery({
+    queryKey: ["dashboard", "recent-audit"],
+    queryFn: () =>
+      api<{ items: Array<Record<string, unknown>>; pagination: Record<string, unknown> }>(
+        "/platform/audit-logs?limit=10",
+      ),
   });
 
   const isLoading = overview.isLoading || billing.isLoading;
@@ -186,6 +218,148 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           )}
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Unpaid Invoices
+                  {(unpaidInvoices.data?.total ?? 0) > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {unpaidInvoices.data?.total}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Due</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(unpaidInvoices.data?.items || []).map((inv) => (
+                      <TableRow key={inv.id as string}>
+                        <TableCell className="font-medium text-sm">
+                          {(inv.companyName as string) || "-"}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatCurrency(inv.amount as number, inv.currency as string)}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {inv.dueDate
+                            ? new Date(inv.dueDate as string).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(unpaidInvoices.data?.items || []).length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-4 text-sm text-muted-foreground">
+                          No unpaid invoices
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Pending Signups
+                  {(recentCompanies.data?.total ?? 0) > 0 && (
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 ml-2">
+                      {recentCompanies.data?.total}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Registered</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(recentCompanies.data?.items || []).map((c) => (
+                      <TableRow key={c.id as string}>
+                        <TableCell className="font-medium text-sm">{c.name as string}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{c.slug as string}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {c.createdAt
+                            ? new Date(c.createdAt as string).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(recentCompanies.data?.items || []).length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-4 text-sm text-muted-foreground">
+                          No pending signups
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Recent Platform Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Actor</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Entity</TableHead>
+                    <TableHead>Time</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(recentAudit.data?.items || []).map((log) => (
+                    <TableRow key={log.id as string}>
+                      <TableCell className="text-sm">
+                        {log.actorEmail as string}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {log.action as string}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {log.entityType as string}
+                        {log.entityId ? ` #${(log.entityId as string).slice(0, 8)}` : ""}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {log.createdAt
+                          ? new Date(log.createdAt as string).toLocaleString()
+                          : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(recentAudit.data?.items || []).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-sm text-muted-foreground">
+                        No recent activity
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
