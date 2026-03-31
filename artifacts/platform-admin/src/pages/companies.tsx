@@ -53,7 +53,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   blocked: "bg-red-100 text-red-800",
   suspended: "bg-orange-100 text-orange-800",
-  cancelled: "bg-gray-100 text-gray-800",
+  canceled: "bg-gray-100 text-gray-800",
 };
 
 export default function CompaniesPage() {
@@ -153,7 +153,7 @@ export default function CompaniesPage() {
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="blocked">Blocked</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="canceled">Canceled</SelectItem>
               </SelectContent>
             </Select>
             <Select

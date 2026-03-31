@@ -45,7 +45,7 @@ const subStatusColors: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   trial: "bg-blue-100 text-blue-800",
   past_due: "bg-red-100 text-red-800",
-  cancelled: "bg-gray-100 text-gray-800",
+  canceled: "bg-gray-100 text-gray-800",
 };
 
 const invStatusColors: Record<string, string> = {
@@ -241,7 +241,7 @@ function SubscriptionsTab() {
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="trial">Trial</SelectItem>
             <SelectItem value="past_due">Past Due</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="canceled">Canceled</SelectItem>
           </SelectContent>
         </Select>
       </div>

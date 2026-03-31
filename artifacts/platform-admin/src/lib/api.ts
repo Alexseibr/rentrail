@@ -1,4 +1,5 @@
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+const API_BASE = import.meta.env.VITE_API_URL
+  || (import.meta.env.BASE_URL.replace(/\/$/, "") + "/api");
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -18,6 +19,10 @@ export function getAccessToken() {
   return accessToken;
 }
 
+export function hasStoredToken() {
+  return !!accessToken;
+}
+
 export function setAuthExpiredHandler(handler: () => void) {
   onAuthExpired = handler;
 }
@@ -25,7 +30,7 @@ export function setAuthExpiredHandler(handler: () => void) {
 async function tryRefresh(): Promise<boolean> {
   if (!refreshToken) return false;
   try {
-    const res = await fetch(`${BASE}/api/auth/refresh`, {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -54,7 +59,7 @@ export async function api<T = unknown>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const url = `${BASE}/api${path}`;
+  const url = `${API_BASE}${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),

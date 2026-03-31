@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import { api, setTokens, clearTokens, setAuthExpiredHandler } from "./api";
+import { api, setTokens, clearTokens, setAuthExpiredHandler, hasStoredToken } from "./api";
 
 interface User {
   id: string;
@@ -30,9 +30,21 @@ function checkPlatformAccess(user: User | null): boolean {
   return (user.platformRoles || []).some((r) => PLATFORM_ROLES.includes(r));
 }
 
+function parseUser(profile: Record<string, unknown>): User {
+  return {
+    id: profile.id as string,
+    email: profile.email as string,
+    firstName: profile.firstName as string,
+    lastName: profile.lastName as string,
+    isSuperAdmin: profile.isSuperAdmin as boolean,
+    platformRoles: (profile.platformRoles as string[]) || [],
+    memberships: profile.memberships as User["memberships"],
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => hasStoredToken());
 
   const handleLogout = useCallback(() => {
     clearTokens();
@@ -41,6 +53,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setAuthExpiredHandler(handleLogout);
+  }, [handleLogout]);
+
+  useEffect(() => {
+    if (!hasStoredToken()) return;
+    let cancelled = false;
+    api<Record<string, unknown>>("/auth/me")
+      .then((profile) => {
+        if (!cancelled) setUser(parseUser(profile));
+      })
+      .catch(() => {
+        if (!cancelled) handleLogout();
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [handleLogout]);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -54,16 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setTokens(loginResult.accessToken, loginResult.refreshToken);
 
-    const profile = await api<User>("/auth/me");
-    setUser({
-      id: profile.id,
-      email: profile.email,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      isSuperAdmin: profile.isSuperAdmin,
-      platformRoles: profile.platformRoles || [],
-      memberships: profile.memberships,
-    });
+    const profile = await api<Record<string, unknown>>("/auth/me");
+    setUser(parseUser(profile));
   }, []);
 
   const logout = useCallback(() => {

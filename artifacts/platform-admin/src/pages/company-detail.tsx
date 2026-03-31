@@ -39,7 +39,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   blocked: "bg-red-100 text-red-800",
   suspended: "bg-orange-100 text-orange-800",
-  cancelled: "bg-gray-100 text-gray-800",
+  canceled: "bg-gray-100 text-gray-800",
 };
 
 interface ModerationForm {
@@ -170,7 +170,7 @@ export default function CompanyDetailPage() {
     { action: "block", label: "Block", icon: Ban, show: status === "active" || status === "pending", variant: "destructive" as const },
     { action: "suspend", label: "Suspend", icon: Pause, show: status === "active", variant: "outline" as const },
     { action: "unblock", label: "Unblock", icon: CheckCircle, show: status === "blocked" || status === "suspended", variant: "default" as const },
-    { action: "cancel", label: "Cancel", icon: XCircle, show: status !== "cancelled", variant: "destructive" as const },
+    { action: "cancel", label: "Cancel", icon: XCircle, show: status !== "canceled", variant: "destructive" as const },
   ];
 
   return (
