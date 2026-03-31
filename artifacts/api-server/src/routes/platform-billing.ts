@@ -206,6 +206,7 @@ router.post(
       targetCompanyId: updated.companyId,
       before: { status: previousStatus },
       after: { status: updated.status },
+      reasonText: req.body.reason ?? null,
     });
     res.json({ data: updated });
   },
@@ -225,6 +226,7 @@ router.post(
       targetCompanyId: updated.companyId,
       before: { status: previousStatus },
       after: { status: updated.status },
+      reasonText: req.body.reason ?? null,
     });
     res.json({ data: updated });
   },

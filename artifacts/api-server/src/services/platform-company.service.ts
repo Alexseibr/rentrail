@@ -376,18 +376,20 @@ export async function getCompanyUsage(companyId: string) {
   const [userCount] = await db.select({ count: count() }).from(userCompanyMemberships).where(eq(userCompanyMemberships.companyId, companyId));
   const [rentalCount] = await db.select({ count: count() }).from(rentals).where(eq(rentals.companyId, companyId));
 
-  const limits = { ...DEFAULT_PLAN_LIMITS };
+  const { getPlanLimitsForCompany } = await import("./billing.service");
+  const planLimits = await getPlanLimitsForCompany(companyId);
+  const limits = planLimits.limits;
 
   return {
     companyId,
     companyName: company.name,
     plan: company.plan ?? "none",
     resources: {
-      branches: { current: branchCount?.count ?? 0, limit: limits.branches },
-      stations: { current: stationCount?.count ?? 0, limit: limits.stations },
-      assets: { current: assetCount?.count ?? 0, limit: limits.assets },
-      users: { current: userCount?.count ?? 0, limit: limits.users },
-      rentals: { current: rentalCount?.count ?? 0, limit: limits.rentals },
+      branches: { current: branchCount?.count ?? 0, limit: limits.branches ?? -1 },
+      stations: { current: stationCount?.count ?? 0, limit: limits.stations ?? -1 },
+      assets: { current: assetCount?.count ?? 0, limit: limits.assets ?? -1 },
+      users: { current: userCount?.count ?? 0, limit: limits.users ?? -1 },
+      rentals: { current: rentalCount?.count ?? 0, limit: limits.rentals ?? -1 },
     },
   };
 }

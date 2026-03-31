@@ -537,6 +537,42 @@ describe("Platform Billing", () => {
     });
   });
 
+  describe("subscription audit logging", () => {
+    it("creates audit log for subscription activation", async () => {
+      const planRes = await request(testApp)
+        .post("/api/platform/billing/plans")
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ name: "Audit Sub Plan", code: `audit-sub-${Date.now()}`, price: 1000 });
+
+      const tenant = await createTestTenant({ companyName: "Audit Sub Co" });
+      const setRes = await request(testApp)
+        .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
+        .set("Authorization", `Bearer ${platformAdmin.token}`)
+        .send({ planId: planRes.body.data.id });
+
+      await request(testApp)
+        .post(`/api/platform/billing/subscriptions/${setRes.body.data.id}/activate`)
+        .set("Authorization", `Bearer ${platformFinance.token}`)
+        .send({ reason: "Trial completed" });
+
+      const logs = await db
+        .select()
+        .from(platformAuditLogs)
+        .where(
+          and(
+            eq(platformAuditLogs.action, "billing.subscription.activate"),
+            eq(platformAuditLogs.entityId, setRes.body.data.id),
+          ),
+        )
+        .orderBy(desc(platformAuditLogs.createdAt))
+        .limit(1);
+
+      expect(logs.length).toBe(1);
+      expect(logs[0].actorUserId).toBe(platformFinance.id);
+      expect(logs[0].reasonText).toBe("Trial completed");
+    });
+  });
+
   describe("plan limits for company", () => {
     it("company usage endpoint reflects plan limits after set-plan", async () => {
       const tenant = await createTestTenant({ companyName: "Plan Limits Co" });
