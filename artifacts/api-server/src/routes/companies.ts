@@ -53,6 +53,10 @@ router.get(
     }
     const dbPlatformRoles = req.platformUser?.platformRoles ?? [];
     if (dbPlatformRoles.length > 0) {
+      await createPlatformAuditLog(req, {
+        action: "company.list_all",
+        entityType: "company",
+      });
       const companies = await companyService.listCompanies();
       res.json({ data: companies });
       return;
