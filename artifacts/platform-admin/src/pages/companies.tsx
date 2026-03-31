@@ -66,6 +66,8 @@ export default function CompaniesPage() {
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "", email: "", country: "", currency: "USD" });
+  const [setPlanTarget, setSetPlanTarget] = useState<{ id: string; name: string } | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
   const limit = 20;
 
   const plans = useQuery({
@@ -92,6 +94,20 @@ export default function CompaniesPage() {
       setShowCreate(false);
       setForm({ name: "", slug: "", email: "", country: "", currency: "USD" });
       toast({ title: "Company created successfully" });
+    },
+  });
+
+  const setPlanMutation = useMutation({
+    mutationFn: ({ companyId, planId }: { companyId: string; planId: string }) =>
+      api(`/platform/billing/subscriptions`, {
+        method: "POST",
+        body: JSON.stringify({ companyId, planId }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      setSetPlanTarget(null);
+      setSelectedPlanId("");
+      toast({ title: "Plan assigned successfully" });
     },
   });
 
@@ -193,6 +209,8 @@ export default function CompaniesPage() {
                     <TableHead>Slug</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Plan</TableHead>
+                    <TableHead>Assets</TableHead>
+                    <TableHead>Users</TableHead>
                     <TableHead>Country</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Actions</TableHead>
@@ -218,6 +236,12 @@ export default function CompaniesPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {company.planName || "-"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {company.assetCount ?? "-"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {company.userCount ?? "-"}
                       </TableCell>
                       <TableCell>{company.country || "-"}</TableCell>
                       <TableCell className="text-muted-foreground">
@@ -255,6 +279,18 @@ export default function CompaniesPage() {
                               Block
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSetPlanTarget({ id: company.id, name: company.name });
+                              setSelectedPlanId("");
+                            }}
+                          >
+                            Set Plan
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -363,6 +399,46 @@ export default function CompaniesPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!setPlanTarget} onOpenChange={() => setSetPlanTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Plan for {setPlanTarget?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Plan</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a plan..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(plans.data || []).map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSetPlanTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!selectedPlanId || setPlanMutation.isPending}
+                onClick={() => {
+                  if (setPlanTarget && selectedPlanId) {
+                    setPlanMutation.mutate({ companyId: setPlanTarget.id, planId: selectedPlanId });
+                  }
+                }}
+              >
+                {setPlanMutation.isPending ? "Saving..." : "Assign Plan"}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

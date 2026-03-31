@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, AlertTriangle, XCircle, RefreshCw } from "lucide-react";
+import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Server, Mail, HardDrive, Radio, Activity, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ServiceStatus {
@@ -12,6 +12,7 @@ interface ServiceStatus {
   latency?: number;
   message?: string;
   lastChecked?: string;
+  version?: string;
 }
 
 interface TenantHealth {
@@ -26,7 +27,18 @@ interface HealthSummary {
   degraded: number;
   critical: number;
   services: ServiceStatus[];
+  buildVersion?: string;
+  uptime?: number;
 }
+
+const SERVICE_ICONS: Record<string, typeof Server> = {
+  database: Server,
+  email: Mail,
+  storage: HardDrive,
+  queues: Radio,
+  telemetry: Activity,
+  push: Bell,
+};
 
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
@@ -37,6 +49,15 @@ function StatusIcon({ status }: { status: string }) {
     default:
       return <XCircle className="h-5 w-5 text-red-500" />;
   }
+}
+
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }
 
 export default function DiagnosticsPage() {
@@ -71,10 +92,22 @@ export default function DiagnosticsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Diagnostics</h1>
           <p className="text-muted-foreground">System health and service status</p>
         </div>
-        <Button variant="outline" onClick={refetchAll}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          {healthQuery.data?.buildVersion && (
+            <Badge variant="outline" className="text-xs">
+              Build: {healthQuery.data.buildVersion}
+            </Badge>
+          )}
+          {healthQuery.data?.uptime !== undefined && (
+            <Badge variant="outline" className="text-xs">
+              Uptime: {formatUptime(healthQuery.data.uptime)}
+            </Badge>
+          )}
+          <Button variant="outline" onClick={refetchAll}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {healthQuery.isLoading ? (
@@ -121,59 +154,63 @@ export default function DiagnosticsPage() {
         </div>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Services</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Service Status</h2>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {servicesQuery.isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
+            Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-28" />
+            ))
           ) : (
-            <div className="space-y-3">
-              {(servicesQuery.data || []).map((svc) => (
-                <div
-                  key={svc.name}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <StatusIcon status={svc.status} />
-                    <div>
-                      <p className="font-medium capitalize">{svc.name}</p>
+            (servicesQuery.data || []).map((svc) => {
+              const SvcIcon = SERVICE_ICONS[svc.name.toLowerCase()] || Server;
+              return (
+                <Card key={svc.name}>
+                  <CardContent className="pt-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <SvcIcon className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium capitalize">{svc.name}</span>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className={
+                          svc.status === "healthy"
+                            ? "bg-green-100 text-green-800"
+                            : svc.status === "degraded"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                        }
+                      >
+                        {svc.status}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      {svc.latency !== undefined && (
+                        <p className="text-xs text-muted-foreground">Latency: {svc.latency}ms</p>
+                      )}
+                      {svc.version && (
+                        <p className="text-xs text-muted-foreground">Version: {svc.version}</p>
+                      )}
                       {svc.message && (
-                        <p className="text-sm text-muted-foreground">{svc.message}</p>
+                        <p className="text-xs text-muted-foreground">{svc.message}</p>
+                      )}
+                      {svc.lastChecked && (
+                        <p className="text-xs text-muted-foreground">
+                          Checked: {new Date(svc.lastChecked).toLocaleTimeString()}
+                        </p>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {svc.latency !== undefined && (
-                      <span className="text-sm text-muted-foreground">{svc.latency}ms</span>
-                    )}
-                    <Badge
-                      variant="secondary"
-                      className={
-                        svc.status === "healthy"
-                          ? "bg-green-100 text-green-800"
-                          : svc.status === "degraded"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                      }
-                    >
-                      {svc.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-              {servicesQuery.data?.length === 0 && (
-                <p className="text-center py-4 text-muted-foreground">No services configured</p>
-              )}
-            </div>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
-        </CardContent>
-      </Card>
+          {servicesQuery.data?.length === 0 && (
+            <p className="col-span-3 text-center py-4 text-muted-foreground">No services configured</p>
+          )}
+        </div>
+      </div>
 
       <Card>
         <CardHeader>

@@ -1,11 +1,19 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -21,13 +29,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Palette, CheckCircle, XCircle } from "lucide-react";
+import { Search, Palette, CheckCircle, XCircle, Globe } from "lucide-react";
 
 interface Company {
   id: string;
   name: string;
   slug: string;
   status: string;
+  whiteLabel?: {
+    customDomain?: string;
+    brandNameOverride?: string;
+    status?: string;
+  };
 }
 
 interface WhiteLabelSettings {
@@ -56,7 +69,7 @@ export default function WhiteLabelPage() {
     queryFn: () => {
       const params = new URLSearchParams({ page: "1", limit: "50" });
       if (search) params.set("search", search);
-      return api<{ items: Company[]; total: number }>(`/platform/companies?${params}`);
+      return api<{ items: Company[]; pagination: { total: number; totalPages: number } }>(`/platform/companies?${params}`);
     },
   });
 
@@ -110,37 +123,86 @@ export default function WhiteLabelPage() {
             />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {companiesLoading ? (
-            <div className="space-y-2">
+            <div className="p-6 space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
-              {(companies?.items || []).map((company) => (
-                <div
-                  key={company.id}
-                  className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => openSettings(company.id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <Palette className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{company.name}</p>
-                      <p className="text-xs text-muted-foreground">{company.slug}</p>
-                    </div>
-                  </div>
-                  <Badge variant="secondary" className="capitalize">
-                    {company.status}
-                  </Badge>
-                </div>
-              ))}
-              {companies?.items.length === 0 && (
-                <p className="text-center py-8 text-muted-foreground">No companies found</p>
-              )}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Brand Name</TableHead>
+                  <TableHead>Custom Domain</TableHead>
+                  <TableHead>WL Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(companies?.items || []).map((company) => (
+                  <TableRow key={company.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Palette className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{company.name}</p>
+                          <p className="text-xs text-muted-foreground">{company.slug}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {company.whiteLabel?.brandNameOverride || "-"}
+                    </TableCell>
+                    <TableCell>
+                      {company.whiteLabel?.customDomain ? (
+                        <div className="flex items-center gap-1">
+                          <Globe className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-sm">{company.whiteLabel.customDomain}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {company.whiteLabel?.status ? (
+                        <Badge
+                          variant="secondary"
+                          className={
+                            company.whiteLabel.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }
+                        >
+                          {company.whiteLabel.status}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">Not configured</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => openSettings(company.id)}
+                      >
+                        Configure
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {companies?.items.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No companies found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
