@@ -23,19 +23,21 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Please enter email and password");
+      setError("Please enter email and password");
       return;
     }
+    setError(null);
     setLoading(true);
     try {
       await login(email.trim(), password);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Login Failed", err instanceof Error ? err.message : "Invalid credentials");
+      setError(err instanceof Error ? err.message : "Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -62,6 +64,13 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.form}>
+        {error && (
+          <View style={[styles.errorBanner, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "30" }]}>
+            <Feather name="alert-circle" size={16} color={colors.destructive} />
+            <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+          </View>
+        )}
+
         <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <Feather name="mail" size={18} color={colors.mutedForeground} />
           <TextInput
@@ -125,6 +134,15 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontFamily: "Inter_700Bold" },
   subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: 4 },
   form: { gap: 14 },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  errorText: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",

@@ -10,6 +10,9 @@ let _currentState: NetworkState = { isConnected: true, isInternetReachable: true
 const _listeners: Set<(state: NetworkState) => void> = new Set();
 
 async function checkConnection(): Promise<boolean> {
+  if (Platform.OS === "web") {
+    return typeof navigator !== "undefined" ? navigator.onLine : true;
+  }
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);

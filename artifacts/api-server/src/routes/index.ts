@@ -24,6 +24,7 @@ import providerApiKeysRouter from "./provider-api-keys";
 import scanRouter from "./scan";
 import pushTokensRouter from "./push-tokens";
 import attachmentsRouter from "./attachments";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(providerApiKeysRouter);
 router.use(scanRouter);
 router.use(pushTokensRouter);
 router.use(attachmentsRouter);
+router.use(storageRouter);
 
 export default router;

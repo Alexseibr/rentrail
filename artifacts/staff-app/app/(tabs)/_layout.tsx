@@ -9,16 +9,28 @@ import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 
-// IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
-// NativeTabs intentionally does NOT use custom design tokens — liquid glass
-// is a system-level appearance provided by iOS and cannot be overridden.
-// Custom brand colors are applied only on the ClassicTabLayout path (older iOS / Android / web).
 function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="assets">
+        <Icon sf={{ default: "bicycle", selected: "bicycle" }} />
+        <Label>Assets</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="rentals">
+        <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
+        <Label>Rentals</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="operations">
+        <Icon sf={{ default: "wrench.and.screwdriver", selected: "wrench.and.screwdriver.fill" }} />
+        <Label>Ops</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="settings">
+        <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
+        <Label>Settings</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -38,7 +50,7 @@ function ClassicTabLayout() {
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: true,
         tabBarStyle: {
-          position: "absolute",
+          position: "absolute" as const,
           backgroundColor: isIOS ? "transparent" : colors.background,
           borderTopWidth: isWeb ? 1 : 0,
           borderTopColor: colors.border,
@@ -65,12 +77,60 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Dashboard",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="house" tintColor={color} size={24} />
             ) : (
               <Feather name="home" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="assets"
+        options={{
+          title: "Assets",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="bicycle" tintColor={color} size={24} />
+            ) : (
+              <Feather name="grid" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="rentals"
+        options={{
+          title: "Rentals",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="doc.text" tintColor={color} size={24} />
+            ) : (
+              <Feather name="file-text" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="operations"
+        options={{
+          title: "Ops",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="wrench.and.screwdriver" tintColor={color} size={24} />
+            ) : (
+              <Feather name="settings" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="gearshape" tintColor={color} size={24} />
+            ) : (
+              <Feather name="user" size={22} color={color} />
             ),
         }}
       />

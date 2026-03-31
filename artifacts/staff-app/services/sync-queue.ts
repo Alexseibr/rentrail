@@ -2,7 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getNetworkState, onNetworkChange } from "./network";
 import { getAccessToken, getCompanyId, getBranchId } from "./api";
 import { isQueueable } from "./offline-policy";
-import { setBaseUrl } from "@workspace/api-client-react";
 
 const QUEUE_KEY = "sync_mutation_queue";
 

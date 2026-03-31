@@ -6,24 +6,57 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Redirect, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SyncProvider } from "@/contexts/SyncContext";
+import { setupNotificationHandler } from "@/services/push";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+setupNotificationHandler();
 
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const segments = useSegments();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8f9fa" }}>
+        <ActivityIndicator size="large" color="#0f7b6c" />
+      </View>
+    );
+  }
+
+  const inAuthGroup = segments[0] === "login";
+
+  if (!isAuthenticated && !inAuthGroup) {
+    return <Redirect href="/login" />;
+  }
+
+  if (isAuthenticated && inAuthGroup) {
+    return <Redirect href="/" />;
+  }
+
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
+      <Stack.Screen name="create-incident" options={{ title: "New Incident" }} />
+      <Stack.Screen name="create-maintenance" options={{ title: "New Maintenance" }} />
+      <Stack.Screen name="sync-queue" options={{ title: "Sync Queue" }} />
+      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
+      <Stack.Screen name="asset/[id]" options={{ title: "Asset" }} />
+      <Stack.Screen name="rental/[id]" options={{ title: "Rental" }} />
     </Stack>
   );
 }
@@ -50,7 +83,11 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <RootLayoutNav />
+              <AuthProvider>
+                <SyncProvider>
+                  <RootLayoutNav />
+                </SyncProvider>
+              </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
