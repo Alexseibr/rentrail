@@ -12,6 +12,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -29,6 +30,7 @@ const DEMO_ACCOUNTS = [
 const DEMO_PASSWORD = "demo1234";
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { loginWithPhone, requestOtp, verifyOtp, setPhonePassword } = useAuth();
@@ -63,7 +65,7 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(err instanceof Error ? err.message : "Invalid credentials");
+      setError(err instanceof Error ? err.message : t("login.invalidCredentials"));
     } finally {
       setLoading(false);
     }
@@ -79,7 +81,7 @@ export default function LoginScreen() {
       setStep("otp");
       setTimeout(() => otpRef.current?.focus(), 200);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send code");
+      setError(err instanceof Error ? err.message : t("login.failedToSendCode"));
     } finally {
       setLoading(false);
     }
@@ -99,7 +101,7 @@ export default function LoginScreen() {
       }
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(err instanceof Error ? err.message : "Invalid code");
+      setError(err instanceof Error ? err.message : t("login.invalidCode"));
     } finally {
       setLoading(false);
     }
@@ -113,7 +115,7 @@ export default function LoginScreen() {
       await setPhonePassword(newPassword);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to set password");
+      setError(err instanceof Error ? err.message : t("login.failedToSetPassword"));
     } finally {
       setLoading(false);
     }
@@ -127,24 +129,24 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(err instanceof Error ? err.message : "Demo login failed");
+      setError(err instanceof Error ? err.message : t("login.demoLoginFailed"));
     } finally {
       setDemoLoading(null);
     }
   };
 
   const stepTitle: Record<Step, string> = {
-    phone:        "Sign in to manage your fleet",
-    password:     `Welcome back`,
-    otp:          `Enter your code`,
-    "set-password": "Create a password",
+    phone:        t("login.signInToManage"),
+    password:     t("login.welcomeBack"),
+    otp:          t("login.enterYourCode"),
+    "set-password": t("login.createPassword"),
   };
 
   const stepSubtitle: Record<Step, string> = {
-    phone:        "Enter your phone number",
+    phone:        t("login.enterPhone"),
     password:     phone,
-    otp:          `Code sent to ${phone}`,
-    "set-password": "You won't need a code next time",
+    otp:          t("login.codeSentTo", { phone }),
+    "set-password": t("login.noCodeNextTime"),
   };
 
   return (
@@ -163,7 +165,7 @@ export default function LoginScreen() {
         <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
           <Feather name="truck" size={32} color="#fff" />
         </View>
-        <Text style={[styles.title, { color: colors.foreground }]}>Staff Portal</Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>{t("login.staffPortal")}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
           {stepTitle[step]}
         </Text>
@@ -204,7 +206,7 @@ export default function LoginScreen() {
               disabled={busy || !phone.trim()}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>Continue</Text>
+              <Text style={styles.buttonText}>{t("login.continue")}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -215,7 +217,7 @@ export default function LoginScreen() {
               <Feather name="lock" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
-                placeholder="Password"
+                placeholder={t("login.password")}
                 placeholderTextColor={colors.mutedForeground}
                 value={password}
                 onChangeText={setPassword}
@@ -233,15 +235,15 @@ export default function LoginScreen() {
               disabled={busy}
               activeOpacity={0.8}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>Sign In</Text>}
+              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>{t("login.signIn")}</Text>}
             </TouchableOpacity>
             <View style={styles.row}>
               <TouchableOpacity onPress={() => { setStep("phone"); setError(null); }}>
-                <Text style={[styles.linkText, { color: colors.mutedForeground }]}>← Change number</Text>
+                <Text style={[styles.linkText, { color: colors.mutedForeground }]}>← {t("login.changeNumber")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
                 <Text style={[styles.linkText, { color: colors.primary, opacity: busy ? 0.5 : 1 }]}>
-                  {loading ? "Sending..." : "Get SMS code"}
+                  {loading ? t("login.sending") : t("login.getSmsCode")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -252,7 +254,7 @@ export default function LoginScreen() {
           <>
             {devCode && (
               <View style={[styles.devBanner, { backgroundColor: "#fef3c7", borderColor: "#fcd34d" }]}>
-                <Text style={styles.devText}>Dev mode — your code: <Text style={styles.devCode}>{devCode}</Text></Text>
+                <Text style={styles.devText}>{t("login.devModeCode")} <Text style={styles.devCode}>{devCode}</Text></Text>
               </View>
             )}
             <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -275,14 +277,14 @@ export default function LoginScreen() {
               disabled={busy || otpCode.length !== 6}
               activeOpacity={0.8}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>Verify Code</Text>}
+              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>{t("login.verifyCode")}</Text>}
             </TouchableOpacity>
             <View style={styles.row}>
               <TouchableOpacity onPress={() => { setStep("password"); setError(null); }}>
-                <Text style={[styles.linkText, { color: colors.mutedForeground }]}>← Back</Text>
+                <Text style={[styles.linkText, { color: colors.mutedForeground }]}>← {t("login.back")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
-                <Text style={[styles.linkText, { color: colors.primary, opacity: busy ? 0.5 : 1 }]}>Resend code</Text>
+                <Text style={[styles.linkText, { color: colors.primary, opacity: busy ? 0.5 : 1 }]}>{t("login.resendCode")}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -294,7 +296,7 @@ export default function LoginScreen() {
               <Feather name="lock" size={18} color={colors.mutedForeground} />
               <TextInput
                 style={[styles.input, { color: colors.foreground }]}
-                placeholder="Min. 6 characters"
+                placeholder={t("login.minChars")}
                 placeholderTextColor={colors.mutedForeground}
                 value={newPassword}
                 onChangeText={setNewPassword}
@@ -310,14 +312,14 @@ export default function LoginScreen() {
               disabled={busy || newPassword.length < 6}
               activeOpacity={0.8}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>Set Password & Continue</Text>}
+              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>{t("login.setPasswordContinue")}</Text>}
             </TouchableOpacity>
           </>
         )}
       </View>
 
       <View style={[styles.demoBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <Text style={[styles.demoTitle, { color: colors.mutedForeground }]}>Demo — tap to enter</Text>
+        <Text style={[styles.demoTitle, { color: colors.mutedForeground }]}>{t("login.demoTapToEnter")}</Text>
         <View style={styles.demoGrid}>
           {DEMO_ACCOUNTS.map((acc) => (
             <TouchableOpacity
@@ -336,7 +338,7 @@ export default function LoginScreen() {
           ))}
         </View>
         <Text style={[styles.demoHint, { color: colors.mutedForeground }]}>
-          Velocity Rides · пароль: <Text style={{ fontFamily: "Inter_600SemiBold" }}>demo1234</Text>
+          {t("login.demoHint")} <Text style={{ fontFamily: "Inter_600SemiBold" }}>demo1234</Text>
         </Text>
       </View>
     </ScrollView>

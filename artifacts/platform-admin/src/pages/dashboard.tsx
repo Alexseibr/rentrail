@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +72,8 @@ function formatCurrency(amount: number, currency = "USD") {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
+
   const overview = useQuery({
     queryKey: ["analytics", "overview"],
     queryFn: () => api<OverviewMetrics>("/platform/analytics/overview"),
@@ -115,8 +118,8 @@ export default function DashboardPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Platform overview and key metrics</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
       </div>
 
       {isLoading ? (
@@ -136,23 +139,23 @@ export default function DashboardPage() {
         <>
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <MetricCard
-              title="Total Companies"
+              title={t("dashboard.totalCompanies")}
               value={overview.data?.totalCompanies ?? 0}
               icon={Building2}
-              description={`${overview.data?.activeCompanies ?? 0} active`}
+              description={t("dashboard.nActive", { count: overview.data?.activeCompanies ?? 0 })}
             />
             <MetricCard
-              title="Total Users"
+              title={t("dashboard.totalUsers")}
               value={overview.data?.totalUsers ?? 0}
               icon={Users}
             />
             <MetricCard
-              title="Total Assets"
+              title={t("dashboard.totalAssets")}
               value={overview.data?.totalAssets ?? 0}
               icon={Bike}
             />
             <MetricCard
-              title="Pending Approval"
+              title={t("dashboard.pendingApproval")}
               value={overview.data?.pendingCompanies ?? 0}
               icon={AlertTriangle}
             />
@@ -160,42 +163,42 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Tenant Status Breakdown</CardTitle>
+              <CardTitle className="text-base">{t("dashboard.tenantStatus")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="flex items-center gap-3 rounded-lg border p-3">
                   <div className="h-3 w-3 rounded-full bg-green-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Active</p>
+                    <p className="text-sm text-muted-foreground">{t("common.active")}</p>
                     <p className="text-xl font-bold">{overview.data?.activeCompanies ?? 0}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-lg border p-3">
                   <Clock className="h-4 w-4 text-blue-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Trial</p>
+                    <p className="text-sm text-muted-foreground">{t("common.trial")}</p>
                     <p className="text-xl font-bold">{overview.data?.trialCompanies ?? 0}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-lg border p-3">
                   <AlertTriangle className="h-4 w-4 text-yellow-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Pending</p>
+                    <p className="text-sm text-muted-foreground">{t("common.pending")}</p>
                     <p className="text-xl font-bold">{overview.data?.pendingCompanies ?? 0}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-lg border p-3">
                   <PauseCircle className="h-4 w-4 text-orange-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Suspended</p>
+                    <p className="text-sm text-muted-foreground">{t("common.suspended")}</p>
                     <p className="text-xl font-bold">{overview.data?.suspendedCompanies ?? 0}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 rounded-lg border p-3">
                   <ShieldAlert className="h-4 w-4 text-red-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Blocked</p>
+                    <p className="text-sm text-muted-foreground">{t("common.blocked")}</p>
                     <p className="text-xl font-bold">{overview.data?.blockedCompanies ?? 0}</p>
                   </div>
                 </div>
@@ -205,46 +208,46 @@ export default function DashboardPage() {
 
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <MetricCard
-              title="Monthly Revenue"
+              title={t("dashboard.monthlyRevenue")}
               value={formatCurrency(billing.data?.totalMrr ?? 0, billing.data?.currency)}
               icon={DollarSign}
             />
             <MetricCard
-              title="Active Subscriptions"
+              title={t("dashboard.activeSubscriptions")}
               value={billing.data?.activeSubscriptions ?? 0}
               icon={TrendingUp}
             />
             <MetricCard
-              title="Trial Subscriptions"
+              title={t("dashboard.trialSubscriptions")}
               value={billing.data?.trialSubscriptions ?? 0}
               icon={TrendingUp}
-              description="Currently in trial"
+              description={t("dashboard.currentlyInTrial")}
             />
             <MetricCard
-              title="Past Due"
+              title={t("dashboard.pastDue")}
               value={billing.data?.pastDueSubscriptions ?? 0}
               icon={AlertTriangle}
-              description="Require attention"
+              description={t("dashboard.requireAttention")}
             />
           </div>
 
           {health.data && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">System Health</CardTitle>
+                <CardTitle className="text-base">{t("dashboard.systemHealth")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-4 mb-4">
                   <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {health.data.healthy} Healthy
+                    {health.data.healthy} {t("dashboard.healthy")}
                   </Badge>
                   {health.data.degraded > 0 && (
                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                      {health.data.degraded} Degraded
+                      {health.data.degraded} {t("dashboard.degraded")}
                     </Badge>
                   )}
                   {health.data.critical > 0 && (
-                    <Badge variant="destructive">{health.data.critical} Critical</Badge>
+                    <Badge variant="destructive">{health.data.critical} {t("dashboard.critical")}</Badge>
                   )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -274,7 +277,7 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
-                  Unpaid Invoices
+                  {t("dashboard.unpaidInvoices")}
                   {(unpaidInvoices.data?.pagination?.total ?? 0) > 0 && (
                     <Badge variant="destructive" className="ml-2">
                       {unpaidInvoices.data?.pagination?.total}
@@ -286,9 +289,9 @@ export default function DashboardPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Due</TableHead>
+                      <TableHead>{t("common.company")}</TableHead>
+                      <TableHead>{t("common.amount")}</TableHead>
+                      <TableHead>{t("dashboard.due")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -310,7 +313,7 @@ export default function DashboardPage() {
                     {(unpaidInvoices.data?.items || []).length === 0 && (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-4 text-sm text-muted-foreground">
-                          No unpaid invoices
+                          {t("dashboard.noUnpaidInvoices")}
                         </TableCell>
                       </TableRow>
                     )}
@@ -322,7 +325,7 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
-                  Pending Signups
+                  {t("dashboard.pendingSignups")}
                   {(recentCompanies.data?.pagination?.total ?? 0) > 0 && (
                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 ml-2">
                       {recentCompanies.data?.pagination?.total}
@@ -334,9 +337,9 @@ export default function DashboardPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Slug</TableHead>
-                      <TableHead>Registered</TableHead>
+                      <TableHead>{t("common.company")}</TableHead>
+                      <TableHead>{t("dashboard.slug")}</TableHead>
+                      <TableHead>{t("dashboard.registered")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -354,7 +357,7 @@ export default function DashboardPage() {
                     {(recentCompanies.data?.items || []).length === 0 && (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-4 text-sm text-muted-foreground">
-                          No pending signups
+                          {t("dashboard.noPendingSignups")}
                         </TableCell>
                       </TableRow>
                     )}
@@ -366,16 +369,16 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Recent Platform Activity</CardTitle>
+              <CardTitle className="text-base">{t("dashboard.recentActivity")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>Time</TableHead>
+                    <TableHead>{t("dashboard.actor")}</TableHead>
+                    <TableHead>{t("dashboard.action")}</TableHead>
+                    <TableHead>{t("dashboard.entity")}</TableHead>
+                    <TableHead>{t("dashboard.time")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -403,7 +406,7 @@ export default function DashboardPage() {
                   {(recentAudit.data?.items || []).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-4 text-sm text-muted-foreground">
-                        No recent activity
+                        {t("dashboard.noRecentActivity")}
                       </TableCell>
                     </TableRow>
                   )}

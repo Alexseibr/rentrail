@@ -1,10 +1,12 @@
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert } from "lucide-react";
 
 export default function AccessDeniedPage() {
   const { logout, user } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
@@ -13,15 +15,14 @@ export default function AccessDeniedPage() {
           <div className="flex justify-center mb-2">
             <ShieldAlert className="h-12 w-12 text-destructive" />
           </div>
-          <CardTitle className="text-xl">Access Denied</CardTitle>
+          <CardTitle className="text-xl">{t("accessDenied.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Your account ({user?.email}) does not have platform administrator privileges.
-            Contact a platform administrator to request access.
+            {t("accessDenied.message", { email: user?.email })}
           </p>
           <Button variant="outline" onClick={logout} className="w-full">
-            Sign out and use a different account
+            {t("accessDenied.signOut")}
           </Button>
         </CardContent>
       </Card>

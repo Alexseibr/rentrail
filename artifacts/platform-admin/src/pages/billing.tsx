@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ const invStatusColors: Record<string, string> = {
 
 function PlansTab() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [showCreate, setShowCreate] = useState(false);
   const [editPlanId, setEditPlanId] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -109,7 +111,7 @@ function PlansTab() {
       <div className="flex justify-end mb-4">
         <Button onClick={() => setShowCreate(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Create Plan
+          {t("billing.createPlan")}
         </Button>
       </div>
       <Card>
@@ -117,12 +119,12 @@ function PlansTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Interval</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("billing.code")}</TableHead>
+                <TableHead>{t("billing.price")}</TableHead>
+                <TableHead>{t("billing.interval")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
+                <TableHead>{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -136,13 +138,13 @@ function PlansTab() {
                   <TableCell>{plan.billingInterval as string}</TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={plan.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                      {plan.isActive ? "Active" : "Inactive"}
+                      {plan.isActive ? t("common.active") : t("common.inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openEdit(plan)}>
                       <Pencil className="h-3 w-3 mr-1" />
-                      Edit
+                      {t("common.edit")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -150,7 +152,7 @@ function PlansTab() {
               {plans?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No plans created yet
+                    {t("billing.noPlans")}
                   </TableCell>
                 </TableRow>
               )}
@@ -162,7 +164,7 @@ function PlansTab() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Plan</DialogTitle>
+            <DialogTitle>{t("billing.createPlan")}</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={(e) => {
@@ -175,7 +177,7 @@ function PlansTab() {
             className="space-y-4"
           >
             <div className="space-y-2">
-              <Label>Plan Name</Label>
+              <Label>{t("billing.planName")}</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -183,7 +185,7 @@ function PlansTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Code</Label>
+              <Label>{t("billing.code")}</Label>
               <Input
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
@@ -192,7 +194,7 @@ function PlansTab() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Price (whole units)</Label>
+                <Label>{t("billing.priceUnits")}</Label>
                 <Input
                   type="number"
                   value={form.price}
@@ -201,7 +203,7 @@ function PlansTab() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Billing Interval</Label>
+                <Label>{t("billing.billingInterval")}</Label>
                 <Select
                   value={form.billingInterval}
                   onValueChange={(v) => setForm({ ...form, billingInterval: v })}
@@ -210,19 +212,19 @@ function PlansTab() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
+                    <SelectItem value="monthly">{t("billing.monthly")}</SelectItem>
+                    <SelectItem value="quarterly">{t("billing.quarterly")}</SelectItem>
+                    <SelectItem value="yearly">{t("billing.yearly")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create"}
+                {createMutation.isPending ? t("common.creating") : t("common.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -232,7 +234,7 @@ function PlansTab() {
       <Dialog open={!!editPlanId} onOpenChange={() => setEditPlanId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Plan</DialogTitle>
+            <DialogTitle>{t("billing.editPlan")}</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={(e) => {
@@ -251,7 +253,7 @@ function PlansTab() {
             className="space-y-4"
           >
             <div className="space-y-2">
-              <Label>Plan Name</Label>
+              <Label>{t("billing.planName")}</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -260,7 +262,7 @@ function PlansTab() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Price (whole units)</Label>
+                <Label>{t("billing.priceUnits")}</Label>
                 <Input
                   type="number"
                   value={form.price}
@@ -269,7 +271,7 @@ function PlansTab() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Billing Interval</Label>
+                <Label>{t("billing.billingInterval")}</Label>
                 <Select
                   value={form.billingInterval}
                   onValueChange={(v) => setForm({ ...form, billingInterval: v })}
@@ -278,19 +280,19 @@ function PlansTab() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
+                    <SelectItem value="monthly">{t("billing.monthly")}</SelectItem>
+                    <SelectItem value="quarterly">{t("billing.quarterly")}</SelectItem>
+                    <SelectItem value="yearly">{t("billing.yearly")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditPlanId(null)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                {updateMutation.isPending ? t("common.saving") : t("billing.saveChanges")}
               </Button>
             </DialogFooter>
           </form>
@@ -302,6 +304,7 @@ function PlansTab() {
 
 function SubscriptionsTab() {
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -332,14 +335,14 @@ function SubscriptionsTab() {
           }}
         >
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("common.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="trial">Trial</SelectItem>
-            <SelectItem value="past_due">Past Due</SelectItem>
-            <SelectItem value="canceled">Canceled</SelectItem>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="active">{t("common.active")}</SelectItem>
+            <SelectItem value="trial">{t("common.trial")}</SelectItem>
+            <SelectItem value="past_due">{t("dashboard.pastDue")}</SelectItem>
+            <SelectItem value="canceled">{t("common.canceled")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -348,10 +351,10 @@ function SubscriptionsTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Period End</TableHead>
+                <TableHead>{t("common.company")}</TableHead>
+                <TableHead>{t("companies.plan")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
+                <TableHead>{t("billing.periodEnd")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -383,7 +386,7 @@ function SubscriptionsTab() {
               {data?.items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    No subscriptions found
+                    {t("billing.noSubscriptions")}
                   </TableCell>
                 </TableRow>
               )}
@@ -391,7 +394,7 @@ function SubscriptionsTab() {
           </Table>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} total</p>
+              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} {t("common.total")}</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -402,7 +405,7 @@ function SubscriptionsTab() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm">
-                  Page {page} of {totalPages}
+                  {t("common.page", { page, totalPages })}
                 </span>
                 <Button
                   variant="outline"
@@ -424,6 +427,7 @@ function SubscriptionsTab() {
 function InvoicesTab() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -469,14 +473,14 @@ function InvoicesTab() {
           }}
         >
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("common.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="issued">Issued</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="void">Void</SelectItem>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="draft">{t("billing.draft")}</SelectItem>
+            <SelectItem value="issued">{t("billing.issued")}</SelectItem>
+            <SelectItem value="paid">{t("billing.paid")}</SelectItem>
+            <SelectItem value="void">{t("billing.void")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -485,11 +489,11 @@ function InvoicesTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t("common.company")}</TableHead>
+                <TableHead>{t("common.amount")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
+                <TableHead>{t("common.dueDate")}</TableHead>
+                <TableHead>{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -533,7 +537,7 @@ function InvoicesTab() {
                             }
                             disabled={markPaidMutation.isPending}
                           >
-                            Mark Paid
+                            {t("billing.markPaid")}
                           </Button>
                           <Button
                             size="sm"
@@ -542,7 +546,7 @@ function InvoicesTab() {
                             onClick={() => voidMutation.mutate(inv.id as string)}
                             disabled={voidMutation.isPending}
                           >
-                            Void
+                            {t("billing.void")}
                           </Button>
                         </>
                       )}
@@ -554,7 +558,7 @@ function InvoicesTab() {
                           onClick={() => voidMutation.mutate(inv.id as string)}
                           disabled={voidMutation.isPending}
                         >
-                          Void
+                          {t("billing.void")}
                         </Button>
                       )}
                     </div>
@@ -564,7 +568,7 @@ function InvoicesTab() {
               {data?.items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No invoices found
+                    {t("billing.noInvoices")}
                   </TableCell>
                 </TableRow>
               )}
@@ -572,7 +576,7 @@ function InvoicesTab() {
           </Table>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} total</p>
+              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} {t("common.total")}</p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -583,7 +587,7 @@ function InvoicesTab() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm">
-                  Page {page} of {totalPages}
+                  {t("common.page", { page, totalPages })}
                 </span>
                 <Button
                   variant="outline"
@@ -603,6 +607,7 @@ function InvoicesTab() {
 }
 
 function PaymentsTab() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [companyFilter, setCompanyFilter] = useState("");
   const [invoiceFilter, setInvoiceFilter] = useState("");
@@ -630,13 +635,13 @@ function PaymentsTab() {
     <>
       <div className="flex items-center gap-3 mb-4">
         <Input
-          placeholder="Filter by Company ID..."
+          placeholder={t("billing.filterByCompanyId")}
           value={companyFilter}
           onChange={(e) => { setCompanyFilter(e.target.value); setPage(1); }}
           className="max-w-xs"
         />
         <Input
-          placeholder="Filter by Invoice ID..."
+          placeholder={t("billing.filterByInvoiceId")}
           value={invoiceFilter}
           onChange={(e) => { setInvoiceFilter(e.target.value); setPage(1); }}
           className="max-w-xs"
@@ -647,11 +652,11 @@ function PaymentsTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>{t("common.company")}</TableHead>
+                <TableHead>{t("common.amount")}</TableHead>
+                <TableHead>{t("billing.method")}</TableHead>
+                <TableHead>{t("billing.reference")}</TableHead>
+                <TableHead>{t("billing.date")}</TableHead>
               </TableRow>
             </TableHeader>
           <TableBody>
@@ -677,7 +682,7 @@ function PaymentsTab() {
             {items.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No payments found
+                  {t("billing.noPayments")}
                 </TableCell>
               </TableRow>
             )}
@@ -685,7 +690,7 @@ function PaymentsTab() {
         </Table>
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
-            <p className="text-sm text-muted-foreground">{total} total</p>
+            <p className="text-sm text-muted-foreground">{total} {t("common.total")}</p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -696,7 +701,7 @@ function PaymentsTab() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm">
-                Page {page} of {totalPages}
+                {t("common.page", { page, totalPages })}
               </span>
               <Button
                 variant="outline"
@@ -716,19 +721,21 @@ function PaymentsTab() {
 }
 
 export default function BillingPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
-        <p className="text-muted-foreground">Manage plans, subscriptions, invoices, and payments</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("billing.title")}</h1>
+        <p className="text-muted-foreground">{t("billing.title")}</p>
       </div>
 
       <Tabs defaultValue="plans">
         <TabsList>
-          <TabsTrigger value="plans">Plans</TabsTrigger>
-          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="plans">{t("billing.plans")}</TabsTrigger>
+          <TabsTrigger value="subscriptions">{t("billing.subscriptions")}</TabsTrigger>
+          <TabsTrigger value="invoices">{t("billing.invoices")}</TabsTrigger>
+          <TabsTrigger value="payments">{t("billing.payments")}</TabsTrigger>
         </TabsList>
         <TabsContent value="plans">
           <PlansTab />

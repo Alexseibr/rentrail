@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -18,6 +19,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SyncProvider } from "@/contexts/SyncContext";
 import { setupNotificationHandler } from "@/services/push";
+import "../i18n/i18n";
 
 SplashScreen.preventAutoHideAsync();
 setupNotificationHandler();
@@ -25,6 +27,7 @@ setupNotificationHandler();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { t } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
 
@@ -47,16 +50,16 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack screenOptions={{ headerBackTitle: t("common.back") }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
-      <Stack.Screen name="create-incident" options={{ title: "New Incident" }} />
-      <Stack.Screen name="create-maintenance" options={{ title: "New Maintenance" }} />
-      <Stack.Screen name="sync-queue" options={{ title: "Sync Queue" }} />
-      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
-      <Stack.Screen name="asset/[id]" options={{ title: "Asset" }} />
-      <Stack.Screen name="rental/[id]" options={{ title: "Rental" }} />
+      <Stack.Screen name="create-incident" options={{ title: t("screens.newIncident") }} />
+      <Stack.Screen name="create-maintenance" options={{ title: t("screens.newMaintenance") }} />
+      <Stack.Screen name="sync-queue" options={{ title: t("screens.syncQueue") }} />
+      <Stack.Screen name="notifications" options={{ title: t("screens.notifications") }} />
+      <Stack.Screen name="asset/[id]" options={{ title: t("screens.asset") }} />
+      <Stack.Screen name="rental/[id]" options={{ title: t("screens.rental") }} />
     </Stack>
   );
 }

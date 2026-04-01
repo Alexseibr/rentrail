@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   Building2,
@@ -11,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Languages,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,19 +20,24 @@ import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/companies", label: "Companies", icon: Building2 },
-  { path: "/billing", label: "Billing", icon: CreditCard },
-  { path: "/blacklist", label: "Global Blacklist", icon: ShieldBan },
-  { path: "/diagnostics", label: "Diagnostics", icon: Activity },
-  { path: "/analytics", label: "Analytics", icon: BarChart3 },
-  { path: "/white-label", label: "White Label", icon: Palette },
+  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/companies", labelKey: "nav.companies", icon: Building2 },
+  { path: "/billing", labelKey: "nav.billing", icon: CreditCard },
+  { path: "/blacklist", labelKey: "nav.blacklist", icon: ShieldBan },
+  { path: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity },
+  { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3 },
+  { path: "/white-label", labelKey: "nav.whiteLabel", icon: Palette },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout, hasTenantMemberships } = useAuth();
+  const { t, i18n } = useTranslation();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+
+  const toggleLang = () => {
+    i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -43,10 +50,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-2 border-b px-4 h-14">
           {!collapsed && (
             <div className="min-w-0">
-              <span className="font-semibold text-sm truncate block">Platform Admin</span>
+              <span className="font-semibold text-sm truncate block">{t("nav.platformAdmin")}</span>
               {hasTenantMemberships && (
                 <Badge variant="outline" className="text-[10px] h-4 px-1">
-                  Platform Admin Mode
+                  {t("nav.platformAdminMode")}
                 </Badge>
               )}
             </div>
@@ -79,14 +86,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
                 </div>
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t p-3">
+        <div className="border-t p-3 space-y-2">
+          <Button
+            variant="ghost"
+            size={collapsed ? "icon" : "sm"}
+            className={cn("w-full", collapsed ? "h-8 w-8 mx-auto" : "justify-start gap-2")}
+            onClick={toggleLang}
+          >
+            <Languages className="h-4 w-4 shrink-0" />
+            {!collapsed && (
+              <span className="text-xs">{i18n.language === "ru" ? "English" : "Русский"}</span>
+            )}
+          </Button>
           <div className={cn("flex items-center gap-2", collapsed && "justify-center")}>
             {!collapsed && (
               <div className="flex-1 min-w-0">

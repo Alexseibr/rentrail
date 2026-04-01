@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ interface WhiteLabelSettings {
 }
 
 export default function WhiteLabelPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
@@ -107,8 +109,8 @@ export default function WhiteLabelPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">White Label</h1>
-        <p className="text-muted-foreground">Manage white-label settings for companies</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("whiteLabel.title")}</h1>
+        <p className="text-muted-foreground">{t("whiteLabel.subtitle")}</p>
       </div>
 
       <Card>
@@ -116,7 +118,7 @@ export default function WhiteLabelPage() {
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search companies..."
+              placeholder={t("whiteLabel.searchCompanies")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -134,11 +136,11 @@ export default function WhiteLabelPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Brand Name</TableHead>
-                  <TableHead>Custom Domain</TableHead>
-                  <TableHead>WL Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t("common.company")}</TableHead>
+                  <TableHead>{t("whiteLabel.brandName")}</TableHead>
+                  <TableHead>{t("whiteLabel.customDomain")}</TableHead>
+                  <TableHead>{t("whiteLabel.wlStatus")}</TableHead>
+                  <TableHead>{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -179,7 +181,7 @@ export default function WhiteLabelPage() {
                           {company.whiteLabel.status}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs">Not configured</Badge>
+                        <Badge variant="outline" className="text-xs">{t("whiteLabel.notConfigured")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -189,7 +191,7 @@ export default function WhiteLabelPage() {
                         className="h-7 text-xs"
                         onClick={() => openSettings(company.id)}
                       >
-                        Configure
+                        {t("whiteLabel.configure")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -197,7 +199,7 @@ export default function WhiteLabelPage() {
                 {companies?.items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      No companies found
+                      {t("companies.noCompanies")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -210,7 +212,7 @@ export default function WhiteLabelPage() {
       <Dialog open={!!selectedCompanyId} onOpenChange={() => setSelectedCompanyId(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>White Label Settings</DialogTitle>
+            <DialogTitle>{t("whiteLabel.settings")}</DialogTitle>
           </DialogHeader>
           {wlLoading ? (
             <div className="space-y-3">
@@ -221,7 +223,7 @@ export default function WhiteLabelPage() {
           ) : wlSettings ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Status</span>
+                <span className="text-sm font-medium">{t("common.status")}</span>
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="secondary"
@@ -241,11 +243,11 @@ export default function WhiteLabelPage() {
                   >
                     {wlSettings.status === "active" ? (
                       <>
-                        <XCircle className="h-3 w-3 mr-1" /> Disable
+                        <XCircle className="h-3 w-3 mr-1" /> {t("common.disable")}
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="h-3 w-3 mr-1" /> Enable
+                        <CheckCircle className="h-3 w-3 mr-1" /> {t("common.enable")}
                       </>
                     )}
                   </Button>
@@ -260,13 +262,13 @@ export default function WhiteLabelPage() {
                 className="space-y-3"
               >
                 {[
-                  { key: "customDomain", label: "Custom Domain", placeholder: "app.example.com" },
-                  { key: "brandNameOverride", label: "Brand Name", placeholder: "Acme Rentals" },
-                  { key: "logoUrl", label: "Logo URL", placeholder: "https://..." },
-                  { key: "primaryColor", label: "Primary Color", placeholder: "#3B82F6" },
-                  { key: "secondaryColor", label: "Secondary Color", placeholder: "#10B981" },
-                  { key: "customSupportEmail", label: "Support Email", placeholder: "support@..." },
-                  { key: "customSupportPhone", label: "Support Phone", placeholder: "+1..." },
+                  { key: "customDomain", label: t("whiteLabel.customDomain"), placeholder: "app.example.com" },
+                  { key: "brandNameOverride", label: t("whiteLabel.brandName"), placeholder: "Acme Rentals" },
+                  { key: "logoUrl", label: t("whiteLabel.logoUrl"), placeholder: "https://..." },
+                  { key: "primaryColor", label: t("whiteLabel.primaryColor"), placeholder: "#3B82F6" },
+                  { key: "secondaryColor", label: t("whiteLabel.secondaryColor"), placeholder: "#10B981" },
+                  { key: "customSupportEmail", label: t("whiteLabel.supportEmail"), placeholder: "support@..." },
+                  { key: "customSupportPhone", label: t("whiteLabel.supportPhone"), placeholder: "+1..." },
                 ].map(({ key, label, placeholder }) => (
                   <div key={key} className="space-y-1">
                     <Label className="text-xs">{label}</Label>
@@ -283,17 +285,17 @@ export default function WhiteLabelPage() {
                     variant="outline"
                     onClick={() => setSelectedCompanyId(null)}
                   >
-                    Close
+                    {t("common.close")}
                   </Button>
                   <Button type="submit" disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                    {updateMutation.isPending ? t("common.saving") : t("billing.saveChanges")}
                   </Button>
                 </DialogFooter>
               </form>
             </div>
           ) : (
             <p className="text-muted-foreground py-4">
-              White label not configured for this company. Enable it to get started.
+              {t("whiteLabel.notConfiguredMsg")}
             </p>
           )}
         </DialogContent>

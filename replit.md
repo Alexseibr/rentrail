@@ -17,7 +17,7 @@ I like functional programming.
 The project is a pnpm monorepo using Node.js 24 and TypeScript 5.9. The backend API is built with Express 5, utilizing PostgreSQL with Drizzle ORM, Zod for validation, and JWT with bcrypt for authentication. API codegen is handled by Orval from an OpenAPI spec, and esbuild is used for the build process.
 
 ### UI/UX Decisions
-A mobile staff application, built with Expo/React Native, provides intuitive workflows for operators. It features tab-based navigation, modal screens for specific actions (e.g., QR scanning, incident creation), and offline-first capabilities with an AsyncStorage queue for data synchronization.
+A mobile staff application, built with Expo/React Native, provides intuitive workflows for operators. It features tab-based navigation, modal screens for specific actions (e.g., QR scanning, incident creation), offline-first capabilities with an AsyncStorage queue for data synchronization, and full bilingual i18n support (Russian default, English) using i18next + react-i18next with language persisted in AsyncStorage. Language toggle available in Settings screen.
 
 A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owners with management capabilities. It features:
 - **Auth:** JWT-based login with automatic token refresh, stored in-memory with localStorage persistence
@@ -28,6 +28,7 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 - **Diagnostics:** Real-time health summary, service status cards, tenant health overview with auto-refresh
 - **Analytics:** Platform-wide metrics, risk overview, top tenants by rentals and assets
 - **White Label:** Per-company white-label settings management (custom domain, branding, colors, support contacts)
+- **i18n:** Full bilingual support (Russian default, English). Uses i18next + react-i18next, language stored in localStorage(`i18n_lang`), toggle in sidebar
 - **Routing:** wouter with sidebar navigation, `/platform-admin/` base path
 - **API Proxy:** Vite dev proxy forwards `/platform-admin/api/` to API server on port 8080
 

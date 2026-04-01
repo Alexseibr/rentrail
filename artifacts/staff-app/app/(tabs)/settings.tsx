@@ -10,13 +10,16 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSync } from "@/contexts/SyncContext";
 import { useNetwork } from "@/services/network";
 import { getPushRegistrationStatus, registerForPushNotifications } from "@/services/push";
+import { toggleLanguage } from "../../i18n/i18n";
 
 export default function SettingsScreen() {
+  const { t, i18n } = useTranslation();
   const colors = useColors();
   const { user, logout, companyId } = useAuth();
   const { pendingCount } = useSync();
@@ -37,10 +40,10 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
+      { text: t("settings.cancel"), style: "cancel" },
       {
-        text: "Sign Out",
+        text: t("settings.signOut"),
         style: "destructive",
         onPress: async () => {
           await logout();
@@ -49,33 +52,44 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const handleToggleLanguage = () => {
+    toggleLanguage();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const rows = [
     {
-      title: "Account",
+      title: t("settings.account"),
       items: [
         { label: user?.email ?? "—", icon: "user" as const, detail: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() },
       ],
     },
     {
-      title: "Status",
+      title: t("settings.status"),
       items: [
         {
-          label: "Network",
+          label: t("settings.network"),
           icon: (isConnected ? "wifi" : "wifi-off") as "wifi" | "wifi-off",
-          detail: isConnected ? "Connected" : "Offline",
+          detail: isConnected ? t("settings.connected") : t("settings.offline"),
           color: isConnected ? colors.success : colors.destructive,
         },
         {
-          label: "Push Notifications",
+          label: t("settings.pushNotifications"),
           icon: "bell" as const,
-          detail: pushStatus.isRegistered ? "Registered" : "Not registered",
+          detail: pushStatus.isRegistered ? t("settings.registered") : t("settings.notRegistered"),
           onPress: handlePushToggle,
         },
         {
-          label: "Pending Sync",
+          label: t("settings.pendingSync"),
           icon: "refresh-cw" as const,
-          detail: `${pendingCount} item${pendingCount !== 1 ? "s" : ""}`,
+          detail: `${pendingCount} ${pendingCount !== 1 ? t("settings.items") : t("settings.item")}`,
           color: pendingCount > 0 ? colors.warning : colors.mutedForeground,
+        },
+        {
+          label: t("settings.language"),
+          icon: "globe" as const,
+          detail: i18n.language === "ru" ? "Русский" : "English",
+          onPress: handleToggleLanguage,
         },
       ],
     },
@@ -118,7 +132,7 @@ export default function SettingsScreen() {
           activeOpacity={0.7}
         >
           <Feather name="log-out" size={18} color={colors.destructive} />
-          <Text style={[styles.logoutText, { color: colors.destructive }]}>Sign Out</Text>
+          <Text style={[styles.logoutText, { color: colors.destructive }]}>{t("settings.signOut")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

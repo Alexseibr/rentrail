@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
@@ -65,6 +66,7 @@ async function fetchDashboard() {
 }
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -77,17 +79,17 @@ export default function DashboardScreen() {
   });
 
   const stats = [
-    { label: "Active Rentals", value: data?.activeRentals ?? 0, icon: "play-circle" as const, color: colors.primary },
-    { label: "Overdue", value: data?.overdueRentals ?? 0, icon: "alert-triangle" as const, color: colors.destructive },
-    { label: "Available", value: data?.availableAssets ?? 0, icon: "check-circle" as const, color: colors.success },
-    { label: "Total Fleet", value: data?.totalAssets ?? 0, icon: "grid" as const, color: colors.info },
+    { label: t("dashboard.activeRentals"), value: data?.activeRentals ?? 0, icon: "play-circle" as const, color: colors.primary },
+    { label: t("dashboard.overdue"), value: data?.overdueRentals ?? 0, icon: "alert-triangle" as const, color: colors.destructive },
+    { label: t("dashboard.available"), value: data?.availableAssets ?? 0, icon: "check-circle" as const, color: colors.success },
+    { label: t("dashboard.totalFleet"), value: data?.totalAssets ?? 0, icon: "grid" as const, color: colors.info },
   ];
 
   const quickActions = [
-    { label: "Scan Asset", icon: "maximize" as const, onPress: () => router.push("/scanner") },
-    { label: "New Incident", icon: "alert-circle" as const, onPress: () => router.push("/create-incident") },
-    { label: "Maintenance", icon: "tool" as const, onPress: () => router.push("/create-maintenance") },
-    { label: "Notifications", icon: "bell" as const, onPress: () => router.push("/notifications"), badge: data?.unreadNotifs },
+    { label: t("dashboard.scanAsset"), icon: "maximize" as const, onPress: () => router.push("/scanner") },
+    { label: t("dashboard.newIncident"), icon: "alert-circle" as const, onPress: () => router.push("/create-incident") },
+    { label: t("dashboard.maintenance"), icon: "tool" as const, onPress: () => router.push("/create-maintenance") },
+    { label: t("dashboard.notifications"), icon: "bell" as const, onPress: () => router.push("/notifications"), badge: data?.unreadNotifs },
   ];
 
   return (
@@ -100,7 +102,7 @@ export default function DashboardScreen() {
         }
       >
         <Text style={[styles.greeting, { color: colors.foreground }]}>
-          {`Hello, ${user?.firstName ?? "Staff"}`}
+          {t("dashboard.hello", { name: user?.firstName ?? "Staff" })}
         </Text>
 
         {isLoading ? (
@@ -117,7 +119,7 @@ export default function DashboardScreen() {
               ))}
             </View>
 
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Quick Actions</Text>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t("dashboard.quickActions")}</Text>
             <View style={styles.actionsGrid}>
               {quickActions.map((action) => (
                 <TouchableOpacity

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export default function CompaniesPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
@@ -97,7 +99,7 @@ export default function CompaniesPage() {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
       setShowCreate(false);
       setForm({ name: "", slug: "", email: "", country: "", currency: "USD" });
-      toast({ title: "Company created successfully" });
+      toast({ title: t("companies.companyCreated") });
     },
   });
 
@@ -111,7 +113,7 @@ export default function CompaniesPage() {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
       setSetPlanTarget(null);
       setSelectedPlanId("");
-      toast({ title: "Plan assigned successfully" });
+      toast({ title: t("companies.planAssigned") });
     },
   });
 
@@ -133,12 +135,12 @@ export default function CompaniesPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Companies</h1>
-          <p className="text-muted-foreground">Manage tenant companies (search by name, slug, or email)</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("companies.title")}</h1>
+          <p className="text-muted-foreground">{t("companies.subtitle")}</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Company
+          {t("companies.addCompany")}
         </Button>
       </div>
 
@@ -148,7 +150,7 @@ export default function CompaniesPage() {
             <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by name, slug, email..."
+                placeholder={t("companies.searchPlaceholder")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -165,15 +167,15 @@ export default function CompaniesPage() {
               }}
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("common.status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="canceled">Canceled</SelectItem>
+                <SelectItem value="all">{t("companies.allStatuses")}</SelectItem>
+                <SelectItem value="active">{t("common.active")}</SelectItem>
+                <SelectItem value="pending">{t("common.pending")}</SelectItem>
+                <SelectItem value="blocked">{t("common.blocked")}</SelectItem>
+                <SelectItem value="suspended">{t("common.suspended")}</SelectItem>
+                <SelectItem value="canceled">{t("common.canceled")}</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -184,10 +186,10 @@ export default function CompaniesPage() {
               }}
             >
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Plan" />
+                <SelectValue placeholder={t("companies.plan")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All plans</SelectItem>
+                <SelectItem value="all">{t("companies.allPlans")}</SelectItem>
                 {(plans.data || []).map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
@@ -210,17 +212,17 @@ export default function CompaniesPage() {
                 <TableHeader>
                   <TableRow>
                     {[
-                      { key: "name", label: "Name" },
-                      { key: "slug", label: "Slug" },
-                      { key: "status", label: "Status" },
-                      { key: "", label: "Plan" },
-                      { key: "", label: "Assets" },
-                      { key: "", label: "Users" },
-                      { key: "country", label: "Country" },
-                      { key: "createdAt", label: "Created" },
-                    ].map(({ key, label }) => (
+                      { key: "name", labelKey: "common.name" },
+                      { key: "slug", labelKey: "dashboard.slug" },
+                      { key: "status", labelKey: "common.status" },
+                      { key: "", labelKey: "companies.plan" },
+                      { key: "", labelKey: "companies.assets" },
+                      { key: "", labelKey: "companies.users" },
+                      { key: "country", labelKey: "companies.country" },
+                      { key: "createdAt", labelKey: "companies.created" },
+                    ].map(({ key, labelKey }) => (
                       <TableHead
-                        key={label}
+                        key={labelKey}
                         className={key ? "cursor-pointer select-none hover:text-foreground" : ""}
                         onClick={() => {
                           if (!key) return;
@@ -233,13 +235,13 @@ export default function CompaniesPage() {
                           setPage(1);
                         }}
                       >
-                        {label}
+                        {t(labelKey)}
                         {sortBy === key && (
                           <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
                         )}
                       </TableHead>
                     ))}
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -287,7 +289,7 @@ export default function CompaniesPage() {
                               disabled={quickActionMutation.isPending}
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
-                              Approve
+                              {t("companies.approve")}
                             </Button>
                           )}
                           {(company.status === "active" || company.status === "pending") && (
@@ -302,7 +304,7 @@ export default function CompaniesPage() {
                               disabled={quickActionMutation.isPending}
                             >
                               <Ban className="h-3 w-3 mr-1" />
-                              Block
+                              {t("companies.block")}
                             </Button>
                           )}
                           <Button
@@ -315,7 +317,7 @@ export default function CompaniesPage() {
                               setSelectedPlanId("");
                             }}
                           >
-                            Set Plan
+                            {t("companies.setPlan")}
                           </Button>
                         </div>
                       </TableCell>
@@ -324,7 +326,7 @@ export default function CompaniesPage() {
                   {data?.items.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No companies found
+                        {t("companies.noCompanies")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -334,7 +336,7 @@ export default function CompaniesPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
                   <p className="text-sm text-muted-foreground">
-                    {data?.pagination?.total ?? 0} total companies
+                    {t("companies.totalCompanies", { count: data?.pagination?.total ?? 0 })}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
@@ -346,7 +348,7 @@ export default function CompaniesPage() {
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <span className="text-sm">
-                      Page {page} of {totalPages}
+                      {t("common.page", { page, totalPages })}
                     </span>
                     <Button
                       variant="outline"
@@ -367,7 +369,7 @@ export default function CompaniesPage() {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Company</DialogTitle>
+            <DialogTitle>{t("companies.createCompany")}</DialogTitle>
           </DialogHeader>
           <form
             onSubmit={(e) => {
@@ -377,7 +379,7 @@ export default function CompaniesPage() {
             className="space-y-4"
           >
             <div className="space-y-2">
-              <Label>Company Name</Label>
+              <Label>{t("companies.companyName")}</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -385,7 +387,7 @@ export default function CompaniesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Slug</Label>
+              <Label>{t("dashboard.slug")}</Label>
               <Input
                 value={form.slug}
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
@@ -393,7 +395,7 @@ export default function CompaniesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{t("common.email")}</Label>
               <Input
                 type="email"
                 value={form.email}
@@ -402,14 +404,14 @@ export default function CompaniesPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Country</Label>
+                <Label>{t("companies.country")}</Label>
                 <Input
                   value={form.country}
                   onChange={(e) => setForm({ ...form, country: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Currency</Label>
+                <Label>{t("companies.currency")}</Label>
                 <Input
                   value={form.currency}
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -418,10 +420,10 @@ export default function CompaniesPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Creating..." : "Create"}
+                {createMutation.isPending ? t("common.creating") : t("common.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -431,14 +433,14 @@ export default function CompaniesPage() {
       <Dialog open={!!setPlanTarget} onOpenChange={() => setSetPlanTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Set Plan for {setPlanTarget?.name}</DialogTitle>
+            <DialogTitle>{t("companies.setPlanFor", { name: setPlanTarget?.name })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Select Plan</Label>
+              <Label>{t("companies.selectPlan")}</Label>
               <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a plan..." />
+                  <SelectValue placeholder={t("companies.choosePlan")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(plans.data || []).map((plan) => (
@@ -451,7 +453,7 @@ export default function CompaniesPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setSetPlanTarget(null)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 disabled={!selectedPlanId || setPlanMutation.isPending}
@@ -461,7 +463,7 @@ export default function CompaniesPage() {
                   }
                 }}
               >
-                {setPlanMutation.isPending ? "Saving..." : "Assign Plan"}
+                {setPlanMutation.isPending ? t("common.saving") : t("companies.assignPlan")}
               </Button>
             </DialogFooter>
           </div>

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,6 +74,8 @@ function BarSegment({ label, value, total, color }: { label: string; value: numb
 }
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
+
   const overview = useQuery({
     queryKey: ["analytics", "overview"],
     queryFn: () => api<OverviewMetrics>("/platform/analytics/overview"),
@@ -108,8 +111,8 @@ export default function AnalyticsPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground">Platform-wide metrics and insights</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("analytics.title")}</h1>
+        <p className="text-muted-foreground">{t("analytics.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -125,25 +128,25 @@ export default function AnalyticsPage() {
           <>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Active Companies</p>
+                <p className="text-sm text-muted-foreground">{t("analytics.activeCompanies")}</p>
                 <p className="text-2xl font-bold">{overview.data?.activeCompanies ?? 0}</p>
                 <p className="text-xs text-muted-foreground">
-                  of {overview.data?.totalCompanies ?? 0} total
+                  of {overview.data?.totalCompanies ?? 0} {t("common.total")}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Total Rentals</p>
+                <p className="text-sm text-muted-foreground">{t("analytics.totalRentals")}</p>
                 <p className="text-2xl font-bold">{usage.data?.totalRentals ?? 0}</p>
                 <p className="text-xs text-muted-foreground">
-                  {usage.data?.activeRentals ?? 0} active
+                  {usage.data?.activeRentals ?? 0} {t("common.active").toLowerCase()}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">Total Assets</p>
+                <p className="text-sm text-muted-foreground">{t("analytics.totalAssets")}</p>
                 <p className="text-2xl font-bold">{usage.data?.totalAssets ?? 0}</p>
                 <p className="text-xs text-muted-foreground">
                   ~{usage.data?.averageAssetsPerCompany ?? 0} per company
@@ -152,12 +155,12 @@ export default function AnalyticsPage() {
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">MRR</p>
+                <p className="text-sm text-muted-foreground">{t("analytics.mrr")}</p>
                 <p className="text-2xl font-bold">
                   {formatCurrency(billing.data?.totalMrr ?? 0, billing.data?.currency)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Total revenue: {formatCurrency(billing.data?.totalRevenue ?? 0, billing.data?.currency)}
+                  {t("analytics.totalRevenue")}: {formatCurrency(billing.data?.totalRevenue ?? 0, billing.data?.currency)}
                 </p>
               </CardContent>
             </Card>
@@ -168,7 +171,7 @@ export default function AnalyticsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Revenue & Subscriptions</CardTitle>
+            <CardTitle className="text-base">{t("analytics.revenueSubscriptions")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {billing.isLoading ? (
@@ -178,20 +181,20 @@ export default function AnalyticsPage() {
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-2xl font-bold">{billing.data?.activeSubscriptions ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">Active</p>
+                    <p className="text-xs text-muted-foreground">{t("common.active")}</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-blue-600">{billing.data?.trialSubscriptions ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">Trial</p>
+                    <p className="text-xs text-muted-foreground">{t("common.trial")}</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-orange-600">{billing.data?.pastDueSubscriptions ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">Past Due</p>
+                    <p className="text-xs text-muted-foreground">{t("dashboard.pastDue")}</p>
                   </div>
                 </div>
                 {billing.data?.planDistribution && billing.data.planDistribution.length > 0 && (
                   <div className="space-y-2 pt-2 border-t">
-                    <p className="text-sm font-medium">Plan Distribution</p>
+                    <p className="text-sm font-medium">{t("analytics.planDistribution")}</p>
                     {billing.data.planDistribution.map((p) => {
                       const total = billing.data!.activeSubscriptions + billing.data!.trialSubscriptions;
                       return (
@@ -208,21 +211,21 @@ export default function AnalyticsPage() {
                 )}
                 {(!billing.data?.planDistribution || billing.data.planDistribution.length === 0) && (
                   <div className="space-y-2 pt-2 border-t">
-                    <p className="text-sm font-medium">Subscription Breakdown</p>
+                    <p className="text-sm font-medium">{t("analytics.planDistribution")}</p>
                     <BarSegment
-                      label="Active"
+                      label={t("common.active")}
                       value={billing.data?.activeSubscriptions ?? 0}
                       total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
                       color="bg-green-500"
                     />
                     <BarSegment
-                      label="Trial"
+                      label={t("common.trial")}
                       value={billing.data?.trialSubscriptions ?? 0}
                       total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
                       color="bg-blue-500"
                     />
                     <BarSegment
-                      label="Past Due"
+                      label={t("dashboard.pastDue")}
                       value={billing.data?.pastDueSubscriptions ?? 0}
                       total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
                       color="bg-orange-500"
@@ -237,29 +240,29 @@ export default function AnalyticsPage() {
         {risks.data && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Risk Overview</CardTitle>
+              <CardTitle className="text-base">{t("analytics.riskOverview")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-bold">{risks.data.blacklistedEntries}</p>
-                  <p className="text-xs text-muted-foreground">Total Blacklist</p>
+                  <p className="text-xs text-muted-foreground">{t("nav.blacklist")}</p>
                 </div>
                 <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
                   <p className="text-2xl font-bold text-red-600">{risks.data.activeBlacklisted}</p>
-                  <p className="text-xs text-muted-foreground">Active Blacklisted</p>
+                  <p className="text-xs text-muted-foreground">{t("common.active")}</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
                   <p className="text-2xl font-bold">{risks.data.blockedCompanies}</p>
-                  <p className="text-xs text-muted-foreground">Blocked Companies</p>
+                  <p className="text-xs text-muted-foreground">{t("common.blocked")}</p>
                 </div>
                 <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-center">
                   <p className="text-2xl font-bold text-orange-600">{risks.data.suspendedCompanies}</p>
-                  <p className="text-xs text-muted-foreground">Suspended Companies</p>
+                  <p className="text-xs text-muted-foreground">{t("common.suspended")}</p>
                 </div>
               </div>
               <BarSegment
-                label="Past Due Subscriptions"
+                label={t("dashboard.pastDue")}
                 value={risks.data.pastDueSubscriptions}
                 total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + risks.data.pastDueSubscriptions}
                 color="bg-red-500"
@@ -272,7 +275,7 @@ export default function AnalyticsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Top Tenants by Rentals</CardTitle>
+            <CardTitle className="text-base">{t("analytics.topByRentals")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {topByRentals.isLoading ? (
@@ -284,22 +287,22 @@ export default function AnalyticsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>#</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead className="text-right">Rentals</TableHead>
+                    <TableHead>{t("common.company")}</TableHead>
+                    <TableHead className="text-right">{t("analytics.totalRentals")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(topByRentals.data || []).map((t, i) => (
-                    <TableRow key={t.companyId}>
+                  {(topByRentals.data || []).map((tenant, i) => (
+                    <TableRow key={tenant.companyId}>
                       <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{t.companyName}</TableCell>
-                      <TableCell className="text-right">{t.value}</TableCell>
+                      <TableCell className="font-medium">{tenant.companyName}</TableCell>
+                      <TableCell className="text-right">{tenant.value}</TableCell>
                     </TableRow>
                   ))}
                   {topByRentals.data?.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                        No data
+                        {t("common.noData")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -311,7 +314,7 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Top Tenants by Assets</CardTitle>
+            <CardTitle className="text-base">{t("analytics.topByAssets")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {topByAssets.isLoading ? (
@@ -323,22 +326,22 @@ export default function AnalyticsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>#</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead className="text-right">Assets</TableHead>
+                    <TableHead>{t("common.company")}</TableHead>
+                    <TableHead className="text-right">{t("analytics.totalAssets")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(topByAssets.data || []).map((t, i) => (
-                    <TableRow key={t.companyId}>
+                  {(topByAssets.data || []).map((tenant, i) => (
+                    <TableRow key={tenant.companyId}>
                       <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{t.companyName}</TableCell>
-                      <TableCell className="text-right">{t.value}</TableCell>
+                      <TableCell className="font-medium">{tenant.companyName}</TableCell>
+                      <TableCell className="text-right">{tenant.value}</TableCell>
                     </TableRow>
                   ))}
                   {topByAssets.data?.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                        No data
+                        {t("common.noData")}
                       </TableCell>
                     </TableRow>
                   )}

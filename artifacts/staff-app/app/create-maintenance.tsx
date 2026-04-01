@@ -12,6 +12,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
@@ -22,6 +23,7 @@ import { MediaAttachments } from "@/components/MediaAttachments";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 export default function CreateMaintenanceScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const { isConnected } = useNetwork();
@@ -35,7 +37,7 @@ export default function CreateMaintenanceScreen() {
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert("Error", "Please enter a title");
+      Alert.alert(t("common.error"), t("maintenance.errorEnterTitle"));
       return;
     }
 
@@ -49,8 +51,8 @@ export default function CreateMaintenanceScreen() {
         method: "POST",
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Queued", "Maintenance task will be created when you're back online", [
-        { text: "OK", onPress: () => router.back() },
+      Alert.alert(t("maintenance.queued"), t("maintenance.queuedMessage"), [
+        { text: t("common.ok"), onPress: () => router.back() },
       ]);
       return;
     }
@@ -59,7 +61,7 @@ export default function CreateMaintenanceScreen() {
     try {
       const token = await getAccessToken();
       const companyId = await getCompanyId();
-      if (!token || !companyId) throw new Error("Not authenticated");
+      if (!token || !companyId) throw new Error(t("scanner.notAuthenticated"));
 
       const res = await fetch(`${BASE_URL}/api/maintenance`, {
         method: "POST",
@@ -73,18 +75,18 @@ export default function CreateMaintenanceScreen() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to create maintenance task");
+        throw new Error(err.error || t("maintenance.failedToCreate"));
       }
 
       const { data } = await res.json();
       setCreatedId(data.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Success", "Maintenance task created. You can add photos now.", [
-        { text: "Done", onPress: () => router.back() },
-        { text: "Add Photos", style: "cancel" },
+      Alert.alert(t("maintenance.success"), t("maintenance.successMessage"), [
+        { text: t("maintenance.done"), onPress: () => router.back() },
+        { text: t("maintenance.addPhotos"), style: "cancel" },
       ]);
     } catch (err: unknown) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Failed");
+      Alert.alert(t("common.error"), err instanceof Error ? err.message : t("maintenance.failedToCreate"));
     } finally {
       setLoading(false);
     }
@@ -94,10 +96,10 @@ export default function CreateMaintenanceScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Title</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("maintenance.title")}</Text>
           <TextInput
             style={[styles.input, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
-            placeholder="Maintenance title..."
+            placeholder={t("maintenance.maintenanceTitle")}
             placeholderTextColor={colors.mutedForeground}
             value={title}
             onChangeText={setTitle}
@@ -105,10 +107,10 @@ export default function CreateMaintenanceScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Description</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("maintenance.description")}</Text>
           <TextInput
             style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
-            placeholder="Describe the maintenance task..."
+            placeholder={t("maintenance.describeMaintenance")}
             placeholderTextColor={colors.mutedForeground}
             value={description}
             onChangeText={setDescription}
@@ -119,22 +121,22 @@ export default function CreateMaintenanceScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Type</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("maintenance.type")}</Text>
           <View style={styles.typeRow}>
-            {types.map((t) => (
+            {types.map((tp) => (
               <TouchableOpacity
-                key={t}
+                key={tp}
                 style={[
                   styles.typeBtn,
                   {
-                    backgroundColor: maintenanceType === t ? colors.primary : colors.muted,
-                    borderColor: maintenanceType === t ? colors.primary : colors.border,
+                    backgroundColor: maintenanceType === tp ? colors.primary : colors.muted,
+                    borderColor: maintenanceType === tp ? colors.primary : colors.border,
                   },
                 ]}
-                onPress={() => setMaintenanceType(t)}
+                onPress={() => setMaintenanceType(tp)}
               >
-                <Text style={[styles.typeText, { color: maintenanceType === t ? "#fff" : colors.foreground }]}>
-                  {t}
+                <Text style={[styles.typeText, { color: maintenanceType === tp ? "#fff" : colors.foreground }]}>
+                  {tp}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -157,7 +159,7 @@ export default function CreateMaintenanceScreen() {
             <>
               <Feather name={!isConnected ? "clock" : "check"} size={18} color="#fff" />
               <Text style={styles.submitText}>
-                {createdId ? "Created" : !isConnected ? "Queue for Later" : "Create Task"}
+                {createdId ? t("maintenance.created") : !isConnected ? t("maintenance.queueForLater") : t("maintenance.createTask")}
               </Text>
             </>
           )}

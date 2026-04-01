@@ -10,29 +10,31 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useSync } from "@/contexts/SyncContext";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
 
 export default function OperationsScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const { pendingCount } = useSync();
 
   const sections = [
     {
-      title: "Field Actions",
+      title: t("operations.fieldActions"),
       items: [
-        { label: "Scan Asset", icon: "maximize" as const, route: "/scanner" },
-        { label: "Report Incident", icon: "alert-circle" as const, route: "/create-incident" },
-        { label: "New Maintenance", icon: "tool" as const, route: "/create-maintenance" },
+        { label: t("operations.scanAsset"), icon: "maximize" as const, route: "/scanner" },
+        { label: t("operations.reportIncident"), icon: "alert-circle" as const, route: "/create-incident" },
+        { label: t("operations.newMaintenance"), icon: "tool" as const, route: "/create-maintenance" },
       ],
     },
     {
-      title: "Sync & Queue",
+      title: t("operations.syncAndQueue"),
       items: [
         {
-          label: "Sync Queue",
+          label: t("operations.syncQueue"),
           icon: "refresh-cw" as const,
           route: "/sync-queue",
           badge: pendingCount > 0 ? pendingCount : undefined,
@@ -40,9 +42,9 @@ export default function OperationsScreen() {
       ],
     },
     {
-      title: "Fleet",
+      title: t("operations.fleet"),
       items: [
-        { label: "Notifications", icon: "bell" as const, route: "/notifications" },
+        { label: t("operations.notifications"), icon: "bell" as const, route: "/notifications" },
       ],
     },
   ];

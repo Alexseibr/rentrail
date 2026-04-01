@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { getAccessToken, getCompanyId } from "@/services/api";
 
@@ -49,6 +50,7 @@ const TYPE_ICONS: Record<string, string> = {
 };
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const queryClient = useQueryClient();
 
@@ -128,7 +130,7 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="bell-off" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No notifications</Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("notifications.noNotifications")}</Text>
             </View>
           }
         />

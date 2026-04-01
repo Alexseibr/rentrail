@@ -11,6 +11,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
@@ -49,6 +50,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function RentalsScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
 
@@ -69,7 +71,7 @@ export default function RentalsScreen() {
       </View>
       <View style={styles.content}>
         <Text style={[styles.title, { color: colors.foreground }]}>
-          {item.rentalType} rental
+          {item.rentalType} {t("rentals.rental")}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground }]}>
           {new Date(item.createdAt).toLocaleDateString()}
@@ -101,7 +103,7 @@ export default function RentalsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="file" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No rentals found</Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("rentals.noRentals")}</Text>
             </View>
           }
         />

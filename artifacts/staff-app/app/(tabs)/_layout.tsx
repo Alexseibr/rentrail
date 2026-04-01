@@ -6,37 +6,40 @@ import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { useColors } from "@/hooks/useColors";
 
 function NativeTabLayout() {
+  const { t } = useTranslation();
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
+        <Label>{t("nav.home")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="assets">
         <Icon sf={{ default: "bicycle", selected: "bicycle" }} />
-        <Label>Assets</Label>
+        <Label>{t("nav.assets")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="rentals">
         <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
-        <Label>Rentals</Label>
+        <Label>{t("nav.rentals")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="operations">
         <Icon sf={{ default: "wrench.and.screwdriver", selected: "wrench.and.screwdriver.fill" }} />
-        <Label>Ops</Label>
+        <Label>{t("nav.ops")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-        <Label>Settings</Label>
+        <Label>{t("nav.settings")}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
 
 function ClassicTabLayout() {
+  const { t } = useTranslation();
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -77,7 +80,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Dashboard",
+          title: t("nav.dashboard"),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="house" tintColor={color} size={24} />
@@ -89,7 +92,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="assets"
         options={{
-          title: "Assets",
+          title: t("nav.assets"),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="bicycle" tintColor={color} size={24} />
@@ -101,7 +104,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="rentals"
         options={{
-          title: "Rentals",
+          title: t("nav.rentals"),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="doc.text" tintColor={color} size={24} />
@@ -113,7 +116,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="operations"
         options={{
-          title: "Ops",
+          title: t("nav.ops"),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="wrench.and.screwdriver" tintColor={color} size={24} />
@@ -125,7 +128,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: t("nav.settings"),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="gearshape" tintColor={color} size={24} />

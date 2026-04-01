@@ -13,6 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { MediaAttachments } from "@/components/MediaAttachments";
@@ -33,6 +34,7 @@ async function fetchRental(id: string) {
 }
 
 export default function RentalDetailScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -50,7 +52,7 @@ export default function RentalDetailScreen() {
     mutationFn: async () => {
       const token = await getAccessToken();
       const companyId = await getCompanyId();
-      if (!token || !companyId) throw new Error("Not authenticated");
+      if (!token || !companyId) throw new Error(t("scanner.notAuthenticated"));
 
       const res = await fetch(`${BASE_URL}/api/rentals/${id}/status`, {
         method: "PATCH",
@@ -63,7 +65,7 @@ export default function RentalDetailScreen() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to complete return");
+        throw new Error(err.error || t("rentalDetail.failedReturn"));
       }
     },
     onSuccess: () => {
@@ -71,10 +73,10 @@ export default function RentalDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["rental", id] });
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
       setShowReturn(false);
-      Alert.alert("Success", "Rental return completed");
+      Alert.alert(t("rentalDetail.success"), t("rentalDetail.returnCompleted"));
     },
     onError: (err: Error) => {
-      Alert.alert("Error", err.message);
+      Alert.alert(t("common.error"), err.message);
     },
   });
 
@@ -90,15 +92,15 @@ export default function RentalDetailScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Feather name="alert-circle" size={40} color={colors.mutedForeground} />
-        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Rental not found</Text>
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("rentalDetail.notFound")}</Text>
       </View>
     );
   }
 
   const fields = [
-    { label: "Status", value: rental.status },
-    { label: "Type", value: rental.rentalType },
-    { label: "Created", value: new Date(rental.createdAt).toLocaleDateString() },
+    { label: t("rentalDetail.status"), value: rental.status },
+    { label: t("rentalDetail.type"), value: rental.rentalType },
+    { label: t("rentalDetail.created"), value: new Date(rental.createdAt).toLocaleDateString() },
   ].filter((f) => f.value);
 
   const canReturn = ["active", "overdue", "extended"].includes(rental.status);
@@ -113,7 +115,7 @@ export default function RentalDetailScreen() {
             </Text>
           </View>
           <Text style={[styles.rentalTitle, { color: colors.foreground }]}>
-            {rental.rentalType} Rental
+            {rental.rentalType} {t("rentalDetail.rental")}
           </Text>
         </View>
 
@@ -135,17 +137,17 @@ export default function RentalDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Feather name="log-in" size={18} color="#fff" />
-                <Text style={styles.returnBtnText}>Process Return</Text>
+                <Text style={styles.returnBtnText}>{t("rentalDetail.processReturn")}</Text>
               </TouchableOpacity>
             ) : (
               <View style={[styles.returnForm, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.returnTitle, { color: colors.foreground }]}>Return Vehicle</Text>
+                <Text style={[styles.returnTitle, { color: colors.foreground }]}>{t("rentalDetail.returnVehicle")}</Text>
 
                 <MediaAttachments entityType="rental" entityId={id!} />
 
                 <TextInput
                   style={[styles.notesInput, { borderColor: colors.border, color: colors.foreground }]}
-                  placeholder="Return notes (optional)..."
+                  placeholder={t("rentalDetail.returnNotes")}
                   placeholderTextColor={colors.mutedForeground}
                   value={returnNotes}
                   onChangeText={setReturnNotes}
@@ -159,7 +161,7 @@ export default function RentalDetailScreen() {
                     style={[styles.cancelBtn, { borderColor: colors.border }]}
                     onPress={() => setShowReturn(false)}
                   >
-                    <Text style={[styles.cancelText, { color: colors.foreground }]}>Cancel</Text>
+                    <Text style={[styles.cancelText, { color: colors.foreground }]}>{t("rentalDetail.cancel")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.confirmBtn, { backgroundColor: colors.primary }]}
@@ -169,7 +171,7 @@ export default function RentalDetailScreen() {
                     {returnMutation.isPending ? (
                       <ActivityIndicator color="#fff" size="small" />
                     ) : (
-                      <Text style={styles.confirmText}>Complete Return</Text>
+                      <Text style={styles.confirmText}>{t("rentalDetail.completeReturn")}</Text>
                     )}
                   </TouchableOpacity>
                 </View>

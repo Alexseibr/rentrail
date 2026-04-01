@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ const emptyForm = {
 };
 
 export default function BlacklistPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -172,12 +174,12 @@ export default function BlacklistPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Global Blacklist</h1>
-          <p className="text-muted-foreground">Manage platform-wide blacklist entries</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("blacklist.title")}</h1>
+          <p className="text-muted-foreground">{t("blacklist.subtitle")}</p>
         </div>
         <Button onClick={() => { setShowCreate(true); setEditEntry(null); setForm({ ...emptyForm }); }}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Entry
+          {t("blacklist.addEntry")}
         </Button>
       </div>
 
@@ -226,12 +228,12 @@ export default function BlacklistPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Identity</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t("blacklist.identity")}</TableHead>
+                    <TableHead>{t("dashboard.action")}</TableHead>
+                    <TableHead>{t("blacklist.reason")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("companies.created")}</TableHead>
+                    <TableHead>{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -279,7 +281,7 @@ export default function BlacklistPage() {
                               : "bg-gray-100 text-gray-800"
                           }
                         >
-                          {entry.isActive ? "Active" : "Inactive"}
+                          {entry.isActive ? t("common.active") : t("common.inactive")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
@@ -293,7 +295,7 @@ export default function BlacklistPage() {
                             className="h-7 text-xs"
                             onClick={() => openEdit(entry)}
                           >
-                            Edit
+                            {t("common.edit")}
                           </Button>
                           <Button
                             size="sm"
@@ -307,7 +309,7 @@ export default function BlacklistPage() {
                               })
                             }
                           >
-                            {entry.isActive ? "Disable" : "Enable"}
+                            {entry.isActive ? t("whiteLabel.disable") : t("whiteLabel.enable")}
                           </Button>
                         </div>
                       </TableCell>
@@ -316,7 +318,7 @@ export default function BlacklistPage() {
                   {entries.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No blacklist entries found
+                        {t("common.noData")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -324,12 +326,12 @@ export default function BlacklistPage() {
               </Table>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
-                  <p className="text-sm text-muted-foreground">{total} total</p>
+                  <p className="text-sm text-muted-foreground">{total} {t("common.total")}</p>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm">Page {page} of {totalPages}</span>
+                    <span className="text-sm">{t("common.page", { page, totalPages })}</span>
                     <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                       <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -344,12 +346,12 @@ export default function BlacklistPage() {
       <Dialog open={showCreate || !!editEntry} onOpenChange={() => { setShowCreate(false); setEditEntry(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editEntry ? "Edit Blacklist Entry" : "Add Blacklist Entry"}</DialogTitle>
+            <DialogTitle>{editEntry ? t("blacklist.editEntry") : t("blacklist.addEntry")}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Action Type</Label>
+                <Label>{t("blacklist.actionType")}</Label>
                 <Select
                   value={form.actionType}
                   onValueChange={(v) => setForm({ ...form, actionType: v })}
@@ -367,7 +369,7 @@ export default function BlacklistPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Reason Code</Label>
+                <Label>{t("blacklist.reasonCode")}</Label>
                 <Input
                   value={form.reasonCode}
                   onChange={(e) => setForm({ ...form, reasonCode: e.target.value })}
@@ -377,7 +379,7 @@ export default function BlacklistPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Reason Text</Label>
+              <Label>{t("blacklist.reason")}</Label>
               <Input
                 value={form.reasonText}
                 onChange={(e) => setForm({ ...form, reasonText: e.target.value })}
@@ -385,28 +387,28 @@ export default function BlacklistPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Full Name</Label>
+                <Label>{t("blacklist.fullName")}</Label>
                 <Input
                   value={form.fullNameSnapshot}
                   onChange={(e) => setForm({ ...form, fullNameSnapshot: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label>{t("common.email")}</Label>
                 <Input
                   value={form.emailSnapshot}
                   onChange={(e) => setForm({ ...form, emailSnapshot: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Phone</Label>
+                <Label>{t("common.phone")}</Label>
                 <Input
                   value={form.phoneSnapshot}
                   onChange={(e) => setForm({ ...form, phoneSnapshot: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Document ID</Label>
+                <Label>{t("blacklist.documentId")}</Label>
                 <Input
                   value={form.documentSnapshot}
                   onChange={(e) => setForm({ ...form, documentSnapshot: e.target.value })}
@@ -415,10 +417,10 @@ export default function BlacklistPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setEditEntry(null); }}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving..." : editEntry ? "Save Changes" : "Add Entry"}
+                {isSaving ? t("common.saving") : editEntry ? t("billing.saveChanges") : t("blacklist.addEntry")}
               </Button>
             </DialogFooter>
           </form>
@@ -429,7 +431,7 @@ export default function BlacklistPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {toggleConfirm?.enable ? "Enable" : "Disable"} Blacklist Entry
+              {toggleConfirm?.enable ? t("blacklist.enableBlock") : t("blacklist.disableAllow")}
             </DialogTitle>
             <DialogDescription>
               Are you sure you want to {toggleConfirm?.enable ? "enable" : "disable"} the blacklist
@@ -441,7 +443,7 @@ export default function BlacklistPage() {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setToggleConfirm(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant={toggleConfirm?.enable ? "destructive" : "default"}
@@ -453,10 +455,10 @@ export default function BlacklistPage() {
               }}
             >
               {toggleMutation.isPending
-                ? "Processing..."
+                ? t("common.processing")
                 : toggleConfirm?.enable
-                  ? "Enable (Block)"
-                  : "Disable (Allow)"}
+                  ? t("blacklist.enableBlock")
+                  : t("blacklist.disableAllow")}
             </Button>
           </DialogFooter>
         </DialogContent>

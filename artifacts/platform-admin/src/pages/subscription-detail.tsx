@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function SubscriptionDetailPage() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/billing/subscriptions/:id");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -47,7 +49,7 @@ export default function SubscriptionDetailPage() {
   if (!data) {
     return (
       <div className="p-6">
-        <p className="text-muted-foreground">Subscription not found</p>
+        <p className="text-muted-foreground">{t("subscriptionDetail.notFound")}</p>
       </div>
     );
   }
@@ -59,15 +61,15 @@ export default function SubscriptionDetailPage() {
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate("/billing")}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
+          {t("common.back")}
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight">Subscription Detail</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("subscriptionDetail.title")}</h1>
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Status</p>
+            <p className="text-sm text-muted-foreground">{t("common.status")}</p>
             <Badge variant="secondary" className={statusColors[status] || ""}>
               {status}
             </Badge>
@@ -75,19 +77,19 @@ export default function SubscriptionDetailPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Company</p>
+            <p className="text-sm text-muted-foreground">{t("common.company")}</p>
             <p className="font-medium">{(data.companyName as string) || (data.companyId as string)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Plan</p>
+            <p className="text-sm text-muted-foreground">{t("common.plan")}</p>
             <p className="font-medium">{(data.planName as string) || (data.planId as string)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Period End</p>
+            <p className="text-sm text-muted-foreground">{t("subscriptionDetail.periodEnd")}</p>
             <p className="font-medium">
               {data.currentPeriodEnd
                 ? new Date(data.currentPeriodEnd as string).toLocaleDateString()
@@ -99,29 +101,29 @@ export default function SubscriptionDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Details</CardTitle>
+          <CardTitle className="text-base">{t("subscriptionDetail.details")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-muted-foreground">ID:</span>{" "}
+              <span className="text-muted-foreground">{t("common.id")}:</span>{" "}
               <span className="font-mono text-xs">{data.id as string}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">Created:</span>{" "}
+              <span className="text-muted-foreground">{t("subscriptionDetail.created")}:</span>{" "}
               {data.createdAt ? new Date(data.createdAt as string).toLocaleString() : "-"}
             </div>
             <div>
-              <span className="text-muted-foreground">Period Start:</span>{" "}
+              <span className="text-muted-foreground">{t("subscriptionDetail.periodStart")}:</span>{" "}
               {data.currentPeriodStart ? new Date(data.currentPeriodStart as string).toLocaleDateString() : "-"}
             </div>
             <div>
-              <span className="text-muted-foreground">Trial Ends:</span>{" "}
+              <span className="text-muted-foreground">{t("subscriptionDetail.trialEnds")}:</span>{" "}
               {data.trialEndsAt ? new Date(data.trialEndsAt as string).toLocaleDateString() : "-"}
             </div>
             {data.notes ? (
               <div className="col-span-2">
-                <span className="text-muted-foreground">Notes:</span>{" "}
+                <span className="text-muted-foreground">{t("subscriptionDetail.notes")}:</span>{" "}
                 {String(data.notes)}
               </div>
             ) : null}
@@ -131,7 +133,7 @@ export default function SubscriptionDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Actions</CardTitle>
+          <CardTitle className="text-base">{t("subscriptionDetail.actions")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 flex-wrap">
@@ -141,7 +143,7 @@ export default function SubscriptionDetailPage() {
                 onClick={() => actionMutation.mutate({ action: "activate" })}
                 disabled={actionMutation.isPending}
               >
-                Activate
+                {t("subscriptionDetail.activate")}
               </Button>
             )}
             {status === "active" && (
@@ -151,7 +153,7 @@ export default function SubscriptionDetailPage() {
                 onClick={() => actionMutation.mutate({ action: "past-due", reason: "Manual mark" })}
                 disabled={actionMutation.isPending}
               >
-                Mark Past Due
+                {t("subscriptionDetail.markPastDue")}
               </Button>
             )}
             {status !== "canceled" && (
@@ -161,7 +163,7 @@ export default function SubscriptionDetailPage() {
                 onClick={() => actionMutation.mutate({ action: "cancel", reason: "Admin cancellation" })}
                 disabled={actionMutation.isPending}
               >
-                Cancel
+                {t("subscriptionDetail.cancel")}
               </Button>
             )}
           </div>

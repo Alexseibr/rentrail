@@ -11,6 +11,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
@@ -57,6 +58,7 @@ const TYPE_ICONS: Record<string, string> = {
 };
 
 export default function AssetsScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
 
@@ -110,7 +112,7 @@ export default function AssetsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="inbox" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No assets found</Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("assets.noAssets")}</Text>
             </View>
           }
         />

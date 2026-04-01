@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ const DEMO_PASSWORD = "demo1234";
 
 export default function LoginPage() {
   const { loginWithPhone, requestOtp, verifyOtp, setPhonePassword } = useAuth();
+  const { t } = useTranslation();
 
   const [step, setStep]         = useState<Step>("phone");
   const [phone, setPhone]       = useState("");
@@ -44,7 +46,7 @@ export default function LoginPage() {
     try {
       await loginWithPhone(phone.trim(), password);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || "Login failed");
+      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export default function LoginPage() {
       setOtpCode("");
       setStep("otp");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || "Failed to send code");
+      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.codeSendFailed"));
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export default function LoginPage() {
         setStep("set-password");
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || "Invalid code");
+      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.invalidCode"));
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ export default function LoginPage() {
     try {
       await setPhonePassword(newPassword);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || "Failed to set password");
+      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.setPasswordFailed"));
     } finally {
       setLoading(false);
     }
@@ -101,7 +103,7 @@ export default function LoginPage() {
     try {
       await loginWithPhone(demoPhone, DEMO_PASSWORD);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Demo login failed");
+      setError(err instanceof ApiError ? err.message : t("login.demoLoginFailed"));
     } finally {
       setDemoLoading(null);
     }
@@ -114,12 +116,12 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-4">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Platform Admin</CardTitle>
+            <CardTitle className="text-xl">{t("login.title")}</CardTitle>
             <CardDescription>
-              {step === "phone"         && "Enter your phone number"}
-              {step === "password"      && `Sign in as ${phone}`}
-              {step === "otp"           && `Enter the code sent to ${phone}`}
-              {step === "set-password"  && "Create your password"}
+              {step === "phone"         && t("login.enterPhone")}
+              {step === "password"      && t("login.signInAs", { phone })}
+              {step === "otp"           && t("login.enterCode", { phone })}
+              {step === "set-password"  && t("login.createPassword")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -132,7 +134,7 @@ export default function LoginPage() {
             {step === "phone" && (
               <form onSubmit={handlePhoneContinue} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone number</Label>
+                  <Label htmlFor="phone">{t("login.phoneLabel")}</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -145,7 +147,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
-                  Continue
+                  {t("login.continue")}
                 </Button>
               </form>
             )}
@@ -153,7 +155,7 @@ export default function LoginPage() {
             {step === "password" && (
               <form onSubmit={handlePasswordLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t("login.password")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -165,7 +167,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
-                  {loading ? "Signing in..." : "Sign in"}
+                  {loading ? t("login.signingIn") : t("login.signIn")}
                 </Button>
                 <div className="flex items-center justify-between text-sm">
                   <button
@@ -173,7 +175,7 @@ export default function LoginPage() {
                     onClick={() => { setStep("phone"); setError(""); }}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    ← Change number
+                    ← {t("login.changeNumber")}
                   </button>
                   <button
                     type="button"
@@ -181,7 +183,7 @@ export default function LoginPage() {
                     disabled={busy}
                     className="text-primary hover:underline disabled:opacity-50"
                   >
-                    {loading ? "Sending..." : "Get SMS code instead"}
+                    {loading ? t("login.sending") : t("login.getSmsCode")}
                   </button>
                 </div>
               </form>
@@ -191,11 +193,11 @@ export default function LoginPage() {
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 {devCode && (
                   <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
-                    Dev mode — your code: <span className="font-mono font-bold text-base">{devCode}</span>
+                    {t("login.devModeCode")} <span className="font-mono font-bold text-base">{devCode}</span>
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="otp">6-digit code</Label>
+                  <Label htmlFor="otp">{t("login.digitCode")}</Label>
                   <Input
                     id="otp"
                     type="text"
@@ -210,7 +212,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy || otpCode.length !== 6}>
-                  {loading ? "Verifying..." : "Verify code"}
+                  {loading ? t("login.verifying") : t("login.verifyCode")}
                 </Button>
                 <div className="flex items-center justify-between text-sm">
                   <button
@@ -218,7 +220,7 @@ export default function LoginPage() {
                     onClick={() => { setStep("password"); setError(""); }}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    ← Back
+                    ← {t("common.back")}
                   </button>
                   <button
                     type="button"
@@ -226,7 +228,7 @@ export default function LoginPage() {
                     disabled={busy}
                     className="text-primary hover:underline disabled:opacity-50"
                   >
-                    Resend code
+                    {t("login.resendCode")}
                   </button>
                 </div>
               </form>
@@ -235,14 +237,14 @@ export default function LoginPage() {
             {step === "set-password" && (
               <form onSubmit={handleSetPassword} className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  You're in! Set a password for future logins — you won't need to use a code every time.
+                  {t("login.setPasswordHint")}
                 </p>
                 <div className="space-y-2">
-                  <Label htmlFor="new-password">New password</Label>
+                  <Label htmlFor="new-password">{t("login.newPassword")}</Label>
                   <Input
                     id="new-password"
                     type="password"
-                    placeholder="Minimum 6 characters"
+                    placeholder={t("login.minChars")}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -252,7 +254,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy || newPassword.length < 6}>
-                  {loading ? "Saving..." : "Set password & continue"}
+                  {loading ? t("common.saving") : t("login.setPasswordContinue")}
                 </Button>
               </form>
             )}
@@ -262,7 +264,7 @@ export default function LoginPage() {
         <Card className="border-dashed">
           <CardHeader className="pb-3 pt-4">
             <CardTitle className="text-sm font-medium text-muted-foreground text-center">
-              Demo access — one click
+              {t("login.demoAccess")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
@@ -279,7 +281,7 @@ export default function LoginPage() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground text-center mt-3">
-              Test numbers: <span className="font-mono">+7 999 000 000X</span> · password: <span className="font-mono font-medium">demo1234</span>
+              {t("login.testNumbers")} <span className="font-mono">+7 999 000 000X</span> · {t("login.demoPassword")}: <span className="font-mono font-medium">demo1234</span>
             </p>
           </CardContent>
         </Card>

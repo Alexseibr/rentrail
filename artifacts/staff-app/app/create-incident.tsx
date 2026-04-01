@@ -12,6 +12,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
@@ -22,6 +23,7 @@ import { MediaAttachments } from "@/components/MediaAttachments";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 export default function CreateIncidentScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const { isConnected } = useNetwork();
@@ -35,7 +37,7 @@ export default function CreateIncidentScreen() {
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert("Error", "Please enter a title");
+      Alert.alert(t("common.error"), t("incident.errorEnterTitle"));
       return;
     }
 
@@ -49,8 +51,8 @@ export default function CreateIncidentScreen() {
         method: "POST",
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Queued", "Incident will be created when you're back online", [
-        { text: "OK", onPress: () => router.back() },
+      Alert.alert(t("incident.queued"), t("incident.queuedMessage"), [
+        { text: t("common.ok"), onPress: () => router.back() },
       ]);
       return;
     }
@@ -59,7 +61,7 @@ export default function CreateIncidentScreen() {
     try {
       const token = await getAccessToken();
       const companyId = await getCompanyId();
-      if (!token || !companyId) throw new Error("Not authenticated");
+      if (!token || !companyId) throw new Error(t("scanner.notAuthenticated"));
 
       const res = await fetch(`${BASE_URL}/api/incidents`, {
         method: "POST",
@@ -73,18 +75,18 @@ export default function CreateIncidentScreen() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to create incident");
+        throw new Error(err.error || t("incident.failedToCreate"));
       }
 
       const { data } = await res.json();
       setCreatedId(data.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Success", "Incident created. You can add photos now or go back.", [
-        { text: "Done", onPress: () => router.back() },
-        { text: "Add Photos", style: "cancel" },
+      Alert.alert(t("incident.success"), t("incident.successMessage"), [
+        { text: t("incident.done"), onPress: () => router.back() },
+        { text: t("incident.addPhotos"), style: "cancel" },
       ]);
     } catch (err: unknown) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Failed to create incident");
+      Alert.alert(t("common.error"), err instanceof Error ? err.message : t("incident.failedToCreate"));
     } finally {
       setLoading(false);
     }
@@ -94,10 +96,10 @@ export default function CreateIncidentScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Title</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("incident.title")}</Text>
           <TextInput
             style={[styles.input, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
-            placeholder="Incident title..."
+            placeholder={t("incident.incidentTitle")}
             placeholderTextColor={colors.mutedForeground}
             value={title}
             onChangeText={setTitle}
@@ -105,10 +107,10 @@ export default function CreateIncidentScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Description</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("incident.description")}</Text>
           <TextInput
             style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
-            placeholder="Describe the incident..."
+            placeholder={t("incident.describeIncident")}
             placeholderTextColor={colors.mutedForeground}
             value={description}
             onChangeText={setDescription}
@@ -119,7 +121,7 @@ export default function CreateIncidentScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Severity</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("incident.severity")}</Text>
           <View style={styles.severityRow}>
             {severities.map((s) => (
               <TouchableOpacity
@@ -162,7 +164,7 @@ export default function CreateIncidentScreen() {
             <>
               <Feather name={!isConnected ? "clock" : "check"} size={18} color="#fff" />
               <Text style={styles.submitText}>
-                {createdId ? "Created" : !isConnected ? "Queue for Later" : "Create Incident"}
+                {createdId ? t("incident.created") : !isConnected ? t("incident.queueForLater") : t("incident.createIncident")}
               </Text>
             </>
           )}

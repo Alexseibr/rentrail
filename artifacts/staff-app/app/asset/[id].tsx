@@ -10,6 +10,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { MediaAttachments } from "@/components/MediaAttachments";
@@ -30,6 +31,7 @@ async function fetchAsset(id: string) {
 }
 
 export default function AssetDetailScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -52,19 +54,19 @@ export default function AssetDetailScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Feather name="alert-circle" size={40} color={colors.mutedForeground} />
-        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Asset not found</Text>
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("assetDetail.notFound")}</Text>
       </View>
     );
   }
 
   const fields = [
-    { label: "Type", value: asset.assetType },
-    { label: "Brand", value: asset.brand },
-    { label: "Model", value: asset.model },
-    { label: "Serial", value: asset.serialNumber },
-    { label: "Internal Code", value: asset.internalCode },
-    { label: "QR Code", value: asset.qrCode },
-    { label: "Status", value: asset.status },
+    { label: t("assetDetail.type"), value: asset.assetType },
+    { label: t("assetDetail.brand"), value: asset.brand },
+    { label: t("assetDetail.model"), value: asset.model },
+    { label: t("assetDetail.serial"), value: asset.serialNumber },
+    { label: t("assetDetail.internalCode"), value: asset.internalCode },
+    { label: t("assetDetail.qrCode"), value: asset.qrCode },
+    { label: t("assetDetail.status"), value: asset.status },
   ].filter((f) => f.value);
 
   return (
@@ -99,14 +101,14 @@ export default function AssetDetailScreen() {
             onPress={() => router.push("/create-incident")}
           >
             <Feather name="alert-circle" size={18} color={colors.primary} />
-            <Text style={[styles.actionText, { color: colors.primary }]}>Report Issue</Text>
+            <Text style={[styles.actionText, { color: colors.primary }]}>{t("assetDetail.reportIssue")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.secondary }]}
             onPress={() => router.push("/create-maintenance")}
           >
             <Feather name="tool" size={18} color={colors.primary} />
-            <Text style={[styles.actionText, { color: colors.primary }]}>Maintenance</Text>
+            <Text style={[styles.actionText, { color: colors.primary }]}>{t("assetDetail.maintenance")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

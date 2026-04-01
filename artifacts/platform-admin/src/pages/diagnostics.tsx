@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,8 @@ function formatUptime(seconds: number): string {
 }
 
 export default function DiagnosticsPage() {
+  const { t } = useTranslation();
+
   const healthQuery = useQuery({
     queryKey: ["health", "summary"],
     queryFn: () => api<HealthSummary>("/platform/health/summary"),
@@ -89,23 +92,23 @@ export default function DiagnosticsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Diagnostics</h1>
-          <p className="text-muted-foreground">System health and service status</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("diagnostics.title")}</h1>
+          <p className="text-muted-foreground">{t("diagnostics.subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
           {healthQuery.data?.buildVersion && (
             <Badge variant="outline" className="text-xs">
-              Build: {healthQuery.data.buildVersion}
+              {t("diagnostics.build")}: {healthQuery.data.buildVersion}
             </Badge>
           )}
           {healthQuery.data?.uptime !== undefined && (
             <Badge variant="outline" className="text-xs">
-              Uptime: {formatUptime(healthQuery.data.uptime)}
+              {t("diagnostics.uptime")}: {formatUptime(healthQuery.data.uptime)}
             </Badge>
           )}
           <Button variant="outline" onClick={refetchAll}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            {t("diagnostics.refresh")}
           </Button>
         </div>
       </div>
@@ -124,7 +127,7 @@ export default function DiagnosticsPage() {
                 <CheckCircle className="h-8 w-8 text-green-500" />
                 <div>
                   <p className="text-2xl font-bold">{healthQuery.data.healthy}</p>
-                  <p className="text-sm text-muted-foreground">Healthy</p>
+                  <p className="text-sm text-muted-foreground">{t("diagnostics.healthy")}</p>
                 </div>
               </div>
             </CardContent>
@@ -135,7 +138,7 @@ export default function DiagnosticsPage() {
                 <AlertTriangle className="h-8 w-8 text-yellow-500" />
                 <div>
                   <p className="text-2xl font-bold">{healthQuery.data.degraded}</p>
-                  <p className="text-sm text-muted-foreground">Degraded</p>
+                  <p className="text-sm text-muted-foreground">{t("diagnostics.degraded")}</p>
                 </div>
               </div>
             </CardContent>
@@ -146,7 +149,7 @@ export default function DiagnosticsPage() {
                 <XCircle className="h-8 w-8 text-red-500" />
                 <div>
                   <p className="text-2xl font-bold">{healthQuery.data.critical}</p>
-                  <p className="text-sm text-muted-foreground">Critical</p>
+                  <p className="text-sm text-muted-foreground">{t("diagnostics.critical")}</p>
                 </div>
               </div>
             </CardContent>
@@ -155,7 +158,7 @@ export default function DiagnosticsPage() {
       ) : null}
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">Service Status</h2>
+        <h2 className="text-lg font-semibold mb-3">{t("diagnostics.serviceStatus")}</h2>
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {servicesQuery.isLoading ? (
             Array.from({ length: 6 }).map((_, i) => (
@@ -187,17 +190,17 @@ export default function DiagnosticsPage() {
                     </div>
                     <div className="space-y-1">
                       {svc.latency !== undefined && (
-                        <p className="text-xs text-muted-foreground">Latency: {svc.latency}ms</p>
+                        <p className="text-xs text-muted-foreground">{t("diagnostics.latency")}: {svc.latency}ms</p>
                       )}
                       {svc.version && (
-                        <p className="text-xs text-muted-foreground">Version: {svc.version}</p>
+                        <p className="text-xs text-muted-foreground">{t("diagnostics.version")}: {svc.version}</p>
                       )}
                       {svc.message && (
                         <p className="text-xs text-muted-foreground">{svc.message}</p>
                       )}
                       {svc.lastChecked && (
                         <p className="text-xs text-muted-foreground">
-                          Checked: {new Date(svc.lastChecked).toLocaleTimeString()}
+                          {t("diagnostics.checked")}: {new Date(svc.lastChecked).toLocaleTimeString()}
                         </p>
                       )}
                     </div>
@@ -206,15 +209,12 @@ export default function DiagnosticsPage() {
               );
             })
           )}
-          {servicesQuery.data?.length === 0 && (
-            <p className="col-span-3 text-center py-4 text-muted-foreground">No services configured</p>
-          )}
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Tenant Health</CardTitle>
+          <CardTitle className="text-base">{t("diagnostics.tenantHealth")}</CardTitle>
         </CardHeader>
         <CardContent>
           {tenantsQuery.isLoading ? (
@@ -256,7 +256,7 @@ export default function DiagnosticsPage() {
                 </div>
               ))}
               {tenantsQuery.data?.length === 0 && (
-                <p className="text-center py-4 text-muted-foreground">No tenant data available</p>
+                <p className="text-center py-4 text-muted-foreground">{t("common.noData")}</p>
               )}
             </div>
           )}

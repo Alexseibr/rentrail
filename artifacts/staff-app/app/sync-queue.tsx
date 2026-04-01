@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useSync } from "@/contexts/SyncContext";
 import { cancelItem, retryItem, clearCompleted } from "@/services/sync-queue";
@@ -32,14 +33,15 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function SyncQueueScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const { queueItems, isSyncing, syncNow } = useSync();
 
   const handleCancel = (item: QueueItem) => {
-    Alert.alert("Cancel Action", `Cancel "${getActionDescription(item.actionType)}"?`, [
-      { text: "No", style: "cancel" },
+    Alert.alert(t("syncQueue.cancelAction"), t("syncQueue.cancelConfirm", { action: getActionDescription(item.actionType) }), [
+      { text: t("syncQueue.no"), style: "cancel" },
       {
-        text: "Yes",
+        text: t("syncQueue.yes"),
         style: "destructive",
         onPress: async () => {
           await cancelItem(item.id);
@@ -76,7 +78,7 @@ export default function SyncQueueScreen() {
       </View>
       <Text style={[styles.cardTime, { color: colors.mutedForeground }]}>
         {new Date(item.createdAt).toLocaleString()}
-        {item.retryCount > 0 ? ` · ${item.retryCount} retries` : ""}
+        {item.retryCount > 0 ? ` · ${item.retryCount} ${t("syncQueue.retries")}` : ""}
       </Text>
       {item.lastError && (
         <Text style={[styles.cardError, { color: colors.destructive }]} numberOfLines={2}>
@@ -88,12 +90,12 @@ export default function SyncQueueScreen() {
           {item.status === "failed" && (
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.secondary }]} onPress={() => handleRetry(item)}>
               <Feather name="refresh-cw" size={14} color={colors.primary} />
-              <Text style={[styles.actionText, { color: colors.primary }]}>Retry</Text>
+              <Text style={[styles.actionText, { color: colors.primary }]}>{t("syncQueue.retry")}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.destructive + "15" }]} onPress={() => handleCancel(item)}>
             <Feather name="x" size={14} color={colors.destructive} />
-            <Text style={[styles.actionText, { color: colors.destructive }]}>Cancel</Text>
+            <Text style={[styles.actionText, { color: colors.destructive }]}>{t("syncQueue.cancel")}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -111,11 +113,11 @@ export default function SyncQueueScreen() {
           disabled={isSyncing}
         >
           <Feather name="refresh-cw" size={16} color="#fff" />
-          <Text style={styles.syncText}>{isSyncing ? "Syncing..." : "Sync Now"}</Text>
+          <Text style={styles.syncText}>{isSyncing ? t("syncQueue.syncing") : t("syncQueue.syncNow")}</Text>
         </TouchableOpacity>
         {completedCount > 0 && (
           <TouchableOpacity onPress={handleClearCompleted}>
-            <Text style={[styles.clearText, { color: colors.primary }]}>Clear Done</Text>
+            <Text style={[styles.clearText, { color: colors.primary }]}>{t("syncQueue.clearDone")}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -129,9 +131,9 @@ export default function SyncQueueScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Feather name="check-circle" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Queue is empty</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("syncQueue.queueEmpty")}</Text>
             <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-              Actions performed offline will appear here
+              {t("syncQueue.offlineActions")}
             </Text>
           </View>
         }

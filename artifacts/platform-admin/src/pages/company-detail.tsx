@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ function formatCurrency(amount: number, currency = "USD") {
 }
 
 export default function CompanyDetailPage() {
+  const { t } = useTranslation();
   const [, params] = useRoute("/companies/:id");
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -158,7 +160,7 @@ export default function CompanyDetailPage() {
   if (!company) {
     return (
       <div className="p-6">
-        <p className="text-muted-foreground">Company not found</p>
+        <p className="text-muted-foreground">{t("companyDetail.notFound")}</p>
       </div>
     );
   }
@@ -166,11 +168,11 @@ export default function CompanyDetailPage() {
   const status = company.status as string;
 
   const moderationActions = [
-    { action: "approve", label: "Approve", icon: CheckCircle, show: status === "pending", variant: "default" as const },
-    { action: "block", label: "Block", icon: Ban, show: status === "active" || status === "pending", variant: "destructive" as const },
-    { action: "suspend", label: "Suspend", icon: Pause, show: status === "active", variant: "outline" as const },
-    { action: "unblock", label: "Unblock", icon: CheckCircle, show: status === "blocked" || status === "suspended", variant: "default" as const },
-    { action: "cancel", label: "Cancel", icon: XCircle, show: status !== "canceled", variant: "destructive" as const },
+    { action: "approve", label: t("companyDetail.approve"), icon: CheckCircle, show: status === "pending", variant: "default" as const },
+    { action: "block", label: t("companyDetail.block"), icon: Ban, show: status === "active" || status === "pending", variant: "destructive" as const },
+    { action: "suspend", label: t("companyDetail.suspend"), icon: Pause, show: status === "active", variant: "outline" as const },
+    { action: "unblock", label: t("companyDetail.unblock"), icon: CheckCircle, show: status === "blocked" || status === "suspended", variant: "default" as const },
+    { action: "cancel", label: t("common.cancel"), icon: XCircle, show: status !== "canceled", variant: "destructive" as const },
   ];
 
   return (
@@ -190,7 +192,7 @@ export default function CompanyDetailPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowSetPlan(true)}>
-            Set Plan
+            {t("companies.setPlan")}
           </Button>
           {moderationActions
             .filter((a) => a.show)
@@ -212,33 +214,33 @@ export default function CompanyDetailPage() {
 
       <Tabs defaultValue="details">
         <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="modules">Modules</TabsTrigger>
-          <TabsTrigger value="subscription">Subscription</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
-          <TabsTrigger value="usage">Usage</TabsTrigger>
-          <TabsTrigger value="health">Health</TabsTrigger>
-          <TabsTrigger value="whitelabel">White Label</TabsTrigger>
-          <TabsTrigger value="audit">Audit Trail</TabsTrigger>
+          <TabsTrigger value="details">{t("companyDetail.details")}</TabsTrigger>
+          <TabsTrigger value="modules">{t("companyDetail.modules")}</TabsTrigger>
+          <TabsTrigger value="subscription">{t("companyDetail.subscription")}</TabsTrigger>
+          <TabsTrigger value="billing">{t("companyDetail.billing")}</TabsTrigger>
+          <TabsTrigger value="usage">{t("companyDetail.usage")}</TabsTrigger>
+          <TabsTrigger value="health">{t("companyDetail.health")}</TabsTrigger>
+          <TabsTrigger value="whitelabel">{t("companyDetail.whiteLabel")}</TabsTrigger>
+          <TabsTrigger value="audit">{t("companyDetail.auditTrail")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Company Information</CardTitle>
+              <CardTitle className="text-base">{t("companyDetail.companyInfo")}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
                 {[
-                  ["Name", company.name],
+                  [t("common.name"), company.name],
                   ["Slug", company.slug],
-                  ["Legal Name", company.legalName],
-                  ["Email", company.email],
-                  ["Phone", company.phone],
-                  ["Country", company.country],
-                  ["Currency", company.currency],
-                  ["Timezone", company.timezone],
-                  ["Created", company.createdAt ? new Date(company.createdAt as string).toLocaleString() : null],
+                  [t("common.legalName"), company.legalName],
+                  [t("common.email"), company.email],
+                  [t("common.phone"), company.phone],
+                  [t("common.country"), company.country],
+                  [t("common.currency"), company.currency],
+                  [t("common.timezone"), company.timezone],
+                  [t("common.created"), company.createdAt ? new Date(company.createdAt as string).toLocaleString() : null],
                 ].map(([label, value]) => (
                   <div key={label as string}>
                     <dt className="text-muted-foreground">{label as string}</dt>
@@ -253,15 +255,15 @@ export default function CompanyDetailPage() {
         <TabsContent value="modules" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Enabled Modules</CardTitle>
+              <CardTitle className="text-base">{t("companyDetail.enabledModules")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Module</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Enabled At</TableHead>
+                    <TableHead>{t("common.module")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("companyDetail.enabledAt")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -273,7 +275,7 @@ export default function CompanyDetailPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={mod.enabled ? "default" : "secondary"}>
-                            {mod.enabled ? "Enabled" : "Disabled"}
+                            {mod.enabled ? t("common.enabled") : t("common.disabled")}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
@@ -285,7 +287,7 @@ export default function CompanyDetailPage() {
                   {(!company.modules || (company.modules as Array<unknown>).length === 0) && (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
-                        No modules configured
+                        {t("companyDetail.noModules")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -298,16 +300,16 @@ export default function CompanyDetailPage() {
         <TabsContent value="subscription" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Subscriptions</CardTitle>
+              <CardTitle className="text-base">{t("billing.subscriptions")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Trial Ends</TableHead>
+                    <TableHead>{t("common.plan")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("subscriptionDetail.periodStart")}</TableHead>
+                    <TableHead>{t("subscriptionDetail.trialEnds")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -330,7 +332,7 @@ export default function CompanyDetailPage() {
                   {(subscriptions?.items || []).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                        No subscriptions
+                        {t("companyDetail.noSubscriptions")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -343,16 +345,16 @@ export default function CompanyDetailPage() {
         <TabsContent value="billing" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Recent Invoices</CardTitle>
+              <CardTitle className="text-base">{t("companyDetail.recentInvoices")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead>{t("common.amount")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("common.dueDate")}</TableHead>
+                    <TableHead>{t("common.created")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -375,7 +377,7 @@ export default function CompanyDetailPage() {
                   {(invoices?.items || []).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                        No invoices
+                        {t("common.noInvoices")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -388,7 +390,7 @@ export default function CompanyDetailPage() {
         <TabsContent value="usage" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Usage Statistics</CardTitle>
+              <CardTitle className="text-base">{t("companyDetail.usageStats")}</CardTitle>
             </CardHeader>
             <CardContent>
               {usage ? (
@@ -403,7 +405,7 @@ export default function CompanyDetailPage() {
                   ))}
                 </dl>
               ) : (
-                <p className="text-muted-foreground">No usage data available</p>
+                <p className="text-muted-foreground">{t("companyDetail.noUsageData")}</p>
               )}
             </CardContent>
           </Card>
@@ -412,7 +414,7 @@ export default function CompanyDetailPage() {
         <TabsContent value="health" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Health Summary</CardTitle>
+              <CardTitle className="text-base">{t("companyDetail.healthSummary")}</CardTitle>
             </CardHeader>
             <CardContent>
               {health ? (
@@ -429,7 +431,7 @@ export default function CompanyDetailPage() {
                   ))}
                 </dl>
               ) : (
-                <p className="text-muted-foreground">No health data available</p>
+                <p className="text-muted-foreground">{t("companyDetail.noHealthData")}</p>
               )}
             </CardContent>
           </Card>
@@ -438,7 +440,7 @@ export default function CompanyDetailPage() {
         <TabsContent value="whitelabel" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">White Label Settings</CardTitle>
+              <CardTitle className="text-base">{t("whiteLabel.settings")}</CardTitle>
             </CardHeader>
             <CardContent>
               {wlSettings ? (
@@ -455,7 +457,7 @@ export default function CompanyDetailPage() {
                   ))}
                 </dl>
               ) : (
-                <p className="text-muted-foreground">No white label settings configured</p>
+                <p className="text-muted-foreground">{t("companyDetail.noWlSettings")}</p>
               )}
             </CardContent>
           </Card>
@@ -464,16 +466,16 @@ export default function CompanyDetailPage() {
         <TabsContent value="audit" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Audit Trail</CardTitle>
+              <CardTitle className="text-base">{t("companyDetail.auditTrail")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead>Time</TableHead>
+                    <TableHead>{t("dashboard.action")}</TableHead>
+                    <TableHead>{t("dashboard.entity")}</TableHead>
+                    <TableHead>{t("common.details")}</TableHead>
+                    <TableHead>{t("dashboard.time")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -492,7 +494,7 @@ export default function CompanyDetailPage() {
                         {log.reasonText
                           ? (log.reasonText as string)
                           : log.after
-                            ? "Data updated"
+                            ? t("companyDetail.dataUpdated")
                             : "-"}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
@@ -505,7 +507,7 @@ export default function CompanyDetailPage() {
                   {(auditData?.items || []).length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                        No audit records
+                        {t("companyDetail.noAuditRecords")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -519,7 +521,7 @@ export default function CompanyDetailPage() {
       <Dialog open={!!modForm} onOpenChange={() => setModForm(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="capitalize">{modForm?.action} Company</DialogTitle>
+            <DialogTitle className="capitalize">{t("companyDetail.actionCompany", { action: modForm?.action })}</DialogTitle>
           </DialogHeader>
           {modForm && (
             <form
@@ -530,7 +532,7 @@ export default function CompanyDetailPage() {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label>Reason Code</Label>
+                <Label>{t("companyDetail.reasonCode")}</Label>
                 <Input
                   value={modForm.reasonCode}
                   onChange={(e) => setModForm({ ...modForm, reasonCode: e.target.value })}
@@ -539,24 +541,23 @@ export default function CompanyDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Reason Text</Label>
+                <Label>{t("companyDetail.reasonText")}</Label>
                 <Textarea
                   value={modForm.reasonText}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setModForm({ ...modForm, reasonText: e.target.value })}
-                  placeholder="Describe the reason..."
                   required
                 />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setModForm(null)}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   variant={modForm.action === "approve" || modForm.action === "unblock" ? "default" : "destructive"}
                   disabled={moderationMutation.isPending}
                 >
-                  {moderationMutation.isPending ? "Processing..." : `Confirm ${modForm.action}`}
+                  {moderationMutation.isPending ? t("common.processing") : t("companyDetail.confirmModeration", { action: modForm.action })}
                 </Button>
               </DialogFooter>
             </form>
@@ -567,14 +568,14 @@ export default function CompanyDetailPage() {
       <Dialog open={showSetPlan} onOpenChange={setShowSetPlan}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Set Plan for {company.name as string}</DialogTitle>
+            <DialogTitle>{t("companies.setPlanFor", { name: company.name as string })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Select Plan</Label>
+              <Label>{t("companies.selectPlan")}</Label>
               <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a plan" />
+                  <SelectValue placeholder={t("companies.choosePlan")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(plans.data || []).map((p) => (
@@ -587,13 +588,13 @@ export default function CompanyDetailPage() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowSetPlan(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 disabled={!selectedPlanId || setPlanMutation.isPending}
                 onClick={() => setPlanMutation.mutate(selectedPlanId)}
               >
-                {setPlanMutation.isPending ? "Setting..." : "Set Plan"}
+                {setPlanMutation.isPending ? t("common.processing") : t("companies.assignPlan")}
               </Button>
             </DialogFooter>
           </div>

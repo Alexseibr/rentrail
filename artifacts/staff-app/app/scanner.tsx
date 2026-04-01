@@ -13,6 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { parseScanResult } from "@/services/scanner";
 import { getAccessToken, getCompanyId } from "@/services/api";
@@ -22,6 +23,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 export default function ScannerScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -33,7 +35,7 @@ export default function ScannerScreen() {
 
   const resolveCode = useCallback(async (code: string) => {
     if (!isConnected) {
-      Alert.alert("Offline", "Scan resolution requires internet connection");
+      Alert.alert(t("scanner.offline"), t("scanner.offlineMessage"));
       return;
     }
 
@@ -42,7 +44,7 @@ export default function ScannerScreen() {
       const token = await getAccessToken();
       const companyId = await getCompanyId();
       if (!token || !companyId) {
-        Alert.alert("Error", "Not authenticated");
+        Alert.alert(t("common.error"), t("scanner.notAuthenticated"));
         return;
       }
 
@@ -57,7 +59,7 @@ export default function ScannerScreen() {
       });
 
       if (!res.ok) {
-        Alert.alert("Error", "Failed to resolve code");
+        Alert.alert(t("common.error"), t("scanner.failedToResolve"));
         return;
       }
 
@@ -67,18 +69,18 @@ export default function ScannerScreen() {
       if (data.type === "asset") {
         router.replace(`/asset/${data.entity.id}`);
       } else if (data.type === "device") {
-        Alert.alert("Device Found", `Device: ${data.entity.externalId}`);
+        Alert.alert(t("scanner.deviceFound"), `Device: ${data.entity.externalId}`);
       } else {
-        Alert.alert("Not Found", `No asset or device found for code: ${code}`);
+        Alert.alert(t("scanner.notFound"), t("scanner.notFoundMessage", { code }));
         setScanned(false);
       }
     } catch {
-      Alert.alert("Error", "Failed to resolve scanned code");
+      Alert.alert(t("common.error"), t("scanner.failedToResolve"));
       setScanned(false);
     } finally {
       setResolving(false);
     }
-  }, [isConnected, router]);
+  }, [isConnected, router, t]);
 
   const handleBarCodeScanned = useCallback(
     ({ data: rawValue }: { data: string }) => {
@@ -109,15 +111,15 @@ export default function ScannerScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Feather name="camera-off" size={48} color={colors.mutedForeground} />
-        <Text style={[styles.permText, { color: colors.foreground }]}>Camera access needed</Text>
+        <Text style={[styles.permText, { color: colors.foreground }]}>{t("scanner.cameraAccessNeeded")}</Text>
         <Text style={[styles.permSub, { color: colors.mutedForeground }]}>
-          Allow camera access to scan QR codes and barcodes
+          {t("scanner.allowCameraDescription")}
         </Text>
         <TouchableOpacity
           style={[styles.permBtn, { backgroundColor: colors.primary }]}
           onPress={requestPermission}
         >
-          <Text style={styles.permBtnText}>Allow Camera</Text>
+          <Text style={styles.permBtnText}>{t("scanner.allowCamera")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -148,16 +150,16 @@ export default function ScannerScreen() {
         {resolving && (
           <View style={styles.loadingWrap}>
             <ActivityIndicator color="#fff" size="large" />
-            <Text style={styles.loadingText}>Resolving...</Text>
+            <Text style={styles.loadingText}>{t("scanner.resolving")}</Text>
           </View>
         )}
 
         <View style={[styles.manualWrap, { paddingBottom: insets.bottom + 16 }]}>
-          <Text style={styles.manualLabel}>Or enter code manually</Text>
+          <Text style={styles.manualLabel}>{t("scanner.orEnterManually")}</Text>
           <View style={styles.manualRow}>
             <TextInput
               style={styles.manualInput}
-              placeholder="Asset code..."
+              placeholder={t("scanner.assetCode")}
               placeholderTextColor="rgba(255,255,255,0.5)"
               value={manualCode}
               onChangeText={setManualCode}
@@ -172,7 +174,7 @@ export default function ScannerScreen() {
           </View>
           {scanned && !resolving && (
             <TouchableOpacity onPress={() => setScanned(false)}>
-              <Text style={[styles.rescanText, { color: colors.primary }]}>Scan Again</Text>
+              <Text style={[styles.rescanText, { color: colors.primary }]}>{t("scanner.scanAgain")}</Text>
             </TouchableOpacity>
           )}
         </View>
