@@ -8,7 +8,8 @@ setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
 interface User {
   id: string;
-  email: string;
+  email?: string;
+  phone?: string;
   firstName: string;
   lastName: string;
   companies?: Array<{ companyId: string; companyName: string; roleCode: string }>;
@@ -24,6 +25,10 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
+  loginWithPhone: (phone: string, password: string) => Promise<void>;
+  requestOtp: (phone: string) => Promise<{ devCode?: string }>;
+  verifyOtp: (phone: string, code: string) => Promise<{ needsPassword: boolean }>;
+  setPhonePassword: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   setCompanyId: (id: string) => Promise<void>;
   setBranchId: (id: string | null) => Promise<void>;
@@ -33,6 +38,17 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+async function fetchWithAuth(url: string, options: RequestInit = {}, accessToken?: string) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+  const res = await fetch(url, { ...options, headers: { ...headers, ...(options.headers as Record<string, string> || {}) } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error || "Request failed");
+  }
+  return res.json();
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -57,13 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (token && storedUser) {
         const user = JSON.parse(storedUser);
-        setState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          companyId,
-          branchId,
-        });
+        setState({ user, isAuthenticated: true, isLoading: false, companyId, branchId });
       } else {
         setState((s) => ({ ...s, isLoading: false }));
       }
@@ -72,43 +82,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const applyAuthResult = useCallback(async (accessToken: string, refreshToken: string) => {
+    await storeTokens(accessToken, refreshToken);
+    const { data: userData } = await fetchWithAuth(`${BASE_URL}/api/auth/me`, {}, accessToken);
+    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+    let companyId = await getCompanyId();
+    if (!companyId && userData.memberships?.length > 0) {
+      companyId = userData.memberships[0].companyId;
+      await storeCompanyId(companyId);
+    }
+    setState({ user: userData, isAuthenticated: true, isLoading: false, companyId, branchId: null });
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${BASE_URL}/api/auth/login`, {
+    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
+    await applyAuthResult(data.accessToken, data.refreshToken);
+  }, [applyAuthResult]);
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "Login failed");
-    }
-
-    const { data } = await res.json();
-    await storeTokens(data.accessToken, data.refreshToken);
-
-    const meRes = await fetch(`${BASE_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${data.accessToken}` },
+  const loginWithPhone = useCallback(async (phone: string, password: string) => {
+    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/login`, {
+      method: "POST",
+      body: JSON.stringify({ phone, password }),
     });
+    await applyAuthResult(data.accessToken, data.refreshToken);
+  }, [applyAuthResult]);
 
-    if (meRes.ok) {
-      const { data: userData } = await meRes.json();
-      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+  const requestOtp = useCallback(async (phone: string): Promise<{ devCode?: string }> => {
+    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/request-otp`, {
+      method: "POST",
+      body: JSON.stringify({ phone }),
+    });
+    return { devCode: data.devCode };
+  }, []);
 
-      let companyId = await getCompanyId();
-      if (!companyId && userData.companies?.length > 0) {
-        companyId = userData.companies[0].companyId;
-        await storeCompanyId(companyId);
-      }
+  const verifyOtp = useCallback(async (phone: string, code: string): Promise<{ needsPassword: boolean }> => {
+    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/verify-otp`, {
+      method: "POST",
+      body: JSON.stringify({ phone, code }),
+    });
+    await applyAuthResult(data.accessToken, data.refreshToken);
+    return { needsPassword: data.needsPassword };
+  }, [applyAuthResult]);
 
-      setState({
-        user: userData,
-        isAuthenticated: true,
-        isLoading: false,
-        companyId,
-        branchId: null,
-      });
-    }
+  const setPhonePassword = useCallback(async (password: string) => {
+    const token = await getAccessToken();
+    await fetchWithAuth(`${BASE_URL}/api/auth/phone/set-password`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+      headers: { Authorization: `Bearer ${token}` },
+    });
   }, []);
 
   const logout = useCallback(async () => {
@@ -123,13 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       await clearAuth();
-      setState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        companyId: null,
-        branchId: null,
-      });
+      setState({ user: null, isAuthenticated: false, isLoading: false, companyId: null, branchId: null });
     }
   }, []);
 
@@ -146,27 +165,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     const token = await getAccessToken();
     if (!token) return;
-    const meRes = await fetch(`${BASE_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (meRes.ok) {
-      const { data: userData } = await meRes.json();
-      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-      setState((s) => ({ ...s, user: userData }));
-    }
+    const { data: userData } = await fetchWithAuth(`${BASE_URL}/api/auth/me`, {}, token);
+    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+    setState((s) => ({ ...s, user: userData }));
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        ...state,
-        login,
-        logout,
-        setCompanyId: setCompanyIdFn,
-        setBranchId: setBranchIdFn,
-        refreshUser,
-      }}
-    >
+    <AuthContext.Provider value={{
+      ...state,
+      login,
+      loginWithPhone,
+      requestOtp,
+      verifyOtp,
+      setPhonePassword,
+      logout,
+      setCompanyId: setCompanyIdFn,
+      setBranchId: setBranchIdFn,
+      refreshUser,
+    }}>
       {children}
     </AuthContext.Provider>
   );

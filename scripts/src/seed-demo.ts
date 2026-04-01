@@ -71,13 +71,13 @@ async function seedDemo() {
 
   const passwordHash = await hash("demo1234");
   const staffData = [
-    { email: "owner@velocityrides.demo", firstName: "Maria", lastName: "Johnson", passwordHash, isSuperAdmin: false },
-    { email: "admin@velocityrides.demo", firstName: "Carlos", lastName: "Rivera", passwordHash, isSuperAdmin: false },
-    { email: "manager@velocityrides.demo", firstName: "Sarah", lastName: "Chen", passwordHash, isSuperAdmin: false },
-    { email: "operator@velocityrides.demo", firstName: "James", lastName: "Wilson", passwordHash, isSuperAdmin: false },
-    { email: "mechanic@velocityrides.demo", firstName: "Andrei", lastName: "Volkov", passwordHash, isSuperAdmin: false },
-    { email: "viewer@velocityrides.demo", firstName: "Emma", lastName: "Park", passwordHash, isSuperAdmin: false },
-    { email: "accountant@velocityrides.demo", firstName: "Lucia", lastName: "Fernandez", passwordHash, isSuperAdmin: false },
+    { email: "owner@velocityrides.demo",     phone: "+79991000001", phoneVerified: true, firstName: "Maria",  lastName: "Johnson",  passwordHash, isSuperAdmin: false },
+    { email: "admin@velocityrides.demo",      phone: "+79991000002", phoneVerified: true, firstName: "Carlos", lastName: "Rivera",   passwordHash, isSuperAdmin: false },
+    { email: "manager@velocityrides.demo",    phone: "+79991000003", phoneVerified: true, firstName: "Sarah",  lastName: "Chen",     passwordHash, isSuperAdmin: false },
+    { email: "operator@velocityrides.demo",   phone: "+79991000004", phoneVerified: true, firstName: "James",  lastName: "Wilson",   passwordHash, isSuperAdmin: false },
+    { email: "mechanic@velocityrides.demo",   phone: "+79991000005", phoneVerified: true, firstName: "Andrei", lastName: "Volkov",   passwordHash, isSuperAdmin: false },
+    { email: "viewer@velocityrides.demo",     phone: "+79991000006", phoneVerified: true, firstName: "Emma",   lastName: "Park",     passwordHash, isSuperAdmin: false },
+    { email: "accountant@velocityrides.demo", phone: "+79991000007", phoneVerified: true, firstName: "Lucia",  lastName: "Fernandez",passwordHash, isSuperAdmin: false },
   ];
   const insertedUsers = await db.insert(users).values(staffData).returning();
   console.log(`  Users: ${insertedUsers.map(u => `${u.firstName} (${u.email})`).join(", ")}`);
@@ -423,10 +423,10 @@ async function seedDemo() {
 
   // ─── Platform admin users ────────────────────────────────────────────────
   const platformUserData = [
-    { email: "superadmin@platform.demo",   firstName: "Alex",    lastName: "Platform",  passwordHash, isSuperAdmin: true  as const },
-    { email: "platformadmin@platform.demo", firstName: "Diana",  lastName: "Admin",     passwordHash, isSuperAdmin: false as const },
-    { email: "support@platform.demo",      firstName: "Kevin",   lastName: "Support",   passwordHash, isSuperAdmin: false as const },
-    { email: "finance@platform.demo",      firstName: "Olga",    lastName: "Finance",   passwordHash, isSuperAdmin: false as const },
+    { email: "superadmin@platform.demo",    phone: "+79990000001", phoneVerified: true, firstName: "Alex",  lastName: "Platform", passwordHash, isSuperAdmin: true  as const },
+    { email: "platformadmin@platform.demo", phone: "+79990000002", phoneVerified: true, firstName: "Diana", lastName: "Admin",    passwordHash, isSuperAdmin: false as const },
+    { email: "support@platform.demo",       phone: "+79990000003", phoneVerified: true, firstName: "Kevin", lastName: "Support",  passwordHash, isSuperAdmin: false as const },
+    { email: "finance@platform.demo",       phone: "+79990000004", phoneVerified: true, firstName: "Olga",  lastName: "Finance",  passwordHash, isSuperAdmin: false as const },
   ];
   const insertedPlatformUsers = await db.insert(users).values(platformUserData).returning();
   console.log(`  Platform users: ${insertedPlatformUsers.map(u => u.email).join(", ")}`);
@@ -473,6 +473,8 @@ async function seedDemo() {
 
   const [uwOwner] = await db.insert(users).values({
     email: "owner@urbanwheels.demo",
+    phone: "+79991000008",
+    phoneVerified: true,
     firstName: "Luca",
     lastName: "Bianchi",
     passwordHash,
@@ -502,27 +504,27 @@ async function seedDemo() {
   console.log(`  Urban Wheels assets: ${uwAssetData.length}`);
 
   console.log("\n✅ Demo seed complete!");
-  console.log("\n╔══════════════════════════════════════════════════════════════╗");
-  console.log("║              DEMO CREDENTIALS  (password: demo1234)          ║");
-  console.log("╠══════════════════════════════════════════════════════════════╣");
-  console.log("║  PLATFORM ADMIN                                              ║");
-  console.log("║  superadmin@platform.demo    → Super Admin (full access)     ║");
-  console.log("║  platformadmin@platform.demo → Platform Admin                ║");
-  console.log("║  support@platform.demo       → Platform Support (read-only)  ║");
-  console.log("║  finance@platform.demo       → Platform Finance              ║");
-  console.log("╠══════════════════════════════════════════════════════════════╣");
-  console.log("║  VELOCITY RIDES (active tenant, US)                          ║");
-  console.log("║  owner@velocityrides.demo    → Owner (full company access)   ║");
-  console.log("║  admin@velocityrides.demo    → Admin                         ║");
-  console.log("║  manager@velocityrides.demo  → Manager (Downtown Hub)        ║");
-  console.log("║  operator@velocityrides.demo → Operator (University Campus)  ║");
-  console.log("║  mechanic@velocityrides.demo → Mechanic (Downtown Hub)       ║");
-  console.log("║  viewer@velocityrides.demo   → Viewer (read-only)            ║");
-  console.log("║  accountant@velocityrides.demo → Accountant                  ║");
-  console.log("╠══════════════════════════════════════════════════════════════╣");
-  console.log("║  URBAN WHEELS (trial tenant, UK)                             ║");
-  console.log("║  owner@urbanwheels.demo      → Owner                         ║");
-  console.log("╚══════════════════════════════════════════════════════════════╝");
+  console.log("\n╔══════════════════════════════════════════════════════════════════════════╗");
+  console.log("║           DEMO CREDENTIALS  (phone login, password: demo1234)           ║");
+  console.log("╠══════════════════════════════════════════════════════════════════════════╣");
+  console.log("║  PLATFORM ADMIN                                                          ║");
+  console.log("║  +7 999 000 0001  (Super Admin)        superadmin@platform.demo          ║");
+  console.log("║  +7 999 000 0002  (Platform Admin)     platformadmin@platform.demo       ║");
+  console.log("║  +7 999 000 0003  (Support)            support@platform.demo             ║");
+  console.log("║  +7 999 000 0004  (Finance)            finance@platform.demo             ║");
+  console.log("╠══════════════════════════════════════════════════════════════════════════╣");
+  console.log("║  VELOCITY RIDES (active tenant, US)                                      ║");
+  console.log("║  +7 999 100 0001  (Owner)              owner@velocityrides.demo          ║");
+  console.log("║  +7 999 100 0002  (Admin)              admin@velocityrides.demo          ║");
+  console.log("║  +7 999 100 0003  (Manager)            manager@velocityrides.demo        ║");
+  console.log("║  +7 999 100 0004  (Operator)           operator@velocityrides.demo       ║");
+  console.log("║  +7 999 100 0005  (Mechanic)           mechanic@velocityrides.demo       ║");
+  console.log("║  +7 999 100 0006  (Viewer)             viewer@velocityrides.demo         ║");
+  console.log("║  +7 999 100 0007  (Accountant)         accountant@velocityrides.demo     ║");
+  console.log("╠══════════════════════════════════════════════════════════════════════════╣");
+  console.log("║  URBAN WHEELS (trial tenant, UK)                                         ║");
+  console.log("║  +7 999 100 0008  (Owner)              owner@urbanwheels.demo            ║");
+  console.log("╚══════════════════════════════════════════════════════════════════════════╝");
 }
 
 async function main() {

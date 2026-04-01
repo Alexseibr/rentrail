@@ -33,7 +33,7 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 
 ### Technical Implementations
 - **Multi-Tenancy:** Enforced via an `x-company-id` header and `companyId` filtering on all database queries.
-- **Authentication & Authorization:** JWT (access/refresh tokens with rotation), bcrypt for password hashing, and a permission-based Role-Based Access Control (RBAC) system. Middleware validates user identity, tenant context, and granular permissions (`resource:action`).
+- **Authentication & Authorization:** Phone number is the primary login identifier. Two login modes: (1) phone+OTP for first-time or passwordless login — in dev mode the OTP code is returned in the API response; (2) phone+password for returning users. On first OTP login, users set a password for subsequent use. Email is stored for receipts/reports only and is optional. JWT (access/refresh tokens with rotation), bcrypt for password hashing, and a permission-based RBAC system. Middleware validates user identity, tenant context, and granular permissions (`resource:action`).
 - **Database Schema:** PostgreSQL schema with 26 tables and over 100 indexes, managed by Drizzle ORM, supporting key entities like companies, assets, rentals, and users.
 - **Asset & Rental Status Machines:** Enforce valid status transitions and log changes to history tables for auditing.
 - **Lead Intake:** Public forms for inquiries, processing leads through a status machine which can convert them into clients or rental drafts.

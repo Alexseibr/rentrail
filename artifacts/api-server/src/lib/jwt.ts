@@ -3,7 +3,7 @@ import { config } from "./config";
 
 export interface AccessTokenPayload {
   userId: string;
-  email: string;
+  email?: string;
   isSuperAdmin: boolean;
   platformRoles: string[];
 }

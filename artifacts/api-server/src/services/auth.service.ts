@@ -13,7 +13,7 @@ function hashToken(token: string): string {
 }
 
 export interface RegisterInput {
-  email: string;
+  email?: string;
   password: string;
   firstName: string;
   lastName: string;
@@ -31,14 +31,16 @@ export interface AuthTokens {
 }
 
 export async function register(input: RegisterInput) {
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, input.email.toLowerCase()))
-    .limit(1);
+  if (input.email) {
+    const existing = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, input.email.toLowerCase()))
+      .limit(1);
 
-  if (existing.length > 0) {
-    throw new ConflictError("Email already registered");
+    if (existing.length > 0) {
+      throw new ConflictError("Email already registered");
+    }
   }
 
   const passwordHash = await bcrypt.hash(input.password, config.bcrypt.saltRounds);
@@ -46,7 +48,7 @@ export async function register(input: RegisterInput) {
   const [user] = await db
     .insert(users)
     .values({
-      email: input.email.toLowerCase(),
+      email: input.email ? input.email.toLowerCase() : undefined,
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
@@ -74,6 +76,10 @@ export async function login(
     .limit(1);
 
   if (!user) {
+    throw new UnauthorizedError("Invalid email or password");
+  }
+
+  if (!user.passwordHash) {
     throw new UnauthorizedError("Invalid email or password");
   }
 

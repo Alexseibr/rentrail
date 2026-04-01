@@ -4,15 +4,16 @@ import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess } from "../middlewares/authorize";
 import * as authService from "../services/auth.service";
+import * as phoneAuthService from "../services/phone-auth.service";
 
 const router: IRouter = Router();
 
 const registerSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().optional(),
+  phone: z.string().min(7).optional(),
   password: z.string().min(8),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  phone: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -22,6 +23,24 @@ const loginSchema = z.object({
 
 const refreshSchema = z.object({
   refreshToken: z.string().min(1),
+});
+
+const phoneRequestOtpSchema = z.object({
+  phone: z.string().min(7),
+});
+
+const phoneVerifyOtpSchema = z.object({
+  phone: z.string().min(7),
+  code: z.string().length(6),
+});
+
+const phoneLoginSchema = z.object({
+  phone: z.string().min(7),
+  password: z.string().min(1),
+});
+
+const setPasswordSchema = z.object({
+  password: z.string().min(6),
 });
 
 router.post("/auth/register", validate({ body: registerSchema }), async (req, res) => {
@@ -36,6 +55,36 @@ router.post("/auth/login", validate({ body: loginSchema }), async (req, res) => 
     req.ip,
   );
   res.json({ data: result });
+});
+
+router.post("/auth/phone/request-otp", validate({ body: phoneRequestOtpSchema }), async (req, res) => {
+  const result = await phoneAuthService.requestOtp(req.body.phone);
+  res.json({ data: result });
+});
+
+router.post("/auth/phone/verify-otp", validate({ body: phoneVerifyOtpSchema }), async (req, res) => {
+  const result = await phoneAuthService.verifyOtp(
+    req.body.phone,
+    req.body.code,
+    req.headers["user-agent"],
+    req.ip,
+  );
+  res.json({ data: result });
+});
+
+router.post("/auth/phone/login", validate({ body: phoneLoginSchema }), async (req, res) => {
+  const result = await phoneAuthService.loginWithPassword(
+    req.body.phone,
+    req.body.password,
+    req.headers["user-agent"],
+    req.ip,
+  );
+  res.json({ data: result });
+});
+
+router.post("/auth/phone/set-password", authenticate, validate({ body: setPasswordSchema }), async (req, res) => {
+  await phoneAuthService.setPassword(req.user!.userId, req.body.password);
+  res.json({ data: { message: "Password set successfully" } });
 });
 
 router.post("/auth/refresh", validate({ body: refreshSchema }), async (req, res) => {
