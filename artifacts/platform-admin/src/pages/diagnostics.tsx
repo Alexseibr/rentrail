@@ -78,7 +78,16 @@ export default function DiagnosticsPage() {
 
   const tenantsQuery = useQuery({
     queryKey: ["health", "tenants"],
-    queryFn: () => api<TenantHealth[]>("/platform/health/tenants"),
+    queryFn: async () => {
+      const res = await api<any[]>("/platform/health/tenants");
+      const items = Array.isArray(res) ? res : (res as any).items ?? [];
+      return items.map((t: any): TenantHealth => ({
+        companyId: t.companyId ?? t.id,
+        companyName: t.companyName ?? t.name,
+        status: t.status ?? t.healthStatus ?? "healthy",
+        issues: t.issues ?? [],
+      }));
+    },
     refetchInterval: 60000,
   });
 
@@ -235,9 +244,9 @@ export default function DiagnosticsPage() {
                     <span className="font-medium">{tenant.companyName}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {tenant.issues.length > 0 && (
+                    {(tenant.issues || []).length > 0 && (
                       <span className="text-xs text-muted-foreground">
-                        {tenant.issues.length} issue{tenant.issues.length !== 1 ? "s" : ""}
+                        {(tenant.issues || []).length} issue{(tenant.issues || []).length !== 1 ? "s" : ""}
                       </span>
                     )}
                     <Badge

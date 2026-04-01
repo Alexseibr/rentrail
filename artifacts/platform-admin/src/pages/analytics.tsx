@@ -98,14 +98,28 @@ export default function AnalyticsPage() {
 
   const topByRentals = useQuery({
     queryKey: ["analytics", "tenants", "rentals"],
-    queryFn: () =>
-      api<TopTenant[]>("/platform/analytics/tenants?metric=rentals&limit=10"),
+    queryFn: async () => {
+      const res = await api<any>("/platform/analytics/tenants?metric=rentals&limit=10");
+      const items = Array.isArray(res) ? res : res?.items ?? [];
+      return items.map((t: any): TopTenant => ({
+        companyId: t.companyId ?? t.id,
+        companyName: t.companyName ?? t.name,
+        value: t.value ?? t.count ?? 0,
+      }));
+    },
   });
 
   const topByAssets = useQuery({
     queryKey: ["analytics", "tenants", "assets"],
-    queryFn: () =>
-      api<TopTenant[]>("/platform/analytics/tenants?metric=assets&limit=10"),
+    queryFn: async () => {
+      const res = await api<any>("/platform/analytics/tenants?metric=assets&limit=10");
+      const items = Array.isArray(res) ? res : res?.items ?? [];
+      return items.map((t: any): TopTenant => ({
+        companyId: t.companyId ?? t.id,
+        companyName: t.companyName ?? t.name,
+        value: t.value ?? t.count ?? 0,
+      }));
+    },
   });
 
   return (

@@ -39,7 +39,13 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (Platform.OS === "web") {
+      if (window.confirm(t("settings.signOutConfirm"))) {
+        await logout();
+      }
+      return;
+    }
     Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
       { text: t("settings.cancel"), style: "cancel" },
       {
