@@ -20,14 +20,14 @@ import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { path: "/companies", labelKey: "nav.companies", icon: Building2 },
-  { path: "/billing", labelKey: "nav.billing", icon: CreditCard },
-  { path: "/blacklist", labelKey: "nav.blacklist", icon: ShieldBan },
-  { path: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity },
-  { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3 },
-  { path: "/white-label", labelKey: "nav.whiteLabel", icon: Palette },
-];
+  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: null },
+  { path: "/companies", labelKey: "nav.companies", icon: Building2, roles: ["superAdmin", "platformAdmin", "platformSupport"] },
+  { path: "/billing", labelKey: "nav.billing", icon: CreditCard, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
+  { path: "/blacklist", labelKey: "nav.blacklist", icon: ShieldBan, roles: ["superAdmin", "platformAdmin", "platformRisk"] },
+  { path: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity, roles: ["superAdmin", "platformAdmin"] },
+  { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
+  { path: "/white-label", labelKey: "nav.whiteLabel", icon: Palette, roles: ["superAdmin", "platformAdmin"] },
+] as const;
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout, hasTenantMemberships } = useAuth();
@@ -69,7 +69,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
-          {navItems.map((item) => {
+          {navItems
+            .filter((item) => {
+              if (!item.roles) return true;
+              if (user?.isSuperAdmin) return true;
+              const userRoles = user?.platformRoles || [];
+              return item.roles.some((r) => userRoles.includes(r));
+            })
+            .map((item) => {
             const active =
               item.path === "/"
                 ? location === "/" || location === ""
