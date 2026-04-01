@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  ScrollView,
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -14,6 +14,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
+
+const DEMO_ACCOUNTS = [
+  { label: "Owner", email: "owner@velocityrides.demo", color: "#7c3aed" },
+  { label: "Admin", email: "admin@velocityrides.demo", color: "#2563eb" },
+  { label: "Manager", email: "manager@velocityrides.demo", color: "#0891b2" },
+  { label: "Operator", email: "operator@velocityrides.demo", color: "#059669" },
+  { label: "Mechanic", email: "mechanic@velocityrides.demo", color: "#d97706" },
+  { label: "Viewer", email: "viewer@velocityrides.demo", color: "#64748b" },
+];
+
+const DEMO_PASSWORD = "demo1234";
 
 export default function LoginScreen() {
   const colors = useColors();
@@ -24,16 +35,17 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
+  const handleLogin = async (loginEmail = email, loginPassword = password) => {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
       setError("Please enter email and password");
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(loginEmail.trim(), loginPassword);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -43,15 +55,31 @@ export default function LoginScreen() {
     }
   };
 
+  const handleDemoLogin = async (demoEmail: string) => {
+    setError(null);
+    setDemoLoading(demoEmail);
+    try {
+      await login(demoEmail, DEMO_PASSWORD);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: unknown) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(err instanceof Error ? err.message : "Demo login failed");
+    } finally {
+      setDemoLoading(null);
+    }
+  };
+
   return (
-    <View
-      style={[
-        styles.container,
+    <ScrollView
+      contentContainerStyle={[
+        styles.scrollContent,
         {
           backgroundColor: colors.background,
           paddingTop: Platform.OS === "web" ? 67 + insets.top : insets.top + 40,
+          paddingBottom: insets.bottom + 24,
         },
       ]}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.logoWrap}>
         <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
@@ -103,9 +131,9 @@ export default function LoginScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
-          onPress={handleLogin}
-          disabled={loading}
+          style={[styles.button, { backgroundColor: colors.primary, opacity: loading || !!demoLoading ? 0.7 : 1 }]}
+          onPress={() => handleLogin()}
+          disabled={loading || !!demoLoading}
           activeOpacity={0.8}
           testID="login-submit"
         >
@@ -116,12 +144,38 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </View>
+
+      <View style={[styles.demoBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Text style={[styles.demoTitle, { color: colors.mutedForeground }]}>
+          Demo — tap to enter
+        </Text>
+        <View style={styles.demoGrid}>
+          {DEMO_ACCOUNTS.map((acc) => (
+            <TouchableOpacity
+              key={acc.email}
+              style={[styles.demoBtn, { backgroundColor: acc.color }]}
+              onPress={() => handleDemoLogin(acc.email)}
+              disabled={!!demoLoading || loading}
+              activeOpacity={0.8}
+            >
+              {demoLoading === acc.email ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.demoBtnText}>{acc.label}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={[styles.demoHint, { color: colors.mutedForeground }]}>
+          Velocity Rides · пароль: <Text style={{ fontFamily: "Inter_600SemiBold" }}>demo1234</Text>
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24, justifyContent: "center" },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, justifyContent: "center" },
   logoWrap: { alignItems: "center", marginBottom: 40 },
   logoCircle: {
     width: 72,
@@ -161,4 +215,23 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  demoBox: {
+    marginTop: 32,
+    borderWidth: 1,
+    borderRadius: 16,
+    borderStyle: "dashed",
+    padding: 16,
+    gap: 12,
+  },
+  demoTitle: { fontSize: 12, fontFamily: "Inter_500Medium", textAlign: "center", textTransform: "uppercase", letterSpacing: 0.5 },
+  demoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
+  demoBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 90,
+    alignItems: "center",
+  },
+  demoBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  demoHint: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
 });
