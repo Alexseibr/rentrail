@@ -4,14 +4,15 @@ import {
   inquiries, b2bRequests, notifications, devices, assetDevices,
   telemetrySnapshots, telemetryEvents, batteries, batteryAssignments,
   userCompanyMemberships, userBranchMemberships, roles,
+  platformRoles, platformUserRoles,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { createHash, randomUUID } from "crypto";
 
 const DEMO_SLUG = "velocity-rides";
 
-function hash(pw: string): string {
-  const bcryptModule = require("bcrypt");
+async function hash(pw: string): Promise<string> {
+  const bcryptModule = await import("bcrypt");
   return bcryptModule.hashSync(pw, 4);
 }
 
@@ -68,7 +69,7 @@ async function seedDemo() {
   const insertedStations = await db.insert(stations).values(stationData).returning();
   console.log(`  Stations: ${insertedStations.length}`);
 
-  const passwordHash = hash("demo1234");
+  const passwordHash = await hash("demo1234");
   const staffData = [
     { email: "owner@velocityrides.demo", firstName: "Maria", lastName: "Johnson", passwordHash, isSuperAdmin: false },
     { email: "admin@velocityrides.demo", firstName: "Carlos", lastName: "Rivera", passwordHash, isSuperAdmin: false },
@@ -104,6 +105,7 @@ async function seedDemo() {
         userId: insertedUsers[ra.userIdx].id,
         companyId: demoCompany.id,
         branchId: insertedBranches[ra.branchIdx].id,
+        roleId,
         status: "active",
       });
     }
@@ -234,7 +236,7 @@ async function seedDemo() {
       rentalId: r.id,
       clientId: r.clientId,
       amount: i % 2 === 0 ? "5.00" : "25.00",
-      paymentType: "rental_payment" as const,
+      type: "rental_payment" as const,
       status: r.status === "canceled" ? "refunded" as const : "paid" as const,
     }));
   const insertedPayments = await db.insert(payments).values(paymentData).returning();
@@ -296,18 +298,22 @@ async function seedDemo() {
     {
       companyId: demoCompany.id,
       companyName: "TechCorp",
-      contactName: "Lisa Wang",
-      contactEmail: "lisa@techcorp.demo",
-      fleetSize: 50,
+      contactPerson: "Lisa Wang",
+      phone: "+1-555-9001",
+      email: "lisa@techcorp.demo",
+      requestedFleetSize: 50,
+      assetTypes: ["ebike"],
       message: "Need fleet of ebikes for campus transport",
       status: "negotiating",
     },
     {
       companyId: demoCompany.id,
       companyName: "Hotel Marina",
-      contactName: "Roberto Silva",
-      contactEmail: "roberto@hotelmarina.demo",
-      fleetSize: 20,
+      contactPerson: "Roberto Silva",
+      phone: "+1-555-9002",
+      email: "roberto@hotelmarina.demo",
+      requestedFleetSize: 20,
+      assetTypes: ["scooter"],
       message: "Guest scooter rental service for beachfront hotel",
       status: "new",
     },
@@ -333,12 +339,13 @@ async function seedDemo() {
   await db.insert(notifications).values(notifData);
   console.log(`  Notifications: ${notifData.length}`);
 
+  const deviceProviders = ["teltonika", "abus", "generic", "ninebot"];
   const deviceData = Array.from({ length: 10 }, (_, i) => ({
     companyId: demoCompany.id,
-    serialNumber: `DEV-${String(1000 + i)}`,
     deviceType: (["gps_tracker", "smart_lock", "battery_bms", "controller", "gps_tracker"] as const)[i % 5],
-    manufacturer: ["Teltonika", "Abus", "KeepTruckin", "Ninebot"][i % 4],
-    model: ["FMB920", "SmartX", "BMS-Pro", "ESC-V2"][i % 4],
+    provider: deviceProviders[i % 4],
+    externalId: `EXT-DEV-${String(1000 + i)}`,
+    serialNumber: `DEV-${String(1000 + i)}`,
     firmwareVersion: `v${1 + (i % 3)}.${i % 10}.0`,
     status: i < 7 ? "active" as const : i === 7 ? "offline" as const : "maintenance" as const,
   }));
@@ -358,7 +365,6 @@ async function seedDemo() {
   const batteryData = Array.from({ length: 15 }, (_, i) => ({
     companyId: demoCompany.id,
     serialNumber: `BAT-${String(2000 + i)}`,
-    manufacturer: ["Samsung", "LG", "Panasonic"][i % 3],
     model: ["INR21700", "MJ1", "NCR18650"][i % 3],
     capacityWh: 500 + (i % 5) * 100,
     healthPercent: Math.max(40, 100 - i * 4),
@@ -379,16 +385,17 @@ async function seedDemo() {
     console.log(`  Battery assignments: ${batteryAssignData.length}`);
   }
 
+  const now = new Date();
   const telSnaps = insertedDevices.slice(0, 5).map((d, i) => ({
     deviceId: d.id,
     companyId: demoCompany.id,
-    latitude: String(40.7128 + (i * 0.01)),
-    longitude: String(-74.006 + (i * 0.01)),
-    speed: String(i * 5),
-    batteryLevel: 100 - i * 15,
-    isOnline: i < 4,
-    rawPayload: { demo: true },
-    receivedAt: past(0),
+    lat: 40.7128 + (i * 0.01),
+    lng: -74.006 + (i * 0.01),
+    speed: i * 5,
+    batteryPercent: 100 - i * 15,
+    onlineState: i < 4 ? "online" : "offline",
+    payload: { demo: true },
+    recordedAt: now,
   }));
   await db.insert(telemetrySnapshots).values(telSnaps);
   console.log(`  Telemetry snapshots: ${telSnaps.length}`);
@@ -399,24 +406,123 @@ async function seedDemo() {
       companyId: demoCompany.id,
       eventType: "online" as const,
       severity: "info" as const,
-      data: {},
+      payload: {},
+      recordedAt: now,
     },
     {
       deviceId: d.id,
       companyId: demoCompany.id,
       eventType: i === 4 ? "low_battery" as const : "location_update" as const,
       severity: i === 4 ? "warning" as const : "info" as const,
-      data: {},
+      payload: {},
+      recordedAt: now,
     },
   ]);
   await db.insert(telemetryEvents).values(telEvents);
   console.log(`  Telemetry events: ${telEvents.length}`);
 
-  console.log("\n✅ Demo seed complete!");
-  console.log("\n📋 Login credentials (password: demo1234):");
-  for (const u of insertedUsers) {
-    console.log(`   ${u.email}`);
+  // ─── Platform admin users ────────────────────────────────────────────────
+  const platformUserData = [
+    { email: "superadmin@platform.demo",   firstName: "Alex",    lastName: "Platform",  passwordHash, isSuperAdmin: true  as const },
+    { email: "platformadmin@platform.demo", firstName: "Diana",  lastName: "Admin",     passwordHash, isSuperAdmin: false as const },
+    { email: "support@platform.demo",      firstName: "Kevin",   lastName: "Support",   passwordHash, isSuperAdmin: false as const },
+    { email: "finance@platform.demo",      firstName: "Olga",    lastName: "Finance",   passwordHash, isSuperAdmin: false as const },
+  ];
+  const insertedPlatformUsers = await db.insert(users).values(platformUserData).returning();
+  console.log(`  Platform users: ${insertedPlatformUsers.map(u => u.email).join(", ")}`);
+
+  const getPlatformRoleId = async (code: string) => {
+    const [r] = await db.select().from(platformRoles).where(eq(platformRoles.code, code)).limit(1);
+    if (!r) throw new Error(`Platform role '${code}' not found. Run seed-rbac first.`);
+    return r.id;
+  };
+
+  const platformRoleAssignments = [
+    { userIdx: 0, code: "superAdmin" },
+    { userIdx: 1, code: "platformAdmin" },
+    { userIdx: 2, code: "platformSupport" },
+    { userIdx: 3, code: "platformFinance" },
+  ];
+  for (const { userIdx, code } of platformRoleAssignments) {
+    const platformRoleId = await getPlatformRoleId(code);
+    await db.insert(platformUserRoles).values({
+      userId: insertedPlatformUsers[userIdx].id,
+      platformRoleId,
+    });
   }
+  console.log("  Platform role assignments: done");
+
+  // ─── Second demo company ─────────────────────────────────────────────────
+  const [company2] = await db.insert(companies).values({
+    name: "Urban Wheels",
+    slug: "urban-wheels",
+    legalName: "Urban Wheels SRL",
+    email: "info@urbanwheels.demo",
+    phone: "+44-20-7946-0200",
+    country: "GB",
+    currency: "GBP",
+    timezone: "Europe/London",
+    status: "trial",
+  }).returning();
+  console.log(`  Company 2: ${company2.name} (${company2.id})`);
+
+  const [uwBranch] = await db.insert(branches).values({
+    name: "City Centre",
+    companyId: company2.id,
+  }).returning();
+
+  const [uwOwner] = await db.insert(users).values({
+    email: "owner@urbanwheels.demo",
+    firstName: "Luca",
+    lastName: "Bianchi",
+    passwordHash,
+    isSuperAdmin: false,
+  }).returning();
+
+  const ownerRoleId = await getRoleId("owner");
+  await db.insert(userCompanyMemberships).values({
+    userId: uwOwner.id,
+    companyId: company2.id,
+    roleId: ownerRoleId,
+    status: "active",
+  });
+
+  const uwAssetData = Array.from({ length: 10 }, (_, i) => ({
+    companyId: company2.id,
+    branchId: uwBranch.id,
+    assetType: (["bike", "ebike", "scooter", "escooter"] as const)[i % 4],
+    brand: ["Trek", "Xiaomi"][i % 2],
+    model: ["City 3", "Mi Electric"][i % 2],
+    serialNumber: `UW-SN-${String(100 + i)}`,
+    internalCode: `UW-${String(i + 1).padStart(3, "0")}`,
+    status: i < 7 ? "available" as const : "maintenance" as const,
+    isPublic: true,
+  }));
+  await db.insert(assets).values(uwAssetData);
+  console.log(`  Urban Wheels assets: ${uwAssetData.length}`);
+
+  console.log("\n✅ Demo seed complete!");
+  console.log("\n╔══════════════════════════════════════════════════════════════╗");
+  console.log("║              DEMO CREDENTIALS  (password: demo1234)          ║");
+  console.log("╠══════════════════════════════════════════════════════════════╣");
+  console.log("║  PLATFORM ADMIN                                              ║");
+  console.log("║  superadmin@platform.demo    → Super Admin (full access)     ║");
+  console.log("║  platformadmin@platform.demo → Platform Admin                ║");
+  console.log("║  support@platform.demo       → Platform Support (read-only)  ║");
+  console.log("║  finance@platform.demo       → Platform Finance              ║");
+  console.log("╠══════════════════════════════════════════════════════════════╣");
+  console.log("║  VELOCITY RIDES (active tenant, US)                          ║");
+  console.log("║  owner@velocityrides.demo    → Owner (full company access)   ║");
+  console.log("║  admin@velocityrides.demo    → Admin                         ║");
+  console.log("║  manager@velocityrides.demo  → Manager (Downtown Hub)        ║");
+  console.log("║  operator@velocityrides.demo → Operator (University Campus)  ║");
+  console.log("║  mechanic@velocityrides.demo → Mechanic (Downtown Hub)       ║");
+  console.log("║  viewer@velocityrides.demo   → Viewer (read-only)            ║");
+  console.log("║  accountant@velocityrides.demo → Accountant                  ║");
+  console.log("╠══════════════════════════════════════════════════════════════╣");
+  console.log("║  URBAN WHEELS (trial tenant, UK)                             ║");
+  console.log("║  owner@urbanwheels.demo      → Owner                         ║");
+  console.log("╚══════════════════════════════════════════════════════════════╝");
 }
 
 async function main() {
@@ -425,22 +531,38 @@ async function main() {
   if (mode === "demo") {
     await seedDemo();
   } else if (mode === "reset") {
-    console.log(`🔄 Resetting demo tenant (${DEMO_SLUG})...`);
-    const [existing] = await db.select().from(companies).where(eq(companies.slug, DEMO_SLUG)).limit(1);
-    if (existing) {
-      const { sql } = await import("drizzle-orm");
-      const tables = await db.execute<{ tablename: string }>(
-        sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('__drizzle_migrations', 'roles', 'permissions', 'role_permissions')`,
-      );
-      for (const { tablename } of tables.rows) {
-        try {
-          await db.execute(sql.raw(`DELETE FROM "${tablename}" WHERE company_id = '${existing.id}'`));
-        } catch {}
+    console.log("🔄 Resetting all demo data...");
+    const { sql } = await import("drizzle-orm");
+
+    const demoSlugs = ["velocity-rides", "urban-wheels"];
+    for (const slug of demoSlugs) {
+      const [existing] = await db.select().from(companies).where(eq(companies.slug, slug)).limit(1);
+      if (existing) {
+        const tables = await db.execute<{ tablename: string }>(
+          sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('__drizzle_migrations', 'roles', 'permissions', 'role_permissions', 'platform_roles', 'saas_plans')`,
+        );
+        for (const { tablename } of tables.rows) {
+          try {
+            await db.execute(sql.raw(`DELETE FROM "${tablename}" WHERE company_id = '${existing.id}'`));
+          } catch {}
+        }
+        await db.execute(sql.raw(`DELETE FROM "users" WHERE email LIKE '%@${slug.replace("-", "")}.demo' OR email LIKE '%@${slug.split("-").join("")}.demo'`));
+        await db.execute(sql.raw(`DELETE FROM "companies" WHERE id = '${existing.id}'`));
+        console.log(`  Cleared: ${slug}`);
       }
-      await db.execute(sql.raw(`DELETE FROM "users" WHERE email LIKE '%@velocityrides.demo'`));
-      await db.execute(sql.raw(`DELETE FROM "companies" WHERE id = '${existing.id}'`));
-      console.log("  Old demo data cleared.");
     }
+
+    await db.execute(sql`
+      DELETE FROM "platform_user_roles"
+      WHERE user_id IN (
+        SELECT id FROM "users"
+        WHERE email LIKE '%@platform.demo'
+           OR email LIKE '%@velocityrides.demo'
+           OR email LIKE '%@urbanwheels.demo'
+      )
+    `);
+    await db.execute(sql`DELETE FROM "users" WHERE email LIKE '%@platform.demo' OR email LIKE '%@velocityrides.demo' OR email LIKE '%@urbanwheels.demo'`);
+    console.log("  Platform users cleared.");
     await seedDemo();
   } else {
     console.error(`Unknown mode: ${mode}. Use 'demo' or 'reset'.`);
