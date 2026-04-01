@@ -66,7 +66,13 @@
     "analytics": "Analytics",
     "whiteLabel": "White Label",
     "platformAdmin": "Platform Admin",
-    "platformAdminMode": "Platform Admin Mode"
+    "platformAdminMode": "Platform Admin Mode",
+    "companyPanel": "Company Panel",
+    "fleet": "Fleet",
+    "rentals": "Rentals",
+    "clients": "Clients",
+    "branches": "Branches",
+    "settings": "Settings"
   },
   "lang": {
     "en": "English",

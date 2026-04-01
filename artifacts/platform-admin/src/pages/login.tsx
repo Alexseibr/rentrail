@@ -10,10 +10,10 @@ import { ApiError } from "@/lib/api";
 type Step = "phone" | "password" | "otp" | "set-password";
 
 const DEMO_ACCOUNTS = [
-  { label: "Super Admin",    phone: "+79990000001", color: "bg-violet-600 hover:bg-violet-700" },
-  { label: "Platform Admin", phone: "+79990000002", color: "bg-blue-600 hover:bg-blue-700" },
-  { label: "Support",        phone: "+79990000003", color: "bg-sky-600 hover:bg-sky-700" },
-  { label: "Finance",        phone: "+79990000004", color: "bg-emerald-600 hover:bg-emerald-700" },
+  { label: "Velocity Rides (Owner)", phone: "+79991000001", color: "bg-blue-600 hover:bg-blue-700" },
+  { label: "Velocity Rides (Admin)", phone: "+79991000002", color: "bg-sky-600 hover:bg-sky-700" },
+  { label: "Urban Wheels (Owner)",   phone: "+79991000008", color: "bg-emerald-600 hover:bg-emerald-700" },
+  { label: "Velocity Rides (Operator)", phone: "+79991000004", color: "bg-amber-600 hover:bg-amber-700" },
 ];
 
 const DEMO_PASSWORD = "demo1234";

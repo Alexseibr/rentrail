@@ -16,8 +16,16 @@ import BlacklistPage from "@/pages/blacklist";
 import DiagnosticsPage from "@/pages/diagnostics";
 import AnalyticsPage from "@/pages/analytics";
 import WhiteLabelPage from "@/pages/white-label";
+import FleetPage from "@/pages/fleet";
+import RentalsCompanyPage from "@/pages/rentals-company";
+import ClientsCompanyPage from "@/pages/clients-company";
+import BranchesPage from "@/pages/branches";
+import SettingsCompanyPage from "@/pages/settings-company";
 import NotFound from "@/pages/not-found";
 import { Spinner } from "@/components/ui/spinner";
+import { useMemo } from "react";
+
+const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,22 +36,50 @@ const queryClient = new QueryClient({
   },
 });
 
+function PlatformRoutes() {
+  return (
+    <Switch>
+      <Route path="/" component={DashboardPage} />
+      <Route path="/companies" component={CompaniesPage} />
+      <Route path="/companies/:id" component={CompanyDetailPage} />
+      <Route path="/billing" component={BillingPage} />
+      <Route path="/billing/subscriptions/:id" component={SubscriptionDetailPage} />
+      <Route path="/billing/invoices/:id" component={InvoiceDetailPage} />
+      <Route path="/blacklist" component={BlacklistPage} />
+      <Route path="/diagnostics" component={DiagnosticsPage} />
+      <Route path="/analytics" component={AnalyticsPage} />
+      <Route path="/white-label" component={WhiteLabelPage} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function CompanyRoutes() {
+  return (
+    <Switch>
+      <Route path="/" component={FleetPage} />
+      <Route path="/fleet" component={FleetPage} />
+      <Route path="/rentals" component={RentalsCompanyPage} />
+      <Route path="/clients" component={ClientsCompanyPage} />
+      <Route path="/branches" component={BranchesPage} />
+      <Route path="/settings" component={SettingsCompanyPage} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
 function AuthenticatedApp() {
+  const { user } = useAuth();
+
+  const isPlatformUser = useMemo(() => {
+    if (!user) return false;
+    if (user.isSuperAdmin) return true;
+    return (user.platformRoles || []).some((r) => PLATFORM_ROLES.includes(r));
+  }, [user]);
+
   return (
     <AppLayout>
-      <Switch>
-        <Route path="/" component={DashboardPage} />
-        <Route path="/companies" component={CompaniesPage} />
-        <Route path="/companies/:id" component={CompanyDetailPage} />
-        <Route path="/billing" component={BillingPage} />
-        <Route path="/billing/subscriptions/:id" component={SubscriptionDetailPage} />
-        <Route path="/billing/invoices/:id" component={InvoiceDetailPage} />
-        <Route path="/blacklist" component={BlacklistPage} />
-        <Route path="/diagnostics" component={DiagnosticsPage} />
-        <Route path="/analytics" component={AnalyticsPage} />
-        <Route path="/white-label" component={WhiteLabelPage} />
-        <Route component={NotFound} />
-      </Switch>
+      {isPlatformUser ? <PlatformRoutes /> : <CompanyRoutes />}
     </AppLayout>
   );
 }

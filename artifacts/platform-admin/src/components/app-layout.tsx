@@ -13,13 +13,26 @@ import {
   ChevronLeft,
   ChevronRight,
   Languages,
+  Bike,
+  Users,
+  ClipboardList,
+  MapPin,
+  Settings,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+interface NavItem {
+  path: string;
+  labelKey: string;
+  icon: typeof LayoutDashboard;
+  roles?: string[] | null;
+}
+
+const platformNavItems: NavItem[] = [
   { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: null },
   { path: "/companies", labelKey: "nav.companies", icon: Building2, roles: ["superAdmin", "platformAdmin", "platformSupport"] },
   { path: "/billing", labelKey: "nav.billing", icon: CreditCard, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
@@ -27,7 +40,18 @@ const navItems = [
   { path: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity, roles: ["superAdmin", "platformAdmin"] },
   { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
   { path: "/white-label", labelKey: "nav.whiteLabel", icon: Palette, roles: ["superAdmin", "platformAdmin"] },
-] as const;
+];
+
+const companyNavItems: NavItem[] = [
+  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/fleet", labelKey: "nav.fleet", icon: Bike },
+  { path: "/rentals", labelKey: "nav.rentals", icon: ClipboardList },
+  { path: "/clients", labelKey: "nav.clients", icon: Users },
+  { path: "/branches", labelKey: "nav.branches", icon: MapPin },
+  { path: "/settings", labelKey: "nav.settings", icon: Settings },
+];
+
+const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout, hasTenantMemberships } = useAuth();
@@ -35,9 +59,34 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
+  const isPlatformUser = useMemo(() => {
+    if (!user) return false;
+    if (user.isSuperAdmin) return true;
+    return (user.platformRoles || []).some((r) => PLATFORM_ROLES.includes(r));
+  }, [user]);
+
+  const companyName = useMemo(() => {
+    if (!user?.memberships?.length) return null;
+    return user.memberships[0].companyName || user.memberships[0].roleName || null;
+  }, [user]);
+
+  const navItems = useMemo(() => {
+    if (isPlatformUser) {
+      return platformNavItems.filter((item) => {
+        if (!item.roles) return true;
+        if (user?.isSuperAdmin) return true;
+        const userRoles = user?.platformRoles || [];
+        return item.roles.some((r) => userRoles.includes(r));
+      });
+    }
+    return companyNavItems;
+  }, [isPlatformUser, user]);
+
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
   };
+
+  const headerTitle = isPlatformUser ? t("nav.platformAdmin") : (companyName || t("nav.companyPanel"));
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -50,10 +99,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-2 border-b px-4 h-14">
           {!collapsed && (
             <div className="min-w-0">
-              <span className="font-semibold text-sm truncate block">{t("nav.platformAdmin")}</span>
-              {hasTenantMemberships && (
+              <span className="font-semibold text-sm truncate block">{headerTitle}</span>
+              {isPlatformUser && hasTenantMemberships && (
                 <Badge variant="outline" className="text-[10px] h-4 px-1">
                   {t("nav.platformAdminMode")}
+                </Badge>
+              )}
+              {!isPlatformUser && user?.memberships?.[0]?.roleCode && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1">
+                  {user.memberships[0].roleCode}
                 </Badge>
               )}
             </div>
@@ -69,14 +123,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
-          {navItems
-            .filter((item) => {
-              if (!item.roles) return true;
-              if (user?.isSuperAdmin) return true;
-              const userRoles = user?.platformRoles || [];
-              return item.roles.some((r) => userRoles.includes(r));
-            })
-            .map((item) => {
+          {navItems.map((item) => {
             const active =
               item.path === "/"
                 ? location === "/" || location === ""

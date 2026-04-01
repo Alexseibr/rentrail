@@ -9,7 +9,7 @@ interface User {
   lastName: string;
   isSuperAdmin: boolean;
   platformRoles: string[];
-  memberships?: Array<{ companyId: string; roleCode: string }>;
+  memberships?: Array<{ companyId: string; companyName?: string; roleCode: string; roleName?: string }>;
 }
 
 interface AuthContextType {
@@ -32,7 +32,9 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function checkPlatformAccess(user: User | null): boolean {
   if (!user) return false;
   if (user.isSuperAdmin) return true;
-  return (user.platformRoles || []).some((r) => PLATFORM_ROLES.includes(r));
+  if ((user.platformRoles || []).some((r) => PLATFORM_ROLES.includes(r))) return true;
+  if ((user.memberships || []).length > 0) return true;
+  return false;
 }
 
 function parseUser(profile: Record<string, unknown>): User {

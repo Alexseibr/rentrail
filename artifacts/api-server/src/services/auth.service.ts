@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
-import { db, users, sessions, userCompanyMemberships, userBranchMemberships, roles } from "@workspace/db";
+import { db, users, sessions, userCompanyMemberships, userBranchMemberships, roles, companies } from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { config } from "../lib/config";
@@ -255,6 +255,7 @@ export async function getCurrentUser(userId: string) {
   const memberships = await db
     .select({
       companyId: userCompanyMemberships.companyId,
+      companyName: companies.name,
       roleId: userCompanyMemberships.roleId,
       roleCode: roles.code,
       roleName: roles.name,
@@ -262,6 +263,7 @@ export async function getCurrentUser(userId: string) {
     })
     .from(userCompanyMemberships)
     .innerJoin(roles, eq(roles.id, userCompanyMemberships.roleId))
+    .innerJoin(companies, eq(companies.id, userCompanyMemberships.companyId))
     .where(eq(userCompanyMemberships.userId, userId));
 
   const branchMemberships = await db

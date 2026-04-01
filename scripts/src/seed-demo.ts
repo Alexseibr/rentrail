@@ -422,8 +422,9 @@ async function seedDemo() {
   console.log(`  Telemetry events: ${telEvents.length}`);
 
   // ─── Platform admin users ────────────────────────────────────────────────
+  const superAdminHash = await hash("39903990");
   const platformUserData = [
-    { email: "superadmin@platform.demo",    phone: "+79990000001", phoneVerified: true, firstName: "Alex",  lastName: "Platform", passwordHash, isSuperAdmin: true  as const },
+    { email: "superadmin@platform.demo",    phone: "+375298971111", phoneVerified: true, firstName: "Admin",  lastName: "Platform", passwordHash: superAdminHash, isSuperAdmin: true  as const },
     { email: "platformadmin@platform.demo", phone: "+79990000002", phoneVerified: true, firstName: "Diana", lastName: "Admin",    passwordHash, isSuperAdmin: false as const },
     { email: "support@platform.demo",       phone: "+79990000003", phoneVerified: true, firstName: "Kevin", lastName: "Support",  passwordHash, isSuperAdmin: false as const },
     { email: "finance@platform.demo",       phone: "+79990000004", phoneVerified: true, firstName: "Olga",  lastName: "Finance",  passwordHash, isSuperAdmin: false as const },
@@ -505,15 +506,17 @@ async function seedDemo() {
 
   console.log("\n✅ Demo seed complete!");
   console.log("\n╔══════════════════════════════════════════════════════════════════════════╗");
-  console.log("║           DEMO CREDENTIALS  (phone login, password: demo1234)           ║");
+  console.log("║                         DEMO CREDENTIALS                                 ║");
   console.log("╠══════════════════════════════════════════════════════════════════════════╣");
-  console.log("║  PLATFORM ADMIN                                                          ║");
-  console.log("║  +7 999 000 0001  (Super Admin)        superadmin@platform.demo          ║");
+  console.log("║  SUPER ADMIN (password: 39903990)                                        ║");
+  console.log("║  +375 29 897 1111                      superadmin@platform.demo          ║");
+  console.log("╠══════════════════════════════════════════════════════════════════════════╣");
+  console.log("║  PLATFORM STAFF (password: demo1234)                                     ║");
   console.log("║  +7 999 000 0002  (Platform Admin)     platformadmin@platform.demo       ║");
   console.log("║  +7 999 000 0003  (Support)            support@platform.demo             ║");
   console.log("║  +7 999 000 0004  (Finance)            finance@platform.demo             ║");
   console.log("╠══════════════════════════════════════════════════════════════════════════╣");
-  console.log("║  VELOCITY RIDES (active tenant, US)                                      ║");
+  console.log("║  VELOCITY RIDES (active tenant, password: demo1234)                      ║");
   console.log("║  +7 999 100 0001  (Owner)              owner@velocityrides.demo          ║");
   console.log("║  +7 999 100 0002  (Admin)              admin@velocityrides.demo          ║");
   console.log("║  +7 999 100 0003  (Manager)            manager@velocityrides.demo        ║");
@@ -522,7 +525,7 @@ async function seedDemo() {
   console.log("║  +7 999 100 0006  (Viewer)             viewer@velocityrides.demo         ║");
   console.log("║  +7 999 100 0007  (Accountant)         accountant@velocityrides.demo     ║");
   console.log("╠══════════════════════════════════════════════════════════════════════════╣");
-  console.log("║  URBAN WHEELS (trial tenant, UK)                                         ║");
+  console.log("║  URBAN WHEELS (trial tenant, password: demo1234)                         ║");
   console.log("║  +7 999 100 0008  (Owner)              owner@urbanwheels.demo            ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════╝");
 }

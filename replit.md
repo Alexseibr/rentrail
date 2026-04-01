@@ -29,8 +29,11 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 - **Analytics:** Platform-wide metrics, risk overview, top tenants by rentals and assets
 - **White Label:** Per-company white-label settings management (custom domain, branding, colors, support contacts)
 - **i18n:** Full bilingual support (Russian default, English). Uses i18next + react-i18next, language stored in localStorage(`i18n_lang`), toggle in sidebar
+- **Dual-mode UI:** Platform users (superAdmin, platformAdmin, etc.) see platform management views (Companies, Billing, Diagnostics, Analytics, White Label). Company users (owner, admin, operator, etc.) see company management views (Fleet, Rentals, Clients, Branches, Settings). Navigation and routes switch based on user type.
 - **Routing:** wouter with sidebar navigation, `/platform-admin/` base path
 - **API Proxy:** Vite dev proxy forwards `/platform-admin/api/` to API server on port 8080
+- **Super Admin credentials:** +375298971111 / 39903990
+- **Demo company access:** demo buttons on login page (Velocity Rides Owner/Admin, Urban Wheels Owner, Velocity Rides Operator), password: demo1234
 
 ### Technical Implementations
 - **Multi-Tenancy:** Enforced via an `x-company-id` header and `companyId` filtering on all database queries.
