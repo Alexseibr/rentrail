@@ -21,6 +21,7 @@ import { useNetwork } from "@/services/network";
 import { CameraView, useCameraPermissions } from "expo-camera";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const YELLOW = "#F5C518";
 
 export default function ScannerScreen() {
   const { t } = useTranslation();
@@ -101,22 +102,24 @@ export default function ScannerScreen() {
 
   if (!permission) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} />
+      <View style={[styles.center, { backgroundColor: "#1a1a1a" }]}>
+        <ActivityIndicator color={YELLOW} />
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Feather name="camera-off" size={48} color={colors.mutedForeground} />
-        <Text style={[styles.permText, { color: colors.foreground }]}>{t("scanner.cameraAccessNeeded")}</Text>
-        <Text style={[styles.permSub, { color: colors.mutedForeground }]}>
+      <View style={[styles.center, { backgroundColor: "#1a1a1a" }]}>
+        <View style={styles.permIconWrap}>
+          <Feather name="camera-off" size={48} color="rgba(255,255,255,0.4)" />
+        </View>
+        <Text style={styles.permText}>{t("scanner.cameraAccessNeeded")}</Text>
+        <Text style={styles.permSub}>
           {t("scanner.allowCameraDescription")}
         </Text>
         <TouchableOpacity
-          style={[styles.permBtn, { backgroundColor: colors.primary }]}
+          style={styles.permBtn}
           onPress={requestPermission}
         >
           <Text style={styles.permBtnText}>{t("scanner.allowCamera")}</Text>
@@ -149,7 +152,7 @@ export default function ScannerScreen() {
 
         {resolving && (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator color="#fff" size="large" />
+            <ActivityIndicator color={YELLOW} size="large" />
             <Text style={styles.loadingText}>{t("scanner.resolving")}</Text>
           </View>
         )}
@@ -160,21 +163,21 @@ export default function ScannerScreen() {
             <TextInput
               style={styles.manualInput}
               placeholder={t("scanner.assetCode")}
-              placeholderTextColor="rgba(255,255,255,0.5)"
+              placeholderTextColor="rgba(255,255,255,0.4)"
               value={manualCode}
               onChangeText={setManualCode}
               autoCapitalize="none"
             />
             <TouchableOpacity
-              style={[styles.submitBtn, { backgroundColor: colors.primary }]}
+              style={styles.submitBtn}
               onPress={handleManualSubmit}
             >
-              <Feather name="search" size={18} color="#fff" />
+              <Feather name="search" size={18} color="#1a1a1a" />
             </TouchableOpacity>
           </View>
           {scanned && !resolving && (
             <TouchableOpacity onPress={() => setScanned(false)}>
-              <Text style={[styles.rescanText, { color: colors.primary }]}>{t("scanner.scanAgain")}</Text>
+              <Text style={styles.rescanText}>{t("scanner.scanAgain")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -185,52 +188,73 @@ export default function ScannerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
-  permText: { fontSize: 18, fontFamily: "Inter_600SemiBold", marginTop: 16 },
-  permSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 40 },
-  permBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10, marginTop: 12 },
-  permBtnText: { color: "#fff", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16, paddingHorizontal: 40 },
+  permIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  permText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#ffffff", textAlign: "center" },
+  permSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", color: "rgba(255,255,255,0.5)" },
+  permBtn: {
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 8,
+    backgroundColor: YELLOW,
+  },
+  permBtnText: { color: "#1a1a1a", fontSize: 15, fontFamily: "Inter_700Bold" },
   overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "space-between" },
   backBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 16,
   },
   frame: {
-    width: 250,
-    height: 250,
+    width: 260,
+    height: 260,
     alignSelf: "center",
     position: "relative",
   },
   corner: {
     position: "absolute",
-    width: 30,
-    height: 30,
-    borderColor: "#fff",
+    width: 36,
+    height: 36,
+    borderColor: YELLOW,
   },
-  tl: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
-  tr: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
-  bl: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
-  br: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
-  loadingWrap: { position: "absolute", top: "50%", alignSelf: "center", alignItems: "center", gap: 8 },
+  tl: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 },
+  tr: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
+  bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
+  br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
+  loadingWrap: { position: "absolute", top: "50%", alignSelf: "center", alignItems: "center", gap: 10 },
   loadingText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
-  manualWrap: { paddingHorizontal: 24, gap: 8 },
-  manualLabel: { color: "rgba(255,255,255,0.7)", fontSize: 13, fontFamily: "Inter_500Medium" },
+  manualWrap: { paddingHorizontal: 24, gap: 10 },
+  manualLabel: { color: "rgba(255,255,255,0.6)", fontSize: 13, fontFamily: "Inter_500Medium" },
   manualRow: { flexDirection: "row", gap: 8 },
   manualInput: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 14,
     paddingHorizontal: 14,
-    height: 44,
+    height: 48,
     color: "#fff",
     fontSize: 15,
     fontFamily: "Inter_400Regular",
   },
-  submitBtn: { width: 44, height: 44, borderRadius: 10, justifyContent: "center", alignItems: "center" },
-  rescanText: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center", marginTop: 4 },
+  submitBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: YELLOW,
+  },
+  rescanText: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center", marginTop: 4, color: YELLOW },
 });

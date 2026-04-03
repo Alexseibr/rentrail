@@ -58,7 +58,7 @@ export default function OperationsScreen() {
             <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
               {section.title}
             </Text>
-            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.sectionCard, { backgroundColor: colors.card }]}>
               {section.items.map((item, idx) => (
                 <TouchableOpacity
                   key={item.label}
@@ -72,7 +72,9 @@ export default function OperationsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Feather name={item.icon} size={20} color={colors.primary} />
+                  <View style={[styles.rowIconWrap, { backgroundColor: colors.primary + "18" }]}>
+                    <Feather name={item.icon} size={18} color={colors.primary} />
+                  </View>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
                   {item.badge ? (
                     <View style={[styles.badge, { backgroundColor: colors.warning }]}>
@@ -98,16 +100,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase" as const,
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    letterSpacing: 1,
+    marginBottom: 10,
     marginLeft: 4,
   },
-  sectionCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  sectionCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
     gap: 12,
+  },
+  rowIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   rowLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium" },
   badge: {
@@ -118,5 +135,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 6,
   },
-  badgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  badgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
 });

@@ -19,12 +19,12 @@ import { useAuth } from "@/contexts/AuthContext";
 type Step = "phone" | "password" | "otp" | "set-password";
 
 const DEMO_ACCOUNTS = [
-  { label: "Owner",    phone: "+79991000001", color: "#7c3aed" },
-  { label: "Admin",    phone: "+79991000002", color: "#2563eb" },
-  { label: "Manager",  phone: "+79991000003", color: "#0891b2" },
-  { label: "Operator", phone: "+79991000004", color: "#059669" },
-  { label: "Mechanic", phone: "+79991000005", color: "#d97706" },
-  { label: "Viewer",   phone: "+79991000006", color: "#64748b" },
+  { label: "Owner",    phone: "+79991000001" },
+  { label: "Admin",    phone: "+79991000002" },
+  { label: "Manager",  phone: "+79991000003" },
+  { label: "Operator", phone: "+79991000004" },
+  { label: "Mechanic", phone: "+79991000005" },
+  { label: "Viewer",   phone: "+79991000006" },
 ];
 
 const DEMO_PASSWORD = "demo1234";
@@ -154,44 +154,44 @@ export default function LoginScreen() {
       contentContainerStyle={[
         styles.scrollContent,
         {
-          backgroundColor: colors.background,
           paddingTop: Platform.OS === "web" ? 67 + insets.top : insets.top + 40,
           paddingBottom: insets.bottom + 24,
         },
       ]}
       keyboardShouldPersistTaps="handled"
+      style={{ backgroundColor: "#1a1a1a" }}
     >
       <View style={styles.logoWrap}>
-        <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-          <Feather name="truck" size={32} color="#fff" />
+        <View style={styles.logoCircle}>
+          <Feather name="truck" size={32} color="#1a1a1a" />
         </View>
-        <Text style={[styles.title, { color: colors.foreground }]}>{t("login.staffPortal")}</Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+        <Text style={styles.brandName}>RideFlow</Text>
+        <Text style={styles.subtitle}>
           {stepTitle[step]}
         </Text>
         {step !== "phone" && (
-          <Text style={[styles.stepHint, { color: colors.mutedForeground }]}>
+          <Text style={styles.stepHint}>
             {stepSubtitle[step]}
           </Text>
         )}
       </View>
 
-      <View style={styles.form}>
+      <View style={styles.formCard}>
         {error && (
-          <View style={[styles.errorBanner, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "30" }]}>
-            <Feather name="alert-circle" size={16} color={colors.destructive} />
-            <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+          <View style={styles.errorBanner}>
+            <Feather name="alert-circle" size={16} color="#E53935" />
+            <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
 
         {step === "phone" && (
           <>
-            <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              <Feather name="phone" size={18} color={colors.mutedForeground} />
+            <View style={styles.inputWrap}>
+              <Feather name="phone" size={18} color="#8c8c8c" />
               <TextInput
-                style={[styles.input, { color: colors.foreground }]}
+                style={styles.input}
                 placeholder="+7 999 100 0001"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor="#bbb"
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -201,7 +201,7 @@ export default function LoginScreen() {
               />
             </View>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.primary, opacity: busy || !phone.trim() ? 0.6 : 1 }]}
+              style={[styles.button, { opacity: busy || !phone.trim() ? 0.6 : 1 }]}
               onPress={handlePhoneContinue}
               disabled={busy || !phone.trim()}
               activeOpacity={0.8}
@@ -213,12 +213,12 @@ export default function LoginScreen() {
 
         {step === "password" && (
           <>
-            <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              <Feather name="lock" size={18} color={colors.mutedForeground} />
+            <View style={styles.inputWrap}>
+              <Feather name="lock" size={18} color="#8c8c8c" />
               <TextInput
-                style={[styles.input, { color: colors.foreground }]}
+                style={styles.input}
                 placeholder={t("login.password")}
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor="#bbb"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -226,23 +226,23 @@ export default function LoginScreen() {
                 autoCorrect={false}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
+                <Feather name={showPassword ? "eye-off" : "eye"} size={18} color="#8c8c8c" />
               </TouchableOpacity>
             </View>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.primary, opacity: busy ? 0.7 : 1 }]}
+              style={[styles.button, { opacity: busy ? 0.7 : 1 }]}
               onPress={handlePasswordLogin}
               disabled={busy}
               activeOpacity={0.8}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>{t("login.signIn")}</Text>}
+              {loading ? <ActivityIndicator color="#1a1a1a" size="small" /> : <Text style={styles.buttonText}>{t("login.signIn")}</Text>}
             </TouchableOpacity>
             <View style={styles.row}>
               <TouchableOpacity onPress={() => { setStep("phone"); setError(null); }}>
-                <Text style={[styles.linkText, { color: colors.mutedForeground }]}>← {t("login.changeNumber")}</Text>
+                <Text style={styles.linkTextLight}>{"\u2190"} {t("login.changeNumber")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
-                <Text style={[styles.linkText, { color: colors.primary, opacity: busy ? 0.5 : 1 }]}>
+                <Text style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}>
                   {loading ? t("login.sending") : t("login.getSmsCode")}
                 </Text>
               </TouchableOpacity>
@@ -253,17 +253,17 @@ export default function LoginScreen() {
         {step === "otp" && (
           <>
             {devCode && (
-              <View style={[styles.devBanner, { backgroundColor: "#fef3c7", borderColor: "#fcd34d" }]}>
+              <View style={styles.devBanner}>
                 <Text style={styles.devText}>{t("login.devModeCode")} <Text style={styles.devCode}>{devCode}</Text></Text>
               </View>
             )}
-            <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              <Feather name="hash" size={18} color={colors.mutedForeground} />
+            <View style={styles.inputWrap}>
+              <Feather name="hash" size={18} color="#8c8c8c" />
               <TextInput
                 ref={otpRef}
-                style={[styles.input, styles.otpInput, { color: colors.foreground }]}
+                style={[styles.input, styles.otpInput]}
                 placeholder="000000"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor="#bbb"
                 value={otpCode}
                 onChangeText={(v) => setOtpCode(v.replace(/\D/g, "").slice(0, 6))}
                 keyboardType="number-pad"
@@ -272,19 +272,19 @@ export default function LoginScreen() {
               />
             </View>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.primary, opacity: busy || otpCode.length !== 6 ? 0.6 : 1 }]}
+              style={[styles.button, { opacity: busy || otpCode.length !== 6 ? 0.6 : 1 }]}
               onPress={handleVerifyOtp}
               disabled={busy || otpCode.length !== 6}
               activeOpacity={0.8}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>{t("login.verifyCode")}</Text>}
+              {loading ? <ActivityIndicator color="#1a1a1a" size="small" /> : <Text style={styles.buttonText}>{t("login.verifyCode")}</Text>}
             </TouchableOpacity>
             <View style={styles.row}>
               <TouchableOpacity onPress={() => { setStep("password"); setError(null); }}>
-                <Text style={[styles.linkText, { color: colors.mutedForeground }]}>← {t("login.back")}</Text>
+                <Text style={styles.linkTextLight}>{"\u2190"} {t("login.back")}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
-                <Text style={[styles.linkText, { color: colors.primary, opacity: busy ? 0.5 : 1 }]}>{t("login.resendCode")}</Text>
+                <Text style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}>{t("login.resendCode")}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -292,12 +292,12 @@ export default function LoginScreen() {
 
         {step === "set-password" && (
           <>
-            <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              <Feather name="lock" size={18} color={colors.mutedForeground} />
+            <View style={styles.inputWrap}>
+              <Feather name="lock" size={18} color="#8c8c8c" />
               <TextInput
-                style={[styles.input, { color: colors.foreground }]}
+                style={styles.input}
                 placeholder={t("login.minChars")}
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor="#bbb"
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -307,38 +307,38 @@ export default function LoginScreen() {
               />
             </View>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: colors.primary, opacity: busy || newPassword.length < 6 ? 0.6 : 1 }]}
+              style={[styles.button, { opacity: busy || newPassword.length < 6 ? 0.6 : 1 }]}
               onPress={handleSetPassword}
               disabled={busy || newPassword.length < 6}
               activeOpacity={0.8}
             >
-              {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>{t("login.setPasswordContinue")}</Text>}
+              {loading ? <ActivityIndicator color="#1a1a1a" size="small" /> : <Text style={styles.buttonText}>{t("login.setPasswordContinue")}</Text>}
             </TouchableOpacity>
           </>
         )}
       </View>
 
-      <View style={[styles.demoBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <Text style={[styles.demoTitle, { color: colors.mutedForeground }]}>{t("login.demoTapToEnter")}</Text>
+      <View style={styles.demoBox}>
+        <Text style={styles.demoTitle}>{t("login.demoTapToEnter")}</Text>
         <View style={styles.demoGrid}>
           {DEMO_ACCOUNTS.map((acc) => (
             <TouchableOpacity
               key={acc.phone}
-              style={[styles.demoBtn, { backgroundColor: acc.color }]}
+              style={styles.demoBtn}
               onPress={() => handleDemoLogin(acc.phone)}
               disabled={busy}
               activeOpacity={0.8}
             >
               {demoLoading === acc.phone ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color="#1a1a1a" size="small" />
               ) : (
                 <Text style={styles.demoBtnText}>{acc.label}</Text>
               )}
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={[styles.demoHint, { color: colors.mutedForeground }]}>
-          {t("login.demoHint")} <Text style={{ fontFamily: "Inter_600SemiBold" }}>demo1234</Text>
+        <Text style={styles.demoHint}>
+          {t("login.demoHint")} <Text style={{ fontFamily: "Inter_700Bold" }}>demo1234</Text>
         </Text>
       </View>
     </ScrollView>
@@ -347,34 +347,90 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, justifyContent: "center" },
-  logoWrap: { alignItems: "center", marginBottom: 40 },
-  logoCircle: { width: 72, height: 72, borderRadius: 36, justifyContent: "center", alignItems: "center", marginBottom: 16 },
-  title: { fontSize: 24, fontFamily: "Inter_700Bold" },
-  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: 4 },
-  stepHint: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 4 },
-  form: { gap: 14 },
-  errorBanner: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    padding: 12, borderRadius: 10, borderWidth: 1,
+  logoWrap: { alignItems: "center", marginBottom: 32 },
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: "#F5C518",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  errorText: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
-  devBanner: { padding: 12, borderRadius: 10, borderWidth: 1 },
-  devText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#92400e" },
+  brandName: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#ffffff" },
+  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: 6, color: "rgba(255,255,255,0.6)" },
+  stepHint: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 4, color: "rgba(255,255,255,0.5)" },
+  formCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 24,
+    gap: 14,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#FDEDED",
+  },
+  errorText: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1, color: "#E53935" },
+  devBanner: { padding: 12, borderRadius: 12, backgroundColor: "#FFF8E1" },
+  devText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8B6914" },
   devCode: { fontFamily: "Inter_700Bold", fontSize: 18, letterSpacing: 2 },
   inputWrap: {
-    flexDirection: "row", alignItems: "center", borderWidth: 1,
-    borderRadius: 12, paddingHorizontal: 14, height: 52, gap: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 52,
+    gap: 10,
   },
-  input: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
+  input: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: "#1a1a1a" },
   otpInput: { textAlign: "center", fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: 8 },
-  button: { height: 52, borderRadius: 12, justifyContent: "center", alignItems: "center", marginTop: 8 },
-  buttonText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  button: {
+    height: 52,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+    backgroundColor: "#F5C518",
+  },
+  buttonText: { color: "#1a1a1a", fontSize: 16, fontFamily: "Inter_700Bold" },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
-  linkText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  demoBox: { marginTop: 32, borderWidth: 1, borderRadius: 16, borderStyle: "dashed", padding: 16, gap: 12 },
-  demoTitle: { fontSize: 12, fontFamily: "Inter_500Medium", textAlign: "center", textTransform: "uppercase", letterSpacing: 0.5 },
+  linkTextLight: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#8c8c8c" },
+  linkTextAccent: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#F5C518" },
+  demoBox: {
+    marginTop: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    borderRadius: 20,
+    padding: 20,
+    gap: 14,
+  },
+  demoTitle: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    color: "rgba(255,255,255,0.5)",
+  },
   demoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" },
-  demoBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, minWidth: 90, alignItems: "center" },
-  demoBtnText: { color: "#fff", fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  demoHint: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
+  demoBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    minWidth: 90,
+    alignItems: "center",
+    backgroundColor: "#F5C518",
+  },
+  demoBtnText: { color: "#1a1a1a", fontSize: 13, fontFamily: "Inter_700Bold" },
+  demoHint: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    color: "rgba(255,255,255,0.4)",
+  },
 });

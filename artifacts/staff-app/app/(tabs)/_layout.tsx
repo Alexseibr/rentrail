@@ -71,29 +71,47 @@ function ClassicTabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: true,
+        headerStyle: {
+          backgroundColor: colors.dark,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+        },
+        headerTintColor: "#ffffff",
+        headerTitleStyle: {
+          fontFamily: "Inter_600SemiBold",
+          fontSize: 17,
+        },
         tabBarStyle: {
           position: "absolute" as const,
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: colors.border,
+          backgroundColor: isIOS ? "transparent" : colors.dark,
+          borderTopWidth: 0,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          ...(isWeb ? { height: 84 } : { height: Platform.OS === "android" ? 64 : 88 }),
+          paddingBottom: Platform.OS === "android" ? 8 : undefined,
         },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
               intensity={100}
-              tint={isDark ? "dark" : "light"}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
+                { backgroundColor: colors.dark },
               ]}
             />
           ) : null,
+        tabBarItemStyle: {
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontFamily: "Inter_500Medium",
+          fontSize: 11,
+        },
       }}
     >
       <Tabs.Screen
@@ -101,11 +119,13 @@ function ClassicTabLayout() {
         options={{
           title: t("nav.dashboard"),
           href: canAccessTab(roleCode, "index") ? undefined : null,
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
+              <SymbolView name={focused ? "house.fill" : "house"} tintColor={color} size={24} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <View style={focused ? tabStyles.activeIconWrap : undefined}>
+                <Feather name="home" size={22} color={color} />
+              </View>
             ),
         }}
       />
@@ -114,11 +134,13 @@ function ClassicTabLayout() {
         options={{
           title: t("nav.assets"),
           href: canAccessTab(roleCode, "assets") ? undefined : null,
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
               <SymbolView name="bicycle" tintColor={color} size={24} />
             ) : (
-              <Feather name="grid" size={22} color={color} />
+              <View style={focused ? tabStyles.activeIconWrap : undefined}>
+                <Feather name="grid" size={22} color={color} />
+              </View>
             ),
         }}
       />
@@ -127,11 +149,13 @@ function ClassicTabLayout() {
         options={{
           title: t("nav.rentals"),
           href: canAccessTab(roleCode, "rentals") ? undefined : null,
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="doc.text" tintColor={color} size={24} />
+              <SymbolView name={focused ? "doc.text.fill" : "doc.text"} tintColor={color} size={24} />
             ) : (
-              <Feather name="file-text" size={22} color={color} />
+              <View style={focused ? tabStyles.activeIconWrap : undefined}>
+                <Feather name="file-text" size={22} color={color} />
+              </View>
             ),
         }}
       />
@@ -140,11 +164,13 @@ function ClassicTabLayout() {
         options={{
           title: t("nav.ops"),
           href: canAccessTab(roleCode, "operations") ? undefined : null,
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="wrench.and.screwdriver" tintColor={color} size={24} />
+              <SymbolView name={focused ? "wrench.and.screwdriver.fill" : "wrench.and.screwdriver"} tintColor={color} size={24} />
             ) : (
-              <Feather name="settings" size={22} color={color} />
+              <View style={focused ? tabStyles.activeIconWrap : undefined}>
+                <Feather name="settings" size={22} color={color} />
+              </View>
             ),
         }}
       />
@@ -153,17 +179,28 @@ function ClassicTabLayout() {
         options={{
           title: t("nav.settings"),
           href: canAccessTab(roleCode, "settings") ? undefined : null,
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name="gearshape" tintColor={color} size={24} />
+              <SymbolView name={focused ? "gearshape.fill" : "gearshape"} tintColor={color} size={24} />
             ) : (
-              <Feather name="user" size={22} color={color} />
+              <View style={focused ? tabStyles.activeIconWrap : undefined}>
+                <Feather name="user" size={22} color={color} />
+              </View>
             ),
         }}
       />
     </Tabs>
   );
 }
+
+const tabStyles = StyleSheet.create({
+  activeIconWrap: {
+    backgroundColor: "rgba(245, 197, 24, 0.15)",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+});
 
 export default function TabLayout() {
   if (isLiquidGlassAvailable()) {

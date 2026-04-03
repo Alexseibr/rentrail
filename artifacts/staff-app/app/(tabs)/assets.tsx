@@ -42,12 +42,12 @@ async function fetchAssets(): Promise<Asset[]> {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  available: "#10b981",
-  rented: "#3b82f6",
-  maintenance: "#f59e0b",
-  blocked: "#ef4444",
-  draft: "#6b7280",
-  retired: "#6b7280",
+  available: "#43A047",
+  rented: "#1E88E5",
+  maintenance: "#FF9800",
+  blocked: "#E53935",
+  draft: "#8c8c8c",
+  retired: "#8c8c8c",
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -70,11 +70,11 @@ export default function AssetsScreen() {
 
   const renderItem = ({ item }: { item: Asset }) => (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[styles.card, { backgroundColor: colors.card }]}
       onPress={() => router.push(`/asset/${item.id}`)}
       activeOpacity={0.7}
     >
-      <View style={[styles.typeIcon, { backgroundColor: colors.secondary }]}>
+      <View style={[styles.typeIcon, { backgroundColor: colors.primary + "18" }]}>
         <Feather name={(TYPE_ICONS[item.assetType] ?? "circle") as any} size={18} color={colors.primary} />
       </View>
       <View style={styles.cardContent}>
@@ -85,9 +85,9 @@ export default function AssetsScreen() {
           {item.internalCode ?? item.id.slice(0, 8)}
         </Text>
       </View>
-      <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#6b7280") + "20" }]}>
-        <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#6b7280" }]} />
-        <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#6b7280" }]}>
+      <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
+        <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
+        <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
           {item.status}
         </Text>
       </View>
@@ -128,14 +128,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
     gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   typeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -145,13 +149,13 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusText: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "capitalize" as const },
+  statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
 });

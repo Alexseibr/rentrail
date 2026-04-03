@@ -33,8 +33,8 @@ function RootLayoutNav() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8f9fa" }}>
-        <ActivityIndicator size="large" color="#0f7b6c" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1a1a1a" }}>
+        <ActivityIndicator size="large" color="#F5C518" />
       </View>
     );
   }
@@ -50,7 +50,13 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack screenOptions={{ headerBackTitle: t("common.back") }}>
+    <Stack screenOptions={{
+      headerBackTitle: t("common.back"),
+      headerStyle: { backgroundColor: "#1a1a1a" },
+      headerTintColor: "#ffffff",
+      headerTitleStyle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
+      headerShadowVisible: false,
+    }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />

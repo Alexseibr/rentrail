@@ -39,14 +39,14 @@ async function fetchRentals(): Promise<Rental[]> {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "#10b981",
-  overdue: "#ef4444",
-  completed: "#6b7280",
-  draft: "#6b7280",
-  pending_approval: "#f59e0b",
-  awaiting_payment: "#f59e0b",
-  awaiting_pickup: "#3b82f6",
-  canceled: "#6b7280",
+  active: "#43A047",
+  overdue: "#E53935",
+  completed: "#8c8c8c",
+  draft: "#8c8c8c",
+  pending_approval: "#FF9800",
+  awaiting_payment: "#FF9800",
+  awaiting_pickup: "#1E88E5",
+  canceled: "#8c8c8c",
 };
 
 export default function RentalsScreen() {
@@ -62,11 +62,11 @@ export default function RentalsScreen() {
 
   const renderItem = ({ item }: { item: Rental }) => (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[styles.card, { backgroundColor: colors.card }]}
       onPress={() => router.push(`/rental/${item.id}`)}
       activeOpacity={0.7}
     >
-      <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
+      <View style={[styles.icon, { backgroundColor: colors.primary + "18" }]}>
         <Feather name="file-text" size={18} color={colors.primary} />
       </View>
       <View style={styles.content}>
@@ -77,8 +77,8 @@ export default function RentalsScreen() {
           {new Date(item.createdAt).toLocaleDateString()}
         </Text>
       </View>
-      <View style={[styles.badge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#6b7280") + "20" }]}>
-        <Text style={[styles.badgeText, { color: STATUS_COLORS[item.status] ?? "#6b7280" }]}>
+      <View style={[styles.badge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
+        <Text style={[styles.badgeText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
           {item.status.replace(/_/g, " ")}
         </Text>
       </View>
@@ -119,16 +119,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
     gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  icon: { width: 40, height: 40, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  icon: { width: 42, height: 42, borderRadius: 12, justifyContent: "center", alignItems: "center" },
   content: { flex: 1, gap: 2 },
   title: { fontSize: 15, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
   sub: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
-  badgeText: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "capitalize" as const },
+  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+  badgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
 });

@@ -109,7 +109,7 @@ export default function SettingsScreen() {
             <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
               {section.title}
             </Text>
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
               {section.items.map((item, idx) => (
                 <TouchableOpacity
                   key={item.label}
@@ -121,7 +121,9 @@ export default function SettingsScreen() {
                   disabled={!item.onPress}
                   activeOpacity={item.onPress ? 0.7 : 1}
                 >
-                  <Feather name={item.icon} size={18} color={colors.primary} />
+                  <View style={[styles.rowIconWrap, { backgroundColor: colors.primary + "18" }]}>
+                    <Feather name={item.icon} size={16} color={colors.primary} />
+                  </View>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
                   <Text style={[styles.rowDetail, { color: (item as any).color ?? colors.mutedForeground }]}>
                     {item.detail}
@@ -133,7 +135,7 @@ export default function SettingsScreen() {
         ))}
 
         <TouchableOpacity
-          style={[styles.logoutBtn, { borderColor: colors.destructive }]}
+          style={[styles.logoutBtn, { backgroundColor: colors.destructive + "10" }]}
           onPress={handleLogout}
           activeOpacity={0.7}
         >
@@ -153,12 +155,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase" as const,
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    letterSpacing: 1,
+    marginBottom: 10,
     marginLeft: 4,
   },
-  card: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  card: {
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
   row: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+  rowIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   rowLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium" },
   rowDetail: { fontSize: 13, fontFamily: "Inter_400Regular" },
   logoutBtn: {
@@ -166,9 +183,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    padding: 16,
+    borderRadius: 16,
   },
   logoutText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

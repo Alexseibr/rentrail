@@ -65,6 +65,13 @@ async function fetchDashboard() {
   return { activeRentals, overdueRentals, availableAssets, totalAssets, unreadNotifs };
 }
 
+const STAT_CONFIG = [
+  { key: "activeRentals", icon: "play-circle" as const, colorKey: "primary" as const },
+  { key: "overdue", icon: "alert-triangle" as const, colorKey: "destructive" as const },
+  { key: "available", icon: "check-circle" as const, colorKey: "success" as const },
+  { key: "totalFleet", icon: "grid" as const, colorKey: "info" as const },
+];
+
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const colors = useColors();
@@ -78,11 +85,11 @@ export default function DashboardScreen() {
     staleTime: 30000,
   });
 
-  const stats = [
-    { label: t("dashboard.activeRentals"), value: data?.activeRentals ?? 0, icon: "play-circle" as const, color: colors.primary },
-    { label: t("dashboard.overdue"), value: data?.overdueRentals ?? 0, icon: "alert-triangle" as const, color: colors.destructive },
-    { label: t("dashboard.available"), value: data?.availableAssets ?? 0, icon: "check-circle" as const, color: colors.success },
-    { label: t("dashboard.totalFleet"), value: data?.totalAssets ?? 0, icon: "grid" as const, color: colors.info },
+  const statValues = [
+    data?.activeRentals ?? 0,
+    data?.overdueRentals ?? 0,
+    data?.availableAssets ?? 0,
+    data?.totalAssets ?? 0,
   ];
 
   const quickActions = [
@@ -110,13 +117,20 @@ export default function DashboardScreen() {
         ) : (
           <>
             <View style={styles.statsGrid}>
-              {stats.map((stat) => (
-                <View key={stat.label} style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <Feather name={stat.icon} size={20} color={stat.color} />
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>{stat.value}</Text>
-                  <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{stat.label}</Text>
-                </View>
-              ))}
+              {STAT_CONFIG.map((stat, i) => {
+                const statColor = colors[stat.colorKey];
+                return (
+                  <View key={stat.key} style={[styles.statCard, { backgroundColor: colors.card }]}>
+                    <View style={[styles.statIconWrap, { backgroundColor: statColor + "15" }]}>
+                      <Feather name={stat.icon} size={18} color={statColor} />
+                    </View>
+                    <Text style={[styles.statValue, { color: colors.foreground }]}>{statValues[i]}</Text>
+                    <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                      {t(`dashboard.${stat.key}`)}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
 
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t("dashboard.quickActions")}</Text>
@@ -124,7 +138,7 @@ export default function DashboardScreen() {
               {quickActions.map((action) => (
                 <TouchableOpacity
                   key={action.label}
-                  style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[styles.actionCard, { backgroundColor: colors.card }]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     action.onPress();
@@ -132,7 +146,9 @@ export default function DashboardScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.actionIconWrap}>
-                    <Feather name={action.icon} size={22} color={colors.primary} />
+                    <View style={[styles.actionIconCircle, { backgroundColor: colors.primary + "20" }]}>
+                      <Feather name={action.icon} size={20} color={colors.primary} />
+                    </View>
                     {action.badge && action.badge > 0 ? (
                       <View style={[styles.actionBadge, { backgroundColor: colors.destructive }]}>
                         <Text style={styles.badgeText}>{action.badge}</Text>
@@ -153,42 +169,65 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: 16, paddingBottom: 100 },
-  greeting: { fontSize: 22, fontFamily: "Inter_700Bold", marginBottom: 20 },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  greeting: { fontSize: 24, fontFamily: "Inter_700Bold", marginBottom: 20 },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   statCard: {
     width: "48%" as unknown as number,
     flexGrow: 1,
     flexBasis: "45%",
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 6,
+    borderRadius: 16,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   statValue: { fontSize: 28, fontFamily: "Inter_700Bold" },
   statLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
-  sectionTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", marginTop: 24, marginBottom: 12 },
-  actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 28, marginBottom: 14 },
+  actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   actionCard: {
     width: "48%" as unknown as number,
     flexGrow: 1,
     flexBasis: "45%",
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 16,
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   actionIconWrap: { position: "relative" },
-  actionBadge: {
-    position: "absolute",
-    top: -6,
-    right: -10,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+  actionIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },
-  badgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_600SemiBold" },
-  actionLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  actionBadge: {
+    position: "absolute",
+    top: -4,
+    right: -8,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
+  actionLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
 });
