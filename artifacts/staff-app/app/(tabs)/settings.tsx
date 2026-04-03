@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -39,13 +40,13 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      logout();
+      return;
+    }
     Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
       { text: t("settings.cancel"), style: "cancel" },
-      {
-        text: t("settings.signOut"),
-        style: "destructive",
-        onPress: () => logout(),
-      },
+      { text: t("settings.signOut"), style: "destructive", onPress: () => logout() },
     ]);
   };
 

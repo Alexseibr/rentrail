@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -59,6 +60,10 @@ export default function ProfileScreen() {
   );
 
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      logout();
+      return;
+    }
     Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
       { text: t("settings.cancel"), style: "cancel" },
       { text: t("settings.signOut"), style: "destructive", onPress: () => logout() },
