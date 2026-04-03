@@ -18,13 +18,14 @@ import {
   ClipboardList,
   MapPin,
   Settings,
-  AlertTriangle,
   Wrench,
   Map,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo, type ReactNode } from "react";
+import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { canAccessRoute } from "@/lib/permissions";
 
@@ -63,6 +64,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
 
   const isPlatformUser = useMemo(() => {
     if (!user) return false;
@@ -98,41 +104,66 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const headerTitle = isPlatformUser ? t("nav.platformAdmin") : (companyName || t("nav.companyPanel"));
 
+  const currentPageTitle = useMemo(() => {
+    const current = navItems.find((item) =>
+      item.path === "/" ? location === "/" || location === "" : location.startsWith(item.path)
+    );
+    return current ? t(current.labelKey) : "";
+  }, [navItems, location, t]);
+
+  const mobileNavItems = navItems.slice(0, 5);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       <aside
         className={cn(
-          "flex flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-200",
-          collapsed ? "w-16" : "w-60",
+          "hidden md:flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out border-0",
+          collapsed ? "w-[72px]" : "w-64",
         )}
       >
-        <div className="flex items-center gap-2 border-b px-4 h-14">
+        <div className={cn("flex items-center h-16 px-4", collapsed ? "justify-center" : "gap-3")}>
+          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary shrink-0">
+            <Bike className="h-5 w-5 text-primary-foreground" />
+          </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <span className="font-semibold text-sm truncate block">{headerTitle}</span>
+            <div className="min-w-0 flex-1">
+              <span className="font-semibold text-sm truncate block text-sidebar-foreground">{headerTitle}</span>
               {isPlatformUser && hasTenantMemberships && (
-                <Badge variant="outline" className="text-[10px] h-4 px-1">
-                  {t("nav.platformAdminMode")}
-                </Badge>
+                <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">Platform</span>
               )}
-              {!isPlatformUser && user?.memberships?.[0]?.roleCode && (
-                <Badge variant="outline" className="text-[10px] h-4 px-1">
-                  {user.memberships[0].roleCode}
-                </Badge>
+              {!isPlatformUser && roleCode && (
+                <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">{roleCode}</span>
               )}
             </div>
           )}
           <Button
             variant="ghost"
             size="icon"
-            className={cn("ml-auto h-8 w-8", collapsed && "mx-auto")}
+            className={cn("h-8 w-8 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent", collapsed && "hidden")}
             onClick={() => setCollapsed(!collapsed)}
           >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
+        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+          {collapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 mx-auto mb-2 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent flex"
+              onClick={() => setCollapsed(false)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
           {navItems.map((item) => {
             const active =
               item.path === "/"
@@ -142,14 +173,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <Link key={item.path} href={item.path}>
                 <div
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer transition-colors",
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
                     active
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                     collapsed && "justify-center px-2",
                   )}
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
                   {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
                 </div>
               </Link>
@@ -157,35 +188,173 @@ export function AppLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="border-t p-3 space-y-2">
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "sm"}
-            className={cn("w-full", collapsed ? "h-8 w-8 mx-auto" : "justify-start gap-2")}
+        <div className="p-3 space-y-1">
+          <button
             onClick={toggleLang}
-          >
-            <Languages className="h-4 w-4 shrink-0" />
-            {!collapsed && (
-              <span className="text-xs">{i18n.language === "ru" ? "English" : "Русский"}</span>
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm w-full transition-all duration-200 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+              collapsed && "justify-center px-2",
             )}
-          </Button>
-          <div className={cn("flex items-center gap-2", collapsed && "justify-center")}>
+          >
+            <Languages className="h-[18px] w-[18px] shrink-0" />
+            {!collapsed && (
+              <span className="text-sm">{i18n.language === "ru" ? "English" : "Русский"}</span>
+            )}
+          </button>
+          <div className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5", collapsed && "justify-center px-2")}>
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sidebar-accent text-sidebar-foreground text-xs font-semibold shrink-0">
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">
+                <p className="text-sm font-medium truncate text-sidebar-foreground">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                <p className="text-xs text-sidebar-foreground/50 truncate">{user?.phone}</p>
               </div>
             )}
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={logout}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("h-8 w-8 shrink-0 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent", collapsed && "hidden")}
+              onClick={logout}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-72 bg-sidebar text-sidebar-foreground transition-transform duration-300 ease-in-out md:hidden",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="flex items-center justify-between h-16 px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary shrink-0">
+              <Bike className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="font-semibold text-sm text-sidebar-foreground">{headerTitle}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            onClick={() => setMobileOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+          {navItems.map((item) => {
+            const active =
+              item.path === "/"
+                ? location === "/" || location === ""
+                : location.startsWith(item.path);
+            return (
+              <Link key={item.path} href={item.path}>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                  )}
+                >
+                  <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
+                  <span className="truncate">{t(item.labelKey)}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="p-3 space-y-1 border-t border-sidebar-border">
+          <button
+            onClick={toggleLang}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm w-full text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <Languages className="h-[18px] w-[18px] shrink-0" />
+            <span>{i18n.language === "ru" ? "English" : "Русский"}</span>
+          </button>
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm w-full text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <LogOut className="h-[18px] w-[18px] shrink-0" />
+            <span>{t("nav.logout", "Выйти")}</span>
+          </button>
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-16 border-b border-border/50 bg-card flex items-center justify-between px-4 md:px-6 shrink-0">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-9 w-9"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold text-foreground">{currentPageTitle}</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden md:inline-flex text-muted-foreground hover:text-foreground"
+              onClick={toggleLang}
+            >
+              <Languages className="h-4 w-4 mr-1" />
+              {i18n.language === "ru" ? "EN" : "RU"}
+            </Button>
+            <div className="hidden md:flex items-center gap-2 ml-2 pl-2 border-l border-border/50">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </div>
+              <span className="text-sm font-medium hidden lg:inline">{user?.firstName}</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="page-transition">
+            {children}
+          </div>
+        </main>
+
+        <nav className="md:hidden border-t border-border/50 bg-card flex items-center justify-around py-1 shrink-0 safe-area-bottom">
+          {mobileNavItems.map((item) => {
+            const active =
+              item.path === "/"
+                ? location === "/" || location === ""
+                : location.startsWith(item.path);
+            return (
+              <Link key={item.path} href={item.path}>
+                <div className={cn(
+                  "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors min-w-[56px]",
+                  active ? "text-primary" : "text-muted-foreground",
+                )}>
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-[10px] font-medium leading-tight">{t(item.labelKey)}</span>
+                </div>
+              </Link>
+            );
+          })}
+          {navItems.length > 5 && (
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-muted-foreground min-w-[56px]"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="text-[10px] font-medium leading-tight">{t("nav.more", "Ещё")}</span>
+            </button>
+          )}
+        </nav>
+      </div>
     </div>
   );
 }

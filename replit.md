@@ -19,7 +19,7 @@ The project is a pnpm monorepo using Node.js 24 and TypeScript 5.9. The backend 
 ### UI/UX Decisions
 A mobile staff application, built with Expo/React Native, provides intuitive workflows for operators. It features tab-based navigation, modal screens for specific actions (e.g., QR scanning, incident creation), offline-first capabilities with an AsyncStorage queue for data synchronization, and full bilingual i18n support (Russian default, English) using i18next + react-i18next with language persisted in AsyncStorage. Language toggle available in Settings screen.
 
-A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owners with management capabilities. It features:
+A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owners with management capabilities. It uses a **Yandex Go-inspired design system**: dark sidebar (navy, hsl 220/20%/14%), amber/yellow primary accent (hsl 45/96%/53%), light gray background (hsl 0/0%/97%), rounded-2xl cards with shadow (no borders), rounded-xl buttons/inputs, pill-shaped badges, branded login page with gradient background. Responsive layout with collapsible sidebar on desktop and bottom tab bar on mobile. Page transitions via CSS animation. It features:
 - **Auth:** JWT-based login with automatic token refresh, stored in-memory with localStorage persistence
 - **Dashboard:** Overview metrics from analytics and health endpoints
 - **Companies:** List/detail views with search, filtering, pagination, moderation actions (approve/block/suspend/unblock/cancel), usage and health tabs
