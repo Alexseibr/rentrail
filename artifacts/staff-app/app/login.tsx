@@ -17,8 +17,9 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Step = "phone" | "password" | "otp" | "set-password";
+type LoginMode = "staff" | "client";
 
-const DEMO_ACCOUNTS = [
+const DEMO_STAFF_ACCOUNTS = [
   { label: "Owner",    phone: "+79991000001" },
   { label: "Admin",    phone: "+79991000002" },
   { label: "Manager",  phone: "+79991000003" },
@@ -27,14 +28,22 @@ const DEMO_ACCOUNTS = [
   { label: "Viewer",   phone: "+79991000006" },
 ];
 
-const DEMO_PASSWORD = "demo1234";
+const DEMO_CLIENT_ACCOUNTS = [
+  { label: "Alex T.",   phone: "+1-555-1000" },
+  { label: "Jessica W.", phone: "+1-555-1001" },
+  { label: "Michael B.", phone: "+1-555-1002" },
+];
+
+const DEMO_STAFF_PASSWORD = "demo1234";
+const DEMO_CLIENT_PASSWORD = "client123";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { loginWithPhone, requestOtp, verifyOtp, setPhonePassword } = useAuth();
+  const { loginWithPhone, loginAsClient, requestOtp, verifyOtp, setPhonePassword } = useAuth();
 
+  const [mode, setMode]         = useState<LoginMode>("staff");
   const [step, setStep]         = useState<Step>("phone");
   const [phone, setPhone]       = useState("");
   const [password, setPassword] = useState("");
@@ -61,7 +70,11 @@ export default function LoginScreen() {
     setError(null);
     setLoading(true);
     try {
-      await loginWithPhone(phone.trim(), password);
+      if (mode === "client") {
+        await loginAsClient(phone.trim(), password);
+      } else {
+        await loginWithPhone(phone.trim(), password);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -125,7 +138,11 @@ export default function LoginScreen() {
     setError(null);
     setDemoLoading(demoPhone);
     try {
-      await loginWithPhone(demoPhone, DEMO_PASSWORD);
+      if (mode === "client") {
+        await loginAsClient(demoPhone, DEMO_CLIENT_PASSWORD);
+      } else {
+        await loginWithPhone(demoPhone, DEMO_STAFF_PASSWORD);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -133,6 +150,14 @@ export default function LoginScreen() {
     } finally {
       setDemoLoading(null);
     }
+  };
+
+  const handleModeSwitch = (newMode: LoginMode) => {
+    setMode(newMode);
+    setStep("phone");
+    setPhone("");
+    setPassword("");
+    setError(null);
   };
 
   const stepTitle: Record<Step, string> = {
@@ -163,11 +188,35 @@ export default function LoginScreen() {
     >
       <View style={styles.logoWrap}>
         <View style={styles.logoCircle}>
-          <Feather name="truck" size={32} color="#1a1a1a" />
+          <Feather name={mode === "client" ? "smartphone" : "truck"} size={32} color="#1a1a1a" />
         </View>
         <Text style={styles.brandName}>RideFlow</Text>
+
+        <View style={styles.modeToggle}>
+          <TouchableOpacity
+            style={[styles.modeBtn, mode === "staff" && styles.modeBtnActive]}
+            onPress={() => handleModeSwitch("staff")}
+            activeOpacity={0.8}
+          >
+            <Feather name="briefcase" size={14} color={mode === "staff" ? "#1a1a1a" : "rgba(255,255,255,0.5)"} />
+            <Text style={[styles.modeBtnText, mode === "staff" && styles.modeBtnTextActive]}>
+              {t("login.staffMode")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeBtn, mode === "client" && styles.modeBtnActive]}
+            onPress={() => handleModeSwitch("client")}
+            activeOpacity={0.8}
+          >
+            <Feather name="user" size={14} color={mode === "client" ? "#1a1a1a" : "rgba(255,255,255,0.5)"} />
+            <Text style={[styles.modeBtnText, mode === "client" && styles.modeBtnTextActive]}>
+              {t("login.clientMode")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.subtitle}>
-          {stepTitle[step]}
+          {mode === "client" ? t("login.signInToRent") : stepTitle[step]}
         </Text>
         {step !== "phone" && (
           <Text style={styles.stepHint}>
@@ -241,11 +290,13 @@ export default function LoginScreen() {
               <TouchableOpacity onPress={() => { setStep("phone"); setError(null); }}>
                 <Text style={styles.linkTextLight}>{"\u2190"} {t("login.changeNumber")}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
-                <Text style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}>
-                  {loading ? t("login.sending") : t("login.getSmsCode")}
-                </Text>
-              </TouchableOpacity>
+              {mode === "staff" && (
+                <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
+                  <Text style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}>
+                    {loading ? t("login.sending") : t("login.getSmsCode")}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </>
         )}
@@ -321,7 +372,7 @@ export default function LoginScreen() {
       <View style={styles.demoBox}>
         <Text style={styles.demoTitle}>{t("login.demoTapToEnter")}</Text>
         <View style={styles.demoGrid}>
-          {DEMO_ACCOUNTS.map((acc) => (
+          {(mode === "client" ? DEMO_CLIENT_ACCOUNTS : DEMO_STAFF_ACCOUNTS).map((acc) => (
             <TouchableOpacity
               key={acc.phone}
               style={styles.demoBtn}
@@ -338,7 +389,7 @@ export default function LoginScreen() {
           ))}
         </View>
         <Text style={styles.demoHint}>
-          {t("login.demoHint")} <Text style={{ fontFamily: "Inter_700Bold" }}>demo1234</Text>
+          {t("login.demoHint")} <Text style={{ fontFamily: "Inter_700Bold" }}>{mode === "client" ? "client123" : "demo1234"}</Text>
         </Text>
       </View>
     </ScrollView>
@@ -357,7 +408,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  brandName: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#ffffff" },
+  brandName: { fontSize: 28, fontFamily: "Inter_700Bold", color: "#ffffff", marginBottom: 12 },
+  modeToggle: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: 8,
+  },
+  modeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    flex: 1,
+  },
+  modeBtnActive: {
+    backgroundColor: "#F5C518",
+  },
+  modeBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "rgba(255,255,255,0.5)",
+  },
+  modeBtnTextActive: {
+    color: "#1a1a1a",
+  },
   subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: 6, color: "rgba(255,255,255,0.6)" },
   stepHint: { fontSize: 13, fontFamily: "Inter_600SemiBold", marginTop: 4, color: "rgba(255,255,255,0.5)" },
   formCard: {

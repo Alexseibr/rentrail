@@ -28,7 +28,7 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { t } = useTranslation();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isClient } = useAuth();
   const segments = useSegments();
 
   if (isLoading) {
@@ -40,12 +40,25 @@ function RootLayoutNav() {
   }
 
   const inAuthGroup = segments[0] === "login";
+  const inStaffTabs = segments[0] === "(tabs)";
+  const inClientTabs = segments[0] === "(client-tabs)";
 
   if (!isAuthenticated && !inAuthGroup) {
     return <Redirect href="/login" />;
   }
 
   if (isAuthenticated && inAuthGroup) {
+    if (isClient) {
+      return <Redirect href="/(client-tabs)/vehicles" />;
+    }
+    return <Redirect href="/" />;
+  }
+
+  if (isAuthenticated && isClient && inStaffTabs) {
+    return <Redirect href="/(client-tabs)/vehicles" />;
+  }
+
+  if (isAuthenticated && !isClient && inClientTabs) {
     return <Redirect href="/" />;
   }
 
@@ -58,6 +71,7 @@ function RootLayoutNav() {
       headerShadowVisible: false,
     }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(client-tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
       <Stack.Screen name="create-incident" options={{ title: t("screens.newIncident") }} />

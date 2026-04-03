@@ -27,6 +27,12 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     const payload = verifyAccessToken(token);
     req.user = payload;
 
+    if (payload.tokenType === "client") {
+      req.platformUser = { platformRoles: [] };
+      next();
+      return;
+    }
+
     loadUserPlatformRoles(payload.userId)
       .then((dbRoles) => {
         req.platformUser = { platformRoles: dbRoles };

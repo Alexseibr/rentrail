@@ -5,6 +5,7 @@ import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess } from "../middlewares/authorize";
 import * as authService from "../services/auth.service";
 import * as phoneAuthService from "../services/phone-auth.service";
+import * as clientAuthService from "../services/client-auth.service";
 
 const router: IRouter = Router();
 
@@ -105,6 +106,34 @@ router.post("/auth/logout-all", authenticate, async (req, res) => {
 router.get("/auth/me", authenticate, async (req, res) => {
   const user = await authService.getCurrentUser(req.user!.userId);
   res.json({ data: user });
+});
+
+const clientLoginSchema = z.object({
+  phone: z.string().min(7),
+  password: z.string().min(1),
+  companyId: z.string().uuid().optional(),
+});
+
+router.post("/auth/client/login", validate({ body: clientLoginSchema }), async (req, res) => {
+  const result = await clientAuthService.clientLoginWithPassword(
+    req.body.phone,
+    req.body.password,
+    req.body.companyId,
+  );
+  res.json({ data: result });
+});
+
+router.get("/auth/client/me", authenticate, async (req, res) => {
+  if (!req.user?.clientId) {
+    res.status(403).json({ error: { code: "FORBIDDEN", message: "Not a client token" } });
+    return;
+  }
+  const profile = await clientAuthService.getClientProfile(req.user.clientId);
+  if (!profile) {
+    res.status(404).json({ error: { code: "NOT_FOUND", message: "Client not found" } });
+    return;
+  }
+  res.json({ data: profile });
 });
 
 router.get("/auth/permissions", authenticate, requireCompanyAccess, async (req, res) => {

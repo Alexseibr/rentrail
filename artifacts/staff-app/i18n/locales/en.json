@@ -42,7 +42,10 @@
     "failedToSendCode": "Failed to send code",
     "invalidCode": "Invalid code",
     "failedToSetPassword": "Failed to set password",
-    "demoLoginFailed": "Demo login failed"
+    "demoLoginFailed": "Demo login failed",
+    "staffMode": "Staff",
+    "clientMode": "Client",
+    "signInToRent": "Sign in to rent a vehicle"
   },
   "dashboard": {
     "hello": "Hello, {{name}}",
@@ -186,9 +189,46 @@
     "success": "Success",
     "returnCompleted": "Rental return completed"
   },
+  "clientNav": {
+    "vehicles": "Vehicles",
+    "myRentals": "My Rentals",
+    "profile": "Profile"
+  },
+  "clientVehicles": {
+    "noVehicles": "No vehicles available",
+    "rent": "Rent",
+    "confirmRent": "Rent Vehicle",
+    "confirmRentMessage": "Do you want to start renting this vehicle?",
+    "success": "Success",
+    "rentalStarted": "Rental started successfully!",
+    "rentFailed": "Failed to rent vehicle"
+  },
+  "clientRentals": {
+    "noRentals": "No rentals yet",
+    "returnVehicle": "Return Vehicle",
+    "confirmReturn": "Return Vehicle",
+    "confirmReturnMessage": "Are you sure you want to return this vehicle?",
+    "success": "Success",
+    "returnCompleted": "Vehicle returned successfully!",
+    "returnFailed": "Failed to return vehicle",
+    "started": "Started",
+    "ended": "Ended",
+    "status_active": "Active",
+    "status_overdue": "Overdue",
+    "status_completed": "Completed",
+    "status_cancelled": "Cancelled",
+    "status_canceled": "Canceled"
+  },
+  "clientProfile": {
+    "phone": "Phone",
+    "email": "Email",
+    "rating": "Rating",
+    "memberSince": "Member Since"
+  },
   "common": {
     "error": "Error",
     "ok": "OK",
-    "back": "Back"
+    "back": "Back",
+    "cancel": "Cancel"
   }
 }

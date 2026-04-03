@@ -13,6 +13,7 @@ export const clients = pgTable("clients", {
   birthday: date("birthday"),
   documentType: varchar("document_type", { length: 50 }),
   documentNumber: varchar("document_number", { length: 100 }),
+  passwordHash: varchar("password_hash", { length: 255 }),
   notes: text("notes"),
   status: clientStatusEnum("status").default("active").notNull(),
   rating: integer("rating").default(0).notNull(),

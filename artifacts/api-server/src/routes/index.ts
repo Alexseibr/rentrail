@@ -34,6 +34,7 @@ import platformDiagnosticsRouter from "./platform-diagnostics";
 import platformAnalyticsRouter from "./platform-analytics";
 import auditLogsRouter from "./audit-logs";
 import serviceRouter from "./service";
+import clientApiRouter from "./client-api";
 
 const router: IRouter = Router();
 
@@ -72,5 +73,6 @@ router.use(platformDiagnosticsRouter);
 router.use(platformAnalyticsRouter);
 router.use(auditLogsRouter);
 router.use(serviceRouter);
+router.use(clientApiRouter);
 
 export default router;

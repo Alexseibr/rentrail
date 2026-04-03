@@ -113,6 +113,7 @@ async function seedDemo() {
   }
   console.log("  Role assignments: done");
 
+  const clientPasswordHash = await hash("client123");
   const clientData = Array.from({ length: 20 }, (_, i) => ({
     companyId: demoCompany.id,
     fullName: [
@@ -125,6 +126,7 @@ async function seedDemo() {
     email: `client${i + 1}@demo.test`,
     documentType: "passport",
     documentNumber: `PASS-${String(100000 + i)}`,
+    passwordHash: clientPasswordHash,
     status: i < 17 ? "active" as const : i === 17 ? "suspended" as const : "blocked" as const,
   }));
   const insertedClients = await db.insert(clients).values(clientData).returning();

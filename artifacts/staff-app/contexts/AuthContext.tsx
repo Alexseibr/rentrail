@@ -18,8 +18,12 @@ interface User {
   phone?: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
   companies?: Membership[];
   memberships?: Membership[];
+  tokenType?: "staff" | "client";
+  clientId?: string;
+  companyId?: string;
 }
 
 interface AuthState {
@@ -33,6 +37,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   loginWithPhone: (phone: string, password: string) => Promise<void>;
+  loginAsClient: (phone: string, password: string) => Promise<void>;
   requestOtp: (phone: string) => Promise<{ devCode?: string }>;
   verifyOtp: (phone: string, code: string) => Promise<{ needsPassword: boolean }>;
   setPhonePassword: (password: string) => Promise<void>;
@@ -40,6 +45,7 @@ interface AuthContextType extends AuthState {
   setCompanyId: (id: string) => Promise<void>;
   setBranchId: (id: string | null) => Promise<void>;
   refreshUser: () => Promise<void>;
+  isClient: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -117,6 +123,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await applyAuthResult(data.accessToken, data.refreshToken);
   }, [applyAuthResult]);
 
+  const loginAsClient = useCallback(async (phone: string, password: string) => {
+    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/client/login`, {
+      method: "POST",
+      body: JSON.stringify({ phone, password }),
+    });
+    await storeTokens(data.accessToken, data.refreshToken || "");
+    const user: User = {
+      id: data.user.id,
+      firstName: data.user.fullName?.split(" ")[0] || "",
+      lastName: data.user.fullName?.split(" ").slice(1).join(" ") || "",
+      fullName: data.user.fullName,
+      phone: data.user.phone,
+      email: data.user.email,
+      tokenType: "client",
+      clientId: data.user.clientId,
+      companyId: data.user.companyId,
+    };
+    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    if (data.user.companyId) {
+      await storeCompanyId(data.user.companyId);
+    }
+    setState({ user, isAuthenticated: true, isLoading: false, companyId: data.user.companyId || null, branchId: null });
+  }, []);
+
   const requestOtp = useCallback(async (phone: string): Promise<{ devCode?: string }> => {
     const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/request-otp`, {
       method: "POST",
@@ -177,11 +207,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, user: userData }));
   }, []);
 
+  const isClient = state.user?.tokenType === "client";
+
   return (
     <AuthContext.Provider value={{
       ...state,
       login,
       loginWithPhone,
+      loginAsClient,
       requestOtp,
       verifyOtp,
       setPhonePassword,
@@ -189,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCompanyId: setCompanyIdFn,
       setBranchId: setBranchIdFn,
       refreshUser,
+      isClient,
     }}>
       {children}
     </AuthContext.Provider>

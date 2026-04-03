@@ -6,6 +6,9 @@ export interface AccessTokenPayload {
   email?: string;
   isSuperAdmin: boolean;
   platformRoles: string[];
+  clientId?: string;
+  companyId?: string;
+  tokenType?: "staff" | "client";
 }
 
 export interface RefreshTokenPayload {

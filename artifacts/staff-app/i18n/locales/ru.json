@@ -42,7 +42,10 @@
     "failedToSendCode": "Не удалось отправить код",
     "invalidCode": "Неверный код",
     "failedToSetPassword": "Не удалось установить пароль",
-    "demoLoginFailed": "Ошибка демо-входа"
+    "demoLoginFailed": "Ошибка демо-входа",
+    "staffMode": "Сотрудник",
+    "clientMode": "Клиент",
+    "signInToRent": "Войдите для аренды транспорта"
   },
   "dashboard": {
     "hello": "Привет, {{name}}",
@@ -186,9 +189,46 @@
     "success": "Успешно",
     "returnCompleted": "Возврат аренды завершён"
   },
+  "clientNav": {
+    "vehicles": "Транспорт",
+    "myRentals": "Мои аренды",
+    "profile": "Профиль"
+  },
+  "clientVehicles": {
+    "noVehicles": "Нет доступного транспорта",
+    "rent": "Арендовать",
+    "confirmRent": "Арендовать транспорт",
+    "confirmRentMessage": "Хотите начать аренду этого транспорта?",
+    "success": "Успешно",
+    "rentalStarted": "Аренда начата!",
+    "rentFailed": "Не удалось арендовать"
+  },
+  "clientRentals": {
+    "noRentals": "Аренд пока нет",
+    "returnVehicle": "Вернуть транспорт",
+    "confirmReturn": "Возврат транспорта",
+    "confirmReturnMessage": "Вы уверены, что хотите вернуть транспорт?",
+    "success": "Успешно",
+    "returnCompleted": "Транспорт успешно возвращён!",
+    "returnFailed": "Не удалось вернуть транспорт",
+    "started": "Начало",
+    "ended": "Конец",
+    "status_active": "Активна",
+    "status_overdue": "Просрочена",
+    "status_completed": "Завершена",
+    "status_cancelled": "Отменена",
+    "status_canceled": "Отменена"
+  },
+  "clientProfile": {
+    "phone": "Телефон",
+    "email": "Email",
+    "rating": "Рейтинг",
+    "memberSince": "Клиент с"
+  },
   "common": {
     "error": "Ошибка",
     "ok": "ОК",
-    "back": "Назад"
+    "back": "Назад",
+    "cancel": "Отмена"
   }
 }
