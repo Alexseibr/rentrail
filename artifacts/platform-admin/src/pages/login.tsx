@@ -10,10 +10,10 @@ import { Bike, ArrowLeft } from "lucide-react";
 type Step = "phone" | "password" | "otp" | "set-password";
 
 const DEMO_ACCOUNTS = [
-  { label: "Velocity Rides (Owner)", phone: "+79991000001", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
-  { label: "Velocity Rides (Admin)", phone: "+79991000002", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
-  { label: "Urban Wheels (Owner)",   phone: "+79991000008", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
-  { label: "Velocity Rides (Operator)", phone: "+79991000004", color: "bg-primary hover:bg-primary/90 text-primary-foreground" },
+  { labelKey: "login.demoOwner", phone: "+79991000001", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
+  { labelKey: "login.demoAdmin", phone: "+79991000002", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
+  { labelKey: "login.demoUrbanOwner", phone: "+79991000008", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
+  { labelKey: "login.demoOperator", phone: "+79991000004", color: "bg-primary hover:bg-primary/90 text-primary-foreground" },
 ];
 
 const DEMO_PASSWORD = "demo1234";
@@ -286,7 +286,7 @@ export default function LoginPage() {
                 disabled={busy}
                 className={`${acc.color} text-xs font-medium rounded-xl px-3 py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
               >
-                {demoLoading === acc.phone ? "..." : acc.label}
+                {demoLoading === acc.phone ? "..." : t(acc.labelKey)}
               </button>
             ))}
           </div>
