@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLocation } from "wouter";
 import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -26,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function RentalsCompanyPage() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const companyId = user?.memberships?.[0]?.companyId;
@@ -150,7 +152,7 @@ export default function RentalsCompanyPage() {
           <Card key={s} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold">{countByStatus(s)}</div>
-              <p className={`text-sm capitalize ${statusFilter === s ? "font-semibold text-primary" : "text-muted-foreground"}`}>{s}</p>
+              <p className={`text-sm ${statusFilter === s ? "font-semibold text-primary" : "text-muted-foreground"}`}>{t(`status.${s}`, s)}</p>
             </CardContent>
           </Card>
         ))}
@@ -170,7 +172,7 @@ export default function RentalsCompanyPage() {
               <SelectContent>
                 <SelectItem value="all">{t("common.all", "Все")}</SelectItem>
                 {["draft", "approved", "awaiting_pickup", "active", "overdue", "completed", "canceled"].map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                  <SelectItem key={s} value={s}>{t(`status.${s}`, s)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -193,13 +195,13 @@ export default function RentalsCompanyPage() {
               </TableHeader>
               <TableBody>
                 {items.map((rental: any) => (
-                  <TableRow key={rental.id}>
+                  <TableRow key={rental.id} className="cursor-pointer" onClick={() => navigate(`/rentals/${rental.id}`)}>
                     <TableCell>{rental.clientName || rental.clientId?.slice(0, 8)}</TableCell>
                     <TableCell className="font-mono text-sm">{rental.assetCode || rental.assetId?.slice(0, 8)}</TableCell>
                     <TableCell className="text-sm">{rental.startDate || rental.startAt ? new Date(rental.startDate || rental.startAt).toLocaleDateString() : "—"}</TableCell>
                     <TableCell className="text-sm">{rental.endDate || rental.plannedEndAt ? new Date(rental.endDate || rental.plannedEndAt).toLocaleDateString() : "—"}</TableCell>
-                    <TableCell><Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{rental.status}</Badge></TableCell>
-                    <TableCell>
+                    <TableCell><Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{t(`status.${rental.status}`, rental.status)}</Badge></TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1">
                         {getAvailableActions(rental).map((act) => (
                           <Button

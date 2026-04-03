@@ -186,7 +186,7 @@ export default function ClientsCompanyPage() {
                       {client.documentType ? `${client.documentType}: ${client.documentNumber || "—"}` : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[client.status] || "bg-gray-100"}>{client.status}</Badge>
+                      <Badge className={STATUS_COLORS[client.status] || "bg-gray-100"}>{t(`status.${client.status}`, client.status)}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">

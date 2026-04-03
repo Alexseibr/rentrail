@@ -31,6 +31,9 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 - **i18n:** Full bilingual support (Russian default, English). Uses i18next + react-i18next, language stored in localStorage(`i18n_lang`), toggle in sidebar
 - **Dual-mode UI:** Platform users (superAdmin, platformAdmin, etc.) see platform management views (Companies, Billing, Diagnostics, Analytics, White Label). Company users (owner, admin, operator, etc.) see company management views (Fleet, Rentals, Clients, Branches, Settings). Navigation and routes switch based on user type.
 - **Full CRUD on company pages:** Fleet (create/edit/status change/archive), Rentals (create/approve/start/return/cancel), Clients (create/edit/archive), Branches (create/edit/activate/deactivate), Settings (view/edit company details). All operations use Dialog modals with form validation.
+- **Company Dashboard:** Real-time metrics (vehicle count, active rentals, clients, branches), status distribution bars for assets and rentals, recent rentals table.
+- **Detail pages:** Asset detail (`/fleet/:id`) and Rental detail (`/rentals/:id`) with full entity info and status history. Clickable table rows in Fleet and Rentals lists navigate to detail views.
+- **Status translations:** All status labels (available→Доступен, rented→В аренде, etc.) and asset types (bike→Велосипед, etc.) are fully translated via i18n keys.
 - **Routing:** wouter with sidebar navigation, `/platform-admin/` base path
 - **API Proxy:** Vite dev proxy forwards `/platform-admin/api/` to API server on port 8080
 - **Super Admin credentials:** +375298971111 / 39903990

@@ -156,7 +156,7 @@ export default function BranchesPage() {
                     <TableCell>{branch.phone || "—"}</TableCell>
                     <TableCell>
                       <Badge className={STATUS_COLORS[branch.status] || "bg-green-100 text-green-800"}>
-                        {branch.status || "active"}
+                        {t(`status.${branch.status || "active"}`, branch.status || "active")}
                       </Badge>
                     </TableCell>
                     <TableCell>

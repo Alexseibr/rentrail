@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +48,7 @@ const emptyForm = {
 
 export default function FleetPage() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const companyId = user?.memberships?.[0]?.companyId;
@@ -191,7 +193,7 @@ export default function FleetPage() {
           <Card key={s} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold">{countByStatus(s)}</div>
-              <p className={`text-sm capitalize ${statusFilter === s ? "font-semibold text-primary" : "text-muted-foreground"}`}>{s}</p>
+              <p className={`text-sm ${statusFilter === s ? "font-semibold text-primary" : "text-muted-foreground"}`}>{t(`status.${s}`, s)}</p>
             </CardContent>
           </Card>
         ))}
@@ -218,7 +220,7 @@ export default function FleetPage() {
               <SelectContent>
                 <SelectItem value="all">{t("common.all", "Все")}</SelectItem>
                 {STATUS_VALUES.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                  <SelectItem key={s} value={s}>{t(`status.${s}`, s)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -243,15 +245,15 @@ export default function FleetPage() {
               </TableHeader>
               <TableBody>
                 {items.map((asset: any) => (
-                  <TableRow key={asset.id}>
+                  <TableRow key={asset.id} className="cursor-pointer" onClick={() => navigate(`/fleet/${asset.id}`)}>
                     <TableCell className="font-mono text-sm">{asset.internalCode}</TableCell>
-                    <TableCell>{asset.assetType}</TableCell>
+                    <TableCell>{t(`assetType.${asset.assetType}`, asset.assetType)}</TableCell>
                     <TableCell>{asset.brand}</TableCell>
                     <TableCell>{asset.model}</TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[asset.status] || "bg-gray-100"}>{asset.status}</Badge>
+                      <Badge className={STATUS_COLORS[asset.status] || "bg-gray-100"}>{t(`status.${asset.status}`, asset.status)}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1">
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(asset)} title={t("common.edit")}>
                           <Pencil className="h-3.5 w-3.5" />
@@ -297,7 +299,7 @@ export default function FleetPage() {
                 <Select value={form.assetType} onValueChange={(v) => setForm({ ...form, assetType: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {ASSET_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    {ASSET_TYPES.map((at) => <SelectItem key={at} value={at}>{t(`assetType.${at}`, at)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -364,7 +366,7 @@ export default function FleetPage() {
                 <SelectTrigger><SelectValue placeholder={t("fleet.selectStatus", "Выберите статус")} /></SelectTrigger>
                 <SelectContent>
                   {STATUS_VALUES.filter((s) => s !== statusChange?.current).map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>{t(`status.${s}`, s)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

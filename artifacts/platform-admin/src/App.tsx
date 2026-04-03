@@ -16,11 +16,14 @@ import BlacklistPage from "@/pages/blacklist";
 import DiagnosticsPage from "@/pages/diagnostics";
 import AnalyticsPage from "@/pages/analytics";
 import WhiteLabelPage from "@/pages/white-label";
+import CompanyDashboardPage from "@/pages/dashboard-company";
 import FleetPage from "@/pages/fleet";
 import RentalsCompanyPage from "@/pages/rentals-company";
 import ClientsCompanyPage from "@/pages/clients-company";
 import BranchesPage from "@/pages/branches";
 import SettingsCompanyPage from "@/pages/settings-company";
+import AssetDetailPage from "@/pages/asset-detail";
+import RentalDetailPage from "@/pages/rental-detail";
 import NotFound from "@/pages/not-found";
 import { Spinner } from "@/components/ui/spinner";
 import { useMemo } from "react";
@@ -57,9 +60,11 @@ function PlatformRoutes() {
 function CompanyRoutes() {
   return (
     <Switch>
-      <Route path="/" component={FleetPage} />
+      <Route path="/" component={CompanyDashboardPage} />
       <Route path="/fleet" component={FleetPage} />
+      <Route path="/fleet/:id" component={AssetDetailPage} />
       <Route path="/rentals" component={RentalsCompanyPage} />
+      <Route path="/rentals/:id" component={RentalDetailPage} />
       <Route path="/clients" component={ClientsCompanyPage} />
       <Route path="/branches" component={BranchesPage} />
       <Route path="/settings" component={SettingsCompanyPage} />
