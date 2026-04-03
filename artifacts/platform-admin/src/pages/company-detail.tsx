@@ -43,6 +43,52 @@ const statusColors: Record<string, string> = {
   canceled: "bg-gray-100 text-gray-800",
 };
 
+const STATUS_DOT_COLORS: Record<string, string> = {
+  available: "bg-green-500",
+  active: "bg-green-500",
+  rented: "bg-blue-500",
+  awaiting_pickup: "bg-blue-400",
+  maintenance: "bg-amber-500",
+  charging: "bg-amber-400",
+  reserved: "bg-violet-500",
+  overdue: "bg-red-500",
+  blocked: "bg-red-400",
+  lost: "bg-red-600",
+  stolen: "bg-red-700",
+  completed: "bg-gray-400",
+  draft: "bg-gray-400",
+  canceled: "bg-gray-400",
+  pending_approval: "bg-amber-500",
+  awaiting_payment: "bg-amber-400",
+};
+
+const STATUS_BAR_COLORS: Record<string, string> = {
+  available: "bg-green-500",
+  active: "bg-green-500",
+  rented: "bg-blue-500",
+  awaiting_pickup: "bg-blue-400",
+  maintenance: "bg-amber-500",
+  charging: "bg-amber-400",
+  reserved: "bg-violet-500",
+  overdue: "bg-red-500",
+  blocked: "bg-red-400",
+  lost: "bg-red-600",
+  stolen: "bg-red-700",
+  completed: "bg-gray-400",
+  draft: "bg-gray-300",
+  canceled: "bg-gray-300",
+  pending_approval: "bg-amber-500",
+  awaiting_payment: "bg-amber-400",
+};
+
+function statusDotColor(status: string): string {
+  return STATUS_DOT_COLORS[status] ?? "bg-gray-400";
+}
+
+function statusBarColor(status: string): string {
+  return STATUS_BAR_COLORS[status] ?? "bg-gray-400";
+}
+
 interface ModerationForm {
   action: string;
   reasonCode: string;
@@ -412,29 +458,149 @@ export default function CompanyDetailPage() {
         </TabsContent>
 
         <TabsContent value="health" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("companyDetail.healthSummary")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {health ? (
-                <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  {Object.entries(health).map(([key, value]) => (
-                    <div key={key}>
-                      <dt className="text-muted-foreground capitalize">
-                        {key.replace(/([A-Z])/g, " $1").trim()}
-                      </dt>
-                      <dd className="text-lg font-semibold mt-0.5">
-                        {typeof value === "object" ? JSON.stringify(value) : String(value)}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : (
+          {health ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-5 pb-4 px-5">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("companyDetail.healthSummary")}</p>
+                    <p className="text-2xl font-bold mt-1">{(health as Record<string, unknown>).companyName as string}</p>
+                    <Badge className="mt-1">{(health as Record<string, unknown>).status as string}</Badge>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{t("companyDetail.healthAssets")} — {t("companyDetail.healthByStatus")}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const assets = (health as Record<string, Record<string, Record<string, number>>>).assets;
+                      if (!assets?.byStatus) return <p className="text-muted-foreground text-sm">{t("companyDetail.noHealthData")}</p>;
+                      const total = Object.values(assets.byStatus).reduce((s, v) => s + v, 0);
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm font-medium mb-2">
+                            <span>{t("companyDetail.healthTotal")}</span>
+                            <span className="text-lg font-bold">{total}</span>
+                          </div>
+                          {Object.entries(assets.byStatus).sort(([,a],[,b]) => b - a).map(([status, count]) => (
+                            <div key={status} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2.5 h-2.5 rounded-full ${statusDotColor(status)}`} />
+                                <span className="text-sm capitalize">{status.replace(/_/g, " ")}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 rounded-full bg-muted overflow-hidden" style={{ width: 80 }}>
+                                  <div className={`h-full rounded-full ${statusBarColor(status)}`} style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }} />
+                                </div>
+                                <span className="text-sm font-semibold w-6 text-right">{count}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{t("companyDetail.healthRentals")} — {t("companyDetail.healthByStatus")}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const rentals = (health as Record<string, Record<string, Record<string, number>>>).rentals;
+                      if (!rentals?.byStatus) return <p className="text-muted-foreground text-sm">{t("companyDetail.noHealthData")}</p>;
+                      const total = Object.values(rentals.byStatus).reduce((s, v) => s + v, 0);
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm font-medium mb-2">
+                            <span>{t("companyDetail.healthTotal")}</span>
+                            <span className="text-lg font-bold">{total}</span>
+                          </div>
+                          {Object.entries(rentals.byStatus).sort(([,a],[,b]) => b - a).map(([status, count]) => (
+                            <div key={status} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2.5 h-2.5 rounded-full ${statusDotColor(status)}`} />
+                                <span className="text-sm capitalize">{status.replace(/_/g, " ")}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 rounded-full bg-muted overflow-hidden" style={{ width: 80 }}>
+                                  <div className={`h-full rounded-full ${statusBarColor(status)}`} style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }} />
+                                </div>
+                                <span className="text-sm font-semibold w-6 text-right">{count}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{t("companyDetail.healthAssets")} — {t("companyDetail.healthIssues")}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const assets = (health as Record<string, Record<string, Record<string, number>>>).assets;
+                      if (!assets?.issues) return <p className="text-muted-foreground text-sm">{t("companyDetail.noHealthData")}</p>;
+                      return (
+                        <div className="grid grid-cols-2 gap-3">
+                          {Object.entries(assets.issues).map(([key, count]) => (
+                            <div key={key} className={`rounded-xl p-3 ${count > 0 ? "bg-destructive/10" : "bg-muted"}`}>
+                              <p className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, " ")}</p>
+                              <p className={`text-xl font-bold mt-0.5 ${count > 0 ? "text-destructive" : ""}`}>{count}</p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">{t("companyDetail.healthIncidents")}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const incidents = (health as Record<string, Record<string, number>>).incidents;
+                      if (!incidents) return <p className="text-muted-foreground text-sm">{t("companyDetail.noHealthData")}</p>;
+                      const items = [
+                        { label: t("companyDetail.healthActiveBlacklist"), value: incidents.activeBlacklistEntries },
+                        { label: t("companyDetail.healthLostStolen"), value: incidents.lostOrStolenAssets },
+                        { label: t("companyDetail.healthOverdueRentals"), value: incidents.overdueRentals },
+                        { label: t("companyDetail.healthDisputedRentals"), value: incidents.disputedRentals },
+                      ];
+                      return (
+                        <div className="grid grid-cols-2 gap-3">
+                          {items.map((item) => (
+                            <div key={item.label} className={`rounded-xl p-3 ${(item.value ?? 0) > 0 ? "bg-warning/10" : "bg-muted"}`}>
+                              <p className="text-xs text-muted-foreground">{item.label}</p>
+                              <p className={`text-xl font-bold mt-0.5 ${(item.value ?? 0) > 0 ? "text-warning" : ""}`}>{item.value ?? 0}</p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
                 <p className="text-muted-foreground">{t("companyDetail.noHealthData")}</p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="whitelabel" className="space-y-4">
