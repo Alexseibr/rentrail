@@ -22,10 +22,15 @@ import {
   Map,
   Menu,
   X,
+  Search,
+  Bell,
+  ChevronDown,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useMemo, useEffect, type ReactNode } from "react";
+import { Input } from "@/components/ui/input";
+import { useState, useMemo, useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { canAccessRoute } from "@/lib/permissions";
 
@@ -65,10 +70,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    if (userMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [userMenuOpen]);
 
   const isPlatformUser = useMemo(() => {
     if (!user) return false;
@@ -301,7 +321,35 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </Button>
             <h1 className="text-lg font-semibold text-foreground">{currentPageTitle}</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {searchOpen ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder={t("common.search", "Поиск...")}
+                  className="w-48 h-9 text-sm"
+                  autoFocus
+                  onBlur={() => setSearchOpen(false)}
+                  onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
+                />
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground relative"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -311,17 +359,45 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <Languages className="h-4 w-4 mr-1" />
               {i18n.language === "ru" ? "EN" : "RU"}
             </Button>
-            <div className="hidden md:flex items-center gap-2 ml-2 pl-2 border-l border-border/50">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </div>
-              <span className="text-sm font-medium hidden lg:inline">{user?.firstName}</span>
+            <div className="relative hidden md:block" ref={userMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 ml-1 pl-2 border-l border-border/50 py-1 hover:opacity-80 transition-opacity"
+              >
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </div>
+                <span className="text-sm font-medium hidden lg:inline">{user?.firstName}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-card rounded-xl shadow-lg border border-border/50 py-1.5 z-50">
+                  <div className="px-4 py-2.5 border-b border-border/50">
+                    <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{user?.phone}</p>
+                  </div>
+                  <button
+                    onClick={() => { toggleLang(); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <Languages className="h-4 w-4 text-muted-foreground" />
+                    {i18n.language === "ru" ? "Switch to English" : "Переключить на Русский"}
+                  </button>
+                  <button
+                    onClick={() => { logout(); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-muted/50 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {t("nav.logout", "Выйти")}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="page-transition">
+          <div key={location} className="page-transition">
             {children}
           </div>
         </main>
