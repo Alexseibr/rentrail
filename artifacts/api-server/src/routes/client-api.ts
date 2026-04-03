@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/authenticate";
-import { db, assets, rentals, rentalPlans, branches, clients, telemetrySnapshots } from "@workspace/db";
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { db, assets, rentals, rentalPlans, branches, clients, telemetrySnapshots, locationHistory } from "@workspace/db";
+import { eq, and, sql, inArray, desc } from "drizzle-orm";
 import { UnauthorizedError, BadRequestError, NotFoundError } from "../lib/errors";
+import * as commandService from "../services/command.service";
+import * as telemetryService from "../services/telemetry.service";
 
 const router = Router();
 
@@ -11,6 +13,37 @@ function requireClient(req: any) {
     throw new UnauthorizedError("Client authentication required");
   }
   return { clientId: req.user.clientId as string, companyId: req.user.companyId as string };
+}
+
+function handleError(res: any, err: any, context: string) {
+  if (err instanceof UnauthorizedError) {
+    res.status(401).json({ error: { code: "UNAUTHORIZED", message: err.message } });
+    return;
+  }
+  if (err instanceof BadRequestError || err instanceof NotFoundError) {
+    const status = err instanceof NotFoundError ? 404 : 400;
+    res.status(status).json({ error: { code: err.constructor.name, message: err.message } });
+    return;
+  }
+  console.error(`${context} error:`, err?.message);
+  res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+}
+
+async function requireActiveRentalForAsset(clientId: string, companyId: string, assetId: string) {
+  const [rental] = await db
+    .select({ id: rentals.id })
+    .from(rentals)
+    .where(
+      and(
+        eq(rentals.companyId, companyId),
+        eq(rentals.clientId, clientId),
+        eq(rentals.assetId, assetId),
+        inArray(rentals.status, ["active", "overdue"]),
+      ),
+    )
+    .limit(1);
+  if (!rental) throw new BadRequestError("You don't have an active rental for this vehicle");
+  return rental;
 }
 
 router.get("/client/vehicles", authenticate, async (req, res) => {
@@ -95,12 +128,7 @@ router.get("/client/vehicles", authenticate, async (req, res) => {
 
     res.json({ data: result });
   } catch (err: any) {
-    if (err instanceof UnauthorizedError) {
-      res.status(401).json({ error: { code: "UNAUTHORIZED", message: err.message } });
-      return;
-    }
-    console.error("GET /client/vehicles error:", err?.message);
-    res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+    handleError(res, err, "GET /client/vehicles");
   }
 });
 
@@ -172,12 +200,7 @@ router.get("/client/rentals", authenticate, async (req, res) => {
 
     res.json({ data: result });
   } catch (err: any) {
-    if (err instanceof UnauthorizedError) {
-      res.status(401).json({ error: { code: "UNAUTHORIZED", message: err.message } });
-      return;
-    }
-    console.error("GET /client/rentals error:", err?.message, err?.stack);
-    res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+    handleError(res, err, "GET /client/rentals");
   }
 });
 
@@ -253,16 +276,7 @@ router.post("/client/rentals", authenticate, async (req, res) => {
 
     res.status(201).json({ data: rental });
   } catch (err: any) {
-    if (err instanceof UnauthorizedError) {
-      res.status(401).json({ error: { code: "UNAUTHORIZED", message: err.message } });
-      return;
-    }
-    if (err instanceof BadRequestError || err instanceof NotFoundError) {
-      res.status(err instanceof NotFoundError ? 404 : 400).json({ error: { code: err.constructor.name, message: err.message } });
-      return;
-    }
-    console.error("POST /client/rentals error:", err?.message);
-    res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+    handleError(res, err, "POST /client/rentals");
   }
 });
 
@@ -303,16 +317,7 @@ router.post("/client/rentals/:id/return", authenticate, async (req, res) => {
 
     res.json({ data: updated });
   } catch (err: any) {
-    if (err instanceof UnauthorizedError) {
-      res.status(401).json({ error: { code: "UNAUTHORIZED", message: err.message } });
-      return;
-    }
-    if (err instanceof BadRequestError || err instanceof NotFoundError) {
-      res.status(err instanceof NotFoundError ? 404 : 400).json({ error: { code: err.constructor.name, message: err.message } });
-      return;
-    }
-    console.error("POST /client/rentals/:id/return error:", err?.message);
-    res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+    handleError(res, err, "POST /client/rentals/:id/return");
   }
 });
 
@@ -339,12 +344,247 @@ router.get("/client/profile", authenticate, async (req, res) => {
 
     res.json({ data: { ...client, tokenType: "client" } });
   } catch (err: any) {
-    if (err instanceof UnauthorizedError) {
-      res.status(401).json({ error: { code: "UNAUTHORIZED", message: err.message } });
-      return;
+    handleError(res, err, "GET /client/profile");
+  }
+});
+
+router.get("/client/vehicles/lookup", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const code = (req.query.code as string ?? "").trim();
+    if (!code) throw new BadRequestError("code query parameter is required");
+
+    const [asset] = await db
+      .select({
+        id: assets.id,
+        assetType: assets.assetType,
+        brand: assets.brand,
+        model: assets.model,
+        internalCode: assets.internalCode,
+        status: assets.status,
+      })
+      .from(assets)
+      .where(and(eq(assets.companyId, companyId), eq(assets.internalCode, code), eq(assets.isPublic, true)))
+      .limit(1);
+
+    if (!asset) throw new NotFoundError("Vehicle not found");
+
+    const [activeRental] = await db
+      .select({ id: rentals.id, status: rentals.status })
+      .from(rentals)
+      .where(
+        and(
+          eq(rentals.companyId, companyId),
+          eq(rentals.clientId, clientId),
+          eq(rentals.assetId, asset.id),
+          inArray(rentals.status, ["active", "overdue"]),
+        ),
+      )
+      .limit(1);
+
+    res.json({ data: { ...asset, hasActiveRental: !!activeRental } });
+  } catch (err: any) {
+    handleError(res, err, "GET /client/vehicles/lookup");
+  }
+});
+
+router.get("/client/vehicles/:id", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const assetId = req.params.id;
+
+    await requireActiveRentalForAsset(clientId, companyId, assetId);
+
+    const [asset] = await db
+      .select({
+        id: assets.id,
+        assetType: assets.assetType,
+        brand: assets.brand,
+        model: assets.model,
+        internalCode: assets.internalCode,
+        status: assets.status,
+        branchId: assets.branchId,
+      })
+      .from(assets)
+      .where(and(eq(assets.id, assetId), eq(assets.companyId, companyId)))
+      .limit(1);
+
+    if (!asset) throw new NotFoundError("Vehicle not found");
+
+    const telemetry = await telemetryService.getLatestSnapshotForAsset(assetId, companyId);
+
+    res.json({
+      data: {
+        ...asset,
+        telemetry: telemetry ? {
+          lat: telemetry.lat ? Number(telemetry.lat) : null,
+          lng: telemetry.lng ? Number(telemetry.lng) : null,
+          speed: telemetry.speed ? Number(telemetry.speed) : null,
+          batteryPercent: telemetry.batteryPercent,
+          batteryVoltage: telemetry.batteryVoltage ? Number(telemetry.batteryVoltage) : null,
+          lockState: telemetry.lockState,
+          alarmState: telemetry.alarmState,
+          onlineState: telemetry.onlineState,
+          odometer: telemetry.odometer ? Number(telemetry.odometer) : null,
+          recordedAt: telemetry.recordedAt,
+        } : null,
+      },
+    });
+  } catch (err: any) {
+    handleError(res, err, "GET /client/vehicles/:id");
+  }
+});
+
+router.get("/client/vehicles/:id/locations", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const assetId = req.params.id;
+
+    await requireActiveRentalForAsset(clientId, companyId, assetId);
+
+    const locations = await telemetryService.getLocationsForAsset(assetId, companyId, {
+      limit: Number(req.query.limit) || 100,
+    });
+
+    res.json({
+      data: locations.map((l) => ({
+        lat: Number(l.lat),
+        lng: Number(l.lng),
+        speed: l.speed ? Number(l.speed) : null,
+        recordedAt: l.recordedAt,
+      })),
+    });
+  } catch (err: any) {
+    handleError(res, err, "GET /client/vehicles/:id/locations");
+  }
+});
+
+router.post("/client/vehicles/:id/lock", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const assetId = req.params.id;
+    await requireActiveRentalForAsset(clientId, companyId, assetId);
+
+    const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "lock", clientId);
+    res.json({ data: { commandId: cmd.id, status: cmd.status } });
+  } catch (err: any) {
+    handleError(res, err, "POST /client/vehicles/:id/lock");
+  }
+});
+
+router.post("/client/vehicles/:id/unlock", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const assetId = req.params.id;
+    await requireActiveRentalForAsset(clientId, companyId, assetId);
+
+    const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "unlock", clientId);
+    res.json({ data: { commandId: cmd.id, status: cmd.status } });
+  } catch (err: any) {
+    handleError(res, err, "POST /client/vehicles/:id/unlock");
+  }
+});
+
+router.post("/client/vehicles/:id/arm", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const assetId = req.params.id;
+    await requireActiveRentalForAsset(clientId, companyId, assetId);
+
+    const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "arm_alarm", clientId);
+    res.json({ data: { commandId: cmd.id, status: cmd.status } });
+  } catch (err: any) {
+    handleError(res, err, "POST /client/vehicles/:id/arm");
+  }
+});
+
+router.post("/client/vehicles/:id/disarm", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const assetId = req.params.id;
+    await requireActiveRentalForAsset(clientId, companyId, assetId);
+
+    const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "disarm_alarm", clientId);
+    res.json({ data: { commandId: cmd.id, status: cmd.status } });
+  } catch (err: any) {
+    handleError(res, err, "POST /client/vehicles/:id/disarm");
+  }
+});
+
+router.get("/client/rentals/:id", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const rentalId = req.params.id;
+
+    const [rental] = await db
+      .select()
+      .from(rentals)
+      .where(
+        and(
+          eq(rentals.id, rentalId),
+          eq(rentals.companyId, companyId),
+          eq(rentals.clientId, clientId),
+        ),
+      )
+      .limit(1);
+
+    if (!rental) throw new NotFoundError("Rental not found");
+
+    const [asset] = rental.assetId
+      ? await db
+          .select({
+            id: assets.id,
+            assetType: assets.assetType,
+            brand: assets.brand,
+            model: assets.model,
+            internalCode: assets.internalCode,
+          })
+          .from(assets)
+          .where(eq(assets.id, rental.assetId))
+          .limit(1)
+      : [null];
+
+    let telemetry = null;
+    if (rental.assetId && (rental.status === "active" || rental.status === "overdue")) {
+      telemetry = await telemetryService.getLatestSnapshotForAsset(rental.assetId, companyId);
     }
-    console.error("GET /client/profile error:", err?.message);
-    res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+
+    const durationMs = rental.startAt
+      ? ((rental.actualEndAt ?? new Date()).getTime() - rental.startAt.getTime())
+      : 0;
+    const durationMinutes = Math.round(durationMs / 60000);
+
+    res.json({
+      data: {
+        id: rental.id,
+        status: rental.status,
+        startAt: rental.startAt,
+        plannedEndAt: rental.plannedEndAt,
+        actualEndAt: rental.actualEndAt,
+        depositAmount: rental.depositAmount,
+        notes: rental.notes,
+        createdAt: rental.createdAt,
+        durationMinutes,
+        asset: asset ? {
+          id: asset.id,
+          assetType: asset.assetType,
+          brand: asset.brand,
+          model: asset.model,
+          internalCode: asset.internalCode,
+        } : null,
+        telemetry: telemetry ? {
+          lat: telemetry.lat ? Number(telemetry.lat) : null,
+          lng: telemetry.lng ? Number(telemetry.lng) : null,
+          speed: telemetry.speed ? Number(telemetry.speed) : null,
+          batteryPercent: telemetry.batteryPercent,
+          lockState: telemetry.lockState,
+          odometer: telemetry.odometer ? Number(telemetry.odometer) : null,
+          recordedAt: telemetry.recordedAt,
+        } : null,
+      },
+    });
+  } catch (err: any) {
+    handleError(res, err, "GET /client/rentals/:id");
   }
 });
 

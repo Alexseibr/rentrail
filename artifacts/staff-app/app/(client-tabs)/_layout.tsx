@@ -86,6 +86,20 @@ export default function ClientTabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="vehicle-detail"
+        options={{
+          title: t("vehicleDetail.title"),
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="rental-detail"
+        options={{
+          title: t("rentalDetail.title"),
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

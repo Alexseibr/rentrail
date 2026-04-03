@@ -8,11 +8,12 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  TextInput,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
@@ -51,11 +52,14 @@ export default function VehiclesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
+  const router = useRouter();
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [renting, setRenting] = useState<string | null>(null);
+  const [searchCode, setSearchCode] = useState("");
+  const [searching, setSearching] = useState(false);
 
   const fetchVehicles = useCallback(async () => {
     try {
@@ -81,6 +85,33 @@ export default function VehiclesScreen() {
       fetchVehicles();
     }, [fetchVehicles]),
   );
+
+  const handleLookup = async () => {
+    const code = searchCode.trim();
+    if (!code) return;
+    setSearching(true);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${BASE_URL}/api/client/vehicles/lookup?code=${encodeURIComponent(code)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok && json.data) {
+        if (json.data.hasActiveRental) {
+          router.push({ pathname: "/(client-tabs)/vehicle-detail", params: { id: json.data.id } });
+        } else {
+          Alert.alert(t("clientVehicles.vehicleFound"), `${json.data.brand ?? ""} ${json.data.model ?? ""} (${json.data.internalCode})\n${t("clientVehicles.noActiveRentalForVehicle")}`);
+        }
+        setSearchCode("");
+      } else {
+        Alert.alert(t("common.error"), json.error?.message || t("clientVehicles.vehicleNotFound"));
+      }
+    } catch {
+      Alert.alert(t("common.error"), t("clientVehicles.lookupFailed"));
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const handleRent = async (vehicleId: string) => {
     Alert.alert(
@@ -185,6 +216,33 @@ export default function VehiclesScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.searchBar}>
+        <View style={styles.searchInputWrap}>
+          <Feather name="search" size={16} color="#8c8c8c" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t("clientVehicles.enterCode")}
+            placeholderTextColor="#aaa"
+            value={searchCode}
+            onChangeText={setSearchCode}
+            onSubmitEditing={handleLookup}
+            returnKeyType="search"
+            autoCapitalize="characters"
+          />
+        </View>
+        <TouchableOpacity
+          style={[styles.searchBtn, searching && { opacity: 0.7 }]}
+          onPress={handleLookup}
+          disabled={searching || !searchCode.trim()}
+          activeOpacity={0.7}
+        >
+          {searching ? (
+            <ActivityIndicator color="#1a1a1a" size="small" />
+          ) : (
+            <Feather name="arrow-right" size={18} color="#1a1a1a" />
+          )}
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={vehicles}
         keyExtractor={(v) => v.id}
@@ -252,6 +310,42 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   rentButtonText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
+  searchBar: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  searchInputWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: "#1a1a1a",
+  },
+  searchBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#F5C518",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   emptyWrap: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 15, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
 });

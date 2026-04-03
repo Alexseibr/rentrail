@@ -175,6 +175,7 @@
     "maintenance": "Maintenance"
   },
   "rentalDetail": {
+    "title": "Rental Details",
     "notFound": "Rental not found",
     "status": "Status",
     "type": "Type",
@@ -187,7 +188,19 @@
     "completeReturn": "Complete Return",
     "failedReturn": "Failed to complete return",
     "success": "Success",
-    "returnCompleted": "Rental return completed"
+    "returnCompleted": "Vehicle returned",
+    "timeline": "Timeline",
+    "plannedEnd": "Planned End",
+    "vehicleStatus": "Vehicle Status",
+    "lockState": "Lock State",
+    "deposit": "Deposit",
+    "notes": "Notes",
+    "min": " min",
+    "h": " h",
+    "d": " d",
+    "confirmReturn": "Return Vehicle",
+    "confirmReturnMessage": "Are you sure you want to return this vehicle?",
+    "returnFailed": "Failed to return"
   },
   "clientNav": {
     "vehicles": "Vehicles",
@@ -201,7 +214,12 @@
     "confirmRentMessage": "Do you want to start renting this vehicle?",
     "success": "Success",
     "rentalStarted": "Rental started successfully!",
-    "rentFailed": "Failed to rent vehicle"
+    "rentFailed": "Failed to rent vehicle",
+    "enterCode": "Vehicle code",
+    "vehicleFound": "Vehicle found",
+    "noActiveRentalForVehicle": "No active rental for this vehicle",
+    "vehicleNotFound": "Vehicle not found",
+    "lookupFailed": "Failed to find vehicle"
   },
   "clientRentals": {
     "noRentals": "No rentals yet",
@@ -217,7 +235,10 @@
     "status_overdue": "Overdue",
     "status_completed": "Completed",
     "status_cancelled": "Cancelled",
-    "status_canceled": "Canceled"
+    "status_canceled": "Canceled",
+    "returnConfirm": "Are you sure you want to return this vehicle?",
+    "returned": "Returned",
+    "returnedMessage": "Vehicle returned successfully!"
   },
   "clientProfile": {
     "phone": "Phone",
@@ -225,10 +246,33 @@
     "rating": "Rating",
     "memberSince": "Member Since"
   },
+  "vehicleDetail": {
+    "title": "Vehicle",
+    "commandSent": "Command Sent",
+    "queued": "Queued",
+    "commandFailed": "Failed to send command",
+    "notFound": "Vehicle not found",
+    "online": "Online",
+    "offline": "Offline",
+    "battery": "Battery",
+    "speedKmh": "Speed (km/h)",
+    "odometerKm": "Odometer (km)",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "armed": "Armed",
+    "disarmed": "Disarmed",
+    "controls": "Controls",
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "armAlarm": "Arm Alarm",
+    "disarmAlarm": "Disarm Alarm",
+    "lastUpdate": "Updated"
+  },
   "common": {
     "error": "Error",
     "ok": "OK",
     "back": "Back",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "success": "Success"
   }
 }

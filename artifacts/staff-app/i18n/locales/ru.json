@@ -175,19 +175,32 @@
     "maintenance": "Обслуживание"
   },
   "rentalDetail": {
+    "title": "Детали аренды",
     "notFound": "Аренда не найдена",
     "status": "Статус",
     "type": "Тип",
     "created": "Создано",
     "rental": "Аренда",
     "processReturn": "Оформить возврат",
-    "returnVehicle": "Возврат транспорта",
+    "returnVehicle": "Вернуть транспорт",
     "returnNotes": "Заметки о возврате (необязательно)...",
     "cancel": "Отмена",
     "completeReturn": "Завершить возврат",
     "failedReturn": "Не удалось завершить возврат",
     "success": "Успешно",
-    "returnCompleted": "Возврат аренды завершён"
+    "returnCompleted": "Транспорт возвращён",
+    "timeline": "Хронология",
+    "plannedEnd": "Плановое окончание",
+    "vehicleStatus": "Состояние транспорта",
+    "lockState": "Замок",
+    "deposit": "Депозит",
+    "notes": "Заметки",
+    "min": " мин",
+    "h": " ч",
+    "d": " д",
+    "confirmReturn": "Возврат транспорта",
+    "confirmReturnMessage": "Вы уверены, что хотите вернуть транспорт?",
+    "returnFailed": "Не удалось вернуть"
   },
   "clientNav": {
     "vehicles": "Транспорт",
@@ -201,7 +214,12 @@
     "confirmRentMessage": "Хотите начать аренду этого транспорта?",
     "success": "Успешно",
     "rentalStarted": "Аренда начата!",
-    "rentFailed": "Не удалось арендовать"
+    "rentFailed": "Не удалось арендовать",
+    "enterCode": "Код транспорта",
+    "vehicleFound": "Транспорт найден",
+    "noActiveRentalForVehicle": "Нет активной аренды для этого транспорта",
+    "vehicleNotFound": "Транспорт не найден",
+    "lookupFailed": "Не удалось найти транспорт"
   },
   "clientRentals": {
     "noRentals": "Аренд пока нет",
@@ -217,7 +235,10 @@
     "status_overdue": "Просрочена",
     "status_completed": "Завершена",
     "status_cancelled": "Отменена",
-    "status_canceled": "Отменена"
+    "status_canceled": "Отменена",
+    "returnConfirm": "Вы уверены, что хотите вернуть транспорт?",
+    "returned": "Возвращено",
+    "returnedMessage": "Транспорт успешно возвращён!"
   },
   "clientProfile": {
     "phone": "Телефон",
@@ -225,10 +246,33 @@
     "rating": "Рейтинг",
     "memberSince": "Клиент с"
   },
+  "vehicleDetail": {
+    "title": "Транспорт",
+    "commandSent": "Команда отправлена",
+    "queued": "В очереди",
+    "commandFailed": "Не удалось отправить команду",
+    "notFound": "Транспорт не найден",
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "battery": "Батарея",
+    "speedKmh": "Скорость (км/ч)",
+    "odometerKm": "Пробег (км)",
+    "locked": "Заблокирован",
+    "unlocked": "Разблокирован",
+    "armed": "Охрана вкл",
+    "disarmed": "Охрана выкл",
+    "controls": "Управление",
+    "lock": "Заблокировать",
+    "unlock": "Разблокировать",
+    "armAlarm": "Включить охрану",
+    "disarmAlarm": "Выключить охрану",
+    "lastUpdate": "Обновлено"
+  },
   "common": {
     "error": "Ошибка",
     "ok": "ОК",
     "back": "Назад",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "success": "Успешно"
   }
 }

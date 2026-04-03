@@ -12,7 +12,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
@@ -44,6 +44,7 @@ export default function MyRentalsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
+  const router = useRouter();
 
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +124,11 @@ export default function MyRentalsScreen() {
     const isActive = item.status === "active" || item.status === "overdue";
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push({ pathname: "/(client-tabs)/rental-detail", params: { id: item.id } })}
+        activeOpacity={0.7}
+      >
         <View style={styles.cardHeader}>
           <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
@@ -178,7 +183,7 @@ export default function MyRentalsScreen() {
             )}
           </TouchableOpacity>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
 
