@@ -9,31 +9,47 @@ import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccessTab } from "@/utils/permissions";
 
 function NativeTabLayout() {
   const { t } = useTranslation();
+  const { user, companyId } = useAuth();
+  const memberships = (user as any)?.memberships || user?.companies;
+  const roleCode = memberships?.find((c: any) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+
   return (
     <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>{t("nav.home")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="assets">
-        <Icon sf={{ default: "bicycle", selected: "bicycle" }} />
-        <Label>{t("nav.assets")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="rentals">
-        <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
-        <Label>{t("nav.rentals")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="operations">
-        <Icon sf={{ default: "wrench.and.screwdriver", selected: "wrench.and.screwdriver.fill" }} />
-        <Label>{t("nav.ops")}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings">
-        <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-        <Label>{t("nav.settings")}</Label>
-      </NativeTabs.Trigger>
+      {canAccessTab(roleCode, "index") && (
+        <NativeTabs.Trigger name="index">
+          <Icon sf={{ default: "house", selected: "house.fill" }} />
+          <Label>{t("nav.home")}</Label>
+        </NativeTabs.Trigger>
+      )}
+      {canAccessTab(roleCode, "assets") && (
+        <NativeTabs.Trigger name="assets">
+          <Icon sf={{ default: "bicycle", selected: "bicycle" }} />
+          <Label>{t("nav.assets")}</Label>
+        </NativeTabs.Trigger>
+      )}
+      {canAccessTab(roleCode, "rentals") && (
+        <NativeTabs.Trigger name="rentals">
+          <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
+          <Label>{t("nav.rentals")}</Label>
+        </NativeTabs.Trigger>
+      )}
+      {canAccessTab(roleCode, "operations") && (
+        <NativeTabs.Trigger name="operations">
+          <Icon sf={{ default: "wrench.and.screwdriver", selected: "wrench.and.screwdriver.fill" }} />
+          <Label>{t("nav.ops")}</Label>
+        </NativeTabs.Trigger>
+      )}
+      {canAccessTab(roleCode, "settings") && (
+        <NativeTabs.Trigger name="settings">
+          <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
+          <Label>{t("nav.settings")}</Label>
+        </NativeTabs.Trigger>
+      )}
     </NativeTabs>
   );
 }
@@ -45,6 +61,9 @@ function ClassicTabLayout() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const { user, companyId } = useAuth();
+  const memberships = (user as any)?.memberships || user?.companies;
+  const roleCode = memberships?.find((c: any) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
 
   return (
     <Tabs
@@ -81,6 +100,7 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: t("nav.dashboard"),
+          href: canAccessTab(roleCode, "index") ? undefined : null,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="house" tintColor={color} size={24} />
@@ -93,6 +113,7 @@ function ClassicTabLayout() {
         name="assets"
         options={{
           title: t("nav.assets"),
+          href: canAccessTab(roleCode, "assets") ? undefined : null,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="bicycle" tintColor={color} size={24} />
@@ -105,6 +126,7 @@ function ClassicTabLayout() {
         name="rentals"
         options={{
           title: t("nav.rentals"),
+          href: canAccessTab(roleCode, "rentals") ? undefined : null,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="doc.text" tintColor={color} size={24} />
@@ -117,6 +139,7 @@ function ClassicTabLayout() {
         name="operations"
         options={{
           title: t("nav.ops"),
+          href: canAccessTab(roleCode, "operations") ? undefined : null,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="wrench.and.screwdriver" tintColor={color} size={24} />
@@ -129,6 +152,7 @@ function ClassicTabLayout() {
         name="settings"
         options={{
           title: t("nav.settings"),
+          href: canAccessTab(roleCode, "settings") ? undefined : null,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="gearshape" tintColor={color} size={24} />

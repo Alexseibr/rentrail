@@ -336,6 +336,11 @@
     "message": "Your account ({{email}}) does not have platform administrator privileges. Contact a platform administrator to request access.",
     "signOut": "Sign out and use a different account"
   },
+  "noAccess": {
+    "title": "Section Unavailable",
+    "message": "Your role \"{{role}}\" does not have access to this section. Contact your company administrator.",
+    "goHome": "Go to Dashboard"
+  },
   "notFound": {
     "title": "404 Page Not Found",
     "message": "Did you forget to add the page to the router?"

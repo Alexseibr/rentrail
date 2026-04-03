@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { AppLayout } from "@/components/app-layout";
+import { canAccessRoute } from "@/lib/permissions";
 import LoginPage from "@/pages/login";
 import AccessDeniedPage from "@/pages/access-denied";
 import DashboardPage from "@/pages/dashboard";
@@ -26,9 +27,10 @@ import AssetDetailPage from "@/pages/asset-detail";
 import RentalDetailPage from "@/pages/rental-detail";
 import ServicePage from "@/pages/service";
 import FleetMapPage from "@/pages/fleet-map";
+import NoAccessPage from "@/pages/no-access";
 import NotFound from "@/pages/not-found";
 import { Spinner } from "@/components/ui/spinner";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 
 const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
 
@@ -59,19 +61,28 @@ function PlatformRoutes() {
   );
 }
 
+function RoleGuard({ children, guardPath }: { children: ReactNode; guardPath: string }) {
+  const { user } = useAuth();
+  const roleCode = user?.memberships?.[0]?.roleCode;
+  if (!canAccessRoute(roleCode, guardPath)) {
+    return <NoAccessPage />;
+  }
+  return <>{children}</>;
+}
+
 function CompanyRoutes() {
   return (
     <Switch>
-      <Route path="/" component={CompanyDashboardPage} />
-      <Route path="/fleet" component={FleetPage} />
-      <Route path="/fleet/:id" component={AssetDetailPage} />
-      <Route path="/map" component={FleetMapPage} />
-      <Route path="/service" component={ServicePage} />
-      <Route path="/rentals" component={RentalsCompanyPage} />
-      <Route path="/rentals/:id" component={RentalDetailPage} />
-      <Route path="/clients" component={ClientsCompanyPage} />
-      <Route path="/branches" component={BranchesPage} />
-      <Route path="/settings" component={SettingsCompanyPage} />
+      <Route path="/">{() => <RoleGuard guardPath="/"><CompanyDashboardPage /></RoleGuard>}</Route>
+      <Route path="/fleet">{() => <RoleGuard guardPath="/fleet"><FleetPage /></RoleGuard>}</Route>
+      <Route path="/fleet/:id">{() => <RoleGuard guardPath="/fleet"><AssetDetailPage /></RoleGuard>}</Route>
+      <Route path="/map">{() => <RoleGuard guardPath="/map"><FleetMapPage /></RoleGuard>}</Route>
+      <Route path="/service">{() => <RoleGuard guardPath="/service"><ServicePage /></RoleGuard>}</Route>
+      <Route path="/rentals">{() => <RoleGuard guardPath="/rentals"><RentalsCompanyPage /></RoleGuard>}</Route>
+      <Route path="/rentals/:id">{() => <RoleGuard guardPath="/rentals"><RentalDetailPage /></RoleGuard>}</Route>
+      <Route path="/clients">{() => <RoleGuard guardPath="/clients"><ClientsCompanyPage /></RoleGuard>}</Route>
+      <Route path="/branches">{() => <RoleGuard guardPath="/branches"><BranchesPage /></RoleGuard>}</Route>
+      <Route path="/settings">{() => <RoleGuard guardPath="/settings"><SettingsCompanyPage /></RoleGuard>}</Route>
       <Route component={NotFound} />
     </Switch>
   );

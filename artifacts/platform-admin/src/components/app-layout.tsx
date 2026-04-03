@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { canAccessRoute } from "@/lib/permissions";
 
 interface NavItem {
   path: string;
@@ -74,6 +75,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return user.memberships[0].companyName || user.memberships[0].roleName || null;
   }, [user]);
 
+  const roleCode = useMemo(() => {
+    if (!user?.memberships?.length) return undefined;
+    return user.memberships[0].roleCode;
+  }, [user]);
+
   const navItems = useMemo(() => {
     if (isPlatformUser) {
       return platformNavItems.filter((item) => {
@@ -83,8 +89,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
         return item.roles.some((r) => userRoles.includes(r));
       });
     }
-    return companyNavItems;
-  }, [isPlatformUser, user]);
+    return companyNavItems.filter((item) => canAccessRoute(roleCode, item.path));
+  }, [isPlatformUser, user, roleCode]);
 
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
