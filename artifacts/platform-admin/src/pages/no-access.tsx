@@ -3,11 +3,14 @@ import { useTranslation } from "react-i18next";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ShieldOff } from "lucide-react";
+import { getNavPaths } from "@/lib/permissions";
 
 export default function NoAccessPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const roleCode = user?.memberships?.[0]?.roleCode;
+  const allowedPaths = getNavPaths(roleCode);
+  const fallback = allowedPaths[0] || "/";
 
   return (
     <div className="flex flex-col items-center justify-center h-full py-20 px-4">
@@ -16,7 +19,7 @@ export default function NoAccessPage() {
       <p className="text-muted-foreground text-center max-w-md mb-6">
         {t("noAccess.message", { role: roleCode || "—" })}
       </p>
-      <Link href="/">
+      <Link href={fallback}>
         <Button variant="outline">{t("noAccess.goHome")}</Button>
       </Link>
     </div>
