@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -14,12 +15,32 @@ import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useSync } from "@/contexts/SyncContext";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function OperationsScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const { pendingCount } = useSync();
+  const { logout, user } = useAuth();
+
+  const handleLogout = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (Platform.OS === "web") {
+      if (window.confirm(t("settings.signOutConfirm"))) {
+        await logout();
+      }
+    } else {
+      Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("settings.signOut"),
+          style: "destructive",
+          onPress: async () => { await logout(); },
+        },
+      ]);
+    }
+  };
 
   const sections = [
     {
@@ -87,6 +108,25 @@ export default function OperationsScreen() {
             </View>
           </View>
         ))}
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            {t("settings.account")}
+          </Text>
+          {user && (
+            <Text style={[styles.userInfo, { color: colors.mutedForeground }]}>
+              {user.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : user.phone}
+            </Text>
+          )}
+          <TouchableOpacity
+            style={[styles.logoutBtn, { backgroundColor: "#DC262610" }]}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <Feather name="log-out" size={18} color="#DC2626" />
+            <Text style={styles.logoutText}>{t("settings.signOut")}</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -136,4 +176,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   badgeText: { color: "#fff", fontSize: 11, fontFamily: "Inter_700Bold" },
+  userInfo: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 14,
+    borderRadius: 16,
+  },
+  logoutText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#DC2626",
+  },
 });
