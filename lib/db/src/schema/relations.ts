@@ -38,6 +38,8 @@ import { deviceCommands } from "./device-commands";
 import { providerApiKeys } from "./provider-api-keys";
 import { platformRoles, platformUserRoles } from "./platform-roles";
 import { platformAuditLogs } from "./platform-audit-logs";
+import { serviceRequests } from "./service-requests";
+import { workOrders } from "./work-orders";
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
   settings: many(companySettings),
@@ -300,4 +302,23 @@ export const platformUserRolesRelations = relations(platformUserRoles, ({ one })
 export const platformAuditLogsRelations = relations(platformAuditLogs, ({ one }) => ({
   actorUser: one(users, { fields: [platformAuditLogs.actorUserId], references: [users.id] }),
   targetCompany: one(companies, { fields: [platformAuditLogs.targetCompanyId], references: [companies.id] }),
+}));
+
+export const serviceRequestsRelations = relations(serviceRequests, ({ one, many }) => ({
+  company: one(companies, { fields: [serviceRequests.companyId], references: [companies.id] }),
+  branch: one(branches, { fields: [serviceRequests.branchId], references: [branches.id] }),
+  asset: one(assets, { fields: [serviceRequests.assetId], references: [assets.id] }),
+  client: one(clients, { fields: [serviceRequests.clientId], references: [clients.id] }),
+  reportedByUser: one(users, { fields: [serviceRequests.reportedByUserId], references: [users.id] }),
+  assignedToUser: one(users, { fields: [serviceRequests.assignedToUserId], references: [users.id] }),
+  workOrders: many(workOrders),
+}));
+
+export const workOrdersRelations = relations(workOrders, ({ one }) => ({
+  company: one(companies, { fields: [workOrders.companyId], references: [companies.id] }),
+  branch: one(branches, { fields: [workOrders.branchId], references: [branches.id] }),
+  asset: one(assets, { fields: [workOrders.assetId], references: [assets.id] }),
+  serviceRequest: one(serviceRequests, { fields: [workOrders.serviceRequestId], references: [serviceRequests.id] }),
+  assignedToUser: one(users, { fields: [workOrders.assignedToUserId], references: [users.id] }),
+  createdByUser: one(users, { fields: [workOrders.createdByUserId], references: [users.id] }),
 }));

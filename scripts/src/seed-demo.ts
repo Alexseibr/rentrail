@@ -5,6 +5,7 @@ import {
   telemetrySnapshots, telemetryEvents, batteries, batteryAssignments,
   userCompanyMemberships, userBranchMemberships, roles,
   platformRoles, platformUserRoles,
+  serviceRequests, workOrders,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { createHash, randomUUID } from "crypto";
@@ -386,14 +387,25 @@ async function seedDemo() {
   }
 
   const now = new Date();
-  const telSnaps = insertedDevices.slice(0, 5).map((d, i) => ({
-    deviceId: d.id,
+  const moscowCoords = [
+    [55.7558, 37.6173], [55.7612, 37.6298], [55.7483, 37.6115],
+    [55.7701, 37.5954], [55.7399, 37.6327], [55.7534, 37.5837],
+    [55.7651, 37.6070], [55.7380, 37.5990], [55.7720, 37.6210],
+    [55.7460, 37.6440], [55.7590, 37.6500], [55.7510, 37.6360],
+    [55.7630, 37.5800], [55.7445, 37.6130], [55.7575, 37.6550],
+    [55.7695, 37.5700], [55.7350, 37.6250], [55.7422, 37.6480],
+    [55.7680, 37.6380], [55.7530, 37.6020],
+  ];
+  const telSnaps = insertedAssets.slice(0, 20).map((a, i) => ({
+    assetId: a.id,
+    deviceId: insertedDevices[i % insertedDevices.length]?.id,
     companyId: demoCompany.id,
-    lat: 40.7128 + (i * 0.01),
-    lng: -74.006 + (i * 0.01),
-    speed: i * 5,
-    batteryPercent: 100 - i * 15,
-    onlineState: i < 4 ? "online" : "offline",
+    lat: moscowCoords[i][0] + (Math.random() - 0.5) * 0.005,
+    lng: moscowCoords[i][1] + (Math.random() - 0.5) * 0.005,
+    speed: Math.round(Math.random() * 25),
+    batteryPercent: Math.round(20 + Math.random() * 80),
+    lockState: i % 3 === 0 ? "unlocked" : "locked",
+    onlineState: i < 16 ? "online" : "offline",
     payload: { demo: true },
     recordedAt: now,
   }));
@@ -420,6 +432,142 @@ async function seedDemo() {
   ]);
   await db.insert(telemetryEvents).values(telEvents);
   console.log(`  Telemetry events: ${telEvents.length}`);
+
+  // ─── Service requests & work orders ─────────────────────────────────────
+  const mechanicUser = insertedUsers[4]; // Andrei Volkov — mechanic
+  const srData = [
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[0].id,
+      assetId: insertedAssets[19].id,
+      requestType: "breakdown" as const,
+      priority: "high" as const,
+      status: "new" as const,
+      title: "Не включается мотор",
+      description: "Клиент сообщил, что мотор не реагирует на газ. Самокат стоит на Тверской.",
+      reportedByUserId: insertedUsers[3].id,
+      lat: 55.7650,
+      lng: 37.6050,
+      locationAddress: "ул. Тверская, 15",
+    },
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[0].id,
+      assetId: insertedAssets[20].id,
+      requestType: "flat_tire" as const,
+      priority: "medium" as const,
+      status: "assigned" as const,
+      title: "Прокол заднего колеса",
+      description: "Обнаружен прокол при осмотре. Требуется замена камеры.",
+      reportedByUserId: insertedUsers[2].id,
+      assignedToUserId: mechanicUser.id,
+      lat: 55.7530,
+      lng: 37.6200,
+      locationAddress: "Парк Горького, вход 2",
+    },
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[1].id,
+      assetId: insertedAssets[21].id,
+      requestType: "battery_issue" as const,
+      priority: "urgent" as const,
+      status: "in_progress" as const,
+      title: "Батарея не заряжается",
+      description: "Батарея показывает 0% и не принимает зарядку. Возможно вздутие.",
+      reportedByUserId: insertedUsers[3].id,
+      assignedToUserId: mechanicUser.id,
+    },
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[0].id,
+      assetId: insertedAssets[5].id,
+      requestType: "scheduled_maintenance" as const,
+      priority: "low" as const,
+      status: "completed" as const,
+      title: "Плановое ТО — 500 км",
+      description: "Плановое техобслуживание после 500 км пробега.",
+      reportedByUserId: insertedUsers[1].id,
+      assignedToUserId: mechanicUser.id,
+      resolvedAt: past(2),
+    },
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[2].id,
+      assetId: insertedAssets[10].id,
+      requestType: "brake_issue" as const,
+      priority: "high" as const,
+      status: "new" as const,
+      title: "Скрипят передние тормоза",
+      description: "Клиент жалуется на скрип и слабое торможение.",
+      reportedByUserId: insertedUsers[3].id,
+      lat: 55.7420,
+      lng: 37.6300,
+    },
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[0].id,
+      requestType: "inspection" as const,
+      priority: "low" as const,
+      status: "new" as const,
+      title: "Осмотр флота перед сезоном",
+      description: "Необходимо провести осмотр всех единиц Downtown Hub перед началом летнего сезона.",
+      reportedByUserId: insertedUsers[1].id,
+    },
+  ];
+  const insertedSRs = await db.insert(serviceRequests).values(srData).returning();
+  console.log(`  Service requests: ${insertedSRs.length}`);
+
+  const woData = [
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[0].id,
+      serviceRequestId: insertedSRs[1].id,
+      assetId: insertedAssets[20].id,
+      orderType: "field_repair" as const,
+      priority: "medium" as const,
+      status: "assigned" as const,
+      title: "Замена камеры заднего колеса",
+      description: "Выехать на место и заменить камеру. Запчасть: камера 10 дюймов.",
+      assignedToUserId: mechanicUser.id,
+      createdByUserId: insertedUsers[2].id,
+      estimatedCost: "450",
+    },
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[1].id,
+      serviceRequestId: insertedSRs[2].id,
+      assetId: insertedAssets[21].id,
+      orderType: "workshop_repair" as const,
+      priority: "urgent" as const,
+      status: "in_progress" as const,
+      title: "Диагностика и замена батареи",
+      description: "Провести полную диагностику BMS. При подтверждении вздутия — замена батареи.",
+      assignedToUserId: mechanicUser.id,
+      createdByUserId: insertedUsers[1].id,
+      estimatedCost: "12000",
+      startedAt: past(1),
+    },
+    {
+      companyId: demoCompany.id,
+      branchId: insertedBranches[0].id,
+      serviceRequestId: insertedSRs[3].id,
+      assetId: insertedAssets[5].id,
+      orderType: "scheduled_maintenance" as const,
+      priority: "low" as const,
+      status: "completed" as const,
+      title: "ТО-500: смазка, проверка, протяжка",
+      description: "Смазка цепи, проверка тормозов, протяжка болтов, проверка давления.",
+      assignedToUserId: mechanicUser.id,
+      createdByUserId: insertedUsers[2].id,
+      estimatedCost: "800",
+      actualCost: "750",
+      resolution: "Все работы выполнены. Тормозные колодки в норме. Давление скорректировано.",
+      startedAt: past(3),
+      completedAt: past(2),
+    },
+  ];
+  const insertedWOs = await db.insert(workOrders).values(woData).returning();
+  console.log(`  Work orders: ${insertedWOs.length}`);
 
   // ─── Platform admin users ────────────────────────────────────────────────
   const superAdminHash = await hash("39903990");
@@ -551,12 +699,22 @@ async function main() {
             await db.execute(sql.raw(`DELETE FROM "${tablename}" WHERE company_id = '${existing.id}'`));
           } catch {}
         }
+        await db.execute(sql.raw(`DELETE FROM "platform_audit_logs" WHERE target_company_id = '${existing.id}'`));
         await db.execute(sql.raw(`DELETE FROM "users" WHERE email LIKE '%@${slug.replace("-", "")}.demo' OR email LIKE '%@${slug.split("-").join("")}.demo'`));
         await db.execute(sql.raw(`DELETE FROM "companies" WHERE id = '${existing.id}'`));
         console.log(`  Cleared: ${slug}`);
       }
     }
 
+    await db.execute(sql`
+      DELETE FROM "platform_audit_logs"
+      WHERE actor_user_id IN (
+        SELECT id FROM "users"
+        WHERE email LIKE '%@platform.demo'
+           OR email LIKE '%@velocityrides.demo'
+           OR email LIKE '%@urbanwheels.demo'
+      )
+    `);
     await db.execute(sql`
       DELETE FROM "platform_user_roles"
       WHERE user_id IN (

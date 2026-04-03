@@ -24,6 +24,8 @@ import BranchesPage from "@/pages/branches";
 import SettingsCompanyPage from "@/pages/settings-company";
 import AssetDetailPage from "@/pages/asset-detail";
 import RentalDetailPage from "@/pages/rental-detail";
+import ServicePage from "@/pages/service";
+import FleetMapPage from "@/pages/fleet-map";
 import NotFound from "@/pages/not-found";
 import { Spinner } from "@/components/ui/spinner";
 import { useMemo } from "react";
@@ -63,6 +65,8 @@ function CompanyRoutes() {
       <Route path="/" component={CompanyDashboardPage} />
       <Route path="/fleet" component={FleetPage} />
       <Route path="/fleet/:id" component={AssetDetailPage} />
+      <Route path="/map" component={FleetMapPage} />
+      <Route path="/service" component={ServicePage} />
       <Route path="/rentals" component={RentalsCompanyPage} />
       <Route path="/rentals/:id" component={RentalDetailPage} />
       <Route path="/clients" component={ClientsCompanyPage} />

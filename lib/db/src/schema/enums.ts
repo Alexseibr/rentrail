@@ -279,6 +279,54 @@ export const commandStatusEnum = pgEnum("command_status", [
   "canceled",
 ]);
 
+export const serviceRequestTypeEnum = pgEnum("service_request_type", [
+  "breakdown",
+  "flat_tire",
+  "brake_issue",
+  "battery_issue",
+  "electrical",
+  "body_damage",
+  "scheduled_maintenance",
+  "inspection",
+  "cleaning",
+  "other",
+]);
+
+export const serviceRequestStatusEnum = pgEnum("service_request_status", [
+  "new",
+  "assigned",
+  "in_progress",
+  "on_hold",
+  "completed",
+  "canceled",
+]);
+
+export const servicePriorityEnum = pgEnum("service_priority", [
+  "low",
+  "medium",
+  "high",
+  "urgent",
+]);
+
+export const workOrderTypeEnum = pgEnum("work_order_type", [
+  "field_repair",
+  "workshop_repair",
+  "scheduled_maintenance",
+  "inspection",
+  "recovery",
+  "cleaning",
+]);
+
+export const workOrderStatusEnum = pgEnum("work_order_status", [
+  "draft",
+  "assigned",
+  "en_route",
+  "in_progress",
+  "waiting_parts",
+  "completed",
+  "canceled",
+]);
+
 export const saasBillingIntervalEnum = pgEnum("saas_billing_interval", [
   "monthly",
   "quarterly",

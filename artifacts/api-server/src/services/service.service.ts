@@ -1,0 +1,192 @@
+import { db } from "@workspace/db";
+import { serviceRequests, workOrders, users, assets, branches, userCompanyMemberships, roles } from "@workspace/db/schema";
+import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+
+const userFullName = sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`.as("assigned_to_name");
+
+export async function listServiceRequests(companyId: string, branchId?: string, status?: string) {
+  const rows = await db
+    .select({
+      id: serviceRequests.id,
+      companyId: serviceRequests.companyId,
+      branchId: serviceRequests.branchId,
+      assetId: serviceRequests.assetId,
+      requestType: serviceRequests.requestType,
+      priority: serviceRequests.priority,
+      status: serviceRequests.status,
+      title: serviceRequests.title,
+      description: serviceRequests.description,
+      lat: serviceRequests.lat,
+      lng: serviceRequests.lng,
+      locationAddress: serviceRequests.locationAddress,
+      assignedToUserId: serviceRequests.assignedToUserId,
+      resolvedAt: serviceRequests.resolvedAt,
+      createdAt: serviceRequests.createdAt,
+      updatedAt: serviceRequests.updatedAt,
+      assetCode: assets.internalCode,
+      assetType: assets.assetType,
+      branchName: branches.name,
+      branchCity: branches.city,
+      assignedToName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
+    })
+    .from(serviceRequests)
+    .leftJoin(assets, eq(serviceRequests.assetId, assets.id))
+    .leftJoin(branches, eq(serviceRequests.branchId, branches.id))
+    .leftJoin(users, eq(serviceRequests.assignedToUserId, users.id))
+    .where(
+      branchId
+        ? and(eq(serviceRequests.companyId, companyId), eq(serviceRequests.branchId, branchId), status ? eq(serviceRequests.status, status as any) : undefined)
+        : and(eq(serviceRequests.companyId, companyId), status ? eq(serviceRequests.status, status as any) : undefined)
+    )
+    .orderBy(desc(serviceRequests.createdAt));
+  return rows;
+}
+
+export async function getServiceRequest(id: string, companyId: string) {
+  const [row] = await db
+    .select({
+      id: serviceRequests.id,
+      companyId: serviceRequests.companyId,
+      branchId: serviceRequests.branchId,
+      assetId: serviceRequests.assetId,
+      clientId: serviceRequests.clientId,
+      requestType: serviceRequests.requestType,
+      priority: serviceRequests.priority,
+      status: serviceRequests.status,
+      title: serviceRequests.title,
+      description: serviceRequests.description,
+      lat: serviceRequests.lat,
+      lng: serviceRequests.lng,
+      locationAddress: serviceRequests.locationAddress,
+      assignedToUserId: serviceRequests.assignedToUserId,
+      reportedByUserId: serviceRequests.reportedByUserId,
+      resolvedAt: serviceRequests.resolvedAt,
+      createdAt: serviceRequests.createdAt,
+      updatedAt: serviceRequests.updatedAt,
+      assetCode: assets.internalCode,
+      assetType: assets.assetType,
+      branchName: branches.name,
+      branchCity: branches.city,
+      assignedToName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
+    })
+    .from(serviceRequests)
+    .leftJoin(assets, eq(serviceRequests.assetId, assets.id))
+    .leftJoin(branches, eq(serviceRequests.branchId, branches.id))
+    .leftJoin(users, eq(serviceRequests.assignedToUserId, users.id))
+    .where(and(eq(serviceRequests.id, id), eq(serviceRequests.companyId, companyId)));
+  return row;
+}
+
+export async function createServiceRequest(data: {
+  companyId: string;
+  branchId: string;
+  assetId?: string;
+  clientId?: string;
+  requestType: string;
+  priority?: string;
+  title: string;
+  description?: string;
+  reportedByUserId?: string;
+  lat?: number;
+  lng?: number;
+  locationAddress?: string;
+}) {
+  const [row] = await db.insert(serviceRequests).values(data as any).returning();
+  return row;
+}
+
+export async function updateServiceRequest(id: string, companyId: string, data: Record<string, unknown>) {
+  const [row] = await db
+    .update(serviceRequests)
+    .set({ ...data, updatedAt: new Date() } as any)
+    .where(and(eq(serviceRequests.id, id), eq(serviceRequests.companyId, companyId)))
+    .returning();
+  return row;
+}
+
+export async function listWorkOrders(companyId: string, branchId?: string, status?: string) {
+  const rows = await db
+    .select({
+      id: workOrders.id,
+      companyId: workOrders.companyId,
+      branchId: workOrders.branchId,
+      serviceRequestId: workOrders.serviceRequestId,
+      assetId: workOrders.assetId,
+      orderType: workOrders.orderType,
+      priority: workOrders.priority,
+      status: workOrders.status,
+      title: workOrders.title,
+      description: workOrders.description,
+      assignedToUserId: workOrders.assignedToUserId,
+      estimatedCost: workOrders.estimatedCost,
+      actualCost: workOrders.actualCost,
+      resolution: workOrders.resolution,
+      startedAt: workOrders.startedAt,
+      completedAt: workOrders.completedAt,
+      createdAt: workOrders.createdAt,
+      assetCode: assets.internalCode,
+      assetType: assets.assetType,
+      branchName: branches.name,
+      branchCity: branches.city,
+      assignedToName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
+    })
+    .from(workOrders)
+    .leftJoin(assets, eq(workOrders.assetId, assets.id))
+    .leftJoin(branches, eq(workOrders.branchId, branches.id))
+    .leftJoin(users, eq(workOrders.assignedToUserId, users.id))
+    .where(
+      branchId
+        ? and(eq(workOrders.companyId, companyId), eq(workOrders.branchId, branchId), status ? eq(workOrders.status, status as any) : undefined)
+        : and(eq(workOrders.companyId, companyId), status ? eq(workOrders.status, status as any) : undefined)
+    )
+    .orderBy(desc(workOrders.createdAt));
+  return rows;
+}
+
+export async function createWorkOrder(data: {
+  companyId: string;
+  branchId: string;
+  serviceRequestId?: string;
+  assetId?: string;
+  orderType: string;
+  priority?: string;
+  title: string;
+  description?: string;
+  assignedToUserId?: string;
+  createdByUserId?: string;
+  estimatedCost?: string;
+}) {
+  const [row] = await db.insert(workOrders).values(data as any).returning();
+  return row;
+}
+
+export async function updateWorkOrder(id: string, companyId: string, data: Record<string, unknown>) {
+  const [row] = await db
+    .update(workOrders)
+    .set({ ...data, updatedAt: new Date() } as any)
+    .where(and(eq(workOrders.id, id), eq(workOrders.companyId, companyId)))
+    .returning();
+  return row;
+}
+
+export async function getMechanics(companyId: string, branchId?: string) {
+  const mechanicRole = await db.select().from(roles).where(eq(roles.code, "mechanic")).then(r => r[0]);
+  if (!mechanicRole) return [];
+
+  const rows = await db
+    .select({
+      userId: userCompanyMemberships.userId,
+      fullName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
+      phone: users.phone,
+    })
+    .from(userCompanyMemberships)
+    .innerJoin(users, eq(userCompanyMemberships.userId, users.id))
+    .where(
+      and(
+        eq(userCompanyMemberships.companyId, companyId),
+        eq(userCompanyMemberships.roleId, mechanicRole.id),
+        eq(userCompanyMemberships.status, "active")
+      )
+    );
+  return rows;
+}

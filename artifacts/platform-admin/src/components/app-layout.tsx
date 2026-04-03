@@ -19,6 +19,8 @@ import {
   MapPin,
   Settings,
   AlertTriangle,
+  Wrench,
+  Map,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +47,8 @@ const platformNavItems: NavItem[] = [
 const companyNavItems: NavItem[] = [
   { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
   { path: "/fleet", labelKey: "nav.fleet", icon: Bike },
+  { path: "/map", labelKey: "nav.map", icon: Map },
+  { path: "/service", labelKey: "nav.service", icon: Wrench },
   { path: "/rentals", labelKey: "nav.rentals", icon: ClipboardList },
   { path: "/clients", labelKey: "nav.clients", icon: Users },
   { path: "/branches", labelKey: "nav.branches", icon: MapPin },

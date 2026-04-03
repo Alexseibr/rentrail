@@ -47,4 +47,6 @@ export * from "./saas-subscriptions";
 export * from "./saas-invoices";
 export * from "./saas-payments";
 export * from "./company-white-label-settings";
+export * from "./service-requests";
+export * from "./work-orders";
 export * from "./relations";

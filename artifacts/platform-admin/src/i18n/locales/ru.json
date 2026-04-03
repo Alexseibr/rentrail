@@ -73,7 +73,9 @@
     "rentals": "Аренды",
     "clients": "Клиенты",
     "branches": "Филиалы",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "service": "Сервис",
+    "map": "Карта"
   },
   "lang": {
     "en": "English",
@@ -460,6 +462,74 @@
     "website": "Сайт",
     "address": "Адрес",
     "created": "Создана"
+  },
+  "service": {
+    "title": "Сервис",
+    "subtitle": "Заявки на обслуживание и наряд-заказы",
+    "requests": "Заявки",
+    "workOrders": "Наряд-заказы",
+    "newRequest": "Новая заявка",
+    "newWorkOrder": "Наряд-заказ",
+    "requestTitle": "Заголовок",
+    "requestTypeLabel": "Тип неисправности",
+    "orderTypeLabel": "Тип работ",
+    "assetLabel": "Транспорт",
+    "branchLabel": "Филиал",
+    "priorityLabel": "Приоритет",
+    "assignee": "Мастер",
+    "assign": "Назначить",
+    "assignMechanic": "Назначить мастера",
+    "selectMechanic": "Выберите мастера",
+    "descriptionLabel": "Описание",
+    "status": {
+      "new": "Новая",
+      "assigned": "Назначена",
+      "in_progress": "В работе",
+      "on_hold": "На паузе",
+      "completed": "Завершена",
+      "canceled": "Отменена",
+      "draft": "Черновик",
+      "en_route": "В пути",
+      "waiting_parts": "Ожидание запчастей"
+    },
+    "priority": {
+      "low": "Низкий",
+      "medium": "Средний",
+      "high": "Высокий",
+      "urgent": "Срочный"
+    },
+    "type": {
+      "breakdown": "Поломка",
+      "flat_tire": "Прокол шины",
+      "brake_issue": "Проблема с тормозами",
+      "battery_issue": "Проблема с батареей",
+      "electrical": "Электрика",
+      "body_damage": "Повреждение корпуса",
+      "scheduled_maintenance": "Плановое ТО",
+      "inspection": "Осмотр",
+      "cleaning": "Чистка",
+      "other": "Другое"
+    },
+    "orderType": {
+      "field_repair": "Выездной ремонт",
+      "workshop_repair": "Ремонт в мастерской",
+      "scheduled_maintenance": "Плановое ТО",
+      "inspection": "Осмотр",
+      "recovery": "Эвакуация",
+      "cleaning": "Чистка"
+    }
+  },
+  "map": {
+    "title": "Карта транспорта",
+    "subtitle": "Местоположение и состояние транспорта в реальном времени",
+    "totalVehicles": "Всего транспорта",
+    "onMap": "На карте",
+    "offline": "Без координат",
+    "avgBattery": "Средний заряд",
+    "battery": "Батарея",
+    "lock": "Замок",
+    "speed": "Скорость",
+    "lastSeen": "Последнее обновление"
   },
   "companyDashboard": {
     "title": "Обзор",
