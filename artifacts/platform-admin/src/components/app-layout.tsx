@@ -233,8 +233,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
-              className={cn("h-8 w-8 shrink-0 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent", collapsed && "hidden")}
+              className="h-8 w-8 shrink-0 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
               onClick={logout}
+              title={t("nav.logout", "Выйти")}
             >
               <LogOut className="h-4 w-4" />
             </Button>
