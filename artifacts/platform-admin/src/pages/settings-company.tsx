@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Pencil, Building2, User, Users } from "lucide-react";
 export default function SettingsCompanyPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { canWriteSettings } = useRolePermissions();
   const queryClient = useQueryClient();
   const membership = user?.memberships?.[0];
   const companyId = membership?.companyId;
@@ -107,10 +109,12 @@ export default function SettingsCompanyPage() {
               <Building2 className="h-5 w-5 text-muted-foreground" />
               <CardTitle className="text-base">{t("settings.company", "Компания")}</CardTitle>
             </div>
-            <Button size="sm" variant="outline" onClick={openEditCompany}>
-              <Pencil className="h-3.5 w-3.5 mr-1" />
-              {t("common.edit", "Редактировать")}
-            </Button>
+            {canWriteSettings && (
+              <Button size="sm" variant="outline" onClick={openEditCompany}>
+                <Pencil className="h-3.5 w-3.5 mr-1" />
+                {t("common.edit", "Редактировать")}
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
