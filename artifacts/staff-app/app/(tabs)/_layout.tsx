@@ -4,6 +4,7 @@ import { Tabs } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -113,6 +114,11 @@ function ClassicTabLayout() {
           fontSize: 11,
         },
       }}
+      screenListeners={{
+        tabPress: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
+      }}
     >
       <Tabs.Screen
         name="index"
@@ -203,8 +209,5 @@ const tabStyles = StyleSheet.create({
 });
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
   return <ClassicTabLayout />;
 }
