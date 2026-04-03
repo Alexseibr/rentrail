@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { db, clients } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { signAccessToken } from "../lib/jwt";
@@ -63,9 +64,15 @@ export async function clientLoginWithPassword(
     tokenType: "client",
   });
 
+  const refreshToken = jwt.sign(
+    { clientId: client.id, companyId: client.companyId, tokenType: "client-refresh" },
+    config.jwt.refreshSecret,
+    { expiresIn: "30d" },
+  );
+
   return {
     accessToken,
-    refreshToken: "",
+    refreshToken,
     user: {
       id: client.id,
       clientId: client.id,

@@ -101,10 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
     let companyId = await getCompanyId();
     if (!companyId && userData.memberships?.length > 0) {
-      companyId = userData.memberships[0].companyId;
+      companyId = userData.memberships[0].companyId as string;
       await storeCompanyId(companyId);
     }
-    setState({ user: userData, isAuthenticated: true, isLoading: false, companyId, branchId: null });
+    setState({ user: userData, isAuthenticated: true, isLoading: false, companyId: companyId ?? null, branchId: null });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {

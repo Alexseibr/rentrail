@@ -100,7 +100,7 @@ export default function ServicePage() {
   });
 
   const branches = Array.isArray(branchesQuery.data) ? branchesQuery.data : [];
-  const allAssets = Array.isArray(assetsQuery.data) ? assetsQuery.data : (assetsQuery.data as any)?.items || [];
+  const allAssets = assetsQuery.data ?? [];
   const mechanics = Array.isArray(mechanicsQuery.data) ? mechanicsQuery.data : [];
   const requests = Array.isArray(requestsQuery.data) ? requestsQuery.data : [];
   const workOrders = Array.isArray(workOrdersQuery.data) ? workOrdersQuery.data : [];

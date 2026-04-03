@@ -41,7 +41,7 @@ export default function RentalDetailPage() {
   });
 
   const rental = rentalQuery.data;
-  const history = Array.isArray(historyQuery.data) ? historyQuery.data : (historyQuery.data as any)?.items || [];
+  const history = historyQuery.data ?? [];
 
   if (rentalQuery.isLoading) {
     return (

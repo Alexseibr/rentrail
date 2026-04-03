@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as serviceService from "../services/service.service";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ router.get("/service-requests", authenticate, requireCompanyAccess, requirePermi
     );
     res.json({ data: items });
   } catch (err: any) {
-    console.error("GET /service-requests error:", err?.message, err?.stack);
+    logger.error({ err }, "GET /service-requests error");
     res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });
@@ -82,7 +83,7 @@ router.get("/work-orders", authenticate, requireCompanyAccess, requirePermission
     );
     res.json({ data: items });
   } catch (err: any) {
-    console.error("GET /work-orders error:", err?.message, err?.stack);
+    logger.error({ err }, "GET /work-orders error");
     res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });
@@ -139,7 +140,7 @@ router.get("/mechanics", authenticate, requireCompanyAccess, requirePermission("
     );
     res.json({ data: items });
   } catch (err: any) {
-    console.error("GET /mechanics error:", err?.message, err?.stack);
+    logger.error({ err }, "GET /mechanics error");
     res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });
@@ -199,7 +200,7 @@ router.get("/fleet-map", authenticate, requireCompanyAccess, requirePermission("
 
     res.json({ data: result });
   } catch (err: any) {
-    console.error("GET /fleet-map error:", err?.message, err?.stack);
+    logger.error({ err }, "GET /fleet-map error");
     res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });

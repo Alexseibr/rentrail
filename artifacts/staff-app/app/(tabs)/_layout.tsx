@@ -209,5 +209,8 @@ const tabStyles = StyleSheet.create({
 });
 
 export default function TabLayout() {
+  if (Platform.OS === "ios" && isLiquidGlassAvailable()) {
+    return <NativeTabLayout />;
+  }
   return <ClassicTabLayout />;
 }

@@ -47,7 +47,7 @@ export default function BranchesPage() {
     queryFn: () => api<any>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
-  const items = Array.isArray(branchesQuery.data) ? branchesQuery.data : (branchesQuery.data as any)?.items || [];
+  const items = branchesQuery.data ?? [];
 
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>

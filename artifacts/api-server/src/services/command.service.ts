@@ -4,6 +4,7 @@ import { NotFoundError, AppError } from "../lib/errors";
 import { validateAssetOwnership } from "../lib/validate-ownership";
 
 type CommandStatus = typeof deviceCommands.$inferSelect.status;
+type CommandType = typeof deviceCommands.$inferSelect.commandType;
 
 export async function enqueueCommand(companyId: string, deviceId: string, data: {
   commandType: string; payload?: unknown; assetId?: string; requestedByUserId?: string; expiresInMinutes?: number;
@@ -25,7 +26,7 @@ export async function enqueueCommand(companyId: string, deviceId: string, data: 
 
   const [cmd] = await db.insert(deviceCommands).values({
     companyId, deviceId, assetId: data.assetId ?? null,
-    commandType: data.commandType as any, payload: data.payload ?? null,
+    commandType: data.commandType as CommandType, payload: data.payload ?? null,
     requestedByUserId: data.requestedByUserId ?? null, expiresAt,
   }).returning();
   return cmd;
@@ -66,7 +67,7 @@ export async function updateCommandStatus(id: string, companyId: string, newStat
   if (newStatus === "failed") { updates.failedAt = new Date(); updates.errorMessage = extra?.errorMessage ?? null; }
   if (extra?.responsePayload) updates.responsePayload = extra.responsePayload;
 
-  const [updated] = await db.update(deviceCommands).set(updates as any)
+  const [updated] = await db.update(deviceCommands).set(updates as Partial<typeof deviceCommands.$inferInsert> & { status: CommandStatus; updatedAt: Date })
     .where(and(eq(deviceCommands.id, id), eq(deviceCommands.companyId, companyId))).returning();
   if (!updated) throw new NotFoundError("Command not found");
   return updated;

@@ -3,6 +3,8 @@ import { eq, and, isNull } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 import { validateBranchOwnership, validateStationOwnership } from "../lib/validate-ownership";
 
+type BatteryStatus = typeof batteries.$inferSelect.status;
+
 export async function createBattery(companyId: string, data: {
   branchId?: string; stationId?: string; serialNumber: string; model?: string;
   capacityWh?: number; healthPercent?: number; cycleCount?: number;
@@ -26,7 +28,7 @@ export async function getBattery(id: string, companyId: string) {
 
 export async function listBatteries(companyId: string, filters?: { status?: string; branchId?: string }) {
   const conditions = [eq(batteries.companyId, companyId), isNull(batteries.archivedAt)];
-  if (filters?.status) conditions.push(eq(batteries.status, filters.status as any));
+  if (filters?.status) conditions.push(eq(batteries.status, filters.status as BatteryStatus));
   if (filters?.branchId) conditions.push(eq(batteries.branchId, filters.branchId));
   return db.select().from(batteries).where(and(...conditions));
 }
@@ -35,7 +37,7 @@ export async function updateBattery(id: string, companyId: string, data: Record<
   delete data.companyId; delete data.id; delete data.status;
   await validateBranchOwnership(companyId, data.branchId as string | undefined);
   await validateStationOwnership(companyId, data.stationId as string | undefined);
-  const [updated] = await db.update(batteries).set({ ...data, updatedAt: new Date() } as any)
+  const [updated] = await db.update(batteries).set({ ...data, updatedAt: new Date() } as Partial<typeof batteries.$inferInsert> & { updatedAt: Date })
     .where(and(eq(batteries.id, id), eq(batteries.companyId, companyId))).returning();
   if (!updated) throw new NotFoundError("Battery not found");
   return updated;

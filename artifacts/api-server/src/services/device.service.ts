@@ -4,6 +4,7 @@ import { NotFoundError, AppError } from "../lib/errors";
 import { validateBranchOwnership, validateStationOwnership } from "../lib/validate-ownership";
 
 type DeviceStatus = typeof devices.$inferSelect.status;
+type DeviceType = typeof devices.$inferSelect.deviceType;
 
 const DEVICE_STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ["active", "maintenance", "retired"],
@@ -35,7 +36,7 @@ export async function createDevice(companyId: string, data: {
     companyId,
     branchId: data.branchId ?? null,
     stationId: data.stationId ?? null,
-    deviceType: data.deviceType as DeviceStatus,
+    deviceType: data.deviceType as DeviceType,
     provider: data.provider,
     externalId: data.externalId,
     serialNumber: data.serialNumber ?? null,
@@ -58,7 +59,7 @@ export async function getDevice(id: string, companyId: string) {
 export async function listDevices(companyId: string, filters?: { status?: string; deviceType?: string; branchId?: string; provider?: string }) {
   const conditions = [eq(devices.companyId, companyId), isNull(devices.archivedAt)];
   if (filters?.status) conditions.push(eq(devices.status, filters.status as DeviceStatus));
-  if (filters?.deviceType) conditions.push(eq(devices.deviceType, filters.deviceType as any));
+  if (filters?.deviceType) conditions.push(eq(devices.deviceType, filters.deviceType as DeviceType));
   if (filters?.branchId) conditions.push(eq(devices.branchId, filters.branchId));
   if (filters?.provider) conditions.push(eq(devices.provider, filters.provider));
   return db.select().from(devices).where(and(...conditions));
@@ -68,7 +69,7 @@ export async function updateDevice(id: string, companyId: string, data: Record<s
   delete data.companyId; delete data.id; delete data.status;
   await validateBranchOwnership(companyId, data.branchId as string | undefined);
   await validateStationOwnership(companyId, data.stationId as string | undefined);
-  const [updated] = await db.update(devices).set({ ...data, updatedAt: new Date() } as any)
+  const [updated] = await db.update(devices).set({ ...data, updatedAt: new Date() } as Partial<typeof devices.$inferInsert> & { updatedAt: Date })
     .where(and(eq(devices.id, id), eq(devices.companyId, companyId))).returning();
   if (!updated) throw new NotFoundError("Device not found");
   return updated;

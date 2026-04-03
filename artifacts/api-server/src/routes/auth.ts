@@ -1,11 +1,16 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
+import jwt from "jsonwebtoken";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess } from "../middlewares/authorize";
 import * as authService from "../services/auth.service";
 import * as phoneAuthService from "../services/phone-auth.service";
 import * as clientAuthService from "../services/client-auth.service";
+import { config } from "../lib/config";
+import { signAccessToken } from "../lib/jwt";
+import { db, clients } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -121,6 +126,37 @@ router.post("/auth/client/login", validate({ body: clientLoginSchema }), async (
     req.body.companyId,
   );
   res.json({ data: result });
+});
+
+const clientRefreshSchema = z.object({ refreshToken: z.string().min(1) });
+
+router.post("/auth/client/refresh", validate({ body: clientRefreshSchema }), async (req, res) => {
+  try {
+    const payload = jwt.verify(req.body.refreshToken, config.jwt.refreshSecret) as {
+      clientId: string; companyId: string; tokenType: string;
+    };
+    if (payload.tokenType !== "client-refresh") {
+      res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid refresh token" } });
+      return;
+    }
+    const [client] = await db.select({ id: clients.id, status: clients.status })
+      .from(clients).where(eq(clients.id, payload.clientId)).limit(1);
+    if (!client || client.status !== "active") {
+      res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Client not found or suspended" } });
+      return;
+    }
+    const accessToken = signAccessToken({
+      userId: payload.clientId,
+      isSuperAdmin: false,
+      platformRoles: [],
+      clientId: payload.clientId,
+      companyId: payload.companyId,
+      tokenType: "client",
+    });
+    res.json({ data: { accessToken } });
+  } catch {
+    res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid or expired refresh token" } });
+  }
 });
 
 router.get("/auth/client/me", authenticate, async (req, res) => {

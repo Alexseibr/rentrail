@@ -63,11 +63,19 @@ export default function SettingsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const rows = [
+  type SettingsItem = {
+    label: string;
+    icon: React.ComponentProps<typeof Feather>["name"];
+    detail: string;
+    onPress?: () => void;
+    color?: string;
+  };
+
+  const rows: Array<{ title: string; items: SettingsItem[] }> = [
     {
       title: t("settings.account"),
       items: [
-        { label: user?.email ?? "—", icon: "user" as const, detail: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() },
+        { label: user?.email ?? "—", icon: "user", detail: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() },
       ],
     },
     {
@@ -75,25 +83,25 @@ export default function SettingsScreen() {
       items: [
         {
           label: t("settings.network"),
-          icon: (isConnected ? "wifi" : "wifi-off") as "wifi" | "wifi-off",
+          icon: isConnected ? "wifi" : "wifi-off",
           detail: isConnected ? t("settings.connected") : t("settings.offline"),
           color: isConnected ? colors.success : colors.destructive,
         },
         {
           label: t("settings.pushNotifications"),
-          icon: "bell" as const,
+          icon: "bell",
           detail: pushStatus.isRegistered ? t("settings.registered") : t("settings.notRegistered"),
           onPress: handlePushToggle,
         },
         {
           label: t("settings.pendingSync"),
-          icon: "refresh-cw" as const,
+          icon: "refresh-cw",
           detail: `${pendingCount} ${pendingCount !== 1 ? t("settings.items") : t("settings.item")}`,
           color: pendingCount > 0 ? colors.warning : colors.mutedForeground,
         },
         {
           label: t("settings.language"),
-          icon: "globe" as const,
+          icon: "globe",
           detail: i18n.language === "ru" ? "Русский" : "English",
           onPress: handleToggleLanguage,
         },
@@ -125,7 +133,7 @@ export default function SettingsScreen() {
                     <Feather name={item.icon} size={16} color={colors.primary} />
                   </View>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
-                  <Text style={[styles.rowDetail, { color: (item as any).color ?? colors.mutedForeground }]}>
+                  <Text style={[styles.rowDetail, { color: item.color ?? colors.mutedForeground }]}>
                     {item.detail}
                   </Text>
                 </TouchableOpacity>

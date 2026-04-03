@@ -45,7 +45,7 @@ export default function AssetDetailPage() {
   });
 
   const asset = assetQuery.data;
-  const history = Array.isArray(historyQuery.data) ? historyQuery.data : (historyQuery.data as any)?.items || [];
+  const history = historyQuery.data ?? [];
 
   if (assetQuery.isLoading) {
     return (

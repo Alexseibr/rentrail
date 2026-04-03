@@ -56,10 +56,10 @@ export default function CompanyDashboardPage() {
     enabled: !!companyId,
   });
 
-  const assets = Array.isArray(assetsQuery.data) ? assetsQuery.data : (assetsQuery.data as any)?.items || [];
-  const rentals = Array.isArray(rentalsQuery.data) ? rentalsQuery.data : (rentalsQuery.data as any)?.items || [];
-  const clients = Array.isArray(clientsQuery.data) ? clientsQuery.data : (clientsQuery.data as any)?.items || [];
-  const branches = Array.isArray(branchesQuery.data) ? branchesQuery.data : (branchesQuery.data as any)?.items || [];
+  const assets = assetsQuery.data ?? [];
+  const rentals = rentalsQuery.data ?? [];
+  const clients = clientsQuery.data ?? [];
+  const branches = branchesQuery.data ?? [];
 
   const isLoading = assetsQuery.isLoading || rentalsQuery.isLoading || clientsQuery.isLoading || branchesQuery.isLoading;
 

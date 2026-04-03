@@ -3,6 +3,9 @@ import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { createHash } from "crypto";
 import * as deviceService from "./device.service";
 
+type TelemetryEventType = typeof telemetryEvents.$inferSelect.eventType;
+type TelemetryEventSeverity = typeof telemetryEvents.$inferSelect.severity;
+
 function payloadSignature(payload: unknown): string {
   return createHash("sha256").update(JSON.stringify(payload ?? "")).digest("hex").slice(0, 32);
 }
@@ -97,8 +100,8 @@ export async function ingestTelemetry(input: IngestInput, ctx: IngestContext) {
         companyId: ctx.companyId,
         assetId,
         deviceId: device.id,
-        eventType: evt.eventType as any,
-        severity: (evt.severity ?? "info") as any,
+        eventType: evt.eventType as TelemetryEventType,
+        severity: (evt.severity ?? "info") as TelemetryEventSeverity,
         payload: evt.payload ?? null,
         recordedAt,
       });
@@ -114,8 +117,8 @@ export async function ingestTelemetry(input: IngestInput, ctx: IngestContext) {
         companyId: ctx.companyId,
         assetId,
         deviceId: device.id,
-        eventType: de.eventType as any,
-        severity: de.severity as any,
+        eventType: de.eventType as TelemetryEventType,
+        severity: de.severity as TelemetryEventSeverity,
         recordedAt,
       });
     }
@@ -144,8 +147,8 @@ export async function getEventsForAsset(assetId: string, companyId: string, filt
   const conditions = [eq(telemetryEvents.assetId, assetId), eq(telemetryEvents.companyId, companyId)];
   if (filters?.from) conditions.push(gte(telemetryEvents.recordedAt, new Date(filters.from)));
   if (filters?.to) conditions.push(lte(telemetryEvents.recordedAt, new Date(filters.to)));
-  if (filters?.eventType) conditions.push(eq(telemetryEvents.eventType, filters.eventType as any));
-  if (filters?.severity) conditions.push(eq(telemetryEvents.severity, filters.severity as any));
+  if (filters?.eventType) conditions.push(eq(telemetryEvents.eventType, filters.eventType as TelemetryEventType));
+  if (filters?.severity) conditions.push(eq(telemetryEvents.severity, filters.severity as TelemetryEventSeverity));
   return db.select().from(telemetryEvents).where(and(...conditions))
     .orderBy(desc(telemetryEvents.recordedAt)).limit(filters?.limit ?? 100).offset(filters?.offset ?? 0);
 }
@@ -154,8 +157,8 @@ export async function getEventsForDevice(deviceId: string, companyId: string, fi
   const conditions = [eq(telemetryEvents.deviceId, deviceId), eq(telemetryEvents.companyId, companyId)];
   if (filters?.from) conditions.push(gte(telemetryEvents.recordedAt, new Date(filters.from)));
   if (filters?.to) conditions.push(lte(telemetryEvents.recordedAt, new Date(filters.to)));
-  if (filters?.eventType) conditions.push(eq(telemetryEvents.eventType, filters.eventType as any));
-  if (filters?.severity) conditions.push(eq(telemetryEvents.severity, filters.severity as any));
+  if (filters?.eventType) conditions.push(eq(telemetryEvents.eventType, filters.eventType as TelemetryEventType));
+  if (filters?.severity) conditions.push(eq(telemetryEvents.severity, filters.severity as TelemetryEventSeverity));
   return db.select().from(telemetryEvents).where(and(...conditions))
     .orderBy(desc(telemetryEvents.recordedAt)).limit(filters?.limit ?? 100).offset(filters?.offset ?? 0);
 }

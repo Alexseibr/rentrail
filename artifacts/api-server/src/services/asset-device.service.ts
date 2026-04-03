@@ -2,6 +2,8 @@ import { db, assetDevices, assets, devices } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 
+type BindingType = typeof assetDevices.$inferSelect.bindingType;
+
 export async function bindDeviceToAsset(companyId: string, assetId: string, data: {
   deviceId: string;
   bindingType: string;
@@ -22,14 +24,14 @@ export async function bindDeviceToAsset(companyId: string, assetId: string, data
 
   if (data.isPrimary) {
     await db.update(assetDevices).set({ isPrimary: false, updatedAt: new Date() })
-      .where(and(eq(assetDevices.assetId, assetId), eq(assetDevices.bindingType, data.bindingType as any), eq(assetDevices.status, "active")));
+      .where(and(eq(assetDevices.assetId, assetId), eq(assetDevices.bindingType, data.bindingType as BindingType), eq(assetDevices.status, "active")));
   }
 
   const [binding] = await db.insert(assetDevices).values({
     companyId,
     assetId,
     deviceId: data.deviceId,
-    bindingType: data.bindingType as any,
+    bindingType: data.bindingType as BindingType,
     isPrimary: data.isPrimary ?? false,
     notes: data.notes ?? null,
   }).returning();

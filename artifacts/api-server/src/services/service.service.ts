@@ -1,6 +1,8 @@
-import { db } from "@workspace/db";
-import { serviceRequests, workOrders, users, assets, branches, userCompanyMemberships, roles } from "@workspace/db/schema";
+import { db, serviceRequests, workOrders, users, assets, branches, userCompanyMemberships, roles } from "@workspace/db";
 import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+
+type ServiceRequestStatus = typeof serviceRequests.$inferSelect.status;
+type WorkOrderStatus = typeof workOrders.$inferSelect.status;
 
 const userFullName = sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`.as("assigned_to_name");
 
@@ -35,8 +37,8 @@ export async function listServiceRequests(companyId: string, branchId?: string, 
     .leftJoin(users, eq(serviceRequests.assignedToUserId, users.id))
     .where(
       branchId
-        ? and(eq(serviceRequests.companyId, companyId), eq(serviceRequests.branchId, branchId), status ? eq(serviceRequests.status, status as any) : undefined)
-        : and(eq(serviceRequests.companyId, companyId), status ? eq(serviceRequests.status, status as any) : undefined)
+        ? and(eq(serviceRequests.companyId, companyId), eq(serviceRequests.branchId, branchId), status ? eq(serviceRequests.status, status as ServiceRequestStatus) : undefined)
+        : and(eq(serviceRequests.companyId, companyId), status ? eq(serviceRequests.status, status as ServiceRequestStatus) : undefined)
     )
     .orderBy(desc(serviceRequests.createdAt));
   return rows;
@@ -91,14 +93,14 @@ export async function createServiceRequest(data: {
   lng?: number;
   locationAddress?: string;
 }) {
-  const [row] = await db.insert(serviceRequests).values(data as any).returning();
+  const [row] = await db.insert(serviceRequests).values(data as typeof serviceRequests.$inferInsert).returning();
   return row;
 }
 
 export async function updateServiceRequest(id: string, companyId: string, data: Record<string, unknown>) {
   const [row] = await db
     .update(serviceRequests)
-    .set({ ...data, updatedAt: new Date() } as any)
+    .set({ ...data, updatedAt: new Date() } as Partial<typeof serviceRequests.$inferInsert> & { updatedAt: Date })
     .where(and(eq(serviceRequests.id, id), eq(serviceRequests.companyId, companyId)))
     .returning();
   return row;
@@ -136,8 +138,8 @@ export async function listWorkOrders(companyId: string, branchId?: string, statu
     .leftJoin(users, eq(workOrders.assignedToUserId, users.id))
     .where(
       branchId
-        ? and(eq(workOrders.companyId, companyId), eq(workOrders.branchId, branchId), status ? eq(workOrders.status, status as any) : undefined)
-        : and(eq(workOrders.companyId, companyId), status ? eq(workOrders.status, status as any) : undefined)
+        ? and(eq(workOrders.companyId, companyId), eq(workOrders.branchId, branchId), status ? eq(workOrders.status, status as WorkOrderStatus) : undefined)
+        : and(eq(workOrders.companyId, companyId), status ? eq(workOrders.status, status as WorkOrderStatus) : undefined)
     )
     .orderBy(desc(workOrders.createdAt));
   return rows;
@@ -156,14 +158,14 @@ export async function createWorkOrder(data: {
   createdByUserId?: string;
   estimatedCost?: string;
 }) {
-  const [row] = await db.insert(workOrders).values(data as any).returning();
+  const [row] = await db.insert(workOrders).values(data as typeof workOrders.$inferInsert).returning();
   return row;
 }
 
 export async function updateWorkOrder(id: string, companyId: string, data: Record<string, unknown>) {
   const [row] = await db
     .update(workOrders)
-    .set({ ...data, updatedAt: new Date() } as any)
+    .set({ ...data, updatedAt: new Date() } as Partial<typeof workOrders.$inferInsert> & { updatedAt: Date })
     .where(and(eq(workOrders.id, id), eq(workOrders.companyId, companyId)))
     .returning();
   return row;

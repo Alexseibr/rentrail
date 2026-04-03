@@ -3,6 +3,7 @@ import { Readable } from "stream";
 import { z } from "zod/v4";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { authenticate } from "../middlewares/authenticate";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -27,7 +28,7 @@ router.post("/storage/uploads/request-url", authenticate, async (req: Request, r
 
     res.json({ uploadURL, objectPath, metadata: { name, size, contentType } });
   } catch (error) {
-    console.error("Error generating upload URL", error);
+    logger.error({ err: error }, "Error generating upload URL");
     res.status(500).json({ error: "Failed to generate upload URL" });
   }
 });
@@ -53,7 +54,7 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
       res.end();
     }
   } catch (error) {
-    console.error("Error serving public object", error);
+    logger.error({ err: error }, "Error serving public object");
     res.status(500).json({ error: "Failed to serve public object" });
   }
 });
@@ -80,7 +81,7 @@ router.get("/storage/objects/*path", authenticate, async (req: Request, res: Res
       res.status(404).json({ error: "Object not found" });
       return;
     }
-    console.error("Error serving object", error);
+    logger.error({ err: error }, "Error serving object");
     res.status(500).json({ error: "Failed to serve object" });
   }
 });

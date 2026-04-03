@@ -71,7 +71,7 @@ export default function FleetPage() {
     queryFn: () => api<any>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
-  const branches = Array.isArray(branchesQuery.data) ? branchesQuery.data : (branchesQuery.data as any)?.items || [];
+  const branches = branchesQuery.data ?? [];
 
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId, statusFilter],
@@ -81,7 +81,7 @@ export default function FleetPage() {
     },
     enabled: !!companyId,
   });
-  const allItems = Array.isArray(assetsQuery.data) ? assetsQuery.data : (assetsQuery.data as any)?.items || [];
+  const allItems = assetsQuery.data ?? [];
   const items = search
     ? allItems.filter((a: any) =>
         (a.internalCode?.toLowerCase() || "").includes(search.toLowerCase()) ||

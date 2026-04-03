@@ -52,7 +52,7 @@ export default function ClientsCompanyPage() {
     queryFn: () => api<any>("/clients", { headers: companyHeaders }),
     enabled: !!companyId,
   });
-  const allItems = Array.isArray(clientsQuery.data) ? clientsQuery.data : (clientsQuery.data as any)?.items || [];
+  const allItems = clientsQuery.data ?? [];
   const filtered = statusFilter !== "all" ? allItems.filter((c: any) => c.status === statusFilter) : allItems;
   const items = search
     ? filtered.filter((c: any) =>

@@ -80,7 +80,7 @@ export default function DiagnosticsPage() {
     queryKey: ["health", "tenants"],
     queryFn: async () => {
       const res = await api<any[]>("/platform/health/tenants");
-      const items = Array.isArray(res) ? res : (res as any).items ?? [];
+      const items = res ?? [];
       return items.map((t: any): TenantHealth => ({
         companyId: t.companyId ?? t.id,
         companyName: t.companyName ?? t.name,

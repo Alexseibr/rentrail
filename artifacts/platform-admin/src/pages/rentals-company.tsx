@@ -48,14 +48,14 @@ export default function RentalsCompanyPage() {
     queryFn: () => api<any>("/clients", { headers: companyHeaders }),
     enabled: !!companyId,
   });
-  const clients = Array.isArray(clientsQuery.data) ? clientsQuery.data : (clientsQuery.data as any)?.items || [];
+  const clients = clientsQuery.data ?? [];
 
   const assetsQuery = useQuery({
     queryKey: ["assets-available", companyId],
     queryFn: () => api<any>("/assets?status=available", { headers: companyHeaders }),
     enabled: !!companyId && showCreate,
   });
-  const availableAssets = Array.isArray(assetsQuery.data) ? assetsQuery.data : (assetsQuery.data as any)?.items || [];
+  const availableAssets = assetsQuery.data ?? [];
 
   const rentalsQuery = useQuery({
     queryKey: ["rentals", companyId, statusFilter],
@@ -65,7 +65,7 @@ export default function RentalsCompanyPage() {
     },
     enabled: !!companyId,
   });
-  const allItems = Array.isArray(rentalsQuery.data) ? rentalsQuery.data : (rentalsQuery.data as any)?.items || [];
+  const allItems = rentalsQuery.data ?? [];
   const items = search
     ? allItems.filter((r: any) =>
         (r.clientName?.toLowerCase() || "").includes(search.toLowerCase()) ||

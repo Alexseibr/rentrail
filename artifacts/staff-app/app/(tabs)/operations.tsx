@@ -42,13 +42,22 @@ export default function OperationsScreen() {
     }
   };
 
-  const sections = [
+  type OperationItem = {
+    label: string;
+    icon: React.ComponentProps<typeof Feather>["name"];
+    route: string;
+    badge?: number;
+  };
+
+  type OperationSection = { title: string; items: OperationItem[] };
+
+  const sections: OperationSection[] = [
     {
       title: t("operations.fieldActions"),
       items: [
-        { label: t("operations.scanAsset"), icon: "maximize" as const, route: "/scanner" },
-        { label: t("operations.reportIncident"), icon: "alert-circle" as const, route: "/create-incident" },
-        { label: t("operations.newMaintenance"), icon: "tool" as const, route: "/create-maintenance" },
+        { label: t("operations.scanAsset"), icon: "maximize", route: "/scanner" },
+        { label: t("operations.reportIncident"), icon: "alert-circle", route: "/create-incident" },
+        { label: t("operations.newMaintenance"), icon: "tool", route: "/create-maintenance" },
       ],
     },
     {
@@ -56,7 +65,7 @@ export default function OperationsScreen() {
       items: [
         {
           label: t("operations.syncQueue"),
-          icon: "refresh-cw" as const,
+          icon: "refresh-cw",
           route: "/sync-queue",
           badge: pendingCount > 0 ? pendingCount : undefined,
         },
@@ -65,7 +74,7 @@ export default function OperationsScreen() {
     {
       title: t("operations.fleet"),
       items: [
-        { label: t("operations.notifications"), icon: "bell" as const, route: "/notifications" },
+        { label: t("operations.notifications"), icon: "bell", route: "/notifications" },
       ],
     },
   ];
@@ -89,7 +98,7 @@ export default function OperationsScreen() {
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(item.route as any);
+                    router.push(item.route as Parameters<typeof router.push>[0]);
                   }}
                   activeOpacity={0.7}
                 >

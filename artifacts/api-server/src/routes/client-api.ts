@@ -5,6 +5,7 @@ import { eq, and, sql, inArray, desc } from "drizzle-orm";
 import { UnauthorizedError, BadRequestError, NotFoundError } from "../lib/errors";
 import * as commandService from "../services/command.service";
 import * as telemetryService from "../services/telemetry.service";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ function handleError(res: any, err: any, context: string) {
     res.status(status).json({ error: { code: err.constructor.name, message: err.message } });
     return;
   }
-  console.error(`${context} error:`, err?.message);
+  logger.error({ err, context }, "Unhandled error in client API");
   res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
 }
 
@@ -99,7 +100,7 @@ router.get("/client/vehicles", authenticate, async (req, res) => {
           }
         }
       } catch (e) {
-        console.error("Telemetry query failed:", e);
+        logger.error({ err: e }, "Telemetry query failed");
       }
     }
 

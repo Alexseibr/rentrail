@@ -3,6 +3,8 @@ import { eq, and, isNull } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 import { validateBranchOwnership, validateStationOwnership } from "../lib/validate-ownership";
 
+type GeofenceType = typeof geofences.$inferSelect.type;
+
 export async function createGeofence(companyId: string, data: {
   branchId?: string; stationId?: string; name: string; type: string;
   geometry: unknown; rules?: unknown;
@@ -12,7 +14,7 @@ export async function createGeofence(companyId: string, data: {
 
   const [geo] = await db.insert(geofences).values({
     companyId, branchId: data.branchId ?? null, stationId: data.stationId ?? null,
-    name: data.name, type: data.type as any, geometry: data.geometry, rules: data.rules ?? null,
+    name: data.name, type: data.type as GeofenceType, geometry: data.geometry, rules: data.rules ?? null,
   }).returning();
   return geo;
 }
@@ -26,7 +28,7 @@ export async function getGeofence(id: string, companyId: string) {
 
 export async function listGeofences(companyId: string, filters?: { type?: string; branchId?: string; isActive?: boolean }) {
   const conditions = [eq(geofences.companyId, companyId), isNull(geofences.archivedAt)];
-  if (filters?.type) conditions.push(eq(geofences.type, filters.type as any));
+  if (filters?.type) conditions.push(eq(geofences.type, filters.type as GeofenceType));
   if (filters?.branchId) conditions.push(eq(geofences.branchId, filters.branchId));
   if (filters?.isActive !== undefined) conditions.push(eq(geofences.isActive, filters.isActive));
   return db.select().from(geofences).where(and(...conditions));
@@ -34,7 +36,7 @@ export async function listGeofences(companyId: string, filters?: { type?: string
 
 export async function updateGeofence(id: string, companyId: string, data: Record<string, unknown>) {
   delete data.companyId; delete data.id;
-  const [updated] = await db.update(geofences).set({ ...data, updatedAt: new Date() } as any)
+  const [updated] = await db.update(geofences).set({ ...data, updatedAt: new Date() } as Partial<typeof geofences.$inferInsert> & { updatedAt: Date })
     .where(and(eq(geofences.id, id), eq(geofences.companyId, companyId))).returning();
   if (!updated) throw new NotFoundError("Geofence not found");
   return updated;
