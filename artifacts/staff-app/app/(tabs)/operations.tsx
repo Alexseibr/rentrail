@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Platform,
   Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -24,22 +23,16 @@ export default function OperationsScreen() {
   const { pendingCount } = useSync();
   const { logout, user } = useAuth();
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (Platform.OS === "web") {
-      if (window.confirm(t("settings.signOutConfirm"))) {
-        await logout();
-      }
-    } else {
-      Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("settings.signOut"),
-          style: "destructive",
-          onPress: async () => { await logout(); },
-        },
-      ]);
-    }
+    Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("settings.signOut"),
+        style: "destructive",
+        onPress: () => logout(),
+      },
+    ]);
   };
 
   type OperationItem = {
