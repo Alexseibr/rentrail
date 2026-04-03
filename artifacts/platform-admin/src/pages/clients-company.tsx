@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Archive, RotateCcw, Search } from "lucide-react";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -35,6 +36,7 @@ export default function ClientsCompanyPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { canWriteClient } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
   const companyHeaders = companyId ? { "x-company-id": companyId } : {};
 
@@ -135,10 +137,12 @@ export default function ClientsCompanyPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("nav.clients")}</h1>
           <p className="text-muted-foreground">{t("clients.subtitle", "Клиенты компании")}</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t("clients.add", "Добавить клиента")}
-        </Button>
+        {canWriteClient && (
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("clients.add", "Добавить клиента")}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -173,7 +177,7 @@ export default function ClientsCompanyPage() {
                   <TableHead>{t("common.email")}</TableHead>
                   <TableHead>{t("clients.document", "Документ")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
-                  <TableHead>{t("common.actions", "Действия")}</TableHead>
+                  {canWriteClient && <TableHead>{t("common.actions", "Действия")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -188,22 +192,24 @@ export default function ClientsCompanyPage() {
                     <TableCell>
                       <Badge className={STATUS_COLORS[client.status] || "bg-gray-100"}>{t(`status.${client.status}`, client.status)}</Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(client)} title={t("common.edit")}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        {client.status === "archived" ? (
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setArchiveConfirm({ ...client, restore: true })} title={t("clients.restore", "Восстановить")}>
-                            <RotateCcw className="h-3.5 w-3.5" />
+                    {canWriteClient && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(client)} title={t("common.edit")}>
+                            <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                        ) : (
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setArchiveConfirm(client)} title={t("clients.archive", "Архивировать")}>
-                            <Archive className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+                          {client.status === "archived" ? (
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setArchiveConfirm({ ...client, restore: true })} title={t("clients.restore", "Восстановить")}>
+                              <RotateCcw className="h-3.5 w-3.5" />
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setArchiveConfirm(client)} title={t("clients.archive", "Архивировать")}>
+                              <Archive className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {items.length === 0 && (

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Wrench, UserCheck, Search } from "lucide-react";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
@@ -44,6 +45,7 @@ export default function ServicePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { canWriteService } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
   const companyHeaders = companyId ? { "x-company-id": companyId } : {};
 
@@ -156,16 +158,18 @@ export default function ServicePage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("service.title", "Сервис")}</h1>
           <p className="text-muted-foreground">{t("service.subtitle", "Заявки на обслуживание и наряд-заказы")}</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("service.newRequest", "Новая заявка")}
-          </Button>
-          <Button variant="outline" onClick={() => setShowCreateWO(true)}>
-            <Wrench className="h-4 w-4 mr-2" />
-            {t("service.newWorkOrder", "Наряд-заказ")}
-          </Button>
-        </div>
+        {canWriteService && (
+          <div className="flex gap-2">
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t("service.newRequest", "Новая заявка")}
+            </Button>
+            <Button variant="outline" onClick={() => setShowCreateWO(true)}>
+              <Wrench className="h-4 w-4 mr-2" />
+              {t("service.newWorkOrder", "Наряд-заказ")}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 grid-cols-3 lg:grid-cols-6">
@@ -220,7 +224,7 @@ export default function ServicePage() {
                       <TableHead>{t("service.priorityLabel", "Приоритет")}</TableHead>
                       <TableHead>{t("common.status")}</TableHead>
                       <TableHead>{t("service.assignee", "Мастер")}</TableHead>
-                      <TableHead>{t("common.actions")}</TableHead>
+                      {canWriteService && <TableHead>{t("common.actions")}</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -233,19 +237,21 @@ export default function ServicePage() {
                         <TableCell><Badge className={PRIORITY_COLORS[sr.priority] || ""}>{t(`service.priority.${sr.priority}`, sr.priority)}</Badge></TableCell>
                         <TableCell><Badge className={STATUS_COLORS[sr.status] || "bg-gray-100"}>{t(`service.status.${sr.status}`, sr.status)}</Badge></TableCell>
                         <TableCell className="text-sm">{sr.assignedToName || "—"}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {sr.status === "new" && (
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAssignDialog(sr)}>
-                                <UserCheck className="h-3 w-3 mr-1" />
-                                {t("service.assign", "Назначить")}
+                        {canWriteService && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {sr.status === "new" && (
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAssignDialog(sr)}>
+                                  <UserCheck className="h-3 w-3 mr-1" />
+                                  {t("service.assign", "Назначить")}
+                                </Button>
+                              )}
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatusDialog({ ...sr, type: "service-requests" })}>
+                                {t("fleet.changeStatus", "Статус")}
                               </Button>
-                            )}
-                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatusDialog({ ...sr, type: "service-requests" })}>
-                              {t("fleet.changeStatus", "Статус")}
-                            </Button>
-                          </div>
-                        </TableCell>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                     {filteredRequests.length === 0 && (
@@ -277,7 +283,7 @@ export default function ServicePage() {
                       <TableHead>{t("service.priorityLabel", "Приоритет")}</TableHead>
                       <TableHead>{t("common.status")}</TableHead>
                       <TableHead>{t("service.assignee", "Мастер")}</TableHead>
-                      <TableHead>{t("common.actions")}</TableHead>
+                      {canWriteService && <TableHead>{t("common.actions")}</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -290,11 +296,13 @@ export default function ServicePage() {
                         <TableCell><Badge className={PRIORITY_COLORS[wo.priority] || ""}>{t(`service.priority.${wo.priority}`, wo.priority)}</Badge></TableCell>
                         <TableCell><Badge className={STATUS_COLORS[wo.status] || "bg-gray-100"}>{t(`service.status.${wo.status}`, wo.status)}</Badge></TableCell>
                         <TableCell className="text-sm">{wo.assignedToName || "—"}</TableCell>
-                        <TableCell>
-                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatusDialog({ ...wo, type: "work-orders" })}>
-                            {t("fleet.changeStatus", "Статус")}
-                          </Button>
-                        </TableCell>
+                        {canWriteService && (
+                          <TableCell>
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatusDialog({ ...wo, type: "work-orders" })}>
+                              {t("fleet.changeStatus", "Статус")}
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                     {workOrders.length === 0 && (

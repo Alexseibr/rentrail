@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation } from "wouter";
 import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search } from "lucide-react";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -30,6 +31,7 @@ export default function RentalsCompanyPage() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { canWriteRental } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
   const companyHeaders = companyId ? { "x-company-id": companyId } : {};
 
@@ -141,10 +143,12 @@ export default function RentalsCompanyPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("nav.rentals")}</h1>
           <p className="text-muted-foreground">{t("rentals.subtitle", "Все аренды компании")}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t("rentals.create", "Новая аренда")}
-        </Button>
+        {canWriteRental && (
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("rentals.create", "Новая аренда")}
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -190,7 +194,7 @@ export default function RentalsCompanyPage() {
                   <TableHead>{t("rentals.start", "Начало")}</TableHead>
                   <TableHead>{t("rentals.end", "Окончание")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
-                  <TableHead>{t("common.actions", "Действия")}</TableHead>
+                  {canWriteRental && <TableHead>{t("common.actions", "Действия")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -201,22 +205,24 @@ export default function RentalsCompanyPage() {
                     <TableCell className="text-sm">{rental.startDate || rental.startAt ? new Date(rental.startDate || rental.startAt).toLocaleDateString() : "—"}</TableCell>
                     <TableCell className="text-sm">{rental.endDate || rental.plannedEndAt ? new Date(rental.endDate || rental.plannedEndAt).toLocaleDateString() : "—"}</TableCell>
                     <TableCell><Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{t(`status.${rental.status}`, rental.status)}</Badge></TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-1">
-                        {getAvailableActions(rental).map((act) => (
-                          <Button
-                            key={act.key}
-                            size="sm"
-                            variant={act.variant === "destructive" ? "destructive" : "outline"}
-                            className="h-7 text-xs"
-                            onClick={() => setActionDialog({ id: rental.id, action: act.key, rental })}
-                          >
-                            <act.icon className="h-3 w-3 mr-1" />
-                            {act.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </TableCell>
+                    {canWriteRental && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1">
+                          {getAvailableActions(rental).map((act) => (
+                            <Button
+                              key={act.key}
+                              size="sm"
+                              variant={act.variant === "destructive" ? "destructive" : "outline"}
+                              className="h-7 text-xs"
+                              onClick={() => setActionDialog({ id: rental.id, action: act.key, rental })}
+                            >
+                              <act.icon className="h-3 w-3 mr-1" />
+                              {act.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {items.length === 0 && (

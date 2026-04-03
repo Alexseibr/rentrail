@@ -15,8 +15,8 @@ import { canAccessTab } from "@/utils/permissions";
 function NativeTabLayout() {
   const { t } = useTranslation();
   const { user, companyId } = useAuth();
-  const memberships = (user as any)?.memberships || user?.companies;
-  const roleCode = memberships?.find((c: any) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const memberships = user?.memberships || user?.companies;
+  const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
 
   return (
     <NativeTabs>
@@ -62,8 +62,8 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const { user, companyId } = useAuth();
-  const memberships = (user as any)?.memberships || user?.companies;
-  const roleCode = memberships?.find((c: any) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const memberships = user?.memberships || user?.companies;
+  const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
 
   return (
     <Tabs

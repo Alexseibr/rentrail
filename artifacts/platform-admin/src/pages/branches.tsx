@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Plus, Pencil, Power, PowerOff } from "lucide-react";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -32,6 +33,7 @@ export default function BranchesPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { canWriteBranch } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
   const companyHeaders = companyId ? { "x-company-id": companyId } : {};
 
@@ -122,10 +124,12 @@ export default function BranchesPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("nav.branches")}</h1>
           <p className="text-muted-foreground">{t("branches.subtitle", "Филиалы и станции")}</p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t("branches.add", "Добавить филиал")}
-        </Button>
+        {canWriteBranch && (
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("branches.add", "Добавить филиал")}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -144,7 +148,7 @@ export default function BranchesPage() {
                   <TableHead>{t("branches.address", "Адрес")}</TableHead>
                   <TableHead>{t("common.phone")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
-                  <TableHead>{t("common.actions", "Действия")}</TableHead>
+                  {canWriteBranch && <TableHead>{t("common.actions", "Действия")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -159,22 +163,24 @@ export default function BranchesPage() {
                         {t(`status.${branch.status || "active"}`, branch.status || "active")}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(branch)} title={t("common.edit")}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        {branch.status === "inactive" ? (
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-green-600" onClick={() => setToggleConfirm({ ...branch, activate: true })} title={t("branches.activate", "Активировать")}>
-                            <Power className="h-3.5 w-3.5" />
+                    {canWriteBranch && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(branch)} title={t("common.edit")}>
+                            <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                        ) : (
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setToggleConfirm({ ...branch, activate: false })} title={t("branches.deactivate", "Деактивировать")}>
-                            <PowerOff className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+                          {branch.status === "inactive" ? (
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-green-600" onClick={() => setToggleConfirm({ ...branch, activate: true })} title={t("branches.activate", "Активировать")}>
+                              <Power className="h-3.5 w-3.5" />
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setToggleConfirm({ ...branch, activate: false })} title={t("branches.deactivate", "Деактивировать")}>
+                              <PowerOff className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {items.length === 0 && (

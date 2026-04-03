@@ -6,13 +6,20 @@ import { unregisterPushToken } from "@/services/push";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
+interface Membership {
+  companyId: string;
+  companyName: string;
+  roleCode: string;
+}
+
 interface User {
   id: string;
   email?: string;
   phone?: string;
   firstName: string;
   lastName: string;
-  companies?: Array<{ companyId: string; companyName: string; roleCode: string }>;
+  companies?: Membership[];
+  memberships?: Membership[];
 }
 
 interface AuthState {

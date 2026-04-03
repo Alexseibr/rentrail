@@ -4,7 +4,7 @@ const ROLE_NAV_ACCESS: Record<string, string[]> = {
   manager: ["/", "/fleet", "/map", "/service", "/rentals", "/clients", "/branches"],
   operator: ["/", "/fleet", "/map", "/rentals", "/clients"],
   mechanic: ["/fleet", "/map", "/service"],
-  accountant: ["/", "/rentals", "/branches"],
+  accountant: ["/", "/rentals"],
   viewer: ["/", "/fleet", "/map", "/service", "/rentals", "/clients", "/branches", "/settings"],
 };
 
