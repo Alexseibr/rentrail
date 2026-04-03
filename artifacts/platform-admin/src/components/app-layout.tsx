@@ -25,10 +25,8 @@ import {
   Search,
   Bell,
   ChevronDown,
-  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo, useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -79,15 +77,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, [location]);
 
   useEffect(() => {
+    if (!userMenuOpen) return;
     function handleClickOutside(e: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
     }
-    if (userMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [userMenuOpen]);
 
   const isPlatformUser = useMemo(() => {
