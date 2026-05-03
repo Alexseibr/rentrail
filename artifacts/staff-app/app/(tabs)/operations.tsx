@@ -41,6 +41,7 @@ export default function OperationsScreen() {
     icon: React.ComponentProps<typeof Feather>["name"];
     route: string;
     badge?: number;
+    color?: string;
   };
 
   type OperationSection = { title: string; items: OperationItem[] };
@@ -52,15 +53,16 @@ export default function OperationsScreen() {
         { label: t("operations.scanAsset"), icon: "maximize", route: "/scanner" },
         { label: t("operations.reportIncident"), icon: "alert-circle", route: "/create-incident" },
         { label: t("operations.newMaintenance"), icon: "tool", route: "/create-maintenance" },
+        { label: t("operations.notifications"), icon: "bell", route: "/notifications" },
       ],
     },
     {
       title: t("serviceModule.serviceSection"),
       items: [
-        { label: t("serviceModule.workOrders"), icon: "clipboard", route: "/service/work-orders" },
-        { label: t("serviceModule.spareParts"), icon: "package", route: "/service/spare-parts" },
-        { label: t("serviceModule.maintenanceLogs"), icon: "file-text", route: "/service/maintenance-logs" },
-        { label: t("serviceModule.schedules"), icon: "calendar", route: "/service/schedules" },
+        { label: t("serviceModule.workOrders"), icon: "clipboard", route: "/service/work-orders", color: "#3b82f6" },
+        { label: t("serviceModule.spareParts"), icon: "package", route: "/service/spare-parts", color: "#f59e0b" },
+        { label: t("serviceModule.maintenanceLogs"), icon: "file-text", route: "/service/maintenance-logs", color: "#8b5cf6" },
+        { label: t("serviceModule.schedules"), icon: "calendar", route: "/service/schedules", color: "#22c55e" },
       ],
     },
     {
@@ -72,12 +74,6 @@ export default function OperationsScreen() {
           route: "/sync-queue",
           badge: pendingCount > 0 ? pendingCount : undefined,
         },
-      ],
-    },
-    {
-      title: t("operations.fleet"),
-      items: [
-        { label: t("operations.notifications"), icon: "bell", route: "/notifications" },
       ],
     },
   ];
@@ -105,8 +101,8 @@ export default function OperationsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.rowIconWrap, { backgroundColor: colors.primary + "18" }]}>
-                    <Feather name={item.icon} size={18} color={colors.primary} />
+                  <View style={[styles.rowIconWrap, { backgroundColor: (item.color ?? colors.primary) + "18" }]}>
+                    <Feather name={item.icon} size={18} color={item.color ?? colors.primary} />
                   </View>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
                   {item.badge ? (

@@ -60,11 +60,36 @@
     "notifications": "Уведомления"
   },
   "assets": {
-    "noAssets": "Активы не найдены"
+    "noAssets": "Активы не найдены",
+    "search": "Поиск по коду, марке...",
+    "status_available": "Доступен",
+    "status_rented": "В аренде",
+    "status_maintenance": "На ТО",
+    "status_blocked": "Заблокирован",
+    "status_draft": "Черновик",
+    "status_retired": "Списан",
+    "type_bike": "Велосипед",
+    "type_ebike": "Электровелосипед",
+    "type_scooter": "Самокат",
+    "type_escooter": "Электросамокат"
   },
   "rentals": {
     "rental": "аренда",
-    "noRentals": "Аренды не найдены"
+    "noRentals": "Аренды не найдены",
+    "search": "Поиск по статусу или типу...",
+    "status_active": "Активна",
+    "status_overdue": "Просрочена",
+    "status_completed": "Завершена",
+    "status_draft": "Черновик",
+    "status_pending_approval": "На одобрении",
+    "status_awaiting_payment": "Ожидает оплаты",
+    "status_awaiting_pickup": "Ожидает выдачи",
+    "status_canceled": "Отменена",
+    "status_cancelled": "Отменена",
+    "type_hourly": "Почасовая",
+    "type_daily": "Посуточная",
+    "type_monthly": "Ежемесячная",
+    "type_deposit": "Депозитная"
   },
   "operations": {
     "fieldActions": "Действия на выезде",

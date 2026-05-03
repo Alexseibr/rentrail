@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, TextInput,
+  RefreshControl, ActivityIndicator, TextInput, ScrollView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -79,9 +79,10 @@ export default function WorkOrdersScreen() {
       )
     : items;
 
-  const FILTERS = [
+  const FILTERS: { key: string | undefined; label: string }[] = [
     { key: undefined, label: t("serviceModule.all") },
     { key: "assigned", label: t("serviceModule.statusAssigned") },
+    { key: "en_route", label: t("serviceModule.status_en_route") },
     { key: "in_progress", label: t("serviceModule.statusInProgress") },
     { key: "waiting_parts", label: t("serviceModule.statusWaitingParts") },
     { key: "completed", label: t("serviceModule.statusCompleted") },
@@ -103,7 +104,7 @@ export default function WorkOrdersScreen() {
             {item.title}
           </Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + "20" }]}>
+        <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#94a3b8") + "20" }]}>
           <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? colors.mutedForeground }]}>
             {t(`serviceModule.status_${item.status}`, { defaultValue: item.status })}
           </Text>
@@ -129,6 +130,14 @@ export default function WorkOrdersScreen() {
           <View style={styles.metaItem}>
             <Feather name="user" size={12} color={colors.mutedForeground} />
             <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assignedToName}</Text>
+          </View>
+        )}
+        {item.priority && (
+          <View style={styles.metaItem}>
+            <View style={[styles.priorityMiniDot, { backgroundColor: PRIORITY_COLORS[item.priority] ?? "#94a3b8" }]} />
+            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+              {t(`serviceModule.priority_${item.priority}`, { defaultValue: item.priority })}
+            </Text>
           </View>
         )}
       </View>
@@ -167,6 +176,35 @@ export default function WorkOrdersScreen() {
         ) : null}
       </View>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {FILTERS.map((f) => {
+          const isActive = filter === f.key;
+          const activeColor = f.key ? (STATUS_COLORS[f.key] ?? colors.primary) : colors.primary;
+          return (
+            <TouchableOpacity
+              key={String(f.key)}
+              style={[
+                styles.chip,
+                isActive && { backgroundColor: activeColor },
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setFilter(f.key);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, { color: isActive ? "#fff" : colors.mutedForeground }]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <FlatList
         data={filtered}
         keyExtractor={i => i.id}
@@ -198,10 +236,19 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#fff" },
   searchBar: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    margin: 12, paddingHorizontal: 12, paddingVertical: 10,
+    margin: 12, marginBottom: 6, paddingHorizontal: 12, paddingVertical: 10,
     borderRadius: 12, borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
+  filterRow: {
+    flexDirection: "row", gap: 8,
+    paddingHorizontal: 12, paddingVertical: 10,
+  },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 20, backgroundColor: "rgba(128,128,128,0.1)",
+  },
+  chipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   list: { padding: 12, paddingBottom: 60 },
   card: {
     borderRadius: 16, padding: 16, marginBottom: 10,
@@ -211,6 +258,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   cardTitleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   priorityDot: { width: 8, height: 8, borderRadius: 4 },
+  priorityMiniDot: { width: 6, height: 6, borderRadius: 3 },
   cardTitle: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold" },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },

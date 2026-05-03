@@ -60,11 +60,36 @@
     "notifications": "Notifications"
   },
   "assets": {
-    "noAssets": "No assets found"
+    "noAssets": "No assets found",
+    "search": "Search by code or brand...",
+    "status_available": "Available",
+    "status_rented": "Rented",
+    "status_maintenance": "Maintenance",
+    "status_blocked": "Blocked",
+    "status_draft": "Draft",
+    "status_retired": "Retired",
+    "type_bike": "Bike",
+    "type_ebike": "E-Bike",
+    "type_scooter": "Scooter",
+    "type_escooter": "E-Scooter"
   },
   "rentals": {
     "rental": "rental",
-    "noRentals": "No rentals found"
+    "noRentals": "No rentals found",
+    "search": "Search by status or type...",
+    "status_active": "Active",
+    "status_overdue": "Overdue",
+    "status_completed": "Completed",
+    "status_draft": "Draft",
+    "status_pending_approval": "Pending Approval",
+    "status_awaiting_payment": "Awaiting Payment",
+    "status_awaiting_pickup": "Awaiting Pickup",
+    "status_canceled": "Canceled",
+    "status_cancelled": "Cancelled",
+    "type_hourly": "Hourly",
+    "type_daily": "Daily",
+    "type_monthly": "Monthly",
+    "type_deposit": "Deposit"
   },
   "operations": {
     "fieldActions": "Field Actions",
