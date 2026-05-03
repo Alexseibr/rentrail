@@ -219,7 +219,8 @@
     "vehicleFound": "Транспорт найден",
     "noActiveRentalForVehicle": "Нет активной аренды для этого транспорта",
     "vehicleNotFound": "Транспорт не найден",
-    "lookupFailed": "Не удалось найти транспорт"
+    "lookupFailed": "Не удалось найти транспорт",
+    "tryScanning": "Отсканируйте QR-код или введите код вручную"
   },
   "clientRentals": {
     "noRentals": "Аренд пока нет",
@@ -238,13 +239,21 @@
     "status_canceled": "Отменена",
     "returnConfirm": "Вы уверены, что хотите вернуть транспорт?",
     "returned": "Возвращено",
-    "returnedMessage": "Транспорт успешно возвращён!"
+    "returnedMessage": "Транспорт успешно возвращён!",
+    "active": "Активные аренды",
+    "vehicle": "Транспорт",
+    "goRent": "Перейдите во вкладку «Транспорт» для начала аренды"
   },
   "clientProfile": {
     "phone": "Телефон",
     "email": "Email",
     "rating": "Рейтинг",
     "memberSince": "Клиент с"
+  },
+  "clientScanner": {
+    "title": "Сканировать транспорт",
+    "pointAt": "Наведите на QR-код транспорта",
+    "vehicleCode": "Код транспорта..."
   },
   "vehicleDetail": {
     "title": "Транспорт",
@@ -266,7 +275,8 @@
     "unlock": "Разблокировать",
     "armAlarm": "Включить охрану",
     "disarmAlarm": "Выключить охрану",
-    "lastUpdate": "Обновлено"
+    "lastUpdate": "Обновлено",
+    "noLocation": "Местоположение недоступно"
   },
   "common": {
     "error": "Ошибка",

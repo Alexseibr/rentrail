@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
 
@@ -33,12 +32,76 @@ interface Rental {
   createdAt: string;
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  active: { bg: "#E8F5E9", text: "#2E7D32" },
-  overdue: { bg: "#FFF3E0", text: "#E65100" },
-  completed: { bg: "#E3F2FD", text: "#1565C0" },
-  canceled: { bg: "#FAFAFA", text: "#757575" },
+const STATUS_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
+  active: { bg: "#E8F5E9", text: "#2E7D32", accent: "#4CAF50" },
+  overdue: { bg: "#FFF3E0", text: "#E65100", accent: "#FF9800" },
+  completed: { bg: "#E3F2FD", text: "#1565C0", accent: "#2196F3" },
+  canceled: { bg: "#FAFAFA", text: "#757575", accent: "#9E9E9E" },
 };
+
+const ASSET_TYPE_ICONS: Record<string, string> = {
+  bike: "activity",
+  ebike: "zap",
+  scooter: "wind",
+  escooter: "battery-charging",
+};
+
+function useLiveElapsed(startAt: string | null, active: boolean): string {
+  const [elapsed, setElapsed] = useState("");
+
+  useEffect(() => {
+    if (!active || !startAt) { setElapsed(""); return; }
+    const calc = () => {
+      const diff = Math.max(0, Math.floor((Date.now() - new Date(startAt).getTime()) / 1000));
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      const s = diff % 60;
+      if (h > 0) setElapsed(`${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+      else setElapsed(`${m}:${String(s).padStart(2, "0")}`);
+    };
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [startAt, active]);
+
+  return elapsed;
+}
+
+function ActiveTimer({ startAt }: { startAt: string | null }) {
+  const elapsed = useLiveElapsed(startAt, true);
+  if (!elapsed) return null;
+  return (
+    <View style={timerStyles.wrap}>
+      <View style={timerStyles.dot} />
+      <Text style={timerStyles.text}>{elapsed}</Text>
+    </View>
+  );
+}
+
+const timerStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#4CAF50",
+  },
+  text: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#2E7D32",
+    letterSpacing: 0.5,
+  },
+});
 
 export default function MyRentalsScreen() {
   const { t } = useTranslation();
@@ -62,8 +125,7 @@ export default function MyRentalsScreen() {
       });
       const json = await res.json();
       if (json.data) setRentals(json.data);
-    } catch (err) {
-      console.error("Failed to fetch rentals:", err);
+    } catch {
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -81,9 +143,10 @@ export default function MyRentalsScreen() {
       t("clientRentals.confirmReturn"),
       t("clientRentals.confirmReturnMessage"),
       [
-        { text: t("settings.cancel"), style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
           text: t("clientRentals.returnVehicle"),
+          style: "destructive",
           onPress: async () => {
             setReturning(rentalId);
             try {
@@ -115,61 +178,86 @@ export default function MyRentalsScreen() {
   };
 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const renderRental = ({ item }: { item: Rental }) => {
     const statusStyle = STATUS_COLORS[item.status] || STATUS_COLORS.canceled;
-    const isActive = item.status === "active" || item.status === "overdue";
+    const isActive = item.status === "active";
+    const isOverdue = item.status === "overdue";
+    const isLive = isActive || isOverdue;
+    const typeIcon = item.assetType ? (ASSET_TYPE_ICONS[item.assetType] || "circle") : "circle";
 
     return (
       <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push({ pathname: "/(client-tabs)/rental-detail", params: { id: item.id } })}
-        activeOpacity={0.7}
+        style={[styles.card, isLive && styles.cardActive]}
+        onPress={() =>
+          router.push({ pathname: "/(client-tabs)/rental-detail", params: { id: item.id } })
+        }
+        activeOpacity={0.75}
       >
+        {isLive && <View style={[styles.cardAccent, { backgroundColor: statusStyle.accent }]} />}
+
         <View style={styles.cardHeader}>
           <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
               {t(`clientRentals.status_${item.status}`, item.status.toUpperCase())}
             </Text>
           </View>
-          <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+          {isLive && <ActiveTimer startAt={item.startAt} />}
+          {!isLive && (
+            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+          )}
         </View>
 
-        {item.assetBrand && (
-          <Text style={styles.vehicleName}>
-            {item.assetBrand} {item.assetModel}
-          </Text>
-        )}
-
-        <View style={styles.infoRow}>
-          {item.assetCode && (
-            <View style={styles.infoItem}>
-              <Feather name="tag" size={13} color="#8c8c8c" />
-              <Text style={styles.infoText}>{item.assetCode}</Text>
+        <View style={styles.vehicleRow}>
+          {item.assetType && (
+            <View style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}>
+              <Feather name={typeIcon as any} size={18} color="#F5C518" />
             </View>
           )}
+          <View style={styles.vehicleInfo}>
+            {item.assetBrand ? (
+              <Text style={styles.vehicleName}>
+                {item.assetBrand} {item.assetModel}
+              </Text>
+            ) : (
+              <Text style={styles.vehicleName}>{t("clientRentals.vehicle")}</Text>
+            )}
+            {item.assetCode && (
+              <Text style={styles.vehicleCode}>{item.assetCode}</Text>
+            )}
+          </View>
+          <Feather name="chevron-right" size={18} color="#ccc" />
         </View>
 
         {item.startAt && (
           <View style={styles.timeRow}>
+            <Feather name="play-circle" size={13} color="#8c8c8c" />
             <Text style={styles.timeLabel}>{t("clientRentals.started")}:</Text>
             <Text style={styles.timeValue}>{formatDate(item.startAt)}</Text>
           </View>
         )}
         {item.actualEndAt && (
           <View style={styles.timeRow}>
+            <Feather name="check-circle" size={13} color="#8c8c8c" />
             <Text style={styles.timeLabel}>{t("clientRentals.ended")}:</Text>
             <Text style={styles.timeValue}>{formatDate(item.actualEndAt)}</Text>
           </View>
         )}
 
-        {isActive && (
+        {isLive && (
           <TouchableOpacity
-            style={[styles.returnButton, returning === item.id && { opacity: 0.7 }]}
-            onPress={() => handleReturn(item.id)}
+            style={[styles.returnButton, returning === item.id && { opacity: 0.6 }]}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              handleReturn(item.id);
+            }}
             disabled={!!returning}
             activeOpacity={0.8}
           >
@@ -177,7 +265,7 @@ export default function MyRentalsScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Feather name="corner-down-left" size={18} color="#fff" />
+                <Feather name="corner-down-left" size={16} color="#fff" />
                 <Text style={styles.returnButtonText}>{t("clientRentals.returnVehicle")}</Text>
               </>
             )}
@@ -195,6 +283,9 @@ export default function MyRentalsScreen() {
     );
   }
 
+  const activeRentals = rentals.filter((r) => r.status === "active" || r.status === "overdue");
+  const pastRentals = rentals.filter((r) => r.status !== "active" && r.status !== "overdue");
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -205,14 +296,25 @@ export default function MyRentalsScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); fetchRentals(); }}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchRentals();
+            }}
             tintColor="#F5C518"
           />
         }
+        ListHeaderComponent={
+          activeRentals.length > 0 ? (
+            <Text style={styles.sectionLabel}>{t("clientRentals.active")}</Text>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <Feather name="clock" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>{t("clientRentals.noRentals")}</Text>
+            <View style={styles.emptyIconWrap}>
+              <Feather name="clock" size={36} color="#F5C518" />
+            </View>
+            <Text style={styles.emptyTitle}>{t("clientRentals.noRentals")}</Text>
+            <Text style={styles.emptyHint}>{t("clientRentals.goRent")}</Text>
           </View>
         }
       />
@@ -223,27 +325,62 @@ export default function MyRentalsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f5f5f5" },
-  list: { padding: 16, gap: 12 },
+  list: { padding: 16, gap: 10 },
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    color: "#8c8c8c",
+    marginBottom: 4,
+  },
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
-    gap: 8,
+    gap: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+    overflow: "hidden",
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  cardActive: {
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardAccent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+  },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 11, fontFamily: "Inter_700Bold" },
   dateText: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
-  vehicleName: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
-  infoRow: { flexDirection: "row", gap: 16 },
-  infoItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  infoText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
-  timeRow: { flexDirection: "row", gap: 6 },
+  vehicleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  vehicleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  vehicleInfo: { flex: 1 },
+  vehicleName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
+  vehicleCode: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8c8c8c", marginTop: 1 },
+  timeRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   timeLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8c8c8c" },
   timeValue: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#555" },
   returnButton: {
@@ -254,9 +391,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#E53935",
     borderRadius: 12,
     paddingVertical: 12,
-    marginTop: 4,
+    marginTop: 2,
   },
-  returnButtonText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
+  returnButtonText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" },
   emptyWrap: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 15, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: "#F5C51815",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
+  emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
 });

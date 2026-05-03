@@ -14,7 +14,6 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
 
@@ -49,7 +48,6 @@ const ASSET_TYPE_COLORS: Record<string, string> = {
 
 export default function VehiclesScreen() {
   const { t } = useTranslation();
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
   const router = useRouter();
@@ -72,8 +70,7 @@ export default function VehiclesScreen() {
       });
       const json = await res.json();
       if (json.data) setVehicles(json.data);
-    } catch (err) {
-      console.error("Failed to fetch vehicles:", err);
+    } catch {
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -92,17 +89,19 @@ export default function VehiclesScreen() {
     setSearching(true);
     try {
       const token = await getAccessToken();
-      const res = await fetch(`${BASE_URL}/api/client/vehicles/lookup?code=${encodeURIComponent(code)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${BASE_URL}/api/client/vehicles/lookup?code=${encodeURIComponent(code)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-company-id": companyId || "",
+          },
+        },
+      );
       const json = await res.json();
       if (res.ok && json.data) {
-        if (json.data.hasActiveRental) {
-          router.push({ pathname: "/(client-tabs)/vehicle-detail", params: { id: json.data.id } });
-        } else {
-          Alert.alert(t("clientVehicles.vehicleFound"), `${json.data.brand ?? ""} ${json.data.model ?? ""} (${json.data.internalCode})\n${t("clientVehicles.noActiveRentalForVehicle")}`);
-        }
         setSearchCode("");
+        router.push({ pathname: "/(client-tabs)/vehicle-detail", params: { id: json.data.id } });
       } else {
         Alert.alert(t("common.error"), json.error?.message || t("clientVehicles.vehicleNotFound"));
       }
@@ -118,7 +117,7 @@ export default function VehiclesScreen() {
       t("clientVehicles.confirmRent"),
       t("clientVehicles.confirmRentMessage"),
       [
-        { text: t("common.cancel", t("settings.cancel")), style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
           text: t("clientVehicles.rent"),
           onPress: async () => {
@@ -157,10 +156,16 @@ export default function VehiclesScreen() {
     const typeIcon = ASSET_TYPE_ICONS[item.assetType] || "circle";
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() =>
+          router.push({ pathname: "/(client-tabs)/vehicle-detail", params: { id: item.id } })
+        }
+        activeOpacity={0.75}
+      >
         <View style={styles.cardHeader}>
           <View style={[styles.typeBadge, { backgroundColor: typeColor + "20" }]}>
-            <Feather name={typeIcon as any} size={16} color={typeColor} />
+            <Feather name={typeIcon as any} size={15} color={typeColor} />
             <Text style={[styles.typeText, { color: typeColor }]}>
               {item.assetType.toUpperCase()}
             </Text>
@@ -181,7 +186,11 @@ export default function VehiclesScreen() {
           )}
           {item.batteryPercent != null && (
             <View style={styles.infoItem}>
-              <Feather name="battery" size={13} color={item.batteryPercent > 20 ? "#4CAF50" : "#E53935"} />
+              <Feather
+                name="battery"
+                size={13}
+                color={item.batteryPercent > 20 ? "#4CAF50" : "#E53935"}
+              />
               <Text style={styles.infoText}>{item.batteryPercent}%</Text>
             </View>
           )}
@@ -189,7 +198,10 @@ export default function VehiclesScreen() {
 
         <TouchableOpacity
           style={[styles.rentButton, renting === item.id && { opacity: 0.7 }]}
-          onPress={() => handleRent(item.id)}
+          onPress={(e) => {
+            e.stopPropagation?.();
+            handleRent(item.id);
+          }}
           disabled={!!renting}
           activeOpacity={0.8}
         >
@@ -197,12 +209,12 @@ export default function VehiclesScreen() {
             <ActivityIndicator color="#1a1a1a" size="small" />
           ) : (
             <>
-              <Feather name="play-circle" size={18} color="#1a1a1a" />
+              <Feather name="play-circle" size={17} color="#1a1a1a" />
               <Text style={styles.rentButtonText}>{t("clientVehicles.rent")}</Text>
             </>
           )}
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -217,8 +229,15 @@ export default function VehiclesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.searchBar}>
+        <TouchableOpacity
+          style={styles.scanBtn}
+          onPress={() => router.push("/client-scanner")}
+          activeOpacity={0.7}
+        >
+          <Feather name="maximize" size={20} color="#1a1a1a" />
+        </TouchableOpacity>
         <View style={styles.searchInputWrap}>
-          <Feather name="search" size={16} color="#8c8c8c" />
+          <Feather name="search" size={15} color="#8c8c8c" />
           <TextInput
             style={styles.searchInput}
             placeholder={t("clientVehicles.enterCode")}
@@ -231,7 +250,7 @@ export default function VehiclesScreen() {
           />
         </View>
         <TouchableOpacity
-          style={[styles.searchBtn, searching && { opacity: 0.7 }]}
+          style={[styles.searchBtn, (searching || !searchCode.trim()) && { opacity: 0.5 }]}
           onPress={handleLookup}
           disabled={searching || !searchCode.trim()}
           activeOpacity={0.7}
@@ -243,25 +262,29 @@ export default function VehiclesScreen() {
           )}
         </TouchableOpacity>
       </View>
+
       <FlatList
         data={vehicles}
         keyExtractor={(v) => v.id}
         renderItem={renderVehicle}
-        contentContainerStyle={[
-          styles.list,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); fetchVehicles(); }}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchVehicles();
+            }}
             tintColor="#F5C518"
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <Feather name="map-pin" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>{t("clientVehicles.noVehicles")}</Text>
+            <View style={styles.emptyIconWrap}>
+              <Feather name="map-pin" size={36} color="#F5C518" />
+            </View>
+            <Text style={styles.emptyTitle}>{t("clientVehicles.noVehicles")}</Text>
+            <Text style={styles.emptyHint}>{t("clientVehicles.tryScanning")}</Text>
           </View>
         }
       />
@@ -317,6 +340,14 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 4,
   },
+  scanBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#F5C518",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   searchInputWrap: {
     flex: 1,
     flexDirection: "row",
@@ -342,10 +373,19 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: "#F5C518",
+    backgroundColor: "#1a1a1a",
     justifyContent: "center",
     alignItems: "center",
   },
   emptyWrap: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 15, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: "#F5C51815",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
+  emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
 });

@@ -219,7 +219,8 @@
     "vehicleFound": "Vehicle found",
     "noActiveRentalForVehicle": "No active rental for this vehicle",
     "vehicleNotFound": "Vehicle not found",
-    "lookupFailed": "Failed to find vehicle"
+    "lookupFailed": "Failed to find vehicle",
+    "tryScanning": "Scan a QR code or enter the vehicle code manually"
   },
   "clientRentals": {
     "noRentals": "No rentals yet",
@@ -238,13 +239,21 @@
     "status_canceled": "Canceled",
     "returnConfirm": "Are you sure you want to return this vehicle?",
     "returned": "Returned",
-    "returnedMessage": "Vehicle returned successfully!"
+    "returnedMessage": "Vehicle returned successfully!",
+    "active": "Active Rentals",
+    "vehicle": "Vehicle",
+    "goRent": "Go to the Vehicles tab to start a rental"
   },
   "clientProfile": {
     "phone": "Phone",
     "email": "Email",
     "rating": "Rating",
     "memberSince": "Member Since"
+  },
+  "clientScanner": {
+    "title": "Scan Vehicle",
+    "pointAt": "Point at the vehicle QR code",
+    "vehicleCode": "Vehicle code..."
   },
   "vehicleDetail": {
     "title": "Vehicle",
@@ -266,7 +275,8 @@
     "unlock": "Unlock",
     "armAlarm": "Arm Alarm",
     "disarmAlarm": "Disarm Alarm",
-    "lastUpdate": "Updated"
+    "lastUpdate": "Updated",
+    "noLocation": "Location unavailable"
   },
   "common": {
     "error": "Error",

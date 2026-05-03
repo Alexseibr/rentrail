@@ -80,6 +80,7 @@ function RootLayoutNav() {
       <Stack.Screen name="notifications" options={{ title: t("screens.notifications") }} />
       <Stack.Screen name="asset/[id]" options={{ title: t("screens.asset") }} />
       <Stack.Screen name="rental/[id]" options={{ title: t("screens.rental") }} />
+      <Stack.Screen name="client-scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
     </Stack>
   );
 }
