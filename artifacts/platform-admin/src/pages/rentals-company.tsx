@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search } from "lucide-react";
+import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search, ClipboardList, AlertCircle, Clock } from "lucide-react";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -25,6 +25,13 @@ const STATUS_COLORS: Record<string, string> = {
   canceled: "bg-orange-100 text-orange-800",
   approved: "bg-sky-100 text-sky-800",
 };
+
+const KPI_CONFIG = [
+  { key: "active", accent: "bg-green-500", icon: ClipboardList },
+  { key: "overdue", accent: "bg-red-500", icon: AlertCircle },
+  { key: "completed", accent: "bg-gray-400", icon: CheckCircle },
+  { key: "canceled", accent: "bg-orange-400", icon: XCircle },
+] as const;
 
 export default function RentalsCompanyPage() {
   const { t } = useTranslation();
@@ -69,7 +76,7 @@ export default function RentalsCompanyPage() {
   const items = search
     ? allItems.filter((r: any) =>
         (r.clientName?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (r.rentalType?.toLowerCase() || "").includes(search.toLowerCase())
+        (r.assetCode?.toLowerCase() || "").includes(search.toLowerCase())
       )
     : allItems;
 
@@ -137,46 +144,74 @@ export default function RentalsCompanyPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("nav.rentals")}</h1>
-          <p className="text-muted-foreground">{t("rentals.subtitle", "Все аренды компании")}</p>
+          <p className="text-muted-foreground mt-0.5">{t("rentals.subtitle", "Все аренды компании")}</p>
         </div>
         {canWriteRental && (
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={() => setShowCreate(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
             {t("rentals.create", "Новая аренда")}
           </Button>
         )}
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {["active", "overdue", "completed", "canceled"].map((s) => (
-          <Card key={s} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">{countByStatus(s)}</div>
-              <p className={`text-sm ${statusFilter === s ? "font-semibold text-primary" : "text-muted-foreground"}`}>{t(`status.${s}`, s)}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {KPI_CONFIG.map(({ key, accent, icon: Icon }) => {
+          const count = countByStatus(key);
+          const isActive = statusFilter === key;
+          return (
+            <Card
+              key={key}
+              className={`relative overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${isActive ? "ring-2 ring-primary" : ""}`}
+              onClick={() => setStatusFilter(statusFilter === key ? "all" : key)}
+            >
+              <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+              <CardContent className="pt-4 pl-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{rentalsQuery.isLoading ? <Skeleton className="h-7 w-10" /> : count}</div>
+                    <p className={`text-sm mt-0.5 ${isActive ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                      {String(t(`status.${key}`, key))}
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-xl bg-muted">
+                    <Icon className={`h-4 w-4 ${accent.replace("bg-", "text-")}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-base">{t("nav.rentals")} ({items.length})</CardTitle>
+          <div className="flex items-center gap-3 flex-wrap">
+            <CardTitle className="text-base font-semibold">
+              {t("nav.rentals")}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">({items.length})</span>
+            </CardTitle>
             <div className="flex-1" />
-            <div className="relative max-w-xs">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder={t("common.search", "Поиск...")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-48" />
+              <Input
+                placeholder={t("common.search", "Поиск...")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 w-48"
+              />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder={t("common.status")} />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("common.all", "Все")}</SelectItem>
                 {["draft", "approved", "awaiting_pickup", "active", "overdue", "completed", "canceled"].map((s) => (
-                  <SelectItem key={s} value={s}>{t(`status.${s}`, s)}</SelectItem>
+                  <SelectItem key={s} value={s}>{String(t(`status.${s}`, s))}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -184,27 +219,45 @@ export default function RentalsCompanyPage() {
         </CardHeader>
         <CardContent className="p-0">
           {rentalsQuery.isLoading ? (
-            <div className="p-6 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+            <div className="p-6 space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("rentals.client", "Клиент")}</TableHead>
-                  <TableHead>{t("rentals.asset", "Транспорт")}</TableHead>
-                  <TableHead>{t("rentals.start", "Начало")}</TableHead>
-                  <TableHead>{t("rentals.end", "Окончание")}</TableHead>
-                  <TableHead>{t("common.status")}</TableHead>
-                  {canWriteRental && <TableHead>{t("common.actions", "Действия")}</TableHead>}
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs">{t("rentals.client", "Клиент")}</TableHead>
+                  <TableHead className="text-xs">{t("rentals.asset", "Транспорт")}</TableHead>
+                  <TableHead className="text-xs">{t("rentals.start", "Начало")}</TableHead>
+                  <TableHead className="text-xs">{t("rentals.end", "Окончание")}</TableHead>
+                  <TableHead className="text-xs">{t("common.status")}</TableHead>
+                  {canWriteRental && <TableHead className="text-xs">{t("common.actions", "Действия")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((rental: any) => (
-                  <TableRow key={rental.id} className="cursor-pointer" onClick={() => navigate(`/rentals/${rental.id}`)}>
-                    <TableCell>{rental.clientName || rental.clientId?.slice(0, 8)}</TableCell>
-                    <TableCell className="font-mono text-sm">{rental.assetCode || rental.assetId?.slice(0, 8)}</TableCell>
-                    <TableCell className="text-sm">{rental.startDate || rental.startAt ? new Date(rental.startDate || rental.startAt).toLocaleDateString() : "—"}</TableCell>
-                    <TableCell className="text-sm">{rental.endDate || rental.plannedEndAt ? new Date(rental.endDate || rental.plannedEndAt).toLocaleDateString() : "—"}</TableCell>
-                    <TableCell><Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{String(t(`status.${rental.status}`, rental.status))}</Badge></TableCell>
+                  <TableRow
+                    key={rental.id}
+                    className="cursor-pointer hover:bg-muted/30"
+                    onClick={() => navigate(`/rentals/${rental.id}`)}
+                  >
+                    <TableCell className="font-medium text-sm">{rental.clientName || rental.clientId?.slice(0, 8) || "—"}</TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">{rental.assetCode || rental.assetId?.slice(0, 8) || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {rental.startDate || rental.startAt
+                        ? new Date(rental.startDate || rental.startAt).toLocaleDateString("ru-RU")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {rental.endDate || rental.plannedEndAt
+                        ? new Date(rental.endDate || rental.plannedEndAt).toLocaleDateString("ru-RU")
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`text-xs ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}>
+                        {String(t(`status.${rental.status}`, rental.status))}
+                      </Badge>
+                    </TableCell>
                     {canWriteRental && (
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-1">
@@ -213,10 +266,10 @@ export default function RentalsCompanyPage() {
                               key={act.key}
                               size="sm"
                               variant={act.variant === "destructive" ? "destructive" : "outline"}
-                              className="h-7 text-xs"
+                              className="h-7 text-xs px-2 gap-1"
                               onClick={() => setActionDialog({ id: rental.id, action: act.key, rental })}
                             >
-                              <act.icon className="h-3 w-3 mr-1" />
+                              <act.icon className="h-3 w-3" />
                               {act.label}
                             </Button>
                           ))}
@@ -227,7 +280,10 @@ export default function RentalsCompanyPage() {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t("common.noData", "Нет данных")}</TableCell>
+                    <TableCell colSpan={6} className="py-12 text-center">
+                      <ClipboardList className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
+                      <p className="text-sm text-muted-foreground">{t("common.noData", "Нет данных")}</p>
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -298,7 +354,7 @@ export default function RentalsCompanyPage() {
               {actionDialog?.action === "cancel" && t("rentals.cancel", "Отменить аренду")}
             </DialogTitle>
             <DialogDescription>
-              {t("rentals.client", "Клиент")}: {actionDialog?.rental?.clientName || "—"}
+              {t("rentals.client", "Клиент")}: <span className="font-medium">{actionDialog?.rental?.clientName || "—"}</span>
             </DialogDescription>
           </DialogHeader>
           {actionDialog?.action === "return" && (

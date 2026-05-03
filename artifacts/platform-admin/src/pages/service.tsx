@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Wrench, UserCheck, Search } from "lucide-react";
+import { Plus, Wrench, UserCheck, Search, AlertTriangle, Clock, CheckCircle, Loader2 } from "lucide-react";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -40,6 +40,13 @@ const REQUEST_TYPES = ["breakdown", "flat_tire", "brake_issue", "battery_issue",
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 const SR_STATUSES = ["new", "assigned", "in_progress", "on_hold", "completed", "canceled"];
 const WO_TYPES = ["field_repair", "workshop_repair", "scheduled_maintenance", "inspection", "recovery", "cleaning"];
+
+const KPI_SR = [
+  { key: "new",         accent: "bg-blue-500",   icon: AlertTriangle },
+  { key: "in_progress", accent: "bg-yellow-500", icon: Loader2 },
+  { key: "on_hold",     accent: "bg-orange-500", icon: Clock },
+  { key: "completed",   accent: "bg-green-500",  icon: CheckCircle },
+] as const;
 
 export default function ServicePage() {
   const { t } = useTranslation();
@@ -106,29 +113,51 @@ export default function ServicePage() {
   const workOrders = Array.isArray(workOrdersQuery.data) ? workOrdersQuery.data : [];
 
   const filteredRequests = search
-    ? requests.filter((r: any) => r.title?.toLowerCase().includes(search.toLowerCase()) || r.assetCode?.toLowerCase().includes(search.toLowerCase()))
+    ? requests.filter((r: any) =>
+        r.title?.toLowerCase().includes(search.toLowerCase()) ||
+        r.assetCode?.toLowerCase().includes(search.toLowerCase())
+      )
     : requests;
 
   const createSRMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api("/service-requests", { method: "POST", body: JSON.stringify(body), headers: companyHeaders }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["service-requests"] }); setShowCreate(false); setSrForm({ branchId: "", assetId: "", requestType: "breakdown", priority: "medium", title: "", description: "" }); },
+    mutationFn: (body: Record<string, unknown>) =>
+      api("/service-requests", { method: "POST", body: JSON.stringify(body), headers: companyHeaders }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      setShowCreate(false);
+      setSrForm({ branchId: "", assetId: "", requestType: "breakdown", priority: "medium", title: "", description: "" });
+    },
   });
 
   const createWOMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api("/work-orders", { method: "POST", body: JSON.stringify(body), headers: companyHeaders }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["work-orders"] }); setShowCreateWO(false); setWoForm({ branchId: "", assetId: "", orderType: "field_repair", priority: "medium", title: "", description: "", assignedToUserId: "", estimatedCost: "" }); },
+    mutationFn: (body: Record<string, unknown>) =>
+      api("/work-orders", { method: "POST", body: JSON.stringify(body), headers: companyHeaders }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["work-orders"] });
+      setShowCreateWO(false);
+      setWoForm({ branchId: "", assetId: "", orderType: "field_repair", priority: "medium", title: "", description: "", assignedToUserId: "", estimatedCost: "" });
+    },
   });
 
   const assignMutation = useMutation({
     mutationFn: ({ id, userId }: { id: string; userId: string }) =>
       api(`/service-requests/${id}/assign`, { method: "POST", body: JSON.stringify({ assignedToUserId: userId }), headers: companyHeaders }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["service-requests"] }); setAssignDialog(null); setSelectedMechanic(""); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      setAssignDialog(null);
+      setSelectedMechanic("");
+    },
   });
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status, type }: { id: string; status: string; type: string }) =>
       api(`/${type}/${id}/status`, { method: "POST", body: JSON.stringify({ status }), headers: companyHeaders }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["service-requests"] }); queryClient.invalidateQueries({ queryKey: ["work-orders"] }); setStatusDialog(null); setNewStatus(""); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["work-orders"] });
+      setStatusDialog(null);
+      setNewStatus("");
+    },
   });
 
   function handleCreateSR(e: React.FormEvent) {
@@ -151,98 +180,153 @@ export default function ServicePage() {
 
   const countByStatus = (s: string) => requests.filter((r: any) => r.status === s).length;
 
+  const urgentCount = requests.filter((r: any) => r.priority === "urgent" && r.status !== "completed" && r.status !== "canceled").length;
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("service.title", "Сервис")}</h1>
-          <p className="text-muted-foreground">{t("service.subtitle", "Заявки на обслуживание и наряд-заказы")}</p>
+          <p className="text-muted-foreground mt-0.5">{t("service.subtitle", "Заявки на обслуживание и наряд-заказы")}</p>
         </div>
         {canWriteService && (
           <div className="flex gap-2">
-            <Button onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("service.newRequest", "Новая заявка")}
+            <Button onClick={() => setShowCreate(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t("service.newRequest", "Заявка")}
             </Button>
-            <Button variant="outline" onClick={() => setShowCreateWO(true)}>
-              <Wrench className="h-4 w-4 mr-2" />
-              {t("service.newWorkOrder", "Наряд-заказ")}
+            <Button variant="outline" onClick={() => setShowCreateWO(true)} className="gap-2">
+              <Wrench className="h-4 w-4" />
+              {t("service.newWorkOrder", "Наряд")}
             </Button>
           </div>
         )}
       </div>
 
-      <div className="grid gap-4 grid-cols-3 lg:grid-cols-6">
-        {SR_STATUSES.map((s) => (
-          <Card key={s} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}>
-            <CardContent className="pt-3 pb-3">
-              <div className="text-xl font-bold">{countByStatus(s)}</div>
-              <p className={`text-xs ${statusFilter === s ? "font-semibold text-primary" : "text-muted-foreground"}`}>
-                {t(`service.status.${s}`, s)}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+      {urgentCount > 0 && (
+        <div className="flex items-center gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
+          <p className="text-sm text-red-700">
+            <span className="font-semibold">{urgentCount}</span>{" "}
+            {t("service.urgentAlert", "срочных заявок требуют немедленного внимания")}
+          </p>
+        </div>
+      )}
+
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        {KPI_SR.map(({ key, accent, icon: Icon }) => {
+          const count = countByStatus(key);
+          const isActive = statusFilter === key;
+          return (
+            <Card
+              key={key}
+              className={`relative overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${isActive ? "ring-2 ring-primary" : ""}`}
+              onClick={() => setStatusFilter(statusFilter === key ? "all" : key)}
+            >
+              <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+              <CardContent className="pt-4 pl-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    {requestsQuery.isLoading ? (
+                      <Skeleton className="h-7 w-8" />
+                    ) : (
+                      <div className="text-2xl font-bold">{count}</div>
+                    )}
+                    <p className={`text-sm mt-0.5 ${isActive ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                      {String(t(`service.status.${key}`, key))}
+                    </p>
+                  </div>
+                  <div className="p-2 rounded-xl bg-muted">
+                    <Icon className={`h-4 w-4 ${accent.replace("bg-", "text-")}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="requests">{t("service.requests", "Заявки")} ({requests.length})</TabsTrigger>
-          <TabsTrigger value="workorders">{t("service.workOrders", "Наряд-заказы")} ({workOrders.length})</TabsTrigger>
+        <TabsList className="mb-0">
+          <TabsTrigger value="requests">
+            {t("service.requests", "Заявки")}
+            <span className="ml-1.5 text-xs bg-muted rounded-full px-1.5 py-0.5">{requests.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="workorders">
+            {t("service.workOrders", "Наряд-заказы")}
+            <span className="ml-1.5 text-xs bg-muted rounded-full px-1.5 py-0.5">{workOrders.length}</span>
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="requests">
+        <TabsContent value="requests" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-base">{t("service.requests", "Заявки")}</CardTitle>
+              <div className="flex items-center gap-3 flex-wrap">
+                <CardTitle className="text-base font-semibold">{t("service.requests", "Заявки")}</CardTitle>
                 <div className="flex-1" />
-                <div className="relative max-w-xs">
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder={t("common.search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-48" />
+                  <Input
+                    placeholder={t("common.search")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 w-48"
+                  />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t("common.all")}</SelectItem>
-                    {SR_STATUSES.map((s) => <SelectItem key={s} value={s}>{t(`service.status.${s}`, s)}</SelectItem>)}
+                    {SR_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>{String(t(`service.status.${s}`, s))}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </CardHeader>
             <CardContent className="p-0">
               {requestsQuery.isLoading ? (
-                <div className="p-6 space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+                <div className="p-6 space-y-2">
+                  {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("service.requestTitle", "Заявка")}</TableHead>
-                      <TableHead>{t("service.requestTypeLabel", "Тип")}</TableHead>
-                      <TableHead>{t("service.assetLabel", "Транспорт")}</TableHead>
-                      <TableHead>{t("service.branchLabel", "Филиал")}</TableHead>
-                      <TableHead>{t("service.priorityLabel", "Приоритет")}</TableHead>
-                      <TableHead>{t("common.status")}</TableHead>
-                      <TableHead>{t("service.assignee", "Мастер")}</TableHead>
-                      {canWriteService && <TableHead>{t("common.actions")}</TableHead>}
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-xs">{t("service.requestTitle", "Заявка")}</TableHead>
+                      <TableHead className="text-xs">{t("service.requestTypeLabel", "Тип")}</TableHead>
+                      <TableHead className="text-xs">{t("service.assetLabel", "Транспорт")}</TableHead>
+                      <TableHead className="text-xs">{t("service.branchLabel", "Филиал")}</TableHead>
+                      <TableHead className="text-xs">{t("service.priorityLabel", "Приоритет")}</TableHead>
+                      <TableHead className="text-xs">{t("common.status")}</TableHead>
+                      <TableHead className="text-xs">{t("service.assignee", "Мастер")}</TableHead>
+                      {canWriteService && <TableHead className="text-xs">{t("common.actions")}</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredRequests.map((sr: any) => (
-                      <TableRow key={sr.id}>
-                        <TableCell className="font-medium max-w-48 truncate">{sr.title}</TableCell>
-                        <TableCell className="text-sm">{String(t(`service.type.${sr.requestType}`, sr.requestType))}</TableCell>
-                        <TableCell className="font-mono text-sm">{sr.assetCode || "—"}</TableCell>
-                        <TableCell className="text-sm">{sr.branchCity || sr.branchName || "—"}</TableCell>
-                        <TableCell><Badge className={PRIORITY_COLORS[sr.priority] || ""}>{String(t(`service.priority.${sr.priority}`, sr.priority))}</Badge></TableCell>
-                        <TableCell><Badge className={STATUS_COLORS[sr.status] || "bg-gray-100"}>{String(t(`service.status.${sr.status}`, sr.status))}</Badge></TableCell>
-                        <TableCell className="text-sm">{sr.assignedToName || "—"}</TableCell>
+                      <TableRow key={sr.id} className="hover:bg-muted/30">
+                        <TableCell className="font-medium max-w-48 truncate text-sm">{sr.title}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{String(t(`service.type.${sr.requestType}`, sr.requestType))}</TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">{sr.assetCode || "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{sr.branchCity || sr.branchName || "—"}</TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${PRIORITY_COLORS[sr.priority] || ""}`}>
+                            {String(t(`service.priority.${sr.priority}`, sr.priority))}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${STATUS_COLORS[sr.status] || "bg-gray-100"}`}>
+                            {String(t(`service.status.${sr.status}`, sr.status))}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{sr.assignedToName || "—"}</TableCell>
                         {canWriteService && (
                           <TableCell>
                             <div className="flex gap-1">
                               {sr.status === "new" && (
-                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAssignDialog(sr)}>
-                                  <UserCheck className="h-3 w-3 mr-1" />
+                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setAssignDialog(sr)}>
+                                  <UserCheck className="h-3 w-3" />
                                   {t("service.assign", "Назначить")}
                                 </Button>
                               )}
@@ -256,7 +340,10 @@ export default function ServicePage() {
                     ))}
                     {filteredRequests.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t("common.noData")}</TableCell>
+                        <TableCell colSpan={8} className="py-12 text-center">
+                          <Wrench className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
+                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -266,36 +353,48 @@ export default function ServicePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="workorders">
+        <TabsContent value="workorders" className="mt-4">
           <Card>
-            <CardHeader><CardTitle className="text-base">{t("service.workOrders", "Наряд-заказы")}</CardTitle></CardHeader>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">{t("service.workOrders", "Наряд-заказы")}</CardTitle>
+            </CardHeader>
             <CardContent className="p-0">
               {workOrdersQuery.isLoading ? (
-                <div className="p-6 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+                <div className="p-6 space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("service.requestTitle", "Наряд")}</TableHead>
-                      <TableHead>{t("service.orderTypeLabel", "Тип работ")}</TableHead>
-                      <TableHead>{t("service.assetLabel", "Транспорт")}</TableHead>
-                      <TableHead>{t("service.branchLabel", "Филиал")}</TableHead>
-                      <TableHead>{t("service.priorityLabel", "Приоритет")}</TableHead>
-                      <TableHead>{t("common.status")}</TableHead>
-                      <TableHead>{t("service.assignee", "Мастер")}</TableHead>
-                      {canWriteService && <TableHead>{t("common.actions")}</TableHead>}
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-xs">{t("service.requestTitle", "Наряд")}</TableHead>
+                      <TableHead className="text-xs">{t("service.orderTypeLabel", "Тип работ")}</TableHead>
+                      <TableHead className="text-xs">{t("service.assetLabel", "Транспорт")}</TableHead>
+                      <TableHead className="text-xs">{t("service.branchLabel", "Филиал")}</TableHead>
+                      <TableHead className="text-xs">{t("service.priorityLabel", "Приоритет")}</TableHead>
+                      <TableHead className="text-xs">{t("common.status")}</TableHead>
+                      <TableHead className="text-xs">{t("service.assignee", "Мастер")}</TableHead>
+                      {canWriteService && <TableHead className="text-xs">{t("common.actions")}</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {workOrders.map((wo: any) => (
-                      <TableRow key={wo.id}>
-                        <TableCell className="font-medium max-w-48 truncate">{wo.title}</TableCell>
-                        <TableCell className="text-sm">{String(t(`service.orderType.${wo.orderType}`, wo.orderType))}</TableCell>
-                        <TableCell className="font-mono text-sm">{wo.assetCode || "—"}</TableCell>
-                        <TableCell className="text-sm">{wo.branchCity || wo.branchName || "—"}</TableCell>
-                        <TableCell><Badge className={PRIORITY_COLORS[wo.priority] || ""}>{String(t(`service.priority.${wo.priority}`, wo.priority))}</Badge></TableCell>
-                        <TableCell><Badge className={STATUS_COLORS[wo.status] || "bg-gray-100"}>{String(t(`service.status.${wo.status}`, wo.status))}</Badge></TableCell>
-                        <TableCell className="text-sm">{wo.assignedToName || "—"}</TableCell>
+                      <TableRow key={wo.id} className="hover:bg-muted/30">
+                        <TableCell className="font-medium max-w-48 truncate text-sm">{wo.title}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{String(t(`service.orderType.${wo.orderType}`, wo.orderType))}</TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">{wo.assetCode || "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{wo.branchCity || wo.branchName || "—"}</TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${PRIORITY_COLORS[wo.priority] || ""}`}>
+                            {String(t(`service.priority.${wo.priority}`, wo.priority))}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${STATUS_COLORS[wo.status] || "bg-gray-100"}`}>
+                            {String(t(`service.status.${wo.status}`, wo.status))}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{wo.assignedToName || "—"}</TableCell>
                         {canWriteService && (
                           <TableCell>
                             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatusDialog({ ...wo, type: "work-orders" })}>
@@ -307,7 +406,10 @@ export default function ServicePage() {
                     ))}
                     {workOrders.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">{t("common.noData")}</TableCell>
+                        <TableCell colSpan={8} className="py-12 text-center">
+                          <Wrench className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
+                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -331,14 +433,18 @@ export default function ServicePage() {
                 <Label>{t("service.branchLabel", "Филиал")} *</Label>
                 <Select value={srForm.branchId} onValueChange={(v) => setSrForm({ ...srForm, branchId: v })}>
                   <SelectTrigger><SelectValue placeholder={t("fleet.selectBranch")} /></SelectTrigger>
-                  <SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name} ({b.city})</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name} ({b.city})</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t("service.requestTypeLabel", "Тип неисправности")}</Label>
                 <Select value={srForm.requestType} onValueChange={(v) => setSrForm({ ...srForm, requestType: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{REQUEST_TYPES.map((rt) => <SelectItem key={rt} value={rt}>{t(`service.type.${rt}`, rt)}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {REQUEST_TYPES.map((rt) => <SelectItem key={rt} value={rt}>{String(t(`service.type.${rt}`, rt))}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -347,14 +453,18 @@ export default function ServicePage() {
                 <Label>{t("service.priorityLabel", "Приоритет")}</Label>
                 <Select value={srForm.priority} onValueChange={(v) => setSrForm({ ...srForm, priority: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{t(`service.priority.${p}`, p)}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => <SelectItem key={p} value={p}>{String(t(`service.priority.${p}`, p))}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t("service.assetLabel", "Транспорт")}</Label>
                 <Select value={srForm.assetId} onValueChange={(v) => setSrForm({ ...srForm, assetId: v })}>
                   <SelectTrigger><SelectValue placeholder={t("rentals.selectAsset")} /></SelectTrigger>
-                  <SelectContent>{allAssets.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.internalCode} — {a.brand} {a.model}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {allAssets.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.internalCode} — {a.brand} {a.model}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -385,14 +495,18 @@ export default function ServicePage() {
                 <Label>{t("service.branchLabel", "Филиал")} *</Label>
                 <Select value={woForm.branchId} onValueChange={(v) => setWoForm({ ...woForm, branchId: v })}>
                   <SelectTrigger><SelectValue placeholder={t("fleet.selectBranch")} /></SelectTrigger>
-                  <SelectContent>{branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name} ({b.city})</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name} ({b.city})</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t("service.orderTypeLabel", "Тип работ")}</Label>
                 <Select value={woForm.orderType} onValueChange={(v) => setWoForm({ ...woForm, orderType: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{WO_TYPES.map((wt) => <SelectItem key={wt} value={wt}>{t(`service.orderType.${wt}`, wt)}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {WO_TYPES.map((wt) => <SelectItem key={wt} value={wt}>{String(t(`service.orderType.${wt}`, wt))}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -401,14 +515,18 @@ export default function ServicePage() {
                 <Label>{t("service.priorityLabel", "Приоритет")}</Label>
                 <Select value={woForm.priority} onValueChange={(v) => setWoForm({ ...woForm, priority: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{t(`service.priority.${p}`, p)}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {PRIORITIES.map((p) => <SelectItem key={p} value={p}>{String(t(`service.priority.${p}`, p))}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t("service.assignee", "Мастер")}</Label>
                 <Select value={woForm.assignedToUserId} onValueChange={(v) => setWoForm({ ...woForm, assignedToUserId: v })}>
                   <SelectTrigger><SelectValue placeholder={t("service.selectMechanic", "Выберите мастера")} /></SelectTrigger>
-                  <SelectContent>{mechanics.map((m: any) => <SelectItem key={m.userId} value={m.userId}>{m.fullName} ({m.phone})</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {mechanics.map((m: any) => <SelectItem key={m.userId} value={m.userId}>{m.fullName} ({m.phone})</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -428,48 +546,57 @@ export default function ServicePage() {
 
       <Dialog open={!!assignDialog} onOpenChange={() => setAssignDialog(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{t("service.assignMechanic", "Назначить мастера")}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground mb-4">{assignDialog?.title}</p>
-          <div className="space-y-2">
-            <Label>{t("service.assignee", "Мастер")}</Label>
-            <Select value={selectedMechanic} onValueChange={setSelectedMechanic}>
-              <SelectTrigger><SelectValue placeholder={t("service.selectMechanic", "Выберите мастера")} /></SelectTrigger>
-              <SelectContent>{mechanics.map((m: any) => <SelectItem key={m.userId} value={m.userId}>{m.fullName} ({m.phone})</SelectItem>)}</SelectContent>
-            </Select>
+          <DialogHeader><DialogTitle>{t("service.assign", "Назначить мастера")}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("service.assignee", "Мастер")}</Label>
+              <Select value={selectedMechanic} onValueChange={setSelectedMechanic}>
+                <SelectTrigger><SelectValue placeholder={t("service.selectMechanic")} /></SelectTrigger>
+                <SelectContent>
+                  {mechanics.map((m: any) => (
+                    <SelectItem key={m.userId} value={m.userId}>{m.fullName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAssignDialog(null)}>{t("common.cancel")}</Button>
+              <Button
+                disabled={!selectedMechanic || assignMutation.isPending}
+                onClick={() => assignMutation.mutate({ id: assignDialog.id, userId: selectedMechanic })}
+              >
+                {assignMutation.isPending ? t("common.saving") : t("service.assign")}
+              </Button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignDialog(null)}>{t("common.cancel")}</Button>
-            <Button disabled={assignMutation.isPending || !selectedMechanic} onClick={() => assignDialog && assignMutation.mutate({ id: assignDialog.id, userId: selectedMechanic })}>
-              {assignMutation.isPending ? t("common.processing") : t("service.assign", "Назначить")}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!statusDialog} onOpenChange={() => setStatusDialog(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{t("fleet.changeStatus")}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground mb-4">{statusDialog?.title}</p>
-          <div className="space-y-2">
-            <Label>{t("fleet.newStatus")}</Label>
-            <Select value={newStatus} onValueChange={setNewStatus}>
-              <SelectTrigger><SelectValue placeholder={t("fleet.selectStatus")} /></SelectTrigger>
-              <SelectContent>
-                {(statusDialog?.type === "work-orders"
-                  ? ["draft", "assigned", "en_route", "in_progress", "waiting_parts", "completed", "canceled"]
-                  : SR_STATUSES
-                ).filter((s) => s !== statusDialog?.status).map((s) => (
-                  <SelectItem key={s} value={s}>{t(`service.status.${s}`, s)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <DialogHeader><DialogTitle>{t("fleet.changeStatus", "Сменить статус")}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("common.status")}</Label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger><SelectValue placeholder={t("common.status")} /></SelectTrigger>
+                <SelectContent>
+                  {(statusDialog?.type === "service-requests" ? SR_STATUSES : ["new", "in_progress", "on_hold", "completed", "canceled"]).map((s) => (
+                    <SelectItem key={s} value={s}>{String(t(`service.status.${s}`, s))}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStatusDialog(null)}>{t("common.cancel")}</Button>
+              <Button
+                disabled={!newStatus || statusMutation.isPending}
+                onClick={() => statusMutation.mutate({ id: statusDialog.id, status: newStatus, type: statusDialog.type })}
+              >
+                {statusMutation.isPending ? t("common.saving") : t("common.save")}
+              </Button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStatusDialog(null)}>{t("common.cancel")}</Button>
-            <Button disabled={statusMutation.isPending || !newStatus} onClick={() => statusDialog && statusMutation.mutate({ id: statusDialog.id, status: newStatus, type: statusDialog.type })}>
-              {statusMutation.isPending ? t("common.processing") : t("common.confirm")}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

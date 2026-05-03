@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Archive, RotateCcw, RefreshCw, Search } from "lucide-react";
+import { Plus, Pencil, Archive, RotateCcw, RefreshCw, Search, Bike } from "lucide-react";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -177,38 +177,73 @@ export default function FleetPage() {
 
   const countByStatus = (s: string) => allItems.filter((a: any) => a.status === s).length;
 
+  const KPI_FLEET = [
+    { key: "available", accent: "bg-green-500", textAccent: "text-green-500" },
+    { key: "rented",    accent: "bg-blue-500",  textAccent: "text-blue-500" },
+    { key: "maintenance", accent: "bg-yellow-500", textAccent: "text-yellow-500" },
+    { key: "overdue",   accent: "bg-red-500",   textAccent: "text-red-500" },
+  ];
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("nav.fleet")}</h1>
-          <p className="text-muted-foreground">{t("fleet.subtitle", "Транспортные средства компании")}</p>
+          <p className="text-muted-foreground mt-0.5">{t("fleet.subtitle", "Транспортные средства компании")}</p>
         </div>
         {canWriteAsset && (
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
             {t("fleet.addAsset", "Добавить")}
           </Button>
         )}
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {["available", "rented", "maintenance", "overdue"].map((s) => (
-          <Card key={s} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter(statusFilter === s ? "all" : s)}>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">{countByStatus(s)}</div>
-              <p className={`text-sm ${statusFilter === s ? "font-semibold text-primary" : "text-muted-foreground"}`}>{t(`status.${s}`, s)}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {KPI_FLEET.map(({ key, accent, textAccent }) => {
+          const count = countByStatus(key);
+          const isActive = statusFilter === key;
+          return (
+            <Card
+              key={key}
+              className={`relative overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${isActive ? "ring-2 ring-primary" : ""}`}
+              onClick={() => setStatusFilter(statusFilter === key ? "all" : key)}
+            >
+              <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+              <CardContent className="pt-4 pl-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    {assetsQuery.isLoading ? (
+                      <Skeleton className="h-7 w-10" />
+                    ) : (
+                      <div className="text-2xl font-bold">{count}</div>
+                    )}
+                    <p className={`text-sm mt-0.5 ${isActive ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                      {String(t(`status.${key}`, key))}
+                    </p>
+                  </div>
+                  <div className="h-10 w-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`w-full rounded-full transition-all duration-500 ${accent}`}
+                      style={{ height: `${allItems.length > 0 ? Math.min((count / allItems.length) * 100, 100) : 0}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <CardTitle className="text-base">{t("nav.fleet")} ({items.length})</CardTitle>
+          <div className="flex items-center gap-3 flex-wrap">
+            <CardTitle className="text-base font-semibold">
+              {t("nav.fleet")}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">({items.length})</span>
+            </CardTitle>
             <div className="flex-1" />
-            <div className="relative max-w-xs">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t("common.search", "Поиск...")}
@@ -224,7 +259,7 @@ export default function FleetPage() {
               <SelectContent>
                 <SelectItem value="all">{t("common.all", "Все")}</SelectItem>
                 {STATUS_VALUES.map((s) => (
-                  <SelectItem key={s} value={s}>{t(`status.${s}`, s)}</SelectItem>
+                  <SelectItem key={s} value={s}>{String(t(`status.${s}`, s))}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -238,24 +273,26 @@ export default function FleetPage() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("fleet.code", "Код")}</TableHead>
-                  <TableHead>{t("fleet.type", "Тип")}</TableHead>
-                  <TableHead>{t("fleet.brand", "Марка")}</TableHead>
-                  <TableHead>{t("fleet.model", "Модель")}</TableHead>
-                  <TableHead>{t("common.status")}</TableHead>
-                  {canWriteAsset && <TableHead>{t("common.actions", "Действия")}</TableHead>}
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs">{t("fleet.code", "Код")}</TableHead>
+                  <TableHead className="text-xs">{t("fleet.type", "Тип")}</TableHead>
+                  <TableHead className="text-xs">{t("fleet.brand", "Марка")}</TableHead>
+                  <TableHead className="text-xs">{t("fleet.model", "Модель")}</TableHead>
+                  <TableHead className="text-xs">{t("common.status")}</TableHead>
+                  {canWriteAsset && <TableHead className="text-xs">{t("common.actions", "Действия")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((asset: any) => (
-                  <TableRow key={asset.id} className="cursor-pointer" onClick={() => navigate(`/fleet/${asset.id}`)}>
-                    <TableCell className="font-mono text-sm">{asset.internalCode}</TableCell>
-                    <TableCell>{String(t(`assetType.${asset.assetType}`, asset.assetType))}</TableCell>
-                    <TableCell>{asset.brand}</TableCell>
-                    <TableCell>{asset.model}</TableCell>
+                  <TableRow key={asset.id} className="cursor-pointer hover:bg-muted/30" onClick={() => navigate(`/fleet/${asset.id}`)}>
+                    <TableCell className="font-mono text-sm font-medium">{asset.internalCode}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{String(t(`assetType.${asset.assetType}`, asset.assetType))}</TableCell>
+                    <TableCell className="text-sm">{asset.brand || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{asset.model || "—"}</TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[asset.status] || "bg-gray-100"}>{String(t(`status.${asset.status}`, asset.status))}</Badge>
+                      <Badge className={`text-xs ${STATUS_COLORS[asset.status] || "bg-gray-100"}`}>
+                        {String(t(`status.${asset.status}`, asset.status))}
+                      </Badge>
                     </TableCell>
                     {canWriteAsset && (
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -267,7 +304,7 @@ export default function FleetPage() {
                             <RefreshCw className="h-3.5 w-3.5" />
                           </Button>
                           {asset.status === "retired" ? (
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setArchiveConfirm({ ...asset, restore: true })} title={t("fleet.restore", "Восстановить")}>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground" onClick={() => setArchiveConfirm({ ...asset, restore: true })} title={t("fleet.restore", "Восстановить")}>
                               <RotateCcw className="h-3.5 w-3.5" />
                             </Button>
                           ) : (
@@ -282,8 +319,9 @@ export default function FleetPage() {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {t("common.noData", "Нет данных")}
+                    <TableCell colSpan={6} className="py-12 text-center">
+                      <Bike className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
+                      <p className="text-sm text-muted-foreground">{t("common.noData", "Нет данных")}</p>
                     </TableCell>
                   </TableRow>
                 )}

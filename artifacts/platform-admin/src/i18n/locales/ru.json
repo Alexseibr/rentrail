@@ -56,7 +56,11 @@
     "paidAt": "Оплачено",
     "notes": "Заметки",
     "amountCents": "Сумма (копейки)",
-    "confirmAction": "Подтвердить {{action}}"
+    "confirmAction": "Подтвердить {{action}}",
+    "refresh": "Обновить",
+    "view": "Просмотреть",
+    "viewAll": "Все",
+    "processing": "Обработка..."
   },
   "nav": {
     "dashboard": "Обзор",
@@ -149,7 +153,10 @@
     "slug": "Слаг",
     "registered": "Зарегистрирован",
     "due": "Срок",
-    "nActive": "{{count}} активных"
+    "nActive": "{{count}} активных",
+    "servicesDown": "сервисов недоступны",
+    "pastDueAlert": "подписок просрочено",
+    "pendingAlert": "компаний ожидают одобрения"
   },
   "companies": {
     "title": "Компании",
@@ -560,6 +567,9 @@
     "assetsByStatus": "Транспорт по статусам",
     "rentalsByStatus": "Аренды по статусам",
     "recentRentals": "Последние аренды",
-    "noRentals": "Нет аренд"
+    "noRentals": "Нет аренд",
+    "fleetHealth": "Состояние парка",
+    "utilization": "загрузка",
+    "overdueAlert": "аренд просрочено — требуют внимания"
   }
 }

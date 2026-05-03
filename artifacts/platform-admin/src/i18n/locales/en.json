@@ -56,7 +56,11 @@
     "paidAt": "Paid At",
     "notes": "Notes",
     "amountCents": "Amount (cents)",
-    "confirmAction": "Confirm {{action}}"
+    "confirmAction": "Confirm {{action}}",
+    "refresh": "Refresh",
+    "view": "View",
+    "viewAll": "All",
+    "processing": "Processing..."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -147,7 +151,10 @@
     "slug": "Slug",
     "registered": "Registered",
     "due": "Due",
-    "nActive": "{{count}} active"
+    "nActive": "{{count}} active",
+    "servicesDown": "services are down",
+    "pastDueAlert": "subscriptions past due",
+    "pendingAlert": "companies awaiting approval"
   },
   "companies": {
     "title": "Companies",
@@ -490,6 +497,9 @@
     "assetsByStatus": "Vehicles by Status",
     "rentalsByStatus": "Rentals by Status",
     "recentRentals": "Recent Rentals",
-    "noRentals": "No rentals"
+    "noRentals": "No rentals",
+    "fleetHealth": "Fleet Health",
+    "utilization": "utilization",
+    "overdueAlert": "rentals overdue — require attention"
   }
 }

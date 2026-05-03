@@ -1,17 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Legend,
+} from "recharts";
+import {
+  Building2, Bike, ClipboardList, DollarSign,
+  ShieldAlert, TrendingUp, ArrowRight, RefreshCw,
+} from "lucide-react";
 
 interface OverviewMetrics {
   totalCompanies: number;
@@ -55,26 +57,51 @@ interface TopTenant {
 }
 
 function formatCurrency(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100);
+  return new Intl.NumberFormat("ru-RU", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount / 100);
 }
 
-function BarSegment({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+function KpiCard({
+  title, value, icon: Icon, sub, accent, isLoading, onClick,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ElementType;
+  sub?: string;
+  accent: string;
+  isLoading?: boolean;
+  onClick?: () => void;
+}) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value} ({pct}%)</span>
-      </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
+    <Card
+      className={`relative overflow-hidden transition-all duration-200 ${onClick ? "cursor-pointer hover:shadow-md hover:-translate-y-0.5" : ""}`}
+      onClick={onClick}
+    >
+      <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+      <CardContent className="pt-5 pl-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+            {isLoading ? (
+              <Skeleton className="h-9 w-20 mt-1" />
+            ) : (
+              <p className="text-3xl font-bold tracking-tight mt-0.5">{value}</p>
+            )}
+            {sub && !isLoading && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+          </div>
+          <div className="p-2.5 rounded-xl bg-muted shrink-0 ml-2">
+            <Icon className={`h-5 w-5 ${accent.replace("bg-", "text-")}`} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
+const CHART_COLORS = ["#3b82f6", "#22c55e", "#f97316", "#a855f7", "#0ea5e9", "#eab308"];
+
 export default function AnalyticsPage() {
   const { t } = useTranslation();
+  const [, navigate] = useLocation();
 
   const overview = useQuery({
     queryKey: ["analytics", "overview"],
@@ -99,7 +126,7 @@ export default function AnalyticsPage() {
   const topByRentals = useQuery({
     queryKey: ["analytics", "tenants", "rentals"],
     queryFn: async () => {
-      const res = await api<any>("/platform/analytics/tenants?metric=rentals&limit=10");
+      const res = await api<any>("/platform/analytics/tenants?metric=rentals&limit=8");
       const items = Array.isArray(res) ? res : res?.items ?? [];
       return items.map((t: any): TopTenant => ({
         companyId: t.companyId ?? t.id,
@@ -112,7 +139,7 @@ export default function AnalyticsPage() {
   const topByAssets = useQuery({
     queryKey: ["analytics", "tenants", "assets"],
     queryFn: async () => {
-      const res = await api<any>("/platform/analytics/tenants?metric=assets&limit=10");
+      const res = await api<any>("/platform/analytics/tenants?metric=assets&limit=8");
       const items = Array.isArray(res) ? res : res?.items ?? [];
       return items.map((t: any): TopTenant => ({
         companyId: t.companyId ?? t.id,
@@ -122,165 +149,188 @@ export default function AnalyticsPage() {
     },
   });
 
+  const rentalStatusData = [
+    { name: t("common.active"), value: usage.data?.activeRentals ?? 0, color: "#22c55e" },
+    { name: t("status.completed"), value: usage.data?.completedRentals ?? 0, color: "#9ca3af" },
+  ].filter((d) => d.value > 0);
+
+  const subscriptionData = [
+    { name: t("common.active"), value: billing.data?.activeSubscriptions ?? 0, color: "#22c55e" },
+    { name: t("common.trial"), value: billing.data?.trialSubscriptions ?? 0, color: "#3b82f6" },
+    { name: t("dashboard.pastDue"), value: billing.data?.pastDueSubscriptions ?? 0, color: "#ef4444" },
+  ].filter((d) => d.value > 0);
+
+  const planData = (billing.data?.planDistribution ?? []).map((p, i) => ({
+    name: p.planName,
+    value: p.count,
+    color: CHART_COLORS[i % CHART_COLORS.length],
+  }));
+
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("analytics.title")}</h1>
-        <p className="text-muted-foreground">{t("analytics.subtitle")}</p>
+    <div className="p-6 space-y-6 max-w-7xl">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t("analytics.title")}</h1>
+          <p className="text-muted-foreground mt-0.5">{t("analytics.subtitle")}</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => { overview.refetch(); usage.refetch(); billing.refetch(); risks.refetch(); topByRentals.refetch(); topByAssets.refetch(); }}
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          {t("common.refresh", "Обновить")}
+        </Button>
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {overview.isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="pt-6">
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">{t("analytics.activeCompanies")}</p>
-                <p className="text-2xl font-bold">{overview.data?.activeCompanies ?? 0}</p>
-                <p className="text-xs text-muted-foreground">
-                  of {overview.data?.totalCompanies ?? 0} {t("common.total")}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">{t("analytics.totalRentals")}</p>
-                <p className="text-2xl font-bold">{usage.data?.totalRentals ?? 0}</p>
-                <p className="text-xs text-muted-foreground">
-                  {usage.data?.activeRentals ?? 0} {t("common.active").toLowerCase()}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">{t("analytics.totalAssets")}</p>
-                <p className="text-2xl font-bold">{usage.data?.totalAssets ?? 0}</p>
-                <p className="text-xs text-muted-foreground">
-                  ~{usage.data?.averageAssetsPerCompany ?? 0} per company
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-sm text-muted-foreground">{t("analytics.mrr")}</p>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(billing.data?.totalMrr ?? 0, billing.data?.currency)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("analytics.totalRevenue")}: {formatCurrency(billing.data?.totalRevenue ?? 0, billing.data?.currency)}
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        )}
+        <KpiCard
+          title={t("analytics.activeCompanies")}
+          value={overview.data?.activeCompanies ?? 0}
+          icon={Building2}
+          sub={`${t("common.total")} ${overview.data?.totalCompanies ?? 0}`}
+          accent="bg-blue-500"
+          isLoading={overview.isLoading}
+          onClick={() => navigate("/companies")}
+        />
+        <KpiCard
+          title={t("analytics.totalRentals")}
+          value={usage.data?.totalRentals ?? 0}
+          icon={ClipboardList}
+          sub={`${usage.data?.activeRentals ?? 0} ${t("common.active").toLowerCase()}`}
+          accent="bg-green-500"
+          isLoading={usage.isLoading}
+        />
+        <KpiCard
+          title={t("analytics.totalAssets")}
+          value={usage.data?.totalAssets ?? 0}
+          icon={Bike}
+          sub={`~${usage.data?.averageAssetsPerCompany ?? 0} / компания`}
+          accent="bg-violet-500"
+          isLoading={usage.isLoading}
+        />
+        <KpiCard
+          title={t("analytics.mrr")}
+          value={formatCurrency(billing.data?.totalMrr ?? 0, billing.data?.currency)}
+          icon={DollarSign}
+          sub={`${t("analytics.totalRevenue")}: ${formatCurrency(billing.data?.totalRevenue ?? 0, billing.data?.currency)}`}
+          accent="bg-emerald-500"
+          isLoading={billing.isLoading}
+          onClick={() => navigate("/billing")}
+        />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("analytics.revenueSubscriptions")}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">{t("analytics.revenueSubscriptions")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {billing.isLoading ? (
-              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-44 w-full" />
             ) : (
               <>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold">{billing.data?.activeSubscriptions ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">{t("common.active")}</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">{billing.data?.trialSubscriptions ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">{t("common.trial")}</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-orange-600">{billing.data?.pastDueSubscriptions ?? 0}</p>
-                    <p className="text-xs text-muted-foreground">{t("dashboard.pastDue")}</p>
-                  </div>
+                <div className="h-44">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={subscriptionData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={76}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {subscriptionData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                {billing.data?.planDistribution && billing.data.planDistribution.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t">
-                    <p className="text-sm font-medium">{t("analytics.planDistribution")}</p>
-                    {billing.data.planDistribution.map((p) => {
-                      const total = billing.data!.activeSubscriptions + billing.data!.trialSubscriptions;
-                      return (
-                        <BarSegment
-                          key={p.planName}
-                          label={p.planName}
-                          value={p.count}
-                          total={total}
-                          color="bg-primary"
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-                {(!billing.data?.planDistribution || billing.data.planDistribution.length === 0) && (
-                  <div className="space-y-2 pt-2 border-t">
-                    <p className="text-sm font-medium">{t("analytics.planDistribution")}</p>
-                    <BarSegment
-                      label={t("common.active")}
-                      value={billing.data?.activeSubscriptions ?? 0}
-                      total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
-                      color="bg-green-500"
-                    />
-                    <BarSegment
-                      label={t("common.trial")}
-                      value={billing.data?.trialSubscriptions ?? 0}
-                      total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
-                      color="bg-blue-500"
-                    />
-                    <BarSegment
-                      label={t("dashboard.pastDue")}
-                      value={billing.data?.pastDueSubscriptions ?? 0}
-                      total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + (billing.data?.pastDueSubscriptions ?? 0)}
-                      color="bg-orange-500"
-                    />
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-3 justify-center pt-1">
+                  {subscriptionData.map((d) => (
+                    <div key={d.name} className="flex items-center gap-1.5 text-xs">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                      <span className="text-muted-foreground">{d.name}: <span className="font-semibold text-foreground">{d.value}</span></span>
+                    </div>
+                  ))}
+                </div>
               </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">{t("analytics.planDistribution")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {billing.isLoading ? (
+              <Skeleton className="h-44 w-full" />
+            ) : planData.length === 0 ? (
+              <div className="h-44 flex items-center justify-center text-sm text-muted-foreground">
+                {t("common.noData")}
+              </div>
+            ) : (
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={planData} layout="vertical" barSize={18}>
+                    <XAxis type="number" hide allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} cursor={{ fill: "hsl(var(--muted))" }} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      {planData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {risks.data && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("analytics.riskOverview")}</CardTitle>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold">{t("analytics.riskOverview")}</CardTitle>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={() => navigate("/blacklist")}>
+                  {t("nav.blacklist")} <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg border p-3 text-center">
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl border p-3 text-center space-y-0.5">
                   <p className="text-2xl font-bold">{risks.data.blacklistedEntries}</p>
                   <p className="text-xs text-muted-foreground">{t("nav.blacklist")}</p>
                 </div>
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center space-y-0.5">
                   <p className="text-2xl font-bold text-red-600">{risks.data.activeBlacklisted}</p>
                   <p className="text-xs text-muted-foreground">{t("common.active")}</p>
                 </div>
-                <div className="rounded-lg border p-3 text-center">
-                  <p className="text-2xl font-bold">{risks.data.blockedCompanies}</p>
+                <div className="rounded-xl border border-red-100 bg-red-50/50 p-3 text-center space-y-0.5">
+                  <p className="text-2xl font-bold text-red-700">{risks.data.blockedCompanies}</p>
                   <p className="text-xs text-muted-foreground">{t("common.blocked")}</p>
                 </div>
-                <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-center">
+                <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-center space-y-0.5">
                   <p className="text-2xl font-bold text-orange-600">{risks.data.suspendedCompanies}</p>
                   <p className="text-xs text-muted-foreground">{t("common.suspended")}</p>
                 </div>
               </div>
-              <BarSegment
-                label={t("dashboard.pastDue")}
-                value={risks.data.pastDueSubscriptions}
-                total={(billing.data?.activeSubscriptions ?? 0) + (billing.data?.trialSubscriptions ?? 0) + risks.data.pastDueSubscriptions}
-                color="bg-red-500"
-              />
+              {risks.data.pastDueSubscriptions > 0 && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-orange-50 border border-orange-100 px-3 py-2">
+                  <ShieldAlert className="h-4 w-4 text-orange-500 shrink-0" />
+                  <p className="text-xs text-orange-800">
+                    <span className="font-semibold">{risks.data.pastDueSubscriptions}</span> {t("dashboard.pastDue").toLowerCase()}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -288,79 +338,65 @@ export default function AnalyticsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("analytics.topByRentals")}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">{t("analytics.topByRentals")}</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent>
             {topByRentals.isLoading ? (
-              <div className="p-6">
-                <Skeleton className="h-48 w-full" />
-              </div>
+              <Skeleton className="h-52 w-full" />
+            ) : (topByRentals.data?.length ?? 0) === 0 ? (
+              <div className="h-52 flex items-center justify-center text-sm text-muted-foreground">{t("common.noData")}</div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>{t("common.company")}</TableHead>
-                    <TableHead className="text-right">{t("analytics.totalRentals")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(topByRentals.data || []).map((tenant: { companyId: string; companyName: string; value: number }, i: number) => (
-                    <TableRow key={tenant.companyId}>
-                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{tenant.companyName}</TableCell>
-                      <TableCell className="text-right">{tenant.value}</TableCell>
-                    </TableRow>
-                  ))}
-                  {topByRentals.data?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                        {t("common.noData")}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={(topByRentals.data ?? []).map((t, i) => ({ name: t.companyName, value: t.value, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+                    layout="vertical"
+                    barSize={18}
+                  >
+                    <XAxis type="number" hide allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} cursor={{ fill: "hsl(var(--muted))" }} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      {(topByRentals.data ?? []).map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("analytics.topByAssets")}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">{t("analytics.topByAssets")}</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent>
             {topByAssets.isLoading ? (
-              <div className="p-6">
-                <Skeleton className="h-48 w-full" />
-              </div>
+              <Skeleton className="h-52 w-full" />
+            ) : (topByAssets.data?.length ?? 0) === 0 ? (
+              <div className="h-52 flex items-center justify-center text-sm text-muted-foreground">{t("common.noData")}</div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>{t("common.company")}</TableHead>
-                    <TableHead className="text-right">{t("analytics.totalAssets")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(topByAssets.data || []).map((tenant: { companyId: string; companyName: string; value: number }, i: number) => (
-                    <TableRow key={tenant.companyId}>
-                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{tenant.companyName}</TableCell>
-                      <TableCell className="text-right">{tenant.value}</TableCell>
-                    </TableRow>
-                  ))}
-                  {topByAssets.data?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                        {t("common.noData")}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={(topByAssets.data ?? []).map((t, i) => ({ name: t.companyName, value: t.value, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+                    layout="vertical"
+                    barSize={18}
+                  >
+                    <XAxis type="number" hide allowDecimals={false} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} cursor={{ fill: "hsl(var(--muted))" }} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                      {(topByAssets.data ?? []).map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
