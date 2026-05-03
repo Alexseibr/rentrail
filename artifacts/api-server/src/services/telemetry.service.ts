@@ -1,7 +1,11 @@
-import { db, telemetrySnapshots, telemetryEvents, locationHistory, assetDevices, devices } from "@workspace/db";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { db, telemetrySnapshots, telemetryEvents, locationHistory, assetDevices, devices, deviceCommands } from "@workspace/db";
+import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
 import { createHash } from "crypto";
 import * as deviceService from "./device.service";
+import { getActiveGeofencesForCompany, evaluatePointAgainstGeofences } from "./geofence.service";
+import { enqueueAssetCommand } from "./command.service";
+import { onGeofenceEnter, onGeofenceExit, onSpeedLimitExceeded } from "./notification.service";
+import { logger } from "../lib/logger";
 
 type TelemetryEventType = typeof telemetryEvents.$inferSelect.eventType;
 type TelemetryEventSeverity = typeof telemetryEvents.$inferSelect.severity;
@@ -34,6 +38,139 @@ interface IngestContext {
   provider: string;
 }
 
+async function hasRecentGeofenceEvent(
+  deviceId: string,
+  companyId: string,
+  geofenceId: string,
+  eventType: "geofence_enter" | "geofence_exit",
+  withinSeconds = 300,
+): Promise<boolean> {
+  const since = new Date(Date.now() - withinSeconds * 1000);
+  const rows = await db
+    .select({ id: telemetryEvents.id })
+    .from(telemetryEvents)
+    .where(
+      and(
+        eq(telemetryEvents.deviceId, deviceId),
+        eq(telemetryEvents.companyId, companyId),
+        eq(telemetryEvents.eventType, eventType as TelemetryEventType),
+        gte(telemetryEvents.recordedAt, since),
+      ),
+    )
+    .limit(1);
+
+  return rows.length > 0;
+}
+
+async function hasPendingCommand(
+  deviceId: string,
+  commandType: string,
+): Promise<boolean> {
+  const rows = await db
+    .select({ id: deviceCommands.id })
+    .from(deviceCommands)
+    .where(
+      and(
+        eq(deviceCommands.deviceId, deviceId),
+        eq(deviceCommands.commandType, commandType as typeof deviceCommands.$inferSelect.commandType),
+        inArray(deviceCommands.status, ["queued", "sent"]),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+async function evaluateGeofences(
+  deviceId: string,
+  assetId: string | null,
+  companyId: string,
+  lat: number,
+  lng: number,
+  speed: number | undefined,
+  recordedAt: Date,
+) {
+  let geoList;
+  try {
+    geoList = await getActiveGeofencesForCompany(companyId);
+  } catch {
+    return;
+  }
+  if (geoList.length === 0) return;
+
+  const results = evaluatePointAgainstGeofences(lat, lng, geoList);
+
+  for (const result of results) {
+    const geo = geoList.find((g) => g.id === result.geofenceId);
+    if (!geo) continue;
+
+    if (result.inside) {
+      const alreadyInside = await hasRecentGeofenceEvent(deviceId, companyId, result.geofenceId, "geofence_enter");
+      if (!alreadyInside) {
+        await db.insert(telemetryEvents).values({
+          companyId,
+          assetId,
+          deviceId,
+          eventType: "geofence_enter" as TelemetryEventType,
+          severity: geo.type === "no_ride_zone" ? ("warning" as TelemetryEventSeverity) : ("info" as TelemetryEventSeverity),
+          payload: { geofenceId: geo.id, geofenceName: geo.name, geofenceType: geo.type },
+          recordedAt,
+        });
+
+        onGeofenceEnter(companyId, [], geo.id, geo.name, geo.type, assetId ?? undefined).catch(() => {});
+
+        if (geo.type === "no_ride_zone" && assetId) {
+          const alreadyLocked = await hasPendingCommand(deviceId, "lock");
+          if (!alreadyLocked) {
+            enqueueAssetCommand(companyId, assetId, "lock").catch((err) => {
+              logger.error({ err, assetId }, "Failed to enqueue lock command for no_ride_zone");
+            });
+          }
+        }
+
+        const rules = geo.rules as Record<string, unknown> | null;
+        if (rules?.maxSpeedKmh && assetId) {
+          const limitKmh = Number(rules.maxSpeedKmh);
+          if (speed !== undefined && speed > limitKmh) {
+            onSpeedLimitExceeded(companyId, [], assetId, speed, limitKmh).catch(() => {});
+          }
+          const alreadySpeedLimited = await hasPendingCommand(deviceId, "set_speed_limit");
+          if (!alreadySpeedLimited) {
+            enqueueAssetCommand(companyId, assetId, "set_speed_limit").catch((err) => {
+              logger.error({ err, assetId }, "Failed to enqueue set_speed_limit command");
+            });
+          }
+        }
+      } else {
+        const rules = geo.rules as Record<string, unknown> | null;
+        if (rules?.maxSpeedKmh && assetId && speed !== undefined) {
+          const limitKmh = Number(rules.maxSpeedKmh);
+          if (speed > limitKmh) {
+            onSpeedLimitExceeded(companyId, [], assetId, speed, limitKmh).catch(() => {});
+          }
+        }
+      }
+    } else {
+      const wasInside = await hasRecentGeofenceEvent(deviceId, companyId, result.geofenceId, "geofence_enter");
+      if (wasInside) {
+        const alreadyExited = await hasRecentGeofenceEvent(deviceId, companyId, result.geofenceId, "geofence_exit", 60);
+        if (!alreadyExited) {
+          await db.insert(telemetryEvents).values({
+            companyId,
+            assetId,
+            deviceId,
+            eventType: "geofence_exit" as TelemetryEventType,
+            severity: geo.type === "operating_zone" ? ("warning" as TelemetryEventSeverity) : ("info" as TelemetryEventSeverity),
+            payload: { geofenceId: geo.id, geofenceName: geo.name, geofenceType: geo.type },
+            recordedAt,
+          });
+
+          onGeofenceExit(companyId, [], geo.id, geo.name, geo.type, assetId ?? undefined).catch(() => {});
+        }
+      }
+    }
+  }
+}
+
 export async function ingestTelemetry(input: IngestInput, ctx: IngestContext) {
   let device: typeof devices.$inferSelect | null = null;
 
@@ -57,6 +194,7 @@ export async function ingestTelemetry(input: IngestInput, ctx: IngestContext) {
 
   const recordedAt = new Date(input.recordedAt);
   const sig = payloadSignature({ ...input, deviceId: device.id });
+  void sig;
 
   const activeBindings = await db.select({ assetId: assetDevices.assetId }).from(assetDevices)
     .where(and(eq(assetDevices.deviceId, device.id), eq(assetDevices.companyId, ctx.companyId), eq(assetDevices.status, "active")))
@@ -91,6 +229,10 @@ export async function ingestTelemetry(input: IngestInput, ctx: IngestContext) {
       speed: input.speed ?? null,
       heading: input.heading ?? null,
       recordedAt,
+    });
+
+    evaluateGeofences(device.id, assetId, ctx.companyId, input.lat, input.lng, input.speed, recordedAt).catch((err) => {
+      logger.error({ err, deviceId: device!.id }, "Geofence evaluation error");
     });
   }
 

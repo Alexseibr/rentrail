@@ -35,6 +35,8 @@ import platformAnalyticsRouter from "./platform-analytics";
 import auditLogsRouter from "./audit-logs";
 import serviceRouter from "./service";
 import clientApiRouter from "./client-api";
+import rentalPaymentsRouter from "./rental-payments";
+import blackoutDatesRouter from "./blackout-dates";
 
 const router: IRouter = Router();
 
@@ -74,5 +76,7 @@ router.use(platformAnalyticsRouter);
 router.use(auditLogsRouter);
 router.use(serviceRouter);
 router.use(clientApiRouter);
+router.use(rentalPaymentsRouter);
+router.use(blackoutDatesRouter);
 
 export default router;

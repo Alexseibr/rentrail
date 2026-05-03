@@ -49,4 +49,6 @@ export * from "./saas-payments";
 export * from "./company-white-label-settings";
 export * from "./service-requests";
 export * from "./work-orders";
+export * from "./client-payment-methods";
+export * from "./rental-blackout-dates";
 export * from "./relations";

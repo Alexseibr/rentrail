@@ -76,7 +76,7 @@ export async function updateCommandStatus(id: string, companyId: string, newStat
 export async function enqueueAssetCommand(companyId: string, assetId: string, commandType: string, userId?: string) {
   const commandToBinding: Record<string, string> = {
     lock: "lock", unlock: "lock", arm_alarm: "tracker", disarm_alarm: "tracker",
-    locate: "tracker", ping: "tracker", disable: "controller",
+    locate: "tracker", ping: "tracker", disable: "controller", set_speed_limit: "tracker",
   };
   const neededType = commandToBinding[commandType] ?? "tracker";
 

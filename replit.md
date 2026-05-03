@@ -47,10 +47,16 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 ### Technical Implementations
 - **Multi-Tenancy:** Enforced via an `x-company-id` header and `companyId` filtering on all database queries.
 - **Authentication & Authorization:** Phone number is the primary login identifier. Two login modes: (1) phone+OTP for first-time or passwordless login — in dev mode the OTP code is returned in the API response; (2) phone+password for returning users. On first OTP login, users set a password for subsequent use. Email is stored for receipts/reports only and is optional. JWT (access/refresh tokens with rotation), bcrypt for password hashing, and a permission-based RBAC system. Middleware validates user identity, tenant context, and granular permissions (`resource:action`).
-- **Database Schema:** PostgreSQL schema with 26 tables and over 100 indexes, managed by Drizzle ORM, supporting key entities like companies, assets, rentals, and users.
+- **Database Schema:** PostgreSQL schema with 30+ tables and over 100 indexes, managed by Drizzle ORM. Includes `client_payment_methods` (saved gateway tokens per provider) and `rental_blackout_dates` (blocked date ranges for assets/branches).
 - **Asset & Rental Status Machines:** Enforce valid status transitions and log changes to history tables for auditing.
 - **Lead Intake:** Public forms for inquiries, processing leads through a status machine which can convert them into clients or rental drafts.
-- **Connected Fleet Foundation (IoT Integration):** Manages IoT devices, handles real-time telemetry data (location, battery, status), tracks batteries, defines GeoJSON geofences, and queues remote device commands. A secure M2M ingestion mechanism allows IoT providers to push telemetry data.
+- **Teltonika GPS Integration (FMB/FMC):** TCP server (`startTeltonikaServer`) activated via `TELTONIKA_TCP_PORT` env var. Binary CODEC 8 parser with full AVL record parsing (GPS coords, speed, heading, IO elements). Command delivery via CODEC 12 packets. Command translation: lock→`setdigout 1 0`, unlock→`setdigout 0 0`, arm/disarm alarm, locate→`getinfo`, `set_speed_limit`→`setparam 382:N`. Device authenticated by IMEI lookup against `devices` table (provider=`teltonika`). Telemetry fed into existing `ingestTelemetry` pipeline automatically. Files: `services/teltonika/codec8.ts`, `services/teltonika/server.ts`.
+- **Expo Push Notifications (real delivery):** `push.service.ts` sends to Expo Push API (`https://exp.host/--/api/v2/push/send`) in batches of 100. Tokens validated (must be `ExponentPushToken[...]` format). `DeviceNotRegistered` errors logged for cleanup. `sendPushToUser(userId, msg)` and `sendPushToUsers(userIds[], msg)` exported. Every `createNotification()` call automatically fires push to the user's devices (opt-out via `sendPush: false`). New notification events added: `rental_ended`, `geofence_enter`, `geofence_exit`, `speed_limit_exceeded`, `rental_payment_held`, `rental_payment_captured`, `rental_payment_voided`.
+- **Geofence Automation:** On every telemetry ingest with GPS coords, active geofences are evaluated against the point. Enter/exit transition detection via recent `telemetry_events` lookup (5-minute dedup window). On `no_ride_zone` entry → auto-enqueue `lock` command (if no pending lock). On zone with `rules.maxSpeedKmh` → auto-enqueue `set_speed_limit` command + notify if current speed exceeds limit. On `operating_zone` exit → push notification to company. Geofence events written to `telemetry_events` table with correct severity.
+- **Payment Gateways (ЮKassa / Тинькофф / CloudPayments):** Unified `PaymentGateway` interface with `createHold`, `capturePayment`, `voidPayment`, `refundPayment`, `getPaymentStatus`. ЮKassa: REST API, Basic Auth (YUKASSA_SHOP_ID/YUKASSA_SECRET_KEY), 2-stage capture, saved `payment_method.id`. Тинькофф: HMAC token signing (TINKOFF_TERMINAL_KEY/TINKOFF_SECRET_KEY), RebillId for saved cards, PayType=O for hold. CloudPayments: Basic Auth (CLOUDPAYMENTS_PUBLIC_ID/CLOUDPAYMENTS_API_SECRET), requires saved token for server-side hold. Factory: `getGateway(provider)`. Files: `services/payment-gateway/`.
+- **Rental Payment Flow:** `rental-payment.service.ts` — `holdDeposit` (creates `deposit_hold` payment in `authorized` state), `capturePayment` (finalizes actual amount, creates `rental_payment`, marks hold as `paid`), `voidHold` (cancels hold → `voided`), `refreshPaymentStatus` (re-syncs with gateway). Routes: `GET /api/rentals/:id/payments`, `POST /api/rentals/:id/payment/hold`, `POST /api/rentals/:id/payment/capture`, `POST /api/rentals/:id/payment/void`, `POST /api/rentals/:id/payments/:paymentId/refresh`. Payment status enum extended with `voided`.
+- **Rental Blackout Dates:** Admin CRUD for blocked date ranges at company/branch/asset level. Routes: `GET /api/blackout-dates`, `POST /api/blackout-dates`, `DELETE /api/blackout-dates/:id`. Filter by `branchId`, `assetId`, date range.
+- **Connected Fleet Foundation (IoT Integration):** Manages IoT devices, handles real-time telemetry data (location, battery, status), tracks batteries, defines GeoJSON geofences, and queues remote device commands. `set_speed_limit` added to command types (routes + command service binding map). A secure M2M ingestion mechanism allows IoT providers to push telemetry data.
 - **Platform Access Model:** Separate platform-level RBAC for five platform roles (superAdmin, platformAdmin, platformSupport, platformFinance, platformRisk) with independent permissions from tenant company memberships. Platform roles are verified on each request.
 - **Tenant Moderation:** Companies have a status flow (e.g., `pending`, `active`, `blocked`, `canceled`). Moderation actions are logged, and access is enforced based on company status, with SuperAdmin bypass.
 - **SaaS Billing Foundation:** Includes schema for plans, subscriptions, invoices, and payments. Plans define pricing, billing intervals, and resource limits. Subscriptions manage lifecycle states, invoices track billing, and payments record transactions. All billing operations are logged.
@@ -59,6 +65,14 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
     - **White-Label:** Allows companies to customize branding (custom domains, logos, colors).
     - **Diagnostics:** Provides endpoints for health summaries, service statuses, and individual service checks.
     - **Analytics:** Offers aggregated data for overview, tenants, billing, usage, and risks.
+
+## Environment Variables (payment gateways + IoT)
+
+- `TELTONIKA_TCP_PORT` — TCP port for Teltonika GPS devices (e.g. 16001). If unset, TCP server disabled.
+- `YUKASSA_SHOP_ID` / `YUKASSA_SECRET_KEY` — ЮKassa merchant credentials
+- `YUKASSA_RETURN_URL` — redirect URL after ЮKassa payment form
+- `TINKOFF_TERMINAL_KEY` / `TINKOFF_SECRET_KEY` — Тинькофф terminal credentials
+- `CLOUDPAYMENTS_PUBLIC_ID` / `CLOUDPAYMENTS_API_SECRET` — CloudPayments API credentials
 
 ## External Dependencies
 
@@ -73,3 +87,5 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 - **Data Fetching (Mobile):** @tanstack/react-query
 - **Object Storage:** Google Cloud Storage (GCS) (via Replit App Storage)
 - **Testing:** Vitest, supertest
+- **Push Notifications:** Expo Push API (HTTP, no SDK, batched)
+- **Payment Gateways:** ЮKassa REST, Тинькофф HMAC, CloudPayments REST

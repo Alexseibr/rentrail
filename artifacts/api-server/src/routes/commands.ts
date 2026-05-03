@@ -12,7 +12,7 @@ const deviceIdParams = z.object({ id: z.string().uuid() });
 const cmdIdParams = z.object({ id: z.string().uuid() });
 
 const enqueueSchema = z.object({
-  commandType: z.enum(["lock", "unlock", "arm_alarm", "disarm_alarm", "locate", "ping", "disable"]),
+  commandType: z.enum(["lock", "unlock", "arm_alarm", "disarm_alarm", "locate", "ping", "disable", "set_speed_limit"]),
   payload: z.record(z.string(), z.unknown()).optional(),
   assetId: z.string().uuid().optional(),
   expiresInMinutes: z.number().int().min(1).max(1440).optional(),

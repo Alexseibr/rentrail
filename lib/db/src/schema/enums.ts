@@ -97,6 +97,7 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "refunded",
   "partially_refunded",
   "chargeback",
+  "voided",
 ]);
 
 export const paymentTypeEnum = pgEnum("payment_type", [
@@ -161,9 +162,16 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "payment_created",
   "payment_paid",
   "rental_started",
+  "rental_ended",
   "rental_overdue",
   "incident_created",
   "maintenance_created",
+  "geofence_enter",
+  "geofence_exit",
+  "speed_limit_exceeded",
+  "rental_payment_held",
+  "rental_payment_captured",
+  "rental_payment_voided",
 ]);
 
 export const deviceTypeEnum = pgEnum("device_type", [
@@ -268,6 +276,7 @@ export const commandTypeEnum = pgEnum("command_type", [
   "locate",
   "ping",
   "disable",
+  "set_speed_limit",
 ]);
 
 export const commandStatusEnum = pgEnum("command_status", [

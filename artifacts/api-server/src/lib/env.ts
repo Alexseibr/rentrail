@@ -13,6 +13,18 @@ const envSchema = z.object({
   PUBLIC_OBJECT_SEARCH_PATHS: z.string().optional(),
 
   TELEMETRY_API_KEY: z.string().optional(),
+
+  TELTONIKA_TCP_PORT: z.string().optional(),
+
+  YUKASSA_SHOP_ID: z.string().optional(),
+  YUKASSA_SECRET_KEY: z.string().optional(),
+  YUKASSA_RETURN_URL: z.string().optional(),
+
+  TINKOFF_TERMINAL_KEY: z.string().optional(),
+  TINKOFF_SECRET_KEY: z.string().optional(),
+
+  CLOUDPAYMENTS_PUBLIC_ID: z.string().optional(),
+  CLOUDPAYMENTS_API_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
