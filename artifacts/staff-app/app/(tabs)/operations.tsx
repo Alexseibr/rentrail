@@ -55,6 +55,13 @@ export default function OperationsScreen() {
       ],
     },
     {
+      title: t("serviceModule.serviceSection"),
+      items: [
+        { label: t("serviceModule.workOrders"), icon: "clipboard", route: "/service/work-orders" },
+        { label: t("serviceModule.spareParts"), icon: "package", route: "/service/spare-parts" },
+      ],
+    },
+    {
       title: t("operations.syncAndQueue"),
       items: [
         {

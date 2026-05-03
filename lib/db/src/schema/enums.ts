@@ -336,6 +336,41 @@ export const workOrderStatusEnum = pgEnum("work_order_status", [
   "canceled",
 ]);
 
+export const maintenanceLogTypeEnum = pgEnum("maintenance_log_type", [
+  "oil_change",
+  "tire_replacement",
+  "brake_service",
+  "battery_replacement",
+  "chain_service",
+  "electrical_repair",
+  "frame_repair",
+  "general_service",
+  "inspection",
+  "cleaning",
+  "other",
+]);
+
+export const sparePartCategoryEnum = pgEnum("spare_part_category", [
+  "tires",
+  "brakes",
+  "electrical",
+  "battery",
+  "frame",
+  "chain",
+  "cables",
+  "bearings",
+  "accessories",
+  "other",
+]);
+
+export const sparePartTransactionTypeEnum = pgEnum("spare_part_transaction_type", [
+  "in",
+  "out",
+  "adjustment",
+  "write_off",
+  "transfer",
+]);
+
 export const saasBillingIntervalEnum = pgEnum("saas_billing_interval", [
   "monthly",
   "quarterly",

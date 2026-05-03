@@ -192,3 +192,40 @@ export async function getMechanics(companyId: string, branchId?: string) {
     );
   return rows;
 }
+export async function getWorkOrder(id: string, companyId: string) {
+  const [row] = await db
+    .select({
+      id: workOrders.id,
+      companyId: workOrders.companyId,
+      branchId: workOrders.branchId,
+      serviceRequestId: workOrders.serviceRequestId,
+      assetId: workOrders.assetId,
+      orderType: workOrders.orderType,
+      priority: workOrders.priority,
+      status: workOrders.status,
+      title: workOrders.title,
+      description: workOrders.description,
+      assignedToUserId: workOrders.assignedToUserId,
+      estimatedCost: workOrders.estimatedCost,
+      actualCost: workOrders.actualCost,
+      partsUsed: workOrders.partsUsed,
+      resolution: workOrders.resolution,
+      startedAt: workOrders.startedAt,
+      completedAt: workOrders.completedAt,
+      createdAt: workOrders.createdAt,
+      updatedAt: workOrders.updatedAt,
+      assetCode: assets.internalCode,
+      assetType: assets.assetType,
+      assetBrand: assets.brand,
+      assetModel: assets.model,
+      branchName: branches.name,
+      assignedToName: sql`concat(${users.firstName}, ' ', ${users.lastName})`,
+    })
+    .from(workOrders)
+    .leftJoin(assets, eq(workOrders.assetId, assets.id))
+    .leftJoin(branches, eq(workOrders.branchId, branches.id))
+    .leftJoin(users, eq(workOrders.assignedToUserId, users.id))
+    .where(and(eq(workOrders.id, id), eq(workOrders.companyId, companyId)))
+    .limit(1);
+  return row ?? null;
+}
