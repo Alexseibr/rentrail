@@ -37,6 +37,7 @@ import serviceRouter from "./service";
 import clientApiRouter from "./client-api";
 import rentalPaymentsRouter from "./rental-payments";
 import blackoutDatesRouter from "./blackout-dates";
+import webhooksRouter from "./webhooks";
 
 const router: IRouter = Router();
 
@@ -78,5 +79,6 @@ router.use(serviceRouter);
 router.use(clientApiRouter);
 router.use(rentalPaymentsRouter);
 router.use(blackoutDatesRouter);
+router.use(webhooksRouter);
 
 export default router;

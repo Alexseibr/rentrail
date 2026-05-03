@@ -14,7 +14,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Wrench, UserCheck, Search, AlertTriangle, Clock, CheckCircle, Loader2 } from "lucide-react";
+import {
+  Plus, Wrench, UserCheck, Search, AlertTriangle, Clock, CheckCircle, Loader2,
+  Package, FileText, Calendar, TrendingDown, DollarSign, CalendarClock,
+} from "lucide-react";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -36,6 +39,13 @@ const PRIORITY_COLORS: Record<string, string> = {
   urgent: "bg-red-100 text-red-700",
 };
 
+const LOG_TYPE_LABELS: Record<string, string> = {
+  general_service: "Общее ТО", tire_change: "Замена шин", brake_service: "Тормоза",
+  battery_replacement: "Батарея", chain_lubrication: "Цепь", cable_adjustment: "Тросы",
+  bearing_replacement: "Подшипники", body_repair: "Кузов", electrical_repair: "Электрика",
+  cleaning: "Чистка", inspection: "Осмотр", other: "Прочее",
+};
+
 const REQUEST_TYPES = ["breakdown", "flat_tire", "brake_issue", "battery_issue", "electrical", "body_damage", "scheduled_maintenance", "inspection", "cleaning", "other"];
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 const SR_STATUSES = ["new", "assigned", "in_progress", "on_hold", "completed", "canceled"];
@@ -47,6 +57,11 @@ const KPI_SR = [
   { key: "on_hold",     accent: "bg-orange-500", icon: Clock },
   { key: "completed",   accent: "bg-green-500",  icon: CheckCircle },
 ] as const;
+
+function daysUntil(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
 
 export default function ServicePage() {
   const { t } = useTranslation();
@@ -65,6 +80,8 @@ export default function ServicePage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedMechanic, setSelectedMechanic] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [partsSearch, setPartsSearch] = useState("");
+  const [logsSearch, setLogsSearch] = useState("");
 
   const [srForm, setSrForm] = useState({
     branchId: "", assetId: "", requestType: "breakdown", priority: "medium", title: "", description: "",
@@ -106,11 +123,48 @@ export default function ServicePage() {
     enabled: !!companyId,
   });
 
+  const sparePartsQuery = useQuery({
+    queryKey: ["spare-parts", companyId],
+    queryFn: () => api<any>("/spare-parts", { headers: companyHeaders }),
+    enabled: !!companyId && tab === "spareParts",
+  });
+
+  const maintenanceLogsQuery = useQuery({
+    queryKey: ["maintenance-logs", companyId],
+    queryFn: () => api<any>("/maintenance-logs?limit=100", { headers: companyHeaders }),
+    enabled: !!companyId && tab === "logs",
+  });
+
+  const schedulesQuery = useQuery({
+    queryKey: ["maintenance-schedules", companyId],
+    queryFn: () => api<any>("/maintenance-schedules", { headers: companyHeaders }),
+    enabled: !!companyId && tab === "schedules",
+  });
+
+  const overdueQuery = useQuery({
+    queryKey: ["maintenance-schedules-overdue", companyId],
+    queryFn: () => api<any>("/maintenance-schedules/overdue", { headers: companyHeaders }),
+    enabled: !!companyId,
+  });
+
+  const serviceStatsQuery = useQuery({
+    queryKey: ["service-stats", companyId],
+    queryFn: () => api<any>("/service-stats", { headers: companyHeaders }),
+    enabled: !!companyId,
+  });
+
   const branches = Array.isArray(branchesQuery.data) ? branchesQuery.data : [];
   const allAssets = assetsQuery.data ?? [];
   const mechanics = Array.isArray(mechanicsQuery.data) ? mechanicsQuery.data : [];
   const requests = Array.isArray(requestsQuery.data) ? requestsQuery.data : [];
   const workOrders = Array.isArray(workOrdersQuery.data) ? workOrdersQuery.data : [];
+  const spareParts: any[] = Array.isArray(sparePartsQuery.data) ? sparePartsQuery.data : [];
+  const maintenanceLogs: any[] = Array.isArray(maintenanceLogsQuery.data) ? maintenanceLogsQuery.data : [];
+  const schedules: any[] = Array.isArray(schedulesQuery.data) ? schedulesQuery.data : [];
+  const overdue: any[] = Array.isArray(overdueQuery.data) ? overdueQuery.data : [];
+  const stats = serviceStatsQuery.data as any;
+
+  const lowStockParts = spareParts.filter(p => parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert));
 
   const filteredRequests = search
     ? requests.filter((r: any) =>
@@ -118,6 +172,20 @@ export default function ServicePage() {
         r.assetCode?.toLowerCase().includes(search.toLowerCase())
       )
     : requests;
+
+  const filteredParts = partsSearch
+    ? spareParts.filter(p =>
+        p.name?.toLowerCase().includes(partsSearch.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(partsSearch.toLowerCase())
+      )
+    : spareParts;
+
+  const filteredLogs = logsSearch
+    ? maintenanceLogs.filter(l =>
+        l.assetCode?.toLowerCase().includes(logsSearch.toLowerCase()) ||
+        l.notes?.toLowerCase().includes(logsSearch.toLowerCase())
+      )
+    : maintenanceLogs;
 
   const createSRMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
@@ -179,7 +247,6 @@ export default function ServicePage() {
   }
 
   const countByStatus = (s: string) => requests.filter((r: any) => r.status === s).length;
-
   const urgentCount = requests.filter((r: any) => r.priority === "urgent" && r.status !== "completed" && r.status !== "canceled").length;
 
   return (
@@ -187,7 +254,7 @@ export default function ServicePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t("service.title", "Сервис")}</h1>
-          <p className="text-muted-foreground mt-0.5">{t("service.subtitle", "Заявки на обслуживание и наряд-заказы")}</p>
+          <p className="text-muted-foreground mt-0.5">{t("service.subtitle", "Заявки, наряды, ТО и запасные части")}</p>
         </div>
         {canWriteService && (
           <div className="flex gap-2">
@@ -203,6 +270,7 @@ export default function ServicePage() {
         )}
       </div>
 
+      {/* Alert banners */}
       {urgentCount > 0 && (
         <div className="flex items-center gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
           <AlertTriangle className="h-4 w-4 text-red-600 shrink-0" />
@@ -212,7 +280,20 @@ export default function ServicePage() {
           </p>
         </div>
       )}
+      {overdue.length > 0 && (
+        <div
+          className="flex items-center gap-3 rounded-xl bg-orange-50 border border-orange-200 px-4 py-3 cursor-pointer hover:bg-orange-100 transition-colors"
+          onClick={() => setTab("schedules")}
+        >
+          <CalendarClock className="h-4 w-4 text-orange-600 shrink-0" />
+          <p className="text-sm text-orange-700">
+            <span className="font-semibold">{overdue.length}</span>{" "}
+            {t("service.overdueSchedules", "графиков ТО просрочено")}
+          </p>
+        </div>
+      )}
 
+      {/* KPI cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {KPI_SR.map(({ key, accent, icon: Icon }) => {
           const count = countByStatus(key);
@@ -246,6 +327,45 @@ export default function ServicePage() {
         })}
       </div>
 
+      {/* Service stats row */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-green-50"><DollarSign className="h-4 w-4 text-green-600" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("service.statsMonthCost", "Расходы за месяц")}</p>
+                  <p className="text-lg font-bold">{Number(stats.monthCost ?? 0).toLocaleString("ru-RU")} ₽</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-orange-50"><TrendingDown className="h-4 w-4 text-orange-600" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("service.statsLowStock", "Низкий остаток запчастей")}</p>
+                  <p className="text-lg font-bold">{stats.lowStockCount ?? 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-red-50"><CalendarClock className="h-4 w-4 text-red-600" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("service.statsOverdue", "Просроченных ТО")}</p>
+                  <p className="text-lg font-bold">{stats.overdueSchedules ?? overdue.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-0">
           <TabsTrigger value="requests">
@@ -256,8 +376,27 @@ export default function ServicePage() {
             {t("service.workOrders", "Наряд-заказы")}
             <span className="ml-1.5 text-xs bg-muted rounded-full px-1.5 py-0.5">{workOrders.length}</span>
           </TabsTrigger>
+          <TabsTrigger value="spareParts">
+            <Package className="h-3.5 w-3.5 mr-1" />
+            {t("service.spareParts", "Запчасти")}
+            {lowStockParts.length > 0 && (
+              <span className="ml-1.5 text-xs bg-orange-100 text-orange-700 rounded-full px-1.5 py-0.5">{lowStockParts.length}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="logs">
+            <FileText className="h-3.5 w-3.5 mr-1" />
+            {t("service.maintenanceLogs", "История ТО")}
+          </TabsTrigger>
+          <TabsTrigger value="schedules">
+            <Calendar className="h-3.5 w-3.5 mr-1" />
+            {t("service.schedules", "Планировщик ТО")}
+            {overdue.length > 0 && (
+              <span className="ml-1.5 text-xs bg-red-100 text-red-700 rounded-full px-1.5 py-0.5">{overdue.length}</span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
+        {/* ── Заявки ── */}
         <TabsContent value="requests" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
@@ -353,6 +492,7 @@ export default function ServicePage() {
           </Card>
         </TabsContent>
 
+        {/* ── Наряд-заказы ── */}
         <TabsContent value="workorders" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
@@ -374,6 +514,7 @@ export default function ServicePage() {
                       <TableHead className="text-xs">{t("service.priorityLabel", "Приоритет")}</TableHead>
                       <TableHead className="text-xs">{t("common.status")}</TableHead>
                       <TableHead className="text-xs">{t("service.assignee", "Мастер")}</TableHead>
+                      <TableHead className="text-xs">{t("service.costLabel", "Стоимость")}</TableHead>
                       {canWriteService && <TableHead className="text-xs">{t("common.actions")}</TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -395,6 +536,13 @@ export default function ServicePage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{wo.assignedToName || "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {wo.actualCost
+                            ? <span className="font-medium text-foreground">{Number(wo.actualCost).toLocaleString("ru-RU")} ₽</span>
+                            : wo.estimatedCost
+                            ? <span className="text-muted-foreground">~{Number(wo.estimatedCost).toLocaleString("ru-RU")} ₽</span>
+                            : "—"}
+                        </TableCell>
                         {canWriteService && (
                           <TableCell>
                             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setStatusDialog({ ...wo, type: "work-orders" })}>
@@ -406,8 +554,250 @@ export default function ServicePage() {
                     ))}
                     {workOrders.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="py-12 text-center">
+                        <TableCell colSpan={9} className="py-12 text-center">
                           <Wrench className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
+                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Запчасти ── */}
+        <TabsContent value="spareParts" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-base font-semibold">{t("service.spareParts", "Склад запчастей")}</CardTitle>
+                {lowStockParts.length > 0 && (
+                  <Badge variant="outline" className="text-orange-700 border-orange-300 bg-orange-50 gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {lowStockParts.length} {t("service.lowStock", "низкий остаток")}
+                  </Badge>
+                )}
+                <div className="flex-1" />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={t("service.searchParts", "Поиск по названию или SKU...")}
+                    value={partsSearch}
+                    onChange={(e) => setPartsSearch(e.target.value)}
+                    className="pl-9 w-56"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {sparePartsQuery.isLoading ? (
+                <div className="p-6 space-y-2">
+                  {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-xs">{t("service.partName", "Запчасть")}</TableHead>
+                      <TableHead className="text-xs">SKU</TableHead>
+                      <TableHead className="text-xs">{t("service.category", "Категория")}</TableHead>
+                      <TableHead className="text-xs">{t("service.branch", "Склад/Филиал")}</TableHead>
+                      <TableHead className="text-xs text-right">{t("service.inStock", "В наличии")}</TableHead>
+                      <TableHead className="text-xs text-right">{t("service.minAlert", "Мин. остаток")}</TableHead>
+                      <TableHead className="text-xs text-right">{t("service.costPrice", "Цена/ед")}</TableHead>
+                      <TableHead className="text-xs">{t("service.location", "Место хранения")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParts.map((p: any) => {
+                      const isLow = parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert);
+                      return (
+                        <TableRow key={p.id} className={`hover:bg-muted/30 ${isLow ? "bg-orange-50/50" : ""}`}>
+                          <TableCell className="font-medium text-sm">
+                            <div className="flex items-center gap-2">
+                              {isLow && <AlertTriangle className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
+                              {p.name}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">{p.sku || "—"}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground capitalize">{p.category}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{p.branchName || "—"}</TableCell>
+                          <TableCell className={`text-right font-bold text-sm ${isLow ? "text-orange-600" : "text-green-600"}`}>
+                            {parseFloat(p.qtyInStock).toLocaleString("ru-RU")} {p.unit}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
+                            {parseFloat(p.minQtyAlert).toLocaleString("ru-RU")} {p.unit}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
+                            {p.costPrice ? `${Number(p.costPrice).toLocaleString("ru-RU")} ₽` : "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{p.location || "—"}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {filteredParts.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="py-12 text-center">
+                          <Package className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
+                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── История ТО ── */}
+        <TabsContent value="logs" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-base font-semibold">{t("service.maintenanceLogs", "История обслуживания")}</CardTitle>
+                <div className="flex-1" />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={t("service.searchLogs", "Поиск по транспорту или заметкам...")}
+                    value={logsSearch}
+                    onChange={(e) => setLogsSearch(e.target.value)}
+                    className="pl-9 w-56"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {maintenanceLogsQuery.isLoading ? (
+                <div className="p-6 space-y-2">
+                  {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-xs">{t("service.logType", "Тип работы")}</TableHead>
+                      <TableHead className="text-xs">{t("service.assetLabel", "Транспорт")}</TableHead>
+                      <TableHead className="text-xs">{t("service.performedAt", "Дата")}</TableHead>
+                      <TableHead className="text-xs">{t("service.mechanic", "Механик")}</TableHead>
+                      <TableHead className="text-xs text-right">{t("service.odometerKm", "Пробег (км)")}</TableHead>
+                      <TableHead className="text-xs text-right">{t("service.costLabel", "Стоимость")}</TableHead>
+                      <TableHead className="text-xs">{t("service.notes", "Заметки")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLogs.map((l: any) => (
+                      <TableRow key={l.id} className="hover:bg-muted/30">
+                        <TableCell className="text-sm font-medium">
+                          {LOG_TYPE_LABELS[l.logType] ?? l.logType}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">{l.assetCode || "—"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(l.performedAt).toLocaleDateString("ru-RU")}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{l.performedByName || "—"}</TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {l.odometerKm ? Number(l.odometerKm).toLocaleString("ru-RU") : "—"}
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-medium">
+                          {l.cost && Number(l.cost) > 0 ? `${Number(l.cost).toLocaleString("ru-RU")} ₽` : "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-48 truncate">{l.notes || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredLogs.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="py-12 text-center">
+                          <FileText className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
+                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Планировщик ТО ── */}
+        <TabsContent value="schedules" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-base font-semibold">{t("service.schedules", "Планировщик ТО")}</CardTitle>
+                {overdue.length > 0 && (
+                  <Badge variant="outline" className="text-red-700 border-red-300 bg-red-50 gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {overdue.length} {t("service.overdue", "просрочено")}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {schedulesQuery.isLoading ? (
+                <div className="p-6 space-y-2">
+                  {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-xs">{t("service.scheduleName", "Наименование")}</TableHead>
+                      <TableHead className="text-xs">{t("service.assetLabel", "Транспорт")}</TableHead>
+                      <TableHead className="text-xs">{t("service.interval", "Интервал")}</TableHead>
+                      <TableHead className="text-xs">{t("service.lastDone", "Последнее ТО")}</TableHead>
+                      <TableHead className="text-xs">{t("service.nextDue", "Плановая дата")}</TableHead>
+                      <TableHead className="text-xs">{t("service.status", "Статус")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {schedules.map((s: any) => {
+                      const days = daysUntil(s.nextDueAt);
+                      const isOverdue = days !== null && days < 0;
+                      const isSoon = days !== null && days >= 0 && days <= 7;
+                      return (
+                        <TableRow key={s.id} className={`hover:bg-muted/30 ${isOverdue ? "bg-red-50/40" : isSoon ? "bg-orange-50/40" : ""}`}>
+                          <TableCell className="font-medium text-sm">{s.name}</TableCell>
+                          <TableCell className="font-mono text-sm text-muted-foreground">{s.assetCode || "—"}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {s.intervalDays ? `${s.intervalDays} дн.` : ""}
+                            {s.intervalKm ? ` / ${Number(s.intervalKm).toLocaleString("ru-RU")} км` : ""}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {s.lastDoneAt ? new Date(s.lastDoneAt).toLocaleDateString("ru-RU") : "—"}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {s.nextDueAt ? new Date(s.nextDueAt).toLocaleDateString("ru-RU") : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {isOverdue ? (
+                              <Badge className="text-xs bg-red-100 text-red-700 gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                {Math.abs(days!)} д. назад
+                              </Badge>
+                            ) : isSoon ? (
+                              <Badge className="text-xs bg-orange-100 text-orange-700">
+                                через {days} д.
+                              </Badge>
+                            ) : days !== null ? (
+                              <Badge className="text-xs bg-green-100 text-green-700">
+                                через {days} д.
+                              </Badge>
+                            ) : (
+                              <Badge className="text-xs bg-gray-100 text-gray-600">—</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {schedules.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-12 text-center">
+                          <Calendar className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
                           <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
                         </TableCell>
                       </TableRow>
@@ -420,6 +810,7 @@ export default function ServicePage() {
         </TabsContent>
       </Tabs>
 
+      {/* ── Диалог: Новая заявка ── */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t("service.newRequest", "Новая заявка на обслуживание")}</DialogTitle></DialogHeader>
@@ -482,6 +873,7 @@ export default function ServicePage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Диалог: Новый наряд ── */}
       <Dialog open={showCreateWO} onOpenChange={setShowCreateWO}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t("service.newWorkOrder", "Новый наряд-заказ")}</DialogTitle></DialogHeader>
@@ -544,59 +936,67 @@ export default function ServicePage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Диалог: Назначить мастера ── */}
       <Dialog open={!!assignDialog} onOpenChange={() => setAssignDialog(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{t("service.assign", "Назначить мастера")}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+          <DialogHeader>
+            <DialogTitle>{t("service.assignMechanic", "Назначить мастера")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">{assignDialog?.title}</p>
             <div className="space-y-2">
-              <Label>{t("service.assignee", "Мастер")}</Label>
+              <Label>{t("service.selectMechanic", "Выберите мастера")}</Label>
               <Select value={selectedMechanic} onValueChange={setSelectedMechanic}>
-                <SelectTrigger><SelectValue placeholder={t("service.selectMechanic")} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("service.selectMechanic", "Выберите мастера")} /></SelectTrigger>
                 <SelectContent>
                   {mechanics.map((m: any) => (
-                    <SelectItem key={m.userId} value={m.userId}>{m.fullName}</SelectItem>
+                    <SelectItem key={m.userId} value={m.userId}>{m.fullName} ({m.phone})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAssignDialog(null)}>{t("common.cancel")}</Button>
-              <Button
-                disabled={!selectedMechanic || assignMutation.isPending}
-                onClick={() => assignMutation.mutate({ id: assignDialog.id, userId: selectedMechanic })}
-              >
-                {assignMutation.isPending ? t("common.saving") : t("service.assign")}
-              </Button>
-            </DialogFooter>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialog(null)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={() => assignMutation.mutate({ id: assignDialog.id, userId: selectedMechanic })}
+              disabled={!selectedMechanic || assignMutation.isPending}
+            >
+              {assignMutation.isPending ? t("common.saving") : t("service.assign", "Назначить")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!statusDialog} onOpenChange={() => setStatusDialog(null)}>
+      {/* ── Диалог: Сменить статус ── */}
+      <Dialog open={!!statusDialog} onOpenChange={() => { setStatusDialog(null); setNewStatus(""); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{t("fleet.changeStatus", "Сменить статус")}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
+          <DialogHeader>
+            <DialogTitle>{t("fleet.changeStatus", "Изменить статус")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">{statusDialog?.title}</p>
             <div className="space-y-2">
               <Label>{t("common.status")}</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger><SelectValue placeholder={t("common.status")} /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectStatus", "Выберите статус")} /></SelectTrigger>
                 <SelectContent>
-                  {(statusDialog?.type === "service-requests" ? SR_STATUSES : ["new", "in_progress", "on_hold", "completed", "canceled"]).map((s) => (
+                  {(statusDialog?.type === "service-requests" ? SR_STATUSES : ["draft", "assigned", "en_route", "in_progress", "waiting_parts", "completed", "canceled"]).map((s) => (
                     <SelectItem key={s} value={s}>{String(t(`service.status.${s}`, s))}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setStatusDialog(null)}>{t("common.cancel")}</Button>
-              <Button
-                disabled={!newStatus || statusMutation.isPending}
-                onClick={() => statusMutation.mutate({ id: statusDialog.id, status: newStatus, type: statusDialog.type })}
-              >
-                {statusMutation.isPending ? t("common.saving") : t("common.save")}
-              </Button>
-            </DialogFooter>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setStatusDialog(null); setNewStatus(""); }}>{t("common.cancel")}</Button>
+            <Button
+              onClick={() => statusMutation.mutate({ id: statusDialog.id, status: newStatus, type: statusDialog.type })}
+              disabled={!newStatus || statusMutation.isPending}
+            >
+              {statusMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

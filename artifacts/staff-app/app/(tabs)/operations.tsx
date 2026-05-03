@@ -59,6 +59,8 @@ export default function OperationsScreen() {
       items: [
         { label: t("serviceModule.workOrders"), icon: "clipboard", route: "/service/work-orders" },
         { label: t("serviceModule.spareParts"), icon: "package", route: "/service/spare-parts" },
+        { label: t("serviceModule.maintenanceLogs"), icon: "file-text", route: "/service/maintenance-logs" },
+        { label: t("serviceModule.schedules"), icon: "calendar", route: "/service/schedules" },
       ],
     },
     {
