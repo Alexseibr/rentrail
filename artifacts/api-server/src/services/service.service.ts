@@ -147,7 +147,7 @@ export async function listWorkOrders(companyId: string, branchId?: string, statu
 
 export async function createWorkOrder(data: {
   companyId: string;
-  branchId: string;
+  branchId?: string;
   serviceRequestId?: string;
   assetId?: string;
   orderType: string;
@@ -158,7 +158,22 @@ export async function createWorkOrder(data: {
   createdByUserId?: string;
   estimatedCost?: string;
 }) {
-  const [row] = await db.insert(workOrders).values(data as typeof workOrders.$inferInsert).returning();
+  const insertData: typeof workOrders.$inferInsert = {
+    companyId: data.companyId,
+    orderType: data.orderType as typeof workOrders.$inferInsert["orderType"],
+    priority: (data.priority ?? "medium") as typeof workOrders.$inferInsert["priority"],
+    title: data.title,
+    status: "draft",
+  };
+  if (data.branchId) insertData.branchId = data.branchId;
+  if (data.serviceRequestId) insertData.serviceRequestId = data.serviceRequestId;
+  if (data.assetId) insertData.assetId = data.assetId;
+  if (data.description) insertData.description = data.description;
+  if (data.assignedToUserId) insertData.assignedToUserId = data.assignedToUserId;
+  if (data.createdByUserId) insertData.createdByUserId = data.createdByUserId;
+  if (data.estimatedCost) insertData.estimatedCost = data.estimatedCost;
+
+  const [row] = await db.insert(workOrders).values(insertData).returning();
   return row;
 }
 

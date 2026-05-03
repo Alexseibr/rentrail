@@ -27,7 +27,7 @@ router.get("/service-requests/:id", authenticate, requireCompanyAccess, requireP
   return res.json({ data: item });
 });
 
-router.post("/service-requests", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/service-requests", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   const item = await serviceService.createServiceRequest({
     companyId: req.tenant!.companyId,
     branchId: req.body.branchId,
@@ -47,7 +47,7 @@ router.post("/service-requests", authenticate, requireCompanyAccess, requirePerm
 
 const ALLOWED_SR_PATCH_FIELDS = ["priority", "title", "description", "locationAddress"] as const;
 
-router.patch("/service-requests/:id", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.patch("/service-requests/:id", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   const safeData: Record<string, unknown> = {};
   for (const key of ALLOWED_SR_PATCH_FIELDS) {
     if (req.body[key] !== undefined) safeData[key] = req.body[key];
@@ -58,7 +58,7 @@ router.patch("/service-requests/:id", authenticate, requireCompanyAccess, requir
   return res.json({ data: item });
 });
 
-router.post("/service-requests/:id/assign", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/service-requests/:id/assign", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   const item = await serviceService.updateServiceRequest(req.params.id as string, req.tenant!.companyId, {
     assignedToUserId: req.body.assignedToUserId,
     status: "assigned",
@@ -67,7 +67,7 @@ router.post("/service-requests/:id/assign", authenticate, requireCompanyAccess, 
   return res.json({ data: item });
 });
 
-router.post("/service-requests/:id/status", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/service-requests/:id/status", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   const update: Record<string, unknown> = { status: req.body.status };
   if (req.body.status === "completed") update.resolvedAt = new Date();
   const item = await serviceService.updateServiceRequest(req.params.id as string, req.tenant!.companyId, update);
@@ -89,26 +89,34 @@ router.get("/work-orders", authenticate, requireCompanyAccess, requirePermission
   }
 });
 
-router.post("/work-orders", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
-  const item = await serviceService.createWorkOrder({
-    companyId: req.tenant!.companyId,
-    branchId: req.body.branchId,
-    serviceRequestId: req.body.serviceRequestId,
-    assetId: req.body.assetId,
-    orderType: req.body.orderType,
-    priority: req.body.priority,
-    title: req.body.title,
-    description: req.body.description,
-    assignedToUserId: req.body.assignedToUserId,
-    createdByUserId: req.user!.userId,
-    estimatedCost: req.body.estimatedCost,
-  });
-  return res.status(201).json({ data: item });
+router.post("/work-orders", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
+  try {
+    if (!req.body.title || !req.body.orderType) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: "title, orderType required" } });
+    }
+    const item = await serviceService.createWorkOrder({
+      companyId: req.tenant!.companyId,
+      branchId: req.body.branchId,
+      serviceRequestId: req.body.serviceRequestId,
+      assetId: req.body.assetId,
+      orderType: req.body.orderType,
+      priority: req.body.priority,
+      title: req.body.title,
+      description: req.body.description,
+      assignedToUserId: req.body.assignedToUserId,
+      createdByUserId: req.user!.userId,
+      estimatedCost: req.body.estimatedCost,
+    });
+    return res.status(201).json({ data: item });
+  } catch (err: any) {
+    logger.error({ err }, "POST /work-orders error");
+    return res.status(err.statusCode ?? 500).json({ error: { code: err.code ?? "INTERNAL_ERROR", message: err?.message } });
+  }
 });
 
 const ALLOWED_WO_PATCH_FIELDS = ["priority", "title", "description", "estimatedCost"] as const;
 
-router.patch("/work-orders/:id", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.patch("/work-orders/:id", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   const safeData: Record<string, unknown> = {};
   for (const key of ALLOWED_WO_PATCH_FIELDS) {
     if (req.body[key] !== undefined) safeData[key] = req.body[key];
@@ -119,7 +127,7 @@ router.patch("/work-orders/:id", authenticate, requireCompanyAccess, requirePerm
   return res.json({ data: item });
 });
 
-router.post("/work-orders/:id/status", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/work-orders/:id/status", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   const update: Record<string, unknown> = { status: req.body.status };
   if (req.body.status === "in_progress") update.startedAt = new Date();
   if (req.body.status === "completed") {
@@ -222,18 +230,18 @@ router.get("/maintenance-logs", authenticate, requireCompanyAccess, requirePermi
   }
 });
 
-router.post("/maintenance-logs", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/maintenance-logs", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     const body = req.body;
-    if (!body.assetId || !body.logType || !body.performedAt) {
-      return res.status(400).json({ error: { code: "VALIDATION", message: "assetId, logType, performedAt required" } });
+    if (!body.assetId || !body.logType) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: "assetId, logType required" } });
     }
     const item = await maintenanceService.createMaintenanceLog(req.tenant!.companyId, {
       assetId: body.assetId,
       branchId: body.branchId,
       workOrderId: body.workOrderId,
       logType: body.logType,
-      performedAt: new Date(body.performedAt),
+      performedAt: body.performedAt ? new Date(body.performedAt) : new Date(),
       performedByUserId: body.performedByUserId ?? req.user!.userId,
       odometerKm: body.odometerKm,
       cost: body.cost,
@@ -272,7 +280,7 @@ router.get("/maintenance-schedules/overdue", authenticate, requireCompanyAccess,
   }
 });
 
-router.post("/maintenance-schedules", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/maintenance-schedules", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     const body = req.body;
     if (!body.scheduleType || !body.name) {
@@ -294,7 +302,7 @@ router.post("/maintenance-schedules", authenticate, requireCompanyAccess, requir
   }
 });
 
-router.patch("/maintenance-schedules/:id", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.patch("/maintenance-schedules/:id", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     const ALLOWED = ["name", "intervalKm", "intervalDays", "nextDueKm", "nextDueAt", "enabled"] as const;
     const safe: Record<string, unknown> = {};
@@ -309,7 +317,7 @@ router.patch("/maintenance-schedules/:id", authenticate, requireCompanyAccess, r
   }
 });
 
-router.delete("/maintenance-schedules/:id", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.delete("/maintenance-schedules/:id", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     await maintenanceService.deleteMaintenanceSchedule(String(req.params.id), req.tenant!.companyId);
     return res.status(204).send();
@@ -344,7 +352,7 @@ router.get("/spare-parts/:id", authenticate, requireCompanyAccess, requirePermis
   }
 });
 
-router.post("/spare-parts", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/spare-parts", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     const body = req.body;
     if (!body.name || !body.category) {
@@ -368,7 +376,7 @@ router.post("/spare-parts", authenticate, requireCompanyAccess, requirePermissio
   }
 });
 
-router.patch("/spare-parts/:id", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.patch("/spare-parts/:id", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     const ALLOWED = ["name", "sku", "category", "unit", "minQtyAlert", "costPrice", "location", "notes"] as const;
     const safe: Record<string, unknown> = {};
@@ -383,7 +391,7 @@ router.patch("/spare-parts/:id", authenticate, requireCompanyAccess, requirePerm
   }
 });
 
-router.delete("/spare-parts/:id", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.delete("/spare-parts/:id", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     await maintenanceService.deleteSparePart(String(req.params.id), req.tenant!.companyId);
     return res.status(204).send();
@@ -406,7 +414,7 @@ router.get("/spare-parts/:id/transactions", authenticate, requireCompanyAccess, 
   }
 });
 
-router.post("/spare-parts/transactions", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/spare-parts/transactions", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     const body = req.body;
     if (!body.partId || !body.transactionType || body.qty == null) {
@@ -442,7 +450,7 @@ router.get("/work-orders/:id/parts", authenticate, requireCompanyAccess, require
   }
 });
 
-router.post("/work-orders/:id/parts", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.post("/work-orders/:id/parts", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     const body = req.body;
     if (!body.partId || body.qtyUsed == null) {
@@ -461,7 +469,7 @@ router.post("/work-orders/:id/parts", authenticate, requireCompanyAccess, requir
   }
 });
 
-router.delete("/work-orders/:id/parts/:partId", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
+router.delete("/work-orders/:id/parts/:partId", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
   try {
     await maintenanceService.removePartFromWorkOrder(
       String(req.params.partId),

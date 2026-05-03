@@ -9,7 +9,7 @@ import { workOrderTypeEnum, workOrderStatusEnum, servicePriorityEnum } from "./e
 export const workOrders = pgTable("work_orders", {
   id: uuid("id").defaultRandom().primaryKey(),
   companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  branchId: uuid("branch_id").notNull().references(() => branches.id),
+  branchId: uuid("branch_id").references(() => branches.id),
   serviceRequestId: uuid("service_request_id").references(() => serviceRequests.id),
   assetId: uuid("asset_id").references(() => assets.id),
   orderType: workOrderTypeEnum("order_type").notNull(),
