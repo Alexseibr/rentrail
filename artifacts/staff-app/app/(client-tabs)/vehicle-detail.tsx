@@ -227,7 +227,7 @@ export default function VehicleDetailScreen() {
         </View>
       ) : (
         <View style={styles.mapPlaceholderFull}>
-          <Feather name="map-off" size={28} color="#ccc" />
+          <Feather name="map-pin" size={28} color="#ccc" />
           <Text style={styles.mapPlaceholderText}>{t("vehicleDetail.noLocation")}</Text>
         </View>
       )}

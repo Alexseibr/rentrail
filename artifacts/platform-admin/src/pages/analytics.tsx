@@ -350,7 +350,7 @@ export default function AnalyticsPage() {
               <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={(topByRentals.data ?? []).map((t, i) => ({ name: t.companyName, value: t.value, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+                    data={(topByRentals.data ?? []).map((item: TopTenant, i: number) => ({ name: item.companyName, value: item.value, color: CHART_COLORS[i % CHART_COLORS.length] }))}
                     layout="vertical"
                     barSize={18}
                   >
@@ -358,7 +358,7 @@ export default function AnalyticsPage() {
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} cursor={{ fill: "hsl(var(--muted))" }} />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {(topByRentals.data ?? []).map((_, i) => (
+                      {(topByRentals.data ?? []).map((_: TopTenant, i: number) => (
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
                     </Bar>
@@ -382,7 +382,7 @@ export default function AnalyticsPage() {
               <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={(topByAssets.data ?? []).map((t, i) => ({ name: t.companyName, value: t.value, color: CHART_COLORS[i % CHART_COLORS.length] }))}
+                    data={(topByAssets.data ?? []).map((item: TopTenant, i: number) => ({ name: item.companyName, value: item.value, color: CHART_COLORS[i % CHART_COLORS.length] }))}
                     layout="vertical"
                     barSize={18}
                   >
@@ -390,7 +390,7 @@ export default function AnalyticsPage() {
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "12px" }} cursor={{ fill: "hsl(var(--muted))" }} />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {(topByAssets.data ?? []).map((_, i) => (
+                      {(topByAssets.data ?? []).map((_: TopTenant, i: number) => (
                         <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
                     </Bar>
