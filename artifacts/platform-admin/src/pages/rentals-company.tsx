@@ -33,7 +33,7 @@ export default function RentalsCompanyPage() {
   const queryClient = useQueryClient();
   const { canWriteRental } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -204,7 +204,7 @@ export default function RentalsCompanyPage() {
                     <TableCell className="font-mono text-sm">{rental.assetCode || rental.assetId?.slice(0, 8)}</TableCell>
                     <TableCell className="text-sm">{rental.startDate || rental.startAt ? new Date(rental.startDate || rental.startAt).toLocaleDateString() : "—"}</TableCell>
                     <TableCell className="text-sm">{rental.endDate || rental.plannedEndAt ? new Date(rental.endDate || rental.plannedEndAt).toLocaleDateString() : "—"}</TableCell>
-                    <TableCell><Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{t(`status.${rental.status}`, rental.status)}</Badge></TableCell>
+                    <TableCell><Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{String(t(`status.${rental.status}`, rental.status))}</Badge></TableCell>
                     {canWriteRental && (
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-1">

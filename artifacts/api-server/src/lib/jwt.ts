@@ -18,14 +18,14 @@ export interface RefreshTokenPayload {
 }
 
 export function signAccessToken(payload: AccessTokenPayload): string {
-  return jwt.sign(payload, config.jwt.accessSecret, {
-    expiresIn: config.jwt.accessExpiresIn,
+  return jwt.sign(payload as object, config.jwt.accessSecret as jwt.Secret, {
+    expiresIn: config.jwt.accessExpiresIn as jwt.SignOptions["expiresIn"],
   });
 }
 
 export function signRefreshToken(payload: RefreshTokenPayload): string {
-  return jwt.sign(payload, config.jwt.refreshSecret, {
-    expiresIn: config.jwt.refreshExpiresIn,
+  return jwt.sign(payload as object, config.jwt.refreshSecret as jwt.Secret, {
+    expiresIn: config.jwt.refreshExpiresIn as jwt.SignOptions["expiresIn"],
   });
 }
 

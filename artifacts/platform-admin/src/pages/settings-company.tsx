@@ -19,7 +19,7 @@ export default function SettingsCompanyPage() {
   const queryClient = useQueryClient();
   const membership = user?.memberships?.[0];
   const companyId = membership?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const [editCompany, setEditCompany] = useState(false);
   const [companyForm, setCompanyForm] = useState({ name: "", contactEmail: "", contactPhone: "", website: "", address: "" });

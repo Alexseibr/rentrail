@@ -30,7 +30,7 @@ export default function AssetDetailPage() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const assetQuery = useQuery({
     queryKey: ["asset", params.id],
@@ -93,11 +93,11 @@ export default function AssetDetailPage() {
         <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight">{asset.internalCode}</h1>
           <p className="text-muted-foreground">
-            {t(`assetType.${asset.assetType}`, asset.assetType)} — {asset.brand} {asset.model}
+            {String(t(`assetType.${asset.assetType}`, asset.assetType))} — {asset.brand} {asset.model}
           </p>
         </div>
         <Badge className={`text-sm px-3 py-1 ${STATUS_COLORS[asset.status] || "bg-gray-100"}`}>
-          {t(`status.${asset.status}`, asset.status)}
+          {String(t(`status.${asset.status}`, asset.status))}
         </Badge>
       </div>
 
@@ -155,7 +155,7 @@ export default function AssetDetailPage() {
                       </TableCell>
                       <TableCell>
                         <Badge className={STATUS_COLORS[entry.newStatus || entry.toStatus || entry.status] || "bg-gray-100"}>
-                          {t(`status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`, entry.newStatus || entry.toStatus || entry.status || "—")}
+                          {String(t(`status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`, entry.newStatus || entry.toStatus || entry.status || "—"))}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{entry.reason || entry.notes || "—"}</TableCell>

@@ -181,20 +181,18 @@ async function seedDemo() {
   const [plan1] = await db.insert(rentalPlans).values({
     companyId: demoCompany.id,
     name: "Hourly Basic",
-    assetType: "bike",
     rentalType: "hourly",
     price: "5.00",
     depositAmount: "25.00",
-    billingInterval: 1,
+    billingInterval: "1",
   }).returning();
   const [plan2] = await db.insert(rentalPlans).values({
     companyId: demoCompany.id,
     name: "Daily EBike",
-    assetType: "ebike",
     rentalType: "daily",
     price: "25.00",
     depositAmount: "100.00",
-    billingInterval: 1,
+    billingInterval: "1",
   }).returning();
   console.log("  Rental plans: 2");
 

@@ -95,7 +95,7 @@ router.get(
   requirePermission("asset:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const asset = await assetService.getAsset(req.params.id, req.tenant!.companyId);
+    const asset = await assetService.getAsset(req.params.id as string, req.tenant!.companyId);
     res.json({ data: asset });
   },
 );
@@ -107,8 +107,8 @@ router.patch(
   requirePermission("asset:update"),
   validate({ params: idParams, body: updateAssetSchema }),
   async (req, res) => {
-    const old = await assetService.getAsset(req.params.id, req.tenant!.companyId);
-    const asset = await assetService.updateAsset(req.params.id, req.tenant!.companyId, req.body);
+    const old = await assetService.getAsset(req.params.id as string, req.tenant!.companyId);
+    const asset = await assetService.updateAsset(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -130,9 +130,9 @@ router.post(
   requirePermission("asset:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
-    const before = await assetService.getAsset(req.params.id, req.tenant!.companyId);
+    const before = await assetService.getAsset(req.params.id as string, req.tenant!.companyId);
     const asset = await assetService.changeAssetStatus(
-      req.params.id,
+      req.params.id as string,
       req.tenant!.companyId,
       req.body.status,
       req.user!.userId,
@@ -160,7 +160,7 @@ router.post(
   requirePermission("asset:delete"),
   validate({ params: idParams }),
   async (req, res) => {
-    const asset = await assetService.archiveAsset(req.params.id, req.tenant!.companyId);
+    const asset = await assetService.archiveAsset(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -180,7 +180,7 @@ router.post(
   requirePermission("asset:delete"),
   validate({ params: idParams }),
   async (req, res) => {
-    const asset = await assetService.restoreAsset(req.params.id, req.tenant!.companyId);
+    const asset = await assetService.restoreAsset(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -200,7 +200,7 @@ router.get(
   requirePermission("asset:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const history = await assetService.getAssetStatusHistory(req.params.id, req.tenant!.companyId);
+    const history = await assetService.getAssetStatusHistory(req.params.id as string, req.tenant!.companyId);
     res.json({ data: history });
   },
 );

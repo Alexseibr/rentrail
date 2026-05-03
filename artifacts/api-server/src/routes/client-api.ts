@@ -176,7 +176,7 @@ router.get("/client/rentals", authenticate, async (req, res) => {
         .from(assets)
         .where(inArray(assets.id, assetIds));
       for (const a of assetRows) {
-        assetMap.set(a.id, { internalCode: a.internalCode, assetType: a.assetType, brand: a.brand ?? "", model: a.model ?? "" });
+        assetMap.set(a.id, { internalCode: a.internalCode ?? "", assetType: a.assetType, brand: a.brand ?? "", model: a.model ?? "" });
       }
     }
 
@@ -284,7 +284,7 @@ router.post("/client/rentals", authenticate, async (req, res) => {
 router.post("/client/rentals/:id/return", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const rentalId = req.params.id;
+    const rentalId = req.params.id as string;
 
     const [rental] = await db
       .select()
@@ -392,7 +392,7 @@ router.get("/client/vehicles/lookup", authenticate, async (req, res) => {
 router.get("/client/vehicles/:id", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const assetId = req.params.id;
+    const assetId = req.params.id as string;
 
     await requireActiveRentalForAsset(clientId, companyId, assetId);
 
@@ -439,7 +439,7 @@ router.get("/client/vehicles/:id", authenticate, async (req, res) => {
 router.get("/client/vehicles/:id/locations", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const assetId = req.params.id;
+    const assetId = req.params.id as string;
 
     await requireActiveRentalForAsset(clientId, companyId, assetId);
 
@@ -463,7 +463,7 @@ router.get("/client/vehicles/:id/locations", authenticate, async (req, res) => {
 router.post("/client/vehicles/:id/lock", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const assetId = req.params.id;
+    const assetId = req.params.id as string;
     await requireActiveRentalForAsset(clientId, companyId, assetId);
 
     const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "lock", clientId);
@@ -476,7 +476,7 @@ router.post("/client/vehicles/:id/lock", authenticate, async (req, res) => {
 router.post("/client/vehicles/:id/unlock", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const assetId = req.params.id;
+    const assetId = req.params.id as string;
     await requireActiveRentalForAsset(clientId, companyId, assetId);
 
     const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "unlock", clientId);
@@ -489,7 +489,7 @@ router.post("/client/vehicles/:id/unlock", authenticate, async (req, res) => {
 router.post("/client/vehicles/:id/arm", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const assetId = req.params.id;
+    const assetId = req.params.id as string;
     await requireActiveRentalForAsset(clientId, companyId, assetId);
 
     const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "arm_alarm", clientId);
@@ -502,7 +502,7 @@ router.post("/client/vehicles/:id/arm", authenticate, async (req, res) => {
 router.post("/client/vehicles/:id/disarm", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const assetId = req.params.id;
+    const assetId = req.params.id as string;
     await requireActiveRentalForAsset(clientId, companyId, assetId);
 
     const cmd = await commandService.enqueueAssetCommand(companyId, assetId, "disarm_alarm", clientId);
@@ -515,7 +515,7 @@ router.post("/client/vehicles/:id/disarm", authenticate, async (req, res) => {
 router.get("/client/rentals/:id", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
-    const rentalId = req.params.id;
+    const rentalId = req.params.id as string;
 
     const [rental] = await db
       .select()

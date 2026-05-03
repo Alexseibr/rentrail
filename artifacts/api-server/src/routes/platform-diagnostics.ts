@@ -61,11 +61,11 @@ router.get(
   adminRoles,
   validate({ params: serviceNameParams }),
   async (req, res) => {
-    const status = diagService.getServiceStatus(req.params.serviceName)!;
+    const status = diagService.getServiceStatus(req.params.serviceName as string)!;
     await createPlatformAuditLog(req, {
       action: "platform.diagnostics.check",
       entityType: "service",
-      metadata: { serviceName: req.params.serviceName },
+      metadata: { serviceName: req.params.serviceName as string },
     });
     res.json({ data: status });
   },

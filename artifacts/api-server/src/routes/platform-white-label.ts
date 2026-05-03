@@ -29,11 +29,11 @@ router.get(
   adminRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const settings = await wlService.getWhiteLabelSettings(req.params.id);
+    const settings = await wlService.getWhiteLabelSettings(req.params.id as string);
     await createPlatformAuditLog(req, {
       action: "platform.white_label.view",
       entityType: "white_label_settings",
-      targetCompanyId: req.params.id,
+      targetCompanyId: req.params.id as string,
     });
     res.json({ data: settings });
   },
@@ -45,11 +45,11 @@ router.patch(
   adminRoles,
   validate({ params: idParams, body: updateSchema }),
   async (req, res) => {
-    const { settings, previous } = await wlService.upsertWhiteLabelSettings(req.params.id, req.body);
+    const { settings, previous } = await wlService.upsertWhiteLabelSettings(req.params.id as string, req.body);
     await createPlatformAuditLog(req, {
       action: "platform.white_label.update",
       entityType: "white_label_settings",
-      targetCompanyId: req.params.id,
+      targetCompanyId: req.params.id as string,
       before: previous,
       after: settings,
     });
@@ -63,11 +63,11 @@ router.post(
   adminRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { settings, previous } = await wlService.enableWhiteLabel(req.params.id);
+    const { settings, previous } = await wlService.enableWhiteLabel(req.params.id as string);
     await createPlatformAuditLog(req, {
       action: "platform.white_label.enable",
       entityType: "white_label_settings",
-      targetCompanyId: req.params.id,
+      targetCompanyId: req.params.id as string,
       before: previous ? { status: previous.status } : null,
       after: { status: settings.status },
     });
@@ -81,11 +81,11 @@ router.post(
   adminRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { settings, previous } = await wlService.disableWhiteLabel(req.params.id);
+    const { settings, previous } = await wlService.disableWhiteLabel(req.params.id as string);
     await createPlatformAuditLog(req, {
       action: "platform.white_label.disable",
       entityType: "white_label_settings",
-      targetCompanyId: req.params.id,
+      targetCompanyId: req.params.id as string,
       before: { status: previous.status },
       after: { status: settings.status },
     });

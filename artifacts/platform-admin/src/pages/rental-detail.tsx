@@ -26,7 +26,7 @@ export default function RentalDetailPage() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const rentalQuery = useQuery({
     queryKey: ["rental", params.id],
@@ -94,7 +94,7 @@ export default function RentalDetailPage() {
           </p>
         </div>
         <Badge className={`text-sm px-3 py-1 ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}>
-          {t(`status.${rental.status}`, rental.status)}
+          {String(t(`status.${rental.status}`, rental.status))}
         </Badge>
       </div>
 
@@ -158,7 +158,7 @@ export default function RentalDetailPage() {
                       </TableCell>
                       <TableCell>
                         <Badge className={STATUS_COLORS[entry.newStatus || entry.toStatus || entry.status] || "bg-gray-100"}>
-                          {t(`status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`, entry.newStatus || entry.toStatus || entry.status || "—")}
+                          {String(t(`status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`, entry.newStatus || entry.toStatus || entry.status || "—"))}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{entry.reason || entry.notes || "—"}</TableCell>

@@ -306,7 +306,7 @@ export default function AnalyticsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(topByRentals.data || []).map((tenant, i) => (
+                  {(topByRentals.data || []).map((tenant: { companyId: string; companyName: string; value: number }, i: number) => (
                     <TableRow key={tenant.companyId}>
                       <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                       <TableCell className="font-medium">{tenant.companyName}</TableCell>
@@ -345,7 +345,7 @@ export default function AnalyticsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(topByAssets.data || []).map((tenant, i) => (
+                  {(topByAssets.data || []).map((tenant: { companyId: string; companyName: string; value: number }, i: number) => (
                     <TableRow key={tenant.companyId}>
                       <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                       <TableCell className="font-medium">{tenant.companyName}</TableCell>

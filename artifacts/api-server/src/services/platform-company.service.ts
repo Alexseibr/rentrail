@@ -227,7 +227,7 @@ export async function getPlatformCompanyDetail(companyId: string) {
     .where(eq(roles.code, "owner"))
     .limit(1);
 
-  let ownerMembers: { userId: string; email: string; firstName: string; lastName: string }[] = [];
+  let ownerMembers: { userId: string; email: string | null; firstName: string; lastName: string }[] = [];
   if (ownerRole.length > 0) {
     ownerMembers = await db
       .select({

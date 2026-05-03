@@ -13,17 +13,17 @@ router.get("/service-requests", authenticate, requireCompanyAccess, requirePermi
       req.query.branchId as string | undefined,
       req.query.status as string | undefined
     );
-    res.json({ data: items });
+    return res.json({ data: items });
   } catch (err: any) {
     logger.error({ err }, "GET /service-requests error");
-    res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
+    return res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });
 
 router.get("/service-requests/:id", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
-  const item = await serviceService.getServiceRequest(req.params.id, req.tenant!.companyId);
+  const item = await serviceService.getServiceRequest(req.params.id as string, req.tenant!.companyId);
   if (!item) return res.status(404).json({ error: "Not found" });
-  res.json({ data: item });
+  return res.json({ data: item });
 });
 
 router.post("/service-requests", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
@@ -41,7 +41,7 @@ router.post("/service-requests", authenticate, requireCompanyAccess, requirePerm
     lng: req.body.lng,
     locationAddress: req.body.locationAddress,
   });
-  res.status(201).json({ data: item });
+  return res.status(201).json({ data: item });
 });
 
 const ALLOWED_SR_PATCH_FIELDS = ["priority", "title", "description", "locationAddress"] as const;
@@ -52,26 +52,26 @@ router.patch("/service-requests/:id", authenticate, requireCompanyAccess, requir
     if (req.body[key] !== undefined) safeData[key] = req.body[key];
   }
   if (Object.keys(safeData).length === 0) return res.status(400).json({ error: "No valid fields to update" });
-  const item = await serviceService.updateServiceRequest(req.params.id, req.tenant!.companyId, safeData);
+  const item = await serviceService.updateServiceRequest(req.params.id as string, req.tenant!.companyId, safeData);
   if (!item) return res.status(404).json({ error: "Not found" });
-  res.json({ data: item });
+  return res.json({ data: item });
 });
 
 router.post("/service-requests/:id/assign", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
-  const item = await serviceService.updateServiceRequest(req.params.id, req.tenant!.companyId, {
+  const item = await serviceService.updateServiceRequest(req.params.id as string, req.tenant!.companyId, {
     assignedToUserId: req.body.assignedToUserId,
     status: "assigned",
   });
   if (!item) return res.status(404).json({ error: "Not found" });
-  res.json({ data: item });
+  return res.json({ data: item });
 });
 
 router.post("/service-requests/:id/status", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
   const update: Record<string, unknown> = { status: req.body.status };
   if (req.body.status === "completed") update.resolvedAt = new Date();
-  const item = await serviceService.updateServiceRequest(req.params.id, req.tenant!.companyId, update);
+  const item = await serviceService.updateServiceRequest(req.params.id as string, req.tenant!.companyId, update);
   if (!item) return res.status(404).json({ error: "Not found" });
-  res.json({ data: item });
+  return res.json({ data: item });
 });
 
 router.get("/work-orders", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
@@ -81,10 +81,10 @@ router.get("/work-orders", authenticate, requireCompanyAccess, requirePermission
       req.query.branchId as string | undefined,
       req.query.status as string | undefined
     );
-    res.json({ data: items });
+    return res.json({ data: items });
   } catch (err: any) {
     logger.error({ err }, "GET /work-orders error");
-    res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
+    return res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });
 
@@ -102,7 +102,7 @@ router.post("/work-orders", authenticate, requireCompanyAccess, requirePermissio
     createdByUserId: req.user!.userId,
     estimatedCost: req.body.estimatedCost,
   });
-  res.status(201).json({ data: item });
+  return res.status(201).json({ data: item });
 });
 
 const ALLOWED_WO_PATCH_FIELDS = ["priority", "title", "description", "estimatedCost"] as const;
@@ -113,9 +113,9 @@ router.patch("/work-orders/:id", authenticate, requireCompanyAccess, requirePerm
     if (req.body[key] !== undefined) safeData[key] = req.body[key];
   }
   if (Object.keys(safeData).length === 0) return res.status(400).json({ error: "No valid fields to update" });
-  const item = await serviceService.updateWorkOrder(req.params.id, req.tenant!.companyId, safeData);
+  const item = await serviceService.updateWorkOrder(req.params.id as string, req.tenant!.companyId, safeData);
   if (!item) return res.status(404).json({ error: "Not found" });
-  res.json({ data: item });
+  return res.json({ data: item });
 });
 
 router.post("/work-orders/:id/status", authenticate, requireCompanyAccess, requirePermission("asset:write"), async (req, res) => {
@@ -127,9 +127,9 @@ router.post("/work-orders/:id/status", authenticate, requireCompanyAccess, requi
     if (req.body.actualCost) update.actualCost = req.body.actualCost;
     if (req.body.partsUsed) update.partsUsed = req.body.partsUsed;
   }
-  const item = await serviceService.updateWorkOrder(req.params.id, req.tenant!.companyId, update);
+  const item = await serviceService.updateWorkOrder(req.params.id as string, req.tenant!.companyId, update);
   if (!item) return res.status(404).json({ error: "Not found" });
-  res.json({ data: item });
+  return res.json({ data: item });
 });
 
 router.get("/mechanics", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
@@ -138,17 +138,17 @@ router.get("/mechanics", authenticate, requireCompanyAccess, requirePermission("
       req.tenant!.companyId,
       req.query.branchId as string | undefined
     );
-    res.json({ data: items });
+    return res.json({ data: items });
   } catch (err: any) {
     logger.error({ err }, "GET /mechanics error");
-    res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
+    return res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });
 
 router.get("/fleet-map", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
   try {
     const { db: dbImport } = await import("@workspace/db");
-    const { assets: assetsTable, telemetrySnapshots } = await import("@workspace/db/schema");
+    const { assets: assetsTable } = await import("@workspace/db/schema");
     const { eq, sql } = await import("drizzle-orm");
 
     const companyId = req.tenant!.companyId;
@@ -198,10 +198,10 @@ router.get("/fleet-map", authenticate, requireCompanyAccess, requirePermission("
       };
     });
 
-    res.json({ data: result });
+    return res.json({ data: result });
   } catch (err: any) {
     logger.error({ err }, "GET /fleet-map error");
-    res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
+    return res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
   }
 });
 

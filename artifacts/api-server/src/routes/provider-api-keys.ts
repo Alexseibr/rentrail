@@ -29,7 +29,7 @@ router.get("/provider-api-keys", authenticate, requireCompanyAccess, requirePerm
 
 router.delete("/provider-api-keys/:id", authenticate, requireCompanyAccess, requirePermission("settings:manage"),
   validate({ params: idParams }), async (req, res) => {
-    const key = await keyService.revokeApiKey(req.params.id, req.tenant!.companyId);
+    const key = await keyService.revokeApiKey(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "revoke", entityType: "provider_api_key", entityId: key.id, req });
     res.json({ data: key });
   });

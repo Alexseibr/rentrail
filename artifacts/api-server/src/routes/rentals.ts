@@ -84,7 +84,7 @@ router.get(
   requirePermission("rental:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const rental = await rentalService.getRental(req.params.id, req.tenant!.companyId);
+    const rental = await rentalService.getRental(req.params.id as string, req.tenant!.companyId);
     res.json({ data: rental });
   },
 );
@@ -96,7 +96,7 @@ router.get(
   requirePermission("rental:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const history = await rentalService.getRentalStatusHistory(req.params.id, req.tenant!.companyId);
+    const history = await rentalService.getRentalStatusHistory(req.params.id as string, req.tenant!.companyId);
     res.json({ data: history });
   },
 );
@@ -108,7 +108,7 @@ router.post(
   requirePermission("rental:approve"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previousStatus } = await rentalService.approveRental(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const { updated, previousStatus } = await rentalService.approveRental(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -130,7 +130,7 @@ router.post(
   requirePermission("rental:start"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previousStatus } = await rentalService.startRental(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const { updated, previousStatus } = await rentalService.startRental(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -153,7 +153,7 @@ router.post(
   validate({ params: idParams, body: extendSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await rentalService.extendRental(
-      req.params.id,
+      req.params.id as string,
       req.tenant!.companyId,
       new Date(req.body.newEndDate),
       req.user!.userId,
@@ -181,7 +181,7 @@ router.post(
   validate({ params: idParams, body: returnSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await rentalService.returnRental(
-      req.params.id,
+      req.params.id as string,
       req.tenant!.companyId,
       req.body,
       req.user!.userId,
@@ -208,7 +208,7 @@ router.post(
   validate({ params: idParams, body: cancelSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await rentalService.cancelRental(
-      req.params.id,
+      req.params.id as string,
       req.tenant!.companyId,
       req.user!.userId,
       req.body.reason,

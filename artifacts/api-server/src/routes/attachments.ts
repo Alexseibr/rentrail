@@ -68,7 +68,7 @@ router.get(
   requireCompanyAccess,
   async (req, res) => {
     const attachment = await attachmentService.getAttachment(
-      req.params.id,
+      req.params.id as string,
       req.tenant!.companyId,
     );
     if (!attachment) {
@@ -85,7 +85,7 @@ router.delete(
   requireCompanyAccess,
   async (req, res) => {
     const deleted = await attachmentService.deleteAttachment(
-      req.params.id,
+      req.params.id as string,
       req.tenant!.companyId,
     );
     if (!deleted) {

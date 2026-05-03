@@ -44,20 +44,20 @@ router.get("/geofences", authenticate, requireCompanyAccess, requirePermission("
 
 router.get("/geofences/:id", authenticate, requireCompanyAccess, requirePermission("geofence:read"),
   validate({ params: idParams }), async (req, res) => {
-    const geo = await geofenceService.getGeofence(req.params.id, req.tenant!.companyId);
+    const geo = await geofenceService.getGeofence(req.params.id as string, req.tenant!.companyId);
     res.json({ data: geo });
   });
 
 router.patch("/geofences/:id", authenticate, requireCompanyAccess, requirePermission("geofence:update"),
   validate({ params: idParams, body: updateGeofenceSchema }), async (req, res) => {
-    const geo = await geofenceService.updateGeofence(req.params.id, req.tenant!.companyId, req.body);
+    const geo = await geofenceService.updateGeofence(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "update", entityType: "geofence", entityId: geo.id, req });
     res.json({ data: geo });
   });
 
 router.post("/geofences/:id/archive", authenticate, requireCompanyAccess, requirePermission("geofence:update"),
   validate({ params: idParams }), async (req, res) => {
-    const geo = await geofenceService.archiveGeofence(req.params.id, req.tenant!.companyId);
+    const geo = await geofenceService.archiveGeofence(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "archive", entityType: "geofence", entityId: geo.id, req });
     res.json({ data: geo });
   });

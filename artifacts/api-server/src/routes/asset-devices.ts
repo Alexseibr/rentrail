@@ -20,27 +20,27 @@ const bindSchema = z.object({
 
 router.post("/assets/:id/devices", authenticate, requireCompanyAccess, requirePermission("device:update"),
   validate({ params: assetParams, body: bindSchema }), async (req, res) => {
-    const binding = await adService.bindDeviceToAsset(req.tenant!.companyId, req.params.id, req.body);
+    const binding = await adService.bindDeviceToAsset(req.tenant!.companyId, req.params.id as string, req.body);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "bind_device", entityType: "asset_device", entityId: binding.id, req });
     res.status(201).json({ data: binding });
   });
 
 router.get("/assets/:id/devices", authenticate, requireCompanyAccess, requirePermission("device:read"),
   validate({ params: assetParams }), async (req, res) => {
-    const bindings = await adService.getCurrentActiveDevicesForAsset(req.params.id, req.tenant!.companyId);
+    const bindings = await adService.getCurrentActiveDevicesForAsset(req.params.id as string, req.tenant!.companyId);
     res.json({ data: bindings });
   });
 
 router.post("/assets/:id/devices/:bindingId/remove", authenticate, requireCompanyAccess, requirePermission("device:update"),
   validate({ params: bindingParams }), async (req, res) => {
-    const binding = await adService.removeBinding(req.params.id, req.params.bindingId, req.tenant!.companyId);
+    const binding = await adService.removeBinding(req.params.id as string, req.params.bindingId as string, req.tenant!.companyId);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "remove_binding", entityType: "asset_device", entityId: binding.id, req });
     res.json({ data: binding });
   });
 
 router.post("/assets/:id/devices/:bindingId/set-primary", authenticate, requireCompanyAccess, requirePermission("device:update"),
   validate({ params: bindingParams }), async (req, res) => {
-    const binding = await adService.setPrimaryBinding(req.params.id, req.params.bindingId, req.tenant!.companyId);
+    const binding = await adService.setPrimaryBinding(req.params.id as string, req.params.bindingId as string, req.tenant!.companyId);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "set_primary", entityType: "asset_device", entityId: binding.id, req });
     res.json({ data: binding });
   });

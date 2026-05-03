@@ -65,7 +65,7 @@ router.get(
   requirePermission("station:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const station = await stationService.getStation(req.params.id, req.tenant!.companyId);
+    const station = await stationService.getStation(req.params.id as string, req.tenant!.companyId);
     res.json({ data: station });
   },
 );
@@ -77,8 +77,8 @@ router.patch(
   requirePermission("station:update"),
   validate({ params: idParams, body: updateStationSchema }),
   async (req, res) => {
-    const old = await stationService.getStation(req.params.id, req.tenant!.companyId);
-    const station = await stationService.updateStation(req.params.id, req.tenant!.companyId, req.body);
+    const old = await stationService.getStation(req.params.id as string, req.tenant!.companyId);
+    const station = await stationService.updateStation(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

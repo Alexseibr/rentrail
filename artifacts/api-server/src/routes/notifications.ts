@@ -27,7 +27,7 @@ router.post(
   requirePermission("notification:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const notification = await notificationService.markRead(req.params.id, req.user!.userId);
+    const notification = await notificationService.markRead(req.params.id as string, req.user!.userId);
     res.json({ data: notification ?? { message: "Already read or not found" } });
   },
 );

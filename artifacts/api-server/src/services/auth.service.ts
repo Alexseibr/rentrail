@@ -68,7 +68,7 @@ export async function login(
   input: LoginInput,
   userAgent?: string,
   ip?: string,
-): Promise<AuthTokens & { user: { id: string; email: string; firstName: string; lastName: string; isSuperAdmin: boolean; mustChangePassword: boolean } }> {
+): Promise<AuthTokens & { user: { id: string; email: string | undefined; firstName: string; lastName: string; isSuperAdmin: boolean; mustChangePassword: boolean } }> {
   const [user] = await db
     .select()
     .from(users)
@@ -107,7 +107,7 @@ export async function login(
 
   const accessToken = signAccessToken({
     userId: user.id,
-    email: user.email,
+    email: user.email ?? undefined,
     isSuperAdmin: user.isSuperAdmin || platformRoles.includes("superAdmin"),
     platformRoles,
   });
@@ -128,7 +128,7 @@ export async function login(
     refreshToken,
     user: {
       id: user.id,
-      email: user.email,
+      email: user.email ?? undefined,
       firstName: user.firstName,
       lastName: user.lastName,
       isSuperAdmin: user.isSuperAdmin,
@@ -202,7 +202,7 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
 
   const accessToken = signAccessToken({
     userId: user.id,
-    email: user.email,
+    email: user.email ?? undefined,
     isSuperAdmin: user.isSuperAdmin || userPlatformRoles.includes("superAdmin"),
     platformRoles: userPlatformRoles,
   });

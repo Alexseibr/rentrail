@@ -23,10 +23,10 @@ router.get(
     await createPlatformAuditLog(req, {
       action: "support.tenant_summary",
       entityType: "company",
-      entityId: req.params.id,
-      targetCompanyId: req.params.id,
+      entityId: req.params.id as string,
+      targetCompanyId: req.params.id as string,
     });
-    const summary = await platformCompanyService.getTenantSummary(req.params.id);
+    const summary = await platformCompanyService.getTenantSummary(req.params.id as string);
     res.json({ data: summary });
   },
 );
@@ -40,10 +40,10 @@ router.get(
     await createPlatformAuditLog(req, {
       action: "support.tenant_audit",
       entityType: "company",
-      entityId: req.params.id,
-      targetCompanyId: req.params.id,
+      entityId: req.params.id as string,
+      targetCompanyId: req.params.id as string,
     });
-    const auditLog = await platformCompanyService.getTenantAuditLog(req.params.id, {
+    const auditLog = await platformCompanyService.getTenantAuditLog(req.params.id as string, {
       page: req.query.page ? Number(req.query.page) : undefined,
       limit: req.query.limit ? Number(req.query.limit) : undefined,
     });
@@ -60,10 +60,10 @@ router.get(
     await createPlatformAuditLog(req, {
       action: "support.tenant_health",
       entityType: "company",
-      entityId: req.params.id,
-      targetCompanyId: req.params.id,
+      entityId: req.params.id as string,
+      targetCompanyId: req.params.id as string,
     });
-    const health = await platformCompanyService.getTenantHealth(req.params.id);
+    const health = await platformCompanyService.getTenantHealth(req.params.id as string);
     res.json({ data: health });
   },
 );

@@ -54,34 +54,34 @@ router.get("/devices", authenticate, requireCompanyAccess, requirePermission("de
 
 router.get("/devices/:id", authenticate, requireCompanyAccess, requirePermission("device:read"),
   validate({ params: idParams }), async (req, res) => {
-    const device = await deviceService.getDevice(req.params.id, req.tenant!.companyId);
+    const device = await deviceService.getDevice(req.params.id as string, req.tenant!.companyId);
     res.json({ data: device });
   });
 
 router.patch("/devices/:id", authenticate, requireCompanyAccess, requirePermission("device:update"),
   validate({ params: idParams, body: updateDeviceSchema }), async (req, res) => {
-    const device = await deviceService.updateDevice(req.params.id, req.tenant!.companyId, req.body);
+    const device = await deviceService.updateDevice(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "update", entityType: "device", entityId: device.id, req });
     res.json({ data: device });
   });
 
 router.post("/devices/:id/change-status", authenticate, requireCompanyAccess, requirePermission("device:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }), async (req, res) => {
-    const device = await deviceService.changeDeviceStatus(req.params.id, req.tenant!.companyId, req.body.status);
+    const device = await deviceService.changeDeviceStatus(req.params.id as string, req.tenant!.companyId, req.body.status);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "change_status", entityType: "device", entityId: device.id, after: { status: device.status }, req });
     res.json({ data: device });
   });
 
 router.post("/devices/:id/archive", authenticate, requireCompanyAccess, requirePermission("device:update"),
   validate({ params: idParams }), async (req, res) => {
-    const device = await deviceService.archiveDevice(req.params.id, req.tenant!.companyId);
+    const device = await deviceService.archiveDevice(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "archive", entityType: "device", entityId: device.id, req });
     res.json({ data: device });
   });
 
 router.post("/devices/:id/restore", authenticate, requireCompanyAccess, requirePermission("device:update"),
   validate({ params: idParams }), async (req, res) => {
-    const device = await deviceService.restoreDevice(req.params.id, req.tenant!.companyId);
+    const device = await deviceService.restoreDevice(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "restore", entityType: "device", entityId: device.id, req });
     res.json({ data: device });
   });

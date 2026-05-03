@@ -47,7 +47,7 @@ export default function ServicePage() {
   const queryClient = useQueryClient();
   const { canWriteService } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const [tab, setTab] = useState("requests");
   const [showCreate, setShowCreate] = useState(false);
@@ -231,11 +231,11 @@ export default function ServicePage() {
                     {filteredRequests.map((sr: any) => (
                       <TableRow key={sr.id}>
                         <TableCell className="font-medium max-w-48 truncate">{sr.title}</TableCell>
-                        <TableCell className="text-sm">{t(`service.type.${sr.requestType}`, sr.requestType)}</TableCell>
+                        <TableCell className="text-sm">{String(t(`service.type.${sr.requestType}`, sr.requestType))}</TableCell>
                         <TableCell className="font-mono text-sm">{sr.assetCode || "—"}</TableCell>
                         <TableCell className="text-sm">{sr.branchCity || sr.branchName || "—"}</TableCell>
-                        <TableCell><Badge className={PRIORITY_COLORS[sr.priority] || ""}>{t(`service.priority.${sr.priority}`, sr.priority)}</Badge></TableCell>
-                        <TableCell><Badge className={STATUS_COLORS[sr.status] || "bg-gray-100"}>{t(`service.status.${sr.status}`, sr.status)}</Badge></TableCell>
+                        <TableCell><Badge className={PRIORITY_COLORS[sr.priority] || ""}>{String(t(`service.priority.${sr.priority}`, sr.priority))}</Badge></TableCell>
+                        <TableCell><Badge className={STATUS_COLORS[sr.status] || "bg-gray-100"}>{String(t(`service.status.${sr.status}`, sr.status))}</Badge></TableCell>
                         <TableCell className="text-sm">{sr.assignedToName || "—"}</TableCell>
                         {canWriteService && (
                           <TableCell>
@@ -290,11 +290,11 @@ export default function ServicePage() {
                     {workOrders.map((wo: any) => (
                       <TableRow key={wo.id}>
                         <TableCell className="font-medium max-w-48 truncate">{wo.title}</TableCell>
-                        <TableCell className="text-sm">{t(`service.orderType.${wo.orderType}`, wo.orderType)}</TableCell>
+                        <TableCell className="text-sm">{String(t(`service.orderType.${wo.orderType}`, wo.orderType))}</TableCell>
                         <TableCell className="font-mono text-sm">{wo.assetCode || "—"}</TableCell>
                         <TableCell className="text-sm">{wo.branchCity || wo.branchName || "—"}</TableCell>
-                        <TableCell><Badge className={PRIORITY_COLORS[wo.priority] || ""}>{t(`service.priority.${wo.priority}`, wo.priority)}</Badge></TableCell>
-                        <TableCell><Badge className={STATUS_COLORS[wo.status] || "bg-gray-100"}>{t(`service.status.${wo.status}`, wo.status)}</Badge></TableCell>
+                        <TableCell><Badge className={PRIORITY_COLORS[wo.priority] || ""}>{String(t(`service.priority.${wo.priority}`, wo.priority))}</Badge></TableCell>
+                        <TableCell><Badge className={STATUS_COLORS[wo.status] || "bg-gray-100"}>{String(t(`service.status.${wo.status}`, wo.status))}</Badge></TableCell>
                         <TableCell className="text-sm">{wo.assignedToName || "—"}</TableCell>
                         {canWriteService && (
                           <TableCell>

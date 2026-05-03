@@ -13,7 +13,7 @@ export function validate(schemas: ValidationSchemas) {
       req.body = schemas.body.parse(req.body);
     }
     if (schemas.params) {
-      req.params = schemas.params.parse(req.params);
+      req.params = schemas.params.parse(req.params) as Record<string, string>;
     }
     if (schemas.query) {
       const parsed = schemas.query.parse(req.query);

@@ -20,7 +20,7 @@ const enqueueSchema = z.object({
 
 router.post("/devices/:id/commands", authenticate, requireCompanyAccess, requirePermission("command:create"),
   validate({ params: deviceIdParams, body: enqueueSchema }), async (req, res) => {
-    const cmd = await commandService.enqueueCommand(req.tenant!.companyId, req.params.id, {
+    const cmd = await commandService.enqueueCommand(req.tenant!.companyId, req.params.id as string, {
       ...req.body, requestedByUserId: req.user!.userId,
     });
     await createAuditLog({ companyId: req.tenant!.companyId, actorUserId: req.user!.userId, action: "enqueue_command", entityType: "device_command", entityId: cmd.id, req });
@@ -29,13 +29,13 @@ router.post("/devices/:id/commands", authenticate, requireCompanyAccess, require
 
 router.get("/devices/:id/commands", authenticate, requireCompanyAccess, requirePermission("command:read"),
   validate({ params: deviceIdParams }), async (req, res) => {
-    const cmds = await commandService.listDeviceCommands(req.params.id, req.tenant!.companyId);
+    const cmds = await commandService.listDeviceCommands(req.params.id as string, req.tenant!.companyId);
     res.json({ data: cmds });
   });
 
 router.get("/commands/:id", authenticate, requireCompanyAccess, requirePermission("command:read"),
   validate({ params: cmdIdParams }), async (req, res) => {
-    const cmd = await commandService.getCommand(req.params.id, req.tenant!.companyId);
+    const cmd = await commandService.getCommand(req.params.id as string, req.tenant!.companyId);
     res.json({ data: cmd });
   });
 
@@ -43,25 +43,25 @@ const assetIdParams = z.object({ id: z.string().uuid() });
 
 router.post("/assets/:id/lock", authenticate, requireCompanyAccess, requirePermission("command:create"),
   validate({ params: assetIdParams }), async (req, res) => {
-    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id, "lock", req.user!.userId);
+    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id as string, "lock", req.user!.userId);
     res.status(201).json({ data: cmd });
   });
 
 router.post("/assets/:id/unlock", authenticate, requireCompanyAccess, requirePermission("command:create"),
   validate({ params: assetIdParams }), async (req, res) => {
-    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id, "unlock", req.user!.userId);
+    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id as string, "unlock", req.user!.userId);
     res.status(201).json({ data: cmd });
   });
 
 router.post("/assets/:id/alarm/arm", authenticate, requireCompanyAccess, requirePermission("command:create"),
   validate({ params: assetIdParams }), async (req, res) => {
-    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id, "arm_alarm", req.user!.userId);
+    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id as string, "arm_alarm", req.user!.userId);
     res.status(201).json({ data: cmd });
   });
 
 router.post("/assets/:id/alarm/disarm", authenticate, requireCompanyAccess, requirePermission("command:create"),
   validate({ params: assetIdParams }), async (req, res) => {
-    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id, "disarm_alarm", req.user!.userId);
+    const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id as string, "disarm_alarm", req.user!.userId);
     res.status(201).json({ data: cmd });
   });
 

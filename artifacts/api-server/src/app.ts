@@ -31,7 +31,7 @@ app.use(correlationId);
 app.use(
   pinoHttp({
     logger,
-    genReqId: (req) => (req as express.Request).correlationId,
+    genReqId: (req) => (req as express.Request & { correlationId?: string }).correlationId ?? "",
     serializers: {
       req(req) {
         return {

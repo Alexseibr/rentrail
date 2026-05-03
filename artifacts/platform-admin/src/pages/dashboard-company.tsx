@@ -30,7 +30,7 @@ export default function CompanyDashboardPage() {
   const { user } = useAuth();
   const companyId = user?.memberships?.[0]?.companyId;
   const companyName = user?.memberships?.[0]?.companyName;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId],
@@ -202,7 +202,7 @@ export default function CompanyDashboardPage() {
                     <TableCell className="font-mono text-sm">{rental.assetCode || rental.assetId?.slice(0, 8)}</TableCell>
                     <TableCell className="text-sm">{rental.startDate || rental.startAt ? new Date(rental.startDate || rental.startAt).toLocaleDateString() : "—"}</TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{t(`status.${rental.status}`, rental.status)}</Badge>
+                      <Badge className={STATUS_COLORS[rental.status] || "bg-gray-100"}>{String(t(`status.${rental.status}`, rental.status))}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}

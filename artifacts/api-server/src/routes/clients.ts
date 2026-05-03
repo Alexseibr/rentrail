@@ -63,7 +63,7 @@ router.get(
   requirePermission("client:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const client = await clientService.getClient(req.params.id, req.tenant!.companyId);
+    const client = await clientService.getClient(req.params.id as string, req.tenant!.companyId);
     res.json({ data: client });
   },
 );
@@ -75,8 +75,8 @@ router.patch(
   requirePermission("client:update"),
   validate({ params: idParams, body: updateClientSchema }),
   async (req, res) => {
-    const old = await clientService.getClient(req.params.id, req.tenant!.companyId);
-    const client = await clientService.updateClient(req.params.id, req.tenant!.companyId, req.body);
+    const old = await clientService.getClient(req.params.id as string, req.tenant!.companyId);
+    const client = await clientService.updateClient(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -98,7 +98,7 @@ router.post(
   requirePermission("client:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const client = await clientService.archiveClient(req.params.id, req.tenant!.companyId);
+    const client = await clientService.archiveClient(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -118,7 +118,7 @@ router.post(
   requirePermission("client:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const client = await clientService.restoreClient(req.params.id, req.tenant!.companyId);
+    const client = await clientService.restoreClient(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

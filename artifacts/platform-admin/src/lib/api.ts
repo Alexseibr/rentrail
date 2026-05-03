@@ -57,7 +57,7 @@ export class ApiError extends Error {
 
 export async function api<T = unknown>(
   path: string,
-  options: RequestInit = {},
+  options: Omit<RequestInit, "headers"> & { headers?: Record<string, string> } = {},
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
   const headers: Record<string, string> = {

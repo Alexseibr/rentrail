@@ -90,7 +90,7 @@ router.get(
   requireAnyPlatformRole,
   validate({ params: idParams }),
   async (req, res) => {
-    const detail = await platformCompanyService.getPlatformCompanyDetail(req.params.id);
+    const detail = await platformCompanyService.getPlatformCompanyDetail(req.params.id as string);
     await createPlatformAuditLog(req, {
       action: "company.detail",
       entityType: "company",
@@ -107,8 +107,8 @@ router.patch(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: updateCompanySchema }),
   async (req, res) => {
-    const old = await companyService.getCompany(req.params.id);
-    const company = await companyService.updateCompany(req.params.id, req.body);
+    const old = await companyService.getCompany(req.params.id as string);
+    const company = await companyService.updateCompany(req.params.id as string, req.body);
     await createPlatformAuditLog(req, {
       action: "company.update",
       entityType: "company",
@@ -128,7 +128,7 @@ router.post(
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await platformCompanyService.approveCompany(
-      req.params.id,
+      req.params.id as string,
       { ...req.body, performedBy: req.user!.userId },
     );
     await createPlatformAuditLog(req, {
@@ -152,7 +152,7 @@ router.post(
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await platformCompanyService.blockCompany(
-      req.params.id,
+      req.params.id as string,
       { ...req.body, performedBy: req.user!.userId },
     );
     await createPlatformAuditLog(req, {
@@ -176,7 +176,7 @@ router.post(
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await platformCompanyService.unblockCompany(
-      req.params.id,
+      req.params.id as string,
       { ...req.body, performedBy: req.user!.userId },
     );
     await createPlatformAuditLog(req, {
@@ -200,7 +200,7 @@ router.post(
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await platformCompanyService.suspendCompany(
-      req.params.id,
+      req.params.id as string,
       { ...req.body, performedBy: req.user!.userId },
     );
     await createPlatformAuditLog(req, {
@@ -224,7 +224,7 @@ router.post(
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
     const { updated, previousStatus } = await platformCompanyService.cancelCompany(
-      req.params.id,
+      req.params.id as string,
       { ...req.body, performedBy: req.user!.userId },
     );
     await createPlatformAuditLog(req, {
@@ -250,10 +250,10 @@ router.get(
     await createPlatformAuditLog(req, {
       action: "company.usage",
       entityType: "company",
-      entityId: req.params.id,
-      targetCompanyId: req.params.id,
+      entityId: req.params.id as string,
+      targetCompanyId: req.params.id as string,
     });
-    const usage = await platformCompanyService.getCompanyUsage(req.params.id);
+    const usage = await platformCompanyService.getCompanyUsage(req.params.id as string);
     res.json({ data: usage });
   },
 );
@@ -267,10 +267,10 @@ router.get(
     await createPlatformAuditLog(req, {
       action: "company.health",
       entityType: "company",
-      entityId: req.params.id,
-      targetCompanyId: req.params.id,
+      entityId: req.params.id as string,
+      targetCompanyId: req.params.id as string,
     });
-    const health = await platformCompanyService.getCompanyHealthSummary(req.params.id);
+    const health = await platformCompanyService.getCompanyHealthSummary(req.params.id as string);
     res.json({ data: health });
   },
 );
@@ -291,7 +291,7 @@ router.get(
   requirePermission("company:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const company = await companyService.getCompany(req.params.id);
+    const company = await companyService.getCompany(req.params.id as string);
     res.json({ data: company });
   },
 );
@@ -303,12 +303,12 @@ router.patch(
   requirePermission("company:update"),
   validate({ params: idParams, body: updateCompanySchema }),
   async (req, res) => {
-    if (!req.user!.isSuperAdmin && req.params.id !== req.tenant!.companyId) {
+    if (!req.user!.isSuperAdmin && req.params.id as string !== req.tenant!.companyId) {
       res.status(403).json({ error: { code: "FORBIDDEN", message: "Cannot update a different company" } });
       return;
     }
-    const old = await companyService.getCompany(req.params.id);
-    const company = await companyService.updateCompany(req.params.id, req.body);
+    const old = await companyService.getCompany(req.params.id as string);
+    const company = await companyService.updateCompany(req.params.id as string, req.body);
     await createAuditLog({
       companyId: company.id,
       actorUserId: req.user!.userId,

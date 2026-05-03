@@ -34,7 +34,7 @@ router.get(
   requirePermission("b2b:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.getB2BRequest(req.params.id, req.tenant!.companyId);
+    const request = await b2bService.getB2BRequest(req.params.id as string, req.tenant!.companyId);
     res.json({ data: request });
   },
 );
@@ -46,7 +46,7 @@ router.patch(
   requirePermission("b2b:update"),
   validate({ params: idParams, body: updateB2BSchema }),
   async (req, res) => {
-    const request = await b2bService.updateB2BRequest(req.params.id, req.tenant!.companyId, req.body);
+    const request = await b2bService.updateB2BRequest(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -66,7 +66,7 @@ router.post(
   requirePermission("b2b:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.markContacted(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const request = await b2bService.markContacted(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -86,7 +86,7 @@ router.post(
   requirePermission("b2b:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.convertB2BRequest(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const request = await b2bService.convertB2BRequest(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -106,7 +106,7 @@ router.post(
   requirePermission("b2b:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.rejectB2BRequest(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const request = await b2bService.rejectB2BRequest(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

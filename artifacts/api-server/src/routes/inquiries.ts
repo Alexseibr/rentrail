@@ -37,7 +37,7 @@ router.get(
   requirePermission("inquiry:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const inquiry = await inquiryService.getInquiry(req.params.id, req.tenant!.companyId);
+    const inquiry = await inquiryService.getInquiry(req.params.id as string, req.tenant!.companyId);
     res.json({ data: inquiry });
   },
 );
@@ -49,7 +49,7 @@ router.patch(
   requirePermission("inquiry:update"),
   validate({ params: idParams, body: updateInquirySchema }),
   async (req, res) => {
-    const inquiry = await inquiryService.updateInquiry(req.params.id, req.tenant!.companyId, req.body);
+    const inquiry = await inquiryService.updateInquiry(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -69,7 +69,7 @@ router.post(
   requirePermission("inquiry:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const inquiry = await inquiryService.markContacted(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const inquiry = await inquiryService.markContacted(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -89,7 +89,7 @@ router.post(
   requirePermission("inquiry:update", "client:create"),
   validate({ params: idParams }),
   async (req, res) => {
-    const inquiry = await inquiryService.convertToClient(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const inquiry = await inquiryService.convertToClient(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -110,7 +110,7 @@ router.post(
   requirePermission("inquiry:update", "rental:create"),
   validate({ params: idParams }),
   async (req, res) => {
-    const result = await inquiryService.convertToRentalDraft(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const result = await inquiryService.convertToRentalDraft(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -131,7 +131,7 @@ router.post(
   requirePermission("inquiry:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const inquiry = await inquiryService.rejectInquiry(req.params.id, req.tenant!.companyId, req.user!.userId);
+    const inquiry = await inquiryService.rejectInquiry(req.params.id as string, req.tenant!.companyId, req.user!.userId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

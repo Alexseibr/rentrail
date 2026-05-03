@@ -24,7 +24,7 @@ export function clearRolesCache() {
 
 export interface TestUser {
   id: string;
-  email: string;
+  email: string | undefined;
   token: string;
   password: string;
 }
@@ -75,13 +75,13 @@ export async function createTestUser(opts: {
 
   const payload: AccessTokenPayload = {
     userId: user.id,
-    email: user.email,
+    email: user.email ?? undefined,
     isSuperAdmin: user.isSuperAdmin || assignedRoleCodes.includes("superAdmin"),
     platformRoles: assignedRoleCodes,
   };
   const token = signAccessToken(payload);
 
-  return { id: user.id, email: user.email, token, password };
+  return { id: user.id, email: user.email ?? undefined, token, password };
 }
 
 export async function createTestTenant(opts?: {

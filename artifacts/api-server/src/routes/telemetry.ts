@@ -53,14 +53,14 @@ router.post("/telemetry/ingest", authenticateApiKey, validate({ body: ingestSche
 
 router.get("/telemetry/assets/:id/latest", authenticate, requireCompanyAccess, requirePermission("telemetry:read"),
   validate({ params: idParams }), async (req, res) => {
-    const snap = await telemetryService.getLatestSnapshotForAsset(req.params.id, req.tenant!.companyId);
+    const snap = await telemetryService.getLatestSnapshotForAsset(req.params.id as string, req.tenant!.companyId);
     res.json({ data: snap });
   });
 
 router.get("/telemetry/assets/:id/events", authenticate, requireCompanyAccess, requirePermission("telemetry:read"),
   validate({ params: idParams }), async (req, res) => {
     const { from, to, eventType, severity, limit, offset } = req.query as Record<string, string>;
-    const events = await telemetryService.getEventsForAsset(req.params.id, req.tenant!.companyId,
+    const events = await telemetryService.getEventsForAsset(req.params.id as string, req.tenant!.companyId,
       { from, to, eventType, severity, limit: limit ? parseInt(limit) : undefined, offset: offset ? parseInt(offset) : undefined });
     res.json({ data: events });
   });
@@ -68,21 +68,21 @@ router.get("/telemetry/assets/:id/events", authenticate, requireCompanyAccess, r
 router.get("/telemetry/assets/:id/locations", authenticate, requireCompanyAccess, requirePermission("telemetry:read"),
   validate({ params: idParams }), async (req, res) => {
     const { from, to, limit, offset } = req.query as Record<string, string>;
-    const locations = await telemetryService.getLocationsForAsset(req.params.id, req.tenant!.companyId,
+    const locations = await telemetryService.getLocationsForAsset(req.params.id as string, req.tenant!.companyId,
       { from, to, limit: limit ? parseInt(limit) : undefined, offset: offset ? parseInt(offset) : undefined });
     res.json({ data: locations });
   });
 
 router.get("/telemetry/devices/:id/latest", authenticate, requireCompanyAccess, requirePermission("telemetry:read"),
   validate({ params: idParams }), async (req, res) => {
-    const snap = await telemetryService.getLatestSnapshotForDevice(req.params.id, req.tenant!.companyId);
+    const snap = await telemetryService.getLatestSnapshotForDevice(req.params.id as string, req.tenant!.companyId);
     res.json({ data: snap });
   });
 
 router.get("/telemetry/devices/:id/events", authenticate, requireCompanyAccess, requirePermission("telemetry:read"),
   validate({ params: idParams }), async (req, res) => {
     const { from, to, eventType, severity, limit, offset } = req.query as Record<string, string>;
-    const events = await telemetryService.getEventsForDevice(req.params.id, req.tenant!.companyId,
+    const events = await telemetryService.getEventsForDevice(req.params.id as string, req.tenant!.companyId,
       { from, to, eventType, severity, limit: limit ? parseInt(limit) : undefined, offset: offset ? parseInt(offset) : undefined });
     res.json({ data: events });
   });

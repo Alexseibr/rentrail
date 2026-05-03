@@ -24,11 +24,11 @@ interface AuditLogItem {
 const testApp = app;
 
 describe("Platform Access Model", () => {
-  let superAdminUser: { id: string; email: string; token: string };
-  let platformAdminUser: { id: string; email: string; token: string };
-  let platformSupportUser: { id: string; email: string; token: string };
-  let platformFinanceUser: { id: string; email: string; token: string };
-  let regularUser: { id: string; email: string; token: string };
+  let superAdminUser: { id: string; email: string | undefined; token: string };
+  let platformAdminUser: { id: string; email: string | undefined; token: string };
+  let platformSupportUser: { id: string; email: string | undefined; token: string };
+  let platformFinanceUser: { id: string; email: string | undefined; token: string };
+  let regularUser: { id: string; email: string | undefined; token: string };
 
   beforeAll(async () => {
     await seedRolesAndPermissions();

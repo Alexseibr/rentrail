@@ -35,7 +35,7 @@ export default function BranchesPage() {
   const queryClient = useQueryClient();
   const { canWriteBranch } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const [showCreate, setShowCreate] = useState(false);
   const [editBranch, setEditBranch] = useState<any>(null);
@@ -160,7 +160,7 @@ export default function BranchesPage() {
                     <TableCell>{branch.phone || "—"}</TableCell>
                     <TableCell>
                       <Badge className={STATUS_COLORS[branch.status] || "bg-green-100 text-green-800"}>
-                        {t(`status.${branch.status || "active"}`, branch.status || "active")}
+                        {String(t(`status.${branch.status || "active"}`, branch.status || "active"))}
                       </Badge>
                     </TableCell>
                     {canWriteBranch && (

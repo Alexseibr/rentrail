@@ -82,7 +82,7 @@ router.get(
   requirePermission("blacklist:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const entry = await blacklistService.getBlacklistEntry(req.params.id, req.tenant!.companyId);
+    const entry = await blacklistService.getBlacklistEntry(req.params.id as string, req.tenant!.companyId);
     res.json({ data: entry });
   },
 );
@@ -94,8 +94,8 @@ router.post(
   requirePermission("blacklist:create"),
   validate({ params: idParams }),
   async (req, res) => {
-    const before = await blacklistService.getBlacklistEntry(req.params.id, req.tenant!.companyId);
-    const entry = await blacklistService.revokeBlacklistEntry(req.params.id, req.tenant!.companyId);
+    const before = await blacklistService.getBlacklistEntry(req.params.id as string, req.tenant!.companyId);
+    const entry = await blacklistService.revokeBlacklistEntry(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

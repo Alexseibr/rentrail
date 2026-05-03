@@ -62,7 +62,7 @@ router.get(
   async (req, res) => {
     await createPlatformAuditLog(req, { action: "platform.blacklist.list", entityType: "blacklist_entry" });
     const result = await platformBlacklistService.listGlobalBlacklistEntries({
-      actionType: req.query.actionType as string | undefined,
+      actionType: req.query.actionType as any,
       active: req.query.active === "true" ? true : req.query.active === "false" ? false : undefined,
       reasonCode: req.query.reasonCode as string | undefined,
       search: req.query.search as string | undefined,
@@ -105,7 +105,7 @@ router.get(
   riskRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const entry = await platformBlacklistService.getGlobalBlacklistEntry(req.params.id);
+    const entry = await platformBlacklistService.getGlobalBlacklistEntry(req.params.id as string);
     await createPlatformAuditLog(req, {
       action: "platform.blacklist.view",
       entityType: "blacklist_entry",
@@ -121,7 +121,7 @@ router.patch(
   riskRoles,
   validate({ params: idParams, body: updateSchema }),
   async (req, res) => {
-    const { updated, previous } = await platformBlacklistService.updateGlobalBlacklistEntry(req.params.id, req.body);
+    const { updated, previous } = await platformBlacklistService.updateGlobalBlacklistEntry(req.params.id as string, req.body);
     await createPlatformAuditLog(req, {
       action: "platform.blacklist.update",
       entityType: "blacklist_entry",
@@ -139,7 +139,7 @@ router.post(
   riskRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previous } = await platformBlacklistService.enableGlobalBlacklistEntry(req.params.id);
+    const { updated, previous } = await platformBlacklistService.enableGlobalBlacklistEntry(req.params.id as string);
     await createPlatformAuditLog(req, {
       action: "platform.blacklist.enable",
       entityType: "blacklist_entry",
@@ -157,7 +157,7 @@ router.post(
   riskRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previous } = await platformBlacklistService.disableGlobalBlacklistEntry(req.params.id);
+    const { updated, previous } = await platformBlacklistService.disableGlobalBlacklistEntry(req.params.id as string);
     await createPlatformAuditLog(req, {
       action: "platform.blacklist.disable",
       entityType: "blacklist_entry",

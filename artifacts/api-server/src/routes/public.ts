@@ -40,7 +40,7 @@ router.get(
   "/public/companies/:slug",
   validate({ params: slugParams }),
   async (req, res) => {
-    const data = await publicService.getPublicCompanyPage(req.params.slug);
+    const data = await publicService.getPublicCompanyPage(req.params.slug as string);
     res.json({ data });
   },
 );
@@ -50,7 +50,7 @@ router.get(
   validate({ params: slugParams }),
   async (req, res) => {
     const { assetType, branchId, stationId } = req.query as Record<string, string | undefined>;
-    const data = await publicService.getPublicAssets(req.params.slug, { assetType, branchId, stationId });
+    const data = await publicService.getPublicAssets(req.params.slug as string, { assetType, branchId, stationId });
     res.json({ data });
   },
 );
@@ -59,7 +59,7 @@ router.get(
   "/public/companies/:slug/stations",
   validate({ params: slugParams }),
   async (req, res) => {
-    const data = await publicService.getPublicStations(req.params.slug);
+    const data = await publicService.getPublicStations(req.params.slug as string);
     res.json({ data });
   },
 );
@@ -68,7 +68,7 @@ router.post(
   "/public/companies/:slug/inquiries",
   validate({ params: slugParams, body: publicInquirySchema }),
   async (req, res) => {
-    const { company, branding } = await resolvePublicCompany(req.params.slug);
+    const { company, branding } = await resolvePublicCompany(req.params.slug as string);
 
     if (!branding.publicShowInquiryForm) {
       throw new AppError(403, "Inquiry form is not available for this company", "INQUIRY_DISABLED");
@@ -96,7 +96,7 @@ router.post(
   "/public/companies/:slug/b2b-request",
   validate({ params: slugParams, body: publicB2BSchema }),
   async (req, res) => {
-    const { company, branding } = await resolvePublicCompany(req.params.slug);
+    const { company, branding } = await resolvePublicCompany(req.params.slug as string);
 
     if (!branding.publicShowB2BForm) {
       throw new AppError(403, "B2B request form is not available for this company", "B2B_DISABLED");

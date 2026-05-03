@@ -38,7 +38,7 @@ export default function ClientsCompanyPage() {
   const queryClient = useQueryClient();
   const { canWriteClient } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const [showCreate, setShowCreate] = useState(false);
   const [editClient, setEditClient] = useState<any>(null);
@@ -190,7 +190,7 @@ export default function ClientsCompanyPage() {
                       {client.documentType ? `${client.documentType}: ${client.documentNumber || "—"}` : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[client.status] || "bg-gray-100"}>{t(`status.${client.status}`, client.status)}</Badge>
+                      <Badge className={STATUS_COLORS[client.status] || "bg-gray-100"}>{String(t(`status.${client.status}`, client.status))}</Badge>
                     </TableCell>
                     {canWriteClient && (
                       <TableCell>

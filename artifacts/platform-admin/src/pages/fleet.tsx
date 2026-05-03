@@ -54,7 +54,7 @@ export default function FleetPage() {
   const queryClient = useQueryClient();
   const { canWriteAsset } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
   const [showCreate, setShowCreate] = useState(false);
   const [editAsset, setEditAsset] = useState<any>(null);
@@ -251,11 +251,11 @@ export default function FleetPage() {
                 {items.map((asset: any) => (
                   <TableRow key={asset.id} className="cursor-pointer" onClick={() => navigate(`/fleet/${asset.id}`)}>
                     <TableCell className="font-mono text-sm">{asset.internalCode}</TableCell>
-                    <TableCell>{t(`assetType.${asset.assetType}`, asset.assetType)}</TableCell>
+                    <TableCell>{String(t(`assetType.${asset.assetType}`, asset.assetType))}</TableCell>
                     <TableCell>{asset.brand}</TableCell>
                     <TableCell>{asset.model}</TableCell>
                     <TableCell>
-                      <Badge className={STATUS_COLORS[asset.status] || "bg-gray-100"}>{t(`status.${asset.status}`, asset.status)}</Badge>
+                      <Badge className={STATUS_COLORS[asset.status] || "bg-gray-100"}>{String(t(`status.${asset.status}`, asset.status))}</Badge>
                     </TableCell>
                     {canWriteAsset && (
                       <TableCell onClick={(e) => e.stopPropagation()}>

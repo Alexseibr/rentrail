@@ -63,7 +63,7 @@ router.get(
   requirePermission("branch:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const branch = await branchService.getBranch(req.params.id, req.tenant!.companyId);
+    const branch = await branchService.getBranch(req.params.id as string, req.tenant!.companyId);
     res.json({ data: branch });
   },
 );
@@ -75,8 +75,8 @@ router.patch(
   requirePermission("branch:update"),
   validate({ params: idParams, body: updateBranchSchema }),
   async (req, res) => {
-    const old = await branchService.getBranch(req.params.id, req.tenant!.companyId);
-    const branch = await branchService.updateBranch(req.params.id, req.tenant!.companyId, req.body);
+    const old = await branchService.getBranch(req.params.id as string, req.tenant!.companyId);
+    const branch = await branchService.updateBranch(req.params.id as string, req.tenant!.companyId, req.body);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -98,7 +98,7 @@ router.post(
   requirePermission("branch:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { branch, previousStatus } = await branchService.deactivateBranch(req.params.id, req.tenant!.companyId);
+    const { branch, previousStatus } = await branchService.deactivateBranch(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -120,7 +120,7 @@ router.post(
   requirePermission("branch:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { branch, previousStatus } = await branchService.activateBranch(req.params.id, req.tenant!.companyId);
+    const { branch, previousStatus } = await branchService.activateBranch(req.params.id as string, req.tenant!.companyId);
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
