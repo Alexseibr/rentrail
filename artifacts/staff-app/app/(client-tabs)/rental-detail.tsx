@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Platform,
-  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -68,6 +66,8 @@ export default function RentalDetailScreen() {
   const [rental, setRental] = useState<RentalDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [returning, setReturning] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -86,41 +86,34 @@ export default function RentalDetailScreen() {
 
   useEffect(() => {
     if (id) fetchDetail();
+    return () => {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    };
   }, [id, fetchDetail]);
 
-  const handleReturn = async () => {
-    Alert.alert(
-      t("clientRentals.returnVehicle"),
-      t("clientRentals.returnConfirm"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("clientRentals.returnVehicle"),
-          style: "destructive",
-          onPress: async () => {
-            setReturning(true);
-            try {
-              const token = await getAccessToken();
-              const res = await fetch(`${BASE_URL}/api/client/rentals/${id}/return`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (res.ok) {
-                Alert.alert(t("clientRentals.returned"), t("clientRentals.returnedMessage"));
-                fetchDetail();
-              } else {
-                const json = await res.json();
-                Alert.alert(t("common.error"), json.error?.message || "Failed");
-              }
-            } catch {
-              Alert.alert(t("common.error"), t("clientRentals.returnFailed"));
-            } finally {
-              setReturning(false);
-            }
-          },
-        },
-      ],
-    );
+  const handleReturnPress = async () => {
+    if (!confirming) {
+      setConfirming(true);
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      confirmTimerRef.current = setTimeout(() => setConfirming(false), 3000);
+      return;
+    }
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    setConfirming(false);
+    setReturning(true);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${BASE_URL}/api/client/rentals/${id}/return`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchDetail();
+      }
+    } catch {
+    } finally {
+      setReturning(false);
+    }
   };
 
   const formatDuration = (minutes: number) => {
@@ -272,13 +265,24 @@ export default function RentalDetailScreen() {
 
       {isActive && (
         <TouchableOpacity
-          style={[styles.returnBtn, returning && { opacity: 0.7 }]}
-          onPress={handleReturn}
+          style={[
+            styles.returnBtn,
+            confirming && styles.returnBtnConfirm,
+            returning && { opacity: 0.7 },
+          ]}
+          onPress={handleReturnPress}
           disabled={returning}
           activeOpacity={0.7}
         >
           {returning ? (
             <ActivityIndicator color="#fff" size="small" />
+          ) : confirming ? (
+            <>
+              <Feather name="check" size={18} color="#1a1a1a" />
+              <Text style={[styles.returnBtnText, { color: "#1a1a1a" }]}>
+                {t("clientRentals.confirmReturn")}
+              </Text>
+            </>
           ) : (
             <>
               <Feather name="corner-down-left" size={18} color="#fff" />
@@ -399,6 +403,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 14,
     marginTop: 4,
+  },
+  returnBtnConfirm: {
+    backgroundColor: "#F5C518",
   },
   returnBtnText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
 });

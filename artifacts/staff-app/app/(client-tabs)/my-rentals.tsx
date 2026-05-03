@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -113,6 +112,8 @@ export default function MyRentalsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [returning, setReturning] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchRentals = useCallback(async () => {
     try {
@@ -135,46 +136,40 @@ export default function MyRentalsScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchRentals();
+      return () => {
+        if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+        setConfirmingId(null);
+      };
     }, [fetchRentals]),
   );
 
-  const handleReturn = async (rentalId: string) => {
-    Alert.alert(
-      t("clientRentals.confirmReturn"),
-      t("clientRentals.confirmReturnMessage"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("clientRentals.returnVehicle"),
-          style: "destructive",
-          onPress: async () => {
-            setReturning(rentalId);
-            try {
-              const token = await getAccessToken();
-              const res = await fetch(`${BASE_URL}/api/client/rentals/${rentalId}/return`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                  "x-company-id": companyId || "",
-                },
-              });
-              if (res.ok) {
-                Alert.alert(t("clientRentals.success"), t("clientRentals.returnCompleted"));
-                fetchRentals();
-              } else {
-                const json = await res.json();
-                Alert.alert(t("common.error"), json.error?.message || "Failed");
-              }
-            } catch {
-              Alert.alert(t("common.error"), t("clientRentals.returnFailed"));
-            } finally {
-              setReturning(null);
-            }
-          },
+  const handleReturnPress = async (rentalId: string) => {
+    if (confirmingId !== rentalId) {
+      setConfirmingId(rentalId);
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      confirmTimerRef.current = setTimeout(() => setConfirmingId(null), 3000);
+      return;
+    }
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+    setConfirmingId(null);
+    setReturning(rentalId);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${BASE_URL}/api/client/rentals/${rentalId}/return`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "x-company-id": companyId || "",
         },
-      ],
-    );
+      });
+      if (res.ok) {
+        fetchRentals();
+      }
+    } catch {
+    } finally {
+      setReturning(null);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -192,77 +187,86 @@ export default function MyRentalsScreen() {
     const isOverdue = item.status === "overdue";
     const isLive = isActive || isOverdue;
     const typeIcon = item.assetType ? (ASSET_TYPE_ICONS[item.assetType] || "circle") : "circle";
+    const isConfirming = confirmingId === item.id;
+    const isReturning = returning === item.id;
 
     return (
-      <TouchableOpacity
-        style={[styles.card, isLive && styles.cardActive]}
-        onPress={() =>
-          router.push({ pathname: "/(client-tabs)/rental-detail", params: { id: item.id } })
-        }
-        activeOpacity={0.75}
-      >
+      <View style={[styles.card, isLive && styles.cardActive]}>
         {isLive && <View style={[styles.cardAccent, { backgroundColor: statusStyle.accent }]} />}
 
-        <View style={styles.cardHeader}>
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-            <Text style={[styles.statusText, { color: statusStyle.text }]}>
-              {t(`clientRentals.status_${item.status}`, item.status.toUpperCase())}
-            </Text>
+        <TouchableOpacity
+          activeOpacity={0.75}
+          onPress={() =>
+            router.push({ pathname: "/(client-tabs)/rental-detail", params: { id: item.id } })
+          }
+        >
+          <View style={styles.cardHeader}>
+            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+              <Text style={[styles.statusText, { color: statusStyle.text }]}>
+                {t(`clientRentals.status_${item.status}`, item.status.toUpperCase())}
+              </Text>
+            </View>
+            {isLive && <ActiveTimer startAt={item.startAt} />}
+            {!isLive && (
+              <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+            )}
           </View>
-          {isLive && <ActiveTimer startAt={item.startAt} />}
-          {!isLive && (
-            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-          )}
-        </View>
 
-        <View style={styles.vehicleRow}>
-          {item.assetType && (
-            <View style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}>
-              <Feather name={typeIcon as any} size={18} color="#F5C518" />
+          <View style={styles.vehicleRow}>
+            {item.assetType && (
+              <View style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}>
+                <Feather name={typeIcon as any} size={18} color="#F5C518" />
+              </View>
+            )}
+            <View style={styles.vehicleInfo}>
+              {item.assetBrand ? (
+                <Text style={styles.vehicleName}>
+                  {item.assetBrand} {item.assetModel}
+                </Text>
+              ) : (
+                <Text style={styles.vehicleName}>{t("clientRentals.vehicle")}</Text>
+              )}
+              {item.assetCode && (
+                <Text style={styles.vehicleCode}>{item.assetCode}</Text>
+              )}
+            </View>
+            <Feather name="chevron-right" size={18} color="#ccc" />
+          </View>
+
+          {item.startAt && (
+            <View style={styles.timeRow}>
+              <Feather name="play-circle" size={13} color="#8c8c8c" />
+              <Text style={styles.timeLabel}>{t("clientRentals.started")}:</Text>
+              <Text style={styles.timeValue}>{formatDate(item.startAt)}</Text>
             </View>
           )}
-          <View style={styles.vehicleInfo}>
-            {item.assetBrand ? (
-              <Text style={styles.vehicleName}>
-                {item.assetBrand} {item.assetModel}
-              </Text>
-            ) : (
-              <Text style={styles.vehicleName}>{t("clientRentals.vehicle")}</Text>
-            )}
-            {item.assetCode && (
-              <Text style={styles.vehicleCode}>{item.assetCode}</Text>
-            )}
-          </View>
-          <Feather name="chevron-right" size={18} color="#ccc" />
-        </View>
-
-        {item.startAt && (
-          <View style={styles.timeRow}>
-            <Feather name="play-circle" size={13} color="#8c8c8c" />
-            <Text style={styles.timeLabel}>{t("clientRentals.started")}:</Text>
-            <Text style={styles.timeValue}>{formatDate(item.startAt)}</Text>
-          </View>
-        )}
-        {item.actualEndAt && (
-          <View style={styles.timeRow}>
-            <Feather name="check-circle" size={13} color="#8c8c8c" />
-            <Text style={styles.timeLabel}>{t("clientRentals.ended")}:</Text>
-            <Text style={styles.timeValue}>{formatDate(item.actualEndAt)}</Text>
-          </View>
-        )}
+          {item.actualEndAt && (
+            <View style={styles.timeRow}>
+              <Feather name="check-circle" size={13} color="#8c8c8c" />
+              <Text style={styles.timeLabel}>{t("clientRentals.ended")}:</Text>
+              <Text style={styles.timeValue}>{formatDate(item.actualEndAt)}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {isLive && (
           <TouchableOpacity
-            style={[styles.returnButton, returning === item.id && { opacity: 0.6 }]}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              handleReturn(item.id);
-            }}
+            style={[
+              styles.returnButton,
+              isConfirming && styles.returnButtonConfirm,
+              isReturning && { opacity: 0.6 },
+            ]}
+            onPress={() => handleReturnPress(item.id)}
             disabled={!!returning}
             activeOpacity={0.8}
           >
-            {returning === item.id ? (
+            {isReturning ? (
               <ActivityIndicator color="#fff" size="small" />
+            ) : isConfirming ? (
+              <>
+                <Feather name="check" size={16} color="#fff" />
+                <Text style={styles.returnButtonText}>{t("clientRentals.confirmReturn")}</Text>
+              </>
             ) : (
               <>
                 <Feather name="corner-down-left" size={16} color="#fff" />
@@ -271,7 +275,7 @@ export default function MyRentalsScreen() {
             )}
           </TouchableOpacity>
         )}
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -284,7 +288,6 @@ export default function MyRentalsScreen() {
   }
 
   const activeRentals = rentals.filter((r) => r.status === "active" || r.status === "overdue");
-  const pastRentals = rentals.filter((r) => r.status !== "active" && r.status !== "overdue");
 
   return (
     <View style={styles.container}>
@@ -392,6 +395,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     marginTop: 2,
+  },
+  returnButtonConfirm: {
+    backgroundColor: "#F5C518",
   },
   returnButtonText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" },
   emptyWrap: { alignItems: "center", paddingTop: 80, gap: 12 },
