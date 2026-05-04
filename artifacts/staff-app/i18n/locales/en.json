@@ -272,6 +272,7 @@
     "retries": "retries",
     "noMatches": "No items match this filter",
     "tryDifferentFilter": "Try a different filter to see more items",
+    "clearingIn": "Clearing in {{seconds}}s",
     "filter": {
       "all": "All",
       "pending": "Pending",

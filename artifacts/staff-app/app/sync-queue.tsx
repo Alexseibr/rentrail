@@ -14,7 +14,12 @@ import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useSync } from "@/contexts/SyncContext";
-import { cancelItem, retryItem, clearCompleted } from "@/services/sync-queue";
+import {
+  cancelItem,
+  retryItem,
+  clearCompleted,
+  AUTO_CLEAR_DELAY_MS,
+} from "@/services/sync-queue";
 import { getActionDescription } from "@/services/offline-policy";
 import type { QueueItem, QueueItemStatus } from "@/services/sync-queue";
 
@@ -68,6 +73,7 @@ export default function SyncQueueScreen() {
   const { queueItems, isSyncing, syncNow } = useSync();
   const [filter, setFilter] = useState<StatusFilter>("all");
   const hydratedRef = React.useRef(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +93,21 @@ export default function SyncQueueScreen() {
       cancelled = true;
     };
   }, []);
+
+  const hasClearingItems = useMemo(
+    () =>
+      queueItems.some(
+        (i) => (i.status === "completed" || i.status === "canceled") && i.completedAt,
+      ),
+    [queueItems],
+  );
+
+  useEffect(() => {
+    if (!hasClearingItems) return;
+    setNow(Date.now());
+    const handle = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(handle);
+  }, [hasClearingItems]);
 
   const filterCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = { all: 0, pending: 0, failed: 0, done: 0 };
@@ -136,18 +157,35 @@ export default function SyncQueueScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const renderItem = ({ item }: { item: QueueItem }) => (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+  const renderItem = ({ item }: { item: QueueItem }) => {
+    const isClearing = (item.status === "completed" || item.status === "canceled") && !!item.completedAt;
+    let secondsLeft: number | null = null;
+    let fadeOpacity = 1;
+    if (isClearing && item.completedAt) {
+      const completedMs = new Date(item.completedAt).getTime();
+      const remainingMs = Math.max(0, completedMs + AUTO_CLEAR_DELAY_MS - now);
+      secondsLeft = Math.max(1, Math.ceil(remainingMs / 1000));
+      const progress = Math.min(1, Math.max(0, remainingMs / AUTO_CLEAR_DELAY_MS));
+      fadeOpacity = 0.4 + progress * 0.6;
+    }
+    const statusColor = STATUS_COLORS[item.status] ?? colors.mutedForeground;
+    return (
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeOpacity },
+      ]}
+    >
       <View style={styles.cardHeader}>
         <Feather
           name={(STATUS_ICONS[item.status] ?? "circle") as any}
           size={18}
-          color={STATUS_COLORS[item.status] ?? colors.mutedForeground}
+          color={statusColor}
         />
         <Text style={[styles.cardTitle, { color: colors.foreground }]}>
           {getActionDescription(item.actionType)}
         </Text>
-        <Text style={[styles.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.mutedForeground }]}>
+        <Text style={[styles.cardStatus, { color: statusColor }]}>
           {item.status}
         </Text>
       </View>
@@ -159,6 +197,19 @@ export default function SyncQueueScreen() {
         <Text style={[styles.cardError, { color: colors.destructive }]} numberOfLines={2}>
           {item.lastError}
         </Text>
+      )}
+      {isClearing && secondsLeft !== null && (
+        <View
+          style={[
+            styles.clearingBadge,
+            { backgroundColor: statusColor + "15", borderColor: statusColor + "40" },
+          ]}
+        >
+          <Feather name="clock" size={11} color={statusColor} />
+          <Text style={[styles.clearingText, { color: statusColor }]}>
+            {t("syncQueue.clearingIn", { seconds: secondsLeft })}
+          </Text>
+        </View>
       )}
       {(item.status === "queued" || item.status === "failed") && (
         <View style={styles.cardActions}>
@@ -175,7 +226,8 @@ export default function SyncQueueScreen() {
         </View>
       )}
     </View>
-  );
+    );
+  };
 
   const completedCount = filterCounts.done;
   const isFiltered = filter !== "all";
@@ -272,6 +324,18 @@ const styles = StyleSheet.create({
   cardStatus: { fontSize: 12, fontFamily: "Inter_500Medium", textTransform: "capitalize" as const },
   cardTime: { fontSize: 12, fontFamily: "Inter_400Regular" },
   cardError: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  clearingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginTop: 2,
+  },
+  clearingText: { fontSize: 11, fontFamily: "Inter_500Medium" },
   cardActions: { flexDirection: "row", gap: 8, marginTop: 4 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   actionText: { fontSize: 12, fontFamily: "Inter_500Medium" },
