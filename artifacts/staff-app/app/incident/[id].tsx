@@ -346,17 +346,19 @@ export default function IncidentDetailScreen() {
           ))}
         </View>
 
-        {attachments.length > 0 ? (
-          <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <MediaAttachments
-              entityType="incident"
-              entityId={id!}
-              existingAttachments={attachments}
-              authToken={authToken}
-              readOnly
-            />
-          </View>
-        ) : null}
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <MediaAttachments
+            entityType="incident"
+            entityId={id!}
+            existingAttachments={attachments}
+            authToken={authToken}
+            onAttachmentCreated={async () => {
+              if (!companyId || !id) return;
+              const atts = await fetchAttachments(companyId, id);
+              setAttachments(atts);
+            }}
+          />
+        </View>
 
         {nextStatus ? (
           <TouchableOpacity
