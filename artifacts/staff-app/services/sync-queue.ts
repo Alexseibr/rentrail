@@ -19,7 +19,10 @@ export interface QueueItem {
   lastError?: string;
   companyId?: string;
   branchId?: string;
+  completedAt?: string;
 }
+
+export const AUTO_CLEAR_DELAY_MS = 30_000;
 
 type QueueListener = (items: QueueItem[]) => void;
 const _listeners: Set<QueueListener> = new Set();
@@ -86,7 +89,7 @@ export async function cancelItem(id: string) {
   const queue = await loadQueue();
   const updated = queue.map((item) =>
     item.id === id && (item.status === "queued" || item.status === "failed")
-      ? { ...item, status: "canceled" as const }
+      ? { ...item, status: "canceled" as const, completedAt: new Date().toISOString() }
       : item,
   );
   await saveQueue(updated);
@@ -106,6 +109,19 @@ export async function clearCompleted() {
   const queue = await loadQueue();
   const active = queue.filter((i) => i.status !== "completed" && i.status !== "canceled");
   await saveQueue(active);
+}
+
+export async function clearCompletedOlderThan(ageMs: number) {
+  const queue = await loadQueue();
+  const now = Date.now();
+  const remaining = queue.filter((item) => {
+    if (item.status !== "completed" && item.status !== "canceled") return true;
+    const completedAt = item.completedAt ? new Date(item.completedAt).getTime() : 0;
+    return now - completedAt < ageMs;
+  });
+  if (remaining.length !== queue.length) {
+    await saveQueue(remaining);
+  }
 }
 
 let _syncing = false;
@@ -155,6 +171,7 @@ export async function processQueue(): Promise<{ processed: number; failed: numbe
 
         if (response.ok) {
           item.status = "completed";
+          item.completedAt = new Date().toISOString();
           processed++;
         } else {
           const errBody = await response.text();

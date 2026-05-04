@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { getQueueItems, processQueue, onQueueChange, startAutoSync, stopAutoSync, type QueueItem } from "@/services/sync-queue";
+import {
+  getQueueItems,
+  processQueue,
+  onQueueChange,
+  startAutoSync,
+  stopAutoSync,
+  clearCompletedOlderThan,
+  AUTO_CLEAR_DELAY_MS,
+  type QueueItem,
+} from "@/services/sync-queue";
 
 interface SyncContextType {
   queueItems: QueueItem[];
@@ -35,6 +44,25 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       stopAutoSync();
     };
   }, []);
+
+  useEffect(() => {
+    const now = Date.now();
+    let nextDeadline: number | null = null;
+    for (const item of queueItems) {
+      if (item.status !== "completed" && item.status !== "canceled") continue;
+      const completedAt = item.completedAt ? new Date(item.completedAt).getTime() : 0;
+      const deadline = completedAt + AUTO_CLEAR_DELAY_MS;
+      if (nextDeadline === null || deadline < nextDeadline) {
+        nextDeadline = deadline;
+      }
+    }
+    if (nextDeadline === null) return;
+    const delay = Math.max(0, nextDeadline - now);
+    const handle = setTimeout(() => {
+      clearCompletedOlderThan(AUTO_CLEAR_DELAY_MS);
+    }, delay);
+    return () => clearTimeout(handle);
+  }, [queueItems]);
 
   const syncNow = useCallback(async () => {
     setIsSyncing(true);
