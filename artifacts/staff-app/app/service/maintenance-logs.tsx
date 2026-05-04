@@ -160,8 +160,11 @@ export default function MaintenanceLogsScreen() {
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>
-              <Feather name="clipboard" size={32} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("serviceModule.noLogs")}</Text>
+              <View style={styles.emptyIconWrap}>
+                <Feather name="clipboard" size={32} color={colors.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("serviceModule.noLogs")}</Text>
+              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("serviceModule.noLogsHint")}</Text>
             </View>
           )
         }
@@ -201,5 +204,11 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   loader: { marginTop: 60 },
   empty: { alignItems: "center", marginTop: 60, gap: 12 },
-  emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
+  emptyIconWrap: {
+    width: 72, height: 72, borderRadius: 24,
+    backgroundColor: "#F5C51815",
+    justifyContent: "center", alignItems: "center",
+  },
+  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 32 },
 });

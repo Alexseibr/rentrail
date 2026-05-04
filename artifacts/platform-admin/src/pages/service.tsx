@@ -478,7 +478,7 @@ export default function ServicePage() {
                         )}
                       </TableRow>
                     ))}
-                    {filteredRequests.length === 0 && (
+                    {filteredRequests.length === 0 && requests.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} className="py-6">
                           <Empty className="border-0">
@@ -486,6 +486,19 @@ export default function ServicePage() {
                               <EmptyMedia variant="icon"><Wrench className="h-5 w-5" /></EmptyMedia>
                               <EmptyTitle>{t("service.emptyRequests")}</EmptyTitle>
                               <EmptyDescription>{t("service.emptyRequestsDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {filteredRequests.length === 0 && requests.length > 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><Search className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("common.noResults")}</EmptyTitle>
+                              <EmptyDescription>{t("common.noResultsDescription")}</EmptyDescription>
                             </EmptyHeader>
                           </Empty>
                         </TableCell>
@@ -648,7 +661,7 @@ export default function ServicePage() {
                         </TableRow>
                       );
                     })}
-                    {filteredParts.length === 0 && (
+                    {filteredParts.length === 0 && spareParts.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} className="py-6">
                           <Empty className="border-0">
@@ -656,6 +669,19 @@ export default function ServicePage() {
                               <EmptyMedia variant="icon"><Package className="h-5 w-5" /></EmptyMedia>
                               <EmptyTitle>{t("service.emptyParts")}</EmptyTitle>
                               <EmptyDescription>{t("service.emptyPartsDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {filteredParts.length === 0 && spareParts.length > 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><Search className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("common.noResults")}</EmptyTitle>
+                              <EmptyDescription>{t("common.noResultsDescription")}</EmptyDescription>
                             </EmptyHeader>
                           </Empty>
                         </TableCell>
@@ -724,7 +750,7 @@ export default function ServicePage() {
                         <TableCell className="text-sm text-muted-foreground max-w-48 truncate">{l.notes || "—"}</TableCell>
                       </TableRow>
                     ))}
-                    {filteredLogs.length === 0 && (
+                    {filteredLogs.length === 0 && maintenanceLogs.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="py-6">
                           <Empty className="border-0">
@@ -732,6 +758,19 @@ export default function ServicePage() {
                               <EmptyMedia variant="icon"><FileText className="h-5 w-5" /></EmptyMedia>
                               <EmptyTitle>{t("service.emptyLogs")}</EmptyTitle>
                               <EmptyDescription>{t("service.emptyLogsDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {filteredLogs.length === 0 && maintenanceLogs.length > 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><Search className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("common.noResults")}</EmptyTitle>
+                              <EmptyDescription>{t("common.noResultsDescription")}</EmptyDescription>
                             </EmptyHeader>
                           </Empty>
                         </TableCell>

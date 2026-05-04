@@ -200,8 +200,11 @@ export default function SparePartsScreen() {
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>
-              <Feather name="package" size={32} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("serviceModule.noParts")}</Text>
+              <View style={styles.emptyIconWrap}>
+                <Feather name="package" size={32} color={colors.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("serviceModule.noParts")}</Text>
+              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("serviceModule.noPartsHint")}</Text>
             </View>
           )
         }
@@ -291,7 +294,13 @@ const styles = StyleSheet.create({
   actionText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   loader: { marginTop: 60 },
   empty: { alignItems: "center", marginTop: 60, gap: 12 },
-  emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
+  emptyIconWrap: {
+    width: 72, height: 72, borderRadius: 24,
+    backgroundColor: "#F5C51815",
+    justifyContent: "center", alignItems: "center",
+  },
+  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 32 },
   modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "#00000060" },
   modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 8 },
   modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 4 },

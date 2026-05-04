@@ -254,7 +254,7 @@ export default function InvoiceDetailPage() {
                 {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={markPaidMutation.isPending}>
-                {markPaidMutation.isPending ? t("common.processing") : t("invoiceDetail.confirmPayment")}
+                {markPaidMutation.isPending ? t("common.processing", "Обработка...") : t("invoiceDetail.confirmPayment")}
               </Button>
             </DialogFooter>
           </form>

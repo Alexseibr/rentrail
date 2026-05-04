@@ -30,6 +30,8 @@
     "amount": "Amount",
     "dueDate": "Due Date",
     "processing": "Processing...",
+    "noResults": "No results found",
+    "noResultsDescription": "Try adjusting your search or filter criteria.",
     "noData": "No data",
     "details": "Details",
     "date": "Date",

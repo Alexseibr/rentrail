@@ -723,7 +723,7 @@ export default function CompanyDetailPage() {
                   variant={modForm.action === "approve" || modForm.action === "unblock" ? "default" : "destructive"}
                   disabled={moderationMutation.isPending}
                 >
-                  {moderationMutation.isPending ? t("common.processing") : t("companyDetail.confirmModeration", { action: modForm.action })}
+                  {moderationMutation.isPending ? t("common.processing", "Обработка...") : t("companyDetail.confirmModeration", { action: modForm.action })}
                 </Button>
               </DialogFooter>
             </form>
@@ -760,7 +760,7 @@ export default function CompanyDetailPage() {
                 disabled={!selectedPlanId || setPlanMutation.isPending}
                 onClick={() => setPlanMutation.mutate(selectedPlanId)}
               >
-                {setPlanMutation.isPending ? t("common.processing") : t("companies.assignPlan")}
+                {setPlanMutation.isPending ? t("common.processing", "Обработка...") : t("companies.assignPlan")}
               </Button>
             </DialogFooter>
           </div>

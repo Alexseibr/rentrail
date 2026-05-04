@@ -455,7 +455,7 @@ export default function BlacklistPage() {
               }}
             >
               {toggleMutation.isPending
-                ? t("common.processing")
+                ? t("common.processing", "Обработка...")
                 : toggleConfirm?.enable
                   ? t("blacklist.enableBlock")
                   : t("blacklist.disableAllow")}

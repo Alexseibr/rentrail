@@ -279,7 +279,7 @@ export default function RentalsCompanyPage() {
                     )}
                   </TableRow>
                 ))}
-                {items.length === 0 && (
+                {items.length === 0 && allItems.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-6">
                       <Empty className="border-0">
@@ -296,6 +296,19 @@ export default function RentalsCompanyPage() {
                             </Button>
                           </EmptyContent>
                         )}
+                      </Empty>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {items.length === 0 && allItems.length > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-6">
+                      <Empty className="border-0">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon"><Search className="h-5 w-5" /></EmptyMedia>
+                          <EmptyTitle>{t("common.noResults")}</EmptyTitle>
+                          <EmptyDescription>{t("common.noResultsDescription")}</EmptyDescription>
+                        </EmptyHeader>
                       </Empty>
                     </TableCell>
                   </TableRow>
