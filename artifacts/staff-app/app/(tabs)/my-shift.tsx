@@ -6,6 +6,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +15,33 @@ import { SyncStatusBanner } from "@/components/SyncStatusBanner";
 import i18n from "@/i18n/i18n";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+interface WorkOrder {
+  id: string;
+  companyId: string;
+  branchId: string | null;
+  serviceRequestId: string | null;
+  assetId: string | null;
+  orderType: string;
+  priority: string;
+  status: string;
+  title: string;
+  description: string | null;
+  assignedToUserId: string | null;
+  estimatedCost: string | null;
+  actualCost: string | null;
+  resolution: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  assetCode: string | null;
+  assetType: string | null;
+  branchName: string | null;
+  branchCity: string | null;
+  assignedToName: string | null;
+}
+
+type ColorTokens = ReturnType<typeof useColors>;
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "#94a3b8",
@@ -39,7 +67,7 @@ const PRIORITY_ORDER: Record<string, number> = {
   low: 3,
 };
 
-async function fetchMyWorkOrders(companyId: string, userId: string) {
+async function fetchMyWorkOrders(companyId: string, userId: string): Promise<WorkOrder[]> {
   const token = await getAccessToken();
   const url = `${BASE_URL}/api/work-orders?assignedToUserId=${userId}`;
   const res = await fetch(url, {
@@ -47,10 +75,10 @@ async function fetchMyWorkOrders(companyId: string, userId: string) {
   });
   if (!res.ok) throw new Error("Failed to fetch work orders");
   const json = await res.json();
-  return json.data as any[];
+  return json.data;
 }
 
-function getTimeAgo(dateStr: string, t: (key: string, opts?: any) => string): string {
+function getTimeAgo(dateStr: string, t: TFunction): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return t("myShift.justNow");
@@ -74,7 +102,7 @@ interface KpiCardProps {
   value: number;
   color: string;
   icon: keyof typeof Feather.glyphMap;
-  colors: any;
+  colors: ColorTokens;
 }
 
 function KpiCard({ label, value, color, icon, colors }: KpiCardProps) {
@@ -118,7 +146,7 @@ export default function MyShiftScreen() {
   const router = useRouter();
   const { user, companyId } = useAuth();
 
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [completedExpanded, setCompletedExpanded] = useState(false);
@@ -142,15 +170,14 @@ export default function MyShiftScreen() {
 
   const { inProgressCount, assignedCount, waitingPartsCount, activeOrders, completedToday } = useMemo(() => {
     let ip = 0, assigned = 0, wp = 0;
-    const active: any[] = [];
-    const completed: any[] = [];
+    const active: WorkOrder[] = [];
+    const completed: WorkOrder[] = [];
 
     for (const item of items) {
       switch (item.status) {
         case "in_progress": ip++; active.push(item); break;
         case "assigned": assigned++; active.push(item); break;
-        case "en_route": active.push(item); break;
-        case "waiting_parts": wp++; active.push(item); break;
+        case "waiting_parts": wp++; break;
         case "completed":
           if (item.completedAt && isToday(item.completedAt)) {
             completed.push(item);
@@ -160,7 +187,7 @@ export default function MyShiftScreen() {
     }
 
     active.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 3) - (PRIORITY_ORDER[b.priority] ?? 3));
-    completed.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+    completed.sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
 
     return {
       inProgressCount: ip,
@@ -171,17 +198,19 @@ export default function MyShiftScreen() {
     };
   }, [items]);
 
-  const renderOrderCard = ({ item }: { item: any }) => {
+  const navigateToOrder = (orderId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/service/work-order/${orderId}` as `/service/work-order/${string}`);
+  };
+
+  const renderOrderCard = ({ item }: { item: WorkOrder }) => {
     const isUrgent = item.priority === "urgent";
     const accentColor = STATUS_COLORS[item.status] ?? "#94a3b8";
 
     return (
       <TouchableOpacity
         style={[styles.card, { backgroundColor: colors.card }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(`/service/work-order/${item.id}` as any);
-        }}
+        onPress={() => navigateToOrder(item.id)}
         activeOpacity={0.7}
       >
         <View style={[styles.cardAccent, { backgroundColor: accentColor }]} />
@@ -231,14 +260,11 @@ export default function MyShiftScreen() {
     );
   };
 
-  const renderCompletedCard = (item: any) => (
+  const renderCompletedCard = (item: WorkOrder) => (
     <TouchableOpacity
       key={item.id}
       style={[styles.completedCard, { backgroundColor: colors.card }]}
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push(`/service/work-order/${item.id}` as any);
-      }}
+      onPress={() => navigateToOrder(item.id)}
       activeOpacity={0.7}
     >
       <View style={styles.completedRow}>

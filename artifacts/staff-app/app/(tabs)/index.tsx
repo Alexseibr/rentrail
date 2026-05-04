@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, Redirect } from "expo-router";
+import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
@@ -83,8 +83,16 @@ export default function DashboardScreen() {
   const memberships = user?.memberships || user?.companies;
   const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
 
-  if (!canAccessTab(roleCode, "index") && canAccessTab(roleCode, "my-shift")) {
-    return <Redirect href={"/(tabs)/my-shift" as any} />;
+  const shouldRedirectToShift = !canAccessTab(roleCode, "index") && canAccessTab(roleCode, "my-shift");
+
+  React.useEffect(() => {
+    if (shouldRedirectToShift) {
+      router.replace("/my-shift" as `/service/work-order/${string}`);
+    }
+  }, [shouldRedirectToShift, router]);
+
+  if (shouldRedirectToShift) {
+    return <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />;
   }
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
