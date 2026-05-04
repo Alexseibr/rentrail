@@ -59,7 +59,8 @@
     "scanAsset": "Сканировать",
     "newIncident": "Инцидент",
     "maintenance": "Обслуживание",
-    "notifications": "Уведомления"
+    "notifications": "Уведомления",
+    "pendingSync": "Ожидает синхр."
   },
   "assets": {
     "noAssets": "Активы не найдены",

@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSync } from "@/contexts/SyncContext";
 import { canAccessTab } from "@/utils/permissions";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
 import { getAccessToken, getCompanyId } from "@/services/api";
@@ -80,6 +81,7 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, companyId } = useAuth();
+  const { pendingCount } = useSync();
 
   const memberships = user?.memberships || user?.companies;
   const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
@@ -111,11 +113,22 @@ export default function DashboardScreen() {
     data?.totalAssets ?? 0,
   ];
 
-  const quickActions = [
-    { label: t("dashboard.scanAsset"), icon: "maximize" as const, onPress: () => router.push("/scanner") },
-    { label: t("dashboard.newIncident"), icon: "alert-circle" as const, onPress: () => router.push("/create-incident") },
-    { label: t("dashboard.maintenance"), icon: "tool" as const, onPress: () => router.push("/create-maintenance") },
-    { label: t("dashboard.notifications"), icon: "bell" as const, onPress: () => router.push("/notifications"), badge: data?.unreadNotifs },
+  type QuickAction = {
+    label: string;
+    icon: React.ComponentProps<typeof Feather>["name"];
+    onPress: () => void;
+    badge?: number;
+    badgeColor?: string;
+  };
+
+  const quickActions: QuickAction[] = [
+    { label: t("dashboard.scanAsset"), icon: "maximize", onPress: () => router.push("/scanner") },
+    { label: t("dashboard.newIncident"), icon: "alert-circle", onPress: () => router.push("/create-incident") },
+    { label: t("dashboard.maintenance"), icon: "tool", onPress: () => router.push("/create-maintenance") },
+    { label: t("dashboard.notifications"), icon: "bell", onPress: () => router.push("/notifications"), badge: data?.unreadNotifs },
+    ...(pendingCount > 0
+      ? [{ label: t("dashboard.pendingSync"), icon: "refresh-cw" as const, onPress: () => router.push("/sync-queue"), badge: pendingCount, badgeColor: "#f59e0b" }]
+      : []),
   ];
 
   return (
@@ -169,7 +182,7 @@ export default function DashboardScreen() {
                       <Feather name={action.icon} size={20} color={colors.primary} />
                     </View>
                     {action.badge && action.badge > 0 ? (
-                      <View style={[styles.actionBadge, { backgroundColor: colors.destructive }]}>
+                      <View style={[styles.actionBadge, { backgroundColor: action.badgeColor ?? colors.destructive }]}>
                         <Text style={styles.badgeText}>{action.badge}</Text>
                       </View>
                     ) : null}

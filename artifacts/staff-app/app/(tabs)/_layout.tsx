@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSync } from "@/contexts/SyncContext";
 import { canAccessTab } from "@/utils/permissions";
 
 function NativeTabLayout() {
@@ -69,6 +70,7 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const { user, companyId } = useAuth();
+  const { pendingCount } = useSync();
   const memberships = user?.memberships || user?.companies;
   const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
 
@@ -191,6 +193,8 @@ function ClassicTabLayout() {
         options={{
           title: t("nav.ops"),
           href: canAccessTab(roleCode, "operations") ? undefined : null,
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: "#f59e0b", fontSize: 10, minWidth: 16, height: 16, lineHeight: 16 },
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
               <SymbolView name={focused ? "wrench.and.screwdriver.fill" : "wrench.and.screwdriver"} tintColor={color} size={24} />

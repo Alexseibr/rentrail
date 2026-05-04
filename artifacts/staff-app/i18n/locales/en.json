@@ -59,7 +59,8 @@
     "scanAsset": "Scan Asset",
     "newIncident": "New Incident",
     "maintenance": "Maintenance",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "pendingSync": "Pending Sync"
   },
   "assets": {
     "noAssets": "No assets found",
