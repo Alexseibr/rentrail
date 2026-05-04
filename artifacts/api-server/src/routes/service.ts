@@ -75,12 +75,18 @@ router.post("/service-requests/:id/status", authenticate, requireCompanyAccess, 
   return res.json({ data: item });
 });
 
+const VALID_WORK_ORDER_STATUSES = ["draft", "assigned", "en_route", "in_progress", "waiting_parts", "completed", "canceled"] as const;
+
 router.get("/work-orders", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
   try {
+    const statusParam = req.query.status as string | undefined;
+    if (statusParam && !VALID_WORK_ORDER_STATUSES.includes(statusParam as (typeof VALID_WORK_ORDER_STATUSES)[number])) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid status value: ${statusParam}` } });
+    }
     const items = await serviceService.listWorkOrders(
       req.tenant!.companyId,
       req.query.branchId as string | undefined,
-      req.query.status as string | undefined,
+      statusParam,
       req.query.assignedToUserId as string | undefined
     );
     return res.json({ data: items });
