@@ -221,6 +221,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
           )}
           {navGroups.map((group, gi) => (
             <div key={gi} className={cn(gi > 0 && "mt-4")}>
+              {!collapsed && gi > 0 && (
+                <Separator className="my-2 bg-sidebar-foreground/10" />
+              )}
               {!collapsed && (
                 <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
                   {t(group.labelKey)}

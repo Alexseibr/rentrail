@@ -60,7 +60,7 @@ export default function SubscriptionDetailPage() {
     <div className="p-6 space-y-6">
       <PageBreadcrumb items={[
         { label: t("nav.billing"), href: "/billing" },
-        { label: t("subscriptionDetail.title") },
+        { label: `${t("subscriptionDetail.title")} #${subId?.slice(0, 8) ?? ""}` },
       ]} />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">

@@ -92,7 +92,7 @@ export default function InvoiceDetailPage() {
     <div className="p-6 space-y-6">
       <PageBreadcrumb items={[
         { label: t("nav.billing"), href: "/billing" },
-        { label: t("invoiceDetail.title") },
+        { label: `${t("invoiceDetail.title")} #${invoiceId?.slice(0, 8) ?? ""}` },
       ]} />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
