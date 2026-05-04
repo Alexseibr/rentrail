@@ -31,6 +31,21 @@ const FILTER_MATCHERS: Record<StatusFilter, (status: QueueItemStatus) => boolean
 
 const FILTER_ORDER: StatusFilter[] = ["all", "pending", "failed", "done"];
 
+const STATUS_SORT_PRIORITY: Record<QueueItemStatus, number> = {
+  failed: 0,
+  syncing: 1,
+  queued: 1,
+  completed: 2,
+  canceled: 2,
+};
+
+const sortQueueItems = (items: QueueItem[]): QueueItem[] =>
+  [...items].sort((a, b) => {
+    const priorityDiff = STATUS_SORT_PRIORITY[a.status] - STATUS_SORT_PRIORITY[b.status];
+    if (priorityDiff !== 0) return priorityDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
 const STATUS_ICONS: Record<string, string> = {
   queued: "clock",
   syncing: "refresh-cw",
@@ -85,7 +100,7 @@ export default function SyncQueueScreen() {
   }, [queueItems]);
 
   const visibleItems = useMemo(
-    () => queueItems.filter((i) => FILTER_MATCHERS[filter](i.status)),
+    () => sortQueueItems(queueItems.filter((i) => FILTER_MATCHERS[filter](i.status))),
     [queueItems, filter],
   );
 
