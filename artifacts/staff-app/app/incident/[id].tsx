@@ -16,6 +16,7 @@ import { getAccessToken } from "@/services/api";
 import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
+import { useSync } from "@/contexts/SyncContext";
 import { MediaAttachments, type ExistingAttachment } from "@/components/MediaAttachments";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -133,6 +134,7 @@ export default function IncidentDetailScreen() {
   const { companyId } = useAuth();
   const { showSnackbar } = useSnackbar();
   const { isConnected } = useNetwork();
+  const { queueItems } = useSync();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
@@ -292,6 +294,13 @@ export default function IncidentDetailScreen() {
     );
   }
 
+  const hasPendingEdit = queueItems.some(
+    (item) =>
+      item.actionType === "edit_incident" &&
+      item.endpoint === `/api/service-requests/${id}` &&
+      (item.status === "queued" || item.status === "syncing" || item.status === "failed"),
+  );
+
   const priorityColor = SEVERITY_COLORS[incident.priority] ?? "#94a3b8";
   const statusColor = STATUS_COLORS[incident.status] ?? "#94a3b8";
   const nextStatus = STATUS_FLOW[incident.status] ?? null;
@@ -309,6 +318,13 @@ export default function IncidentDetailScreen() {
           <Feather name="edit-2" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {hasPendingEdit ? (
+        <View style={styles.pendingBanner}>
+          <Feather name="clock" size={14} color="#92400e" />
+          <Text style={styles.pendingBannerText}>{t("incidentDetail.pendingSyncBanner")}</Text>
+        </View>
+      ) : null}
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={[styles.statusCard, { backgroundColor: statusColor + "18", borderColor: statusColor + "40" }]}>
@@ -563,6 +579,19 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: "#fff",
     textAlign: "center",
+  },
+  pendingBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#fef3c7",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  pendingBannerText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#92400e",
   },
   scroll: { padding: 16, paddingBottom: 40, gap: 12 },
   statusCard: {

@@ -178,7 +178,8 @@
     "status_in_progress": "В работе",
     "status_on_hold": "На удержании",
     "status_completed": "Завершён",
-    "status_canceled": "Отменён"
+    "status_canceled": "Отменён",
+    "pendingSyncBanner": "Изменения ожидают синхронизации"
   },
   "incidents": {
     "listTitle": "Инциденты",

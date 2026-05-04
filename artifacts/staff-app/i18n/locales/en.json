@@ -178,7 +178,8 @@
     "status_in_progress": "In Progress",
     "status_on_hold": "On Hold",
     "status_completed": "Completed",
-    "status_canceled": "Canceled"
+    "status_canceled": "Canceled",
+    "pendingSyncBanner": "Edit pending sync"
   },
   "incidents": {
     "listTitle": "Incidents",
