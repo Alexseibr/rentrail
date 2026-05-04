@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSnackbar } from "@/contexts/SnackbarContext";
 import { getAccessToken } from "@/services/api";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -45,6 +46,7 @@ export default function SparePartsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
+  const { showSnackbar } = useSnackbar();
 
   const [parts, setParts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,8 +101,9 @@ export default function SparePartsScreen() {
       setQty("1");
       setTxNote("");
       load();
+      showSnackbar(t("toast.transactionSuccess"), "success");
     } catch (e: any) {
-      Alert.alert(t("common.error"), e.message);
+      showSnackbar(e.message || t("toast.transactionFailed"), "error");
     } finally {
       setSubmitting(false);
     }

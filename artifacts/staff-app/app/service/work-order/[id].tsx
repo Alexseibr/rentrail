@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSnackbar } from "@/contexts/SnackbarContext";
 import { getAccessToken } from "@/services/api";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -61,6 +62,7 @@ export default function WorkOrderDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [order, setOrder] = useState<any>(null);
@@ -108,8 +110,9 @@ export default function WorkOrderDetailScreen() {
                   });
                 }
                 await load();
+                showSnackbar(t("toast.orderCompleted"), "success");
               } catch (e: any) {
-                Alert.alert(t("common.error"), e.message);
+                showSnackbar(e.message || t("toast.actionFailed"), "error");
               } finally {
                 setActionLoading(false);
               }
@@ -137,8 +140,9 @@ export default function WorkOrderDetailScreen() {
                       });
                     }
                     await load();
+                    showSnackbar(t("toast.orderCompleted"), "success");
                   } catch (e: any) {
-                    Alert.alert(t("common.error"), e.message);
+                    showSnackbar(e.message || t("toast.actionFailed"), "error");
                   } finally {
                     setActionLoading(false);
                   }
@@ -154,8 +158,9 @@ export default function WorkOrderDetailScreen() {
       await updateStatus(companyId, order.id, newStatus);
       await load();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showSnackbar(t("toast.statusChanged"), "success");
     } catch (e: any) {
-      Alert.alert(t("common.error"), e.message);
+      showSnackbar(e.message || t("toast.actionFailed"), "error");
     } finally {
       setActionLoading(false);
     }

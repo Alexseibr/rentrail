@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface BlacklistEntry {
   id: string;
@@ -106,6 +107,10 @@ export default function BlacklistPage() {
       setShowCreate(false);
       setEditEntry(null);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.blacklistCreated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -116,15 +121,23 @@ export default function BlacklistPage() {
       queryClient.invalidateQueries({ queryKey: ["blacklist"] });
       setEditEntry(null);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.blacklistUpdated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, enable }: { id: string; enable: boolean }) =>
       api(`/platform/blacklist/${id}/${enable ? "enable" : "disable"}`, { method: "POST" }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["blacklist"] });
       setToggleConfirm(null);
+      toast({ title: variables.enable ? t("toast.blacklistEnabled") : t("toast.blacklistDisabled") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 

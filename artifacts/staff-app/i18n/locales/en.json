@@ -426,6 +426,10 @@
     "returnSuccess": "Vehicle returned successfully",
     "returnFailed": "Failed to return vehicle",
     "error": "Error",
-    "actionFailed": "Action failed"
+    "actionFailed": "Action failed",
+    "statusChanged": "Status updated",
+    "orderCompleted": "Work order completed",
+    "transactionSuccess": "Transaction completed",
+    "transactionFailed": "Transaction failed"
   }
 }

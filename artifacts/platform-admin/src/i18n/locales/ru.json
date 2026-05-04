@@ -623,6 +623,10 @@
     "branchCreated": "Филиал создан",
     "branchUpdated": "Филиал обновлён",
     "branchActivated": "Филиал активирован",
-    "branchDeactivated": "Филиал деактивирован"
+    "branchDeactivated": "Филиал деактивирован",
+    "blacklistCreated": "Запись добавлена в чёрный список",
+    "blacklistUpdated": "Запись обновлена",
+    "blacklistEnabled": "Блокировка включена",
+    "blacklistDisabled": "Блокировка снята"
   }
 }

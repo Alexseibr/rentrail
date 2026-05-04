@@ -623,6 +623,10 @@
     "branchCreated": "Branch created",
     "branchUpdated": "Branch updated",
     "branchActivated": "Branch activated",
-    "branchDeactivated": "Branch deactivated"
+    "branchDeactivated": "Branch deactivated",
+    "blacklistCreated": "Blacklist entry added",
+    "blacklistUpdated": "Blacklist entry updated",
+    "blacklistEnabled": "Block enabled",
+    "blacklistDisabled": "Block disabled"
   }
 }

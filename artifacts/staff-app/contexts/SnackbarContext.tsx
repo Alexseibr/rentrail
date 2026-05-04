@@ -52,7 +52,7 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const bgColor = type === "success" ? "#2E7D32" : "#C62828";
-  const iconName = type === "success" ? "check-circle" : "alert-circle";
+  const iconName: React.ComponentProps<typeof Feather>["name"] = type === "success" ? "check-circle" : "alert-circle";
 
   return (
     <SnackbarContext.Provider value={{ showSnackbar }}>
@@ -65,7 +65,7 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
           ]}
           pointerEvents="none"
         >
-          <Feather name={iconName as any} size={18} color="#fff" />
+          <Feather name={iconName} size={18} color="#fff" />
           <Text style={styles.text}>{message}</Text>
         </Animated.View>
       )}

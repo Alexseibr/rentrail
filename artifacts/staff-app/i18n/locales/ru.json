@@ -426,6 +426,10 @@
     "returnSuccess": "Транспорт успешно возвращён",
     "returnFailed": "Не удалось вернуть транспорт",
     "error": "Ошибка",
-    "actionFailed": "Не удалось выполнить действие"
+    "actionFailed": "Не удалось выполнить действие",
+    "statusChanged": "Статус обновлён",
+    "orderCompleted": "Наряд завершён",
+    "transactionSuccess": "Операция выполнена",
+    "transactionFailed": "Не удалось выполнить операцию"
   }
 }
