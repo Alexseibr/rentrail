@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator,
@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
@@ -146,27 +147,25 @@ export default function MyShiftScreen() {
   const router = useRouter();
   const { user, companyId } = useAuth();
 
-  const [items, setItems] = useState<WorkOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [completedExpanded, setCompletedExpanded] = useState(false);
+  const [completedExpanded, setCompletedExpanded] = React.useState(false);
+  const [manualRefreshing, setManualRefreshing] = React.useState(false);
 
-  const load = useCallback(async () => {
-    if (!companyId || !user?.id) return;
-    try {
-      const data = await fetchMyWorkOrders(companyId, user.id);
-      setItems(data);
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [companyId, user?.id]);
+  const { data: items = [], isLoading: loading, isRefetching, refetch } = useQuery({
+    queryKey: ["myShiftWorkOrders", companyId, user?.id],
+    queryFn: () => fetchMyWorkOrders(companyId!, user!.id),
+    enabled: !!companyId && !!user?.id,
+    staleTime: 20000,
+    refetchInterval: 30000,
+  });
 
-  React.useEffect(() => { load(); }, [load]);
+  React.useEffect(() => {
+    if (!isRefetching) setManualRefreshing(false);
+  }, [isRefetching]);
 
-  const onRefresh = () => { setRefreshing(true); load(); };
+  const onRefresh = () => {
+    setManualRefreshing(true);
+    refetch();
+  };
 
   const { inProgressCount, assignedCount, waitingPartsCount, activeOrders, completedToday } = useMemo(() => {
     let ip = 0, assigned = 0, wp = 0;
@@ -384,7 +383,7 @@ export default function MyShiftScreen() {
             </View>
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            <RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
           contentContainerStyle={styles.list}
         />

@@ -9,6 +9,8 @@ import {
   RefreshControl,
   Alert,
   TextInput,
+  Modal,
+  Pressable,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -65,6 +67,8 @@ export default function VehiclesScreen() {
   const [searchCode, setSearchCode] = useState("");
   const [searching, setSearching] = useState(false);
 
+  const [confirmVehicle, setConfirmVehicle] = useState<Vehicle | null>(null);
+
   const fetchVehicles = useCallback(async () => {
     try {
       const token = await getAccessToken();
@@ -118,43 +122,32 @@ export default function VehiclesScreen() {
     }
   };
 
-  const handleRent = async (vehicleId: string) => {
-    Alert.alert(
-      t("clientVehicles.confirmRent"),
-      t("clientVehicles.confirmRentMessage"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("clientVehicles.rent"),
-          onPress: async () => {
-            setRenting(vehicleId);
-            try {
-              const token = await getAccessToken();
-              const res = await fetch(`${BASE_URL}/api/client/rentals`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                  "x-company-id": companyId || "",
-                },
-                body: JSON.stringify({ assetId: vehicleId }),
-              });
-              const json = await res.json();
-              if (res.ok) {
-                Alert.alert(t("clientVehicles.success"), t("clientVehicles.rentalStarted"));
-                fetchVehicles();
-              } else {
-                Alert.alert(t("common.error"), json.error?.message || "Failed");
-              }
-            } catch {
-              Alert.alert(t("common.error"), t("clientVehicles.rentFailed"));
-            } finally {
-              setRenting(null);
-            }
-          },
+  const confirmRent = async (vehicleId: string) => {
+    setConfirmVehicle(null);
+    setRenting(vehicleId);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${BASE_URL}/api/client/rentals`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "x-company-id": companyId || "",
         },
-      ],
-    );
+        body: JSON.stringify({ assetId: vehicleId }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        Alert.alert(t("clientVehicles.success"), t("clientVehicles.rentalStarted"));
+        fetchVehicles();
+      } else {
+        Alert.alert(t("common.error"), json.error?.message || "Failed");
+      }
+    } catch {
+      Alert.alert(t("common.error"), t("clientVehicles.rentFailed"));
+    } finally {
+      setRenting(null);
+    }
   };
 
   const renderVehicle = ({ item }: { item: Vehicle }) => {
@@ -213,7 +206,7 @@ export default function VehiclesScreen() {
           style={[styles.rentButton, renting === item.id && { opacity: 0.7 }]}
           onPress={(e) => {
             e.stopPropagation?.();
-            handleRent(item.id);
+            setConfirmVehicle(item);
           }}
           disabled={!!renting}
           activeOpacity={0.8}
@@ -301,6 +294,46 @@ export default function VehiclesScreen() {
           </View>
         }
       />
+
+      <Modal
+        visible={!!confirmVehicle}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmVehicle(null)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setConfirmVehicle(null)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            <View style={styles.modalIconWrap}>
+              <Feather name="play-circle" size={32} color="#F5C518" />
+            </View>
+            <Text style={styles.modalTitle}>{t("clientVehicles.confirmRent")}</Text>
+            {confirmVehicle && (
+              <Text style={styles.modalVehicleName}>
+                {confirmVehicle.brand} {confirmVehicle.model}
+              </Text>
+            )}
+            <Text style={styles.modalMessage}>{t("clientVehicles.confirmRentMessage")}</Text>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setConfirmVehicle(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCancelText}>{t("common.cancel")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirm}
+                onPress={() => confirmVehicle && confirmRent(confirmVehicle.id)}
+                activeOpacity={0.8}
+              >
+                <Feather name="play-circle" size={17} color="#1a1a1a" />
+                <Text style={styles.modalConfirmText}>{t("clientVehicles.rent")}</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -407,4 +440,80 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
   emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 28,
+    paddingBottom: 40,
+    alignItems: "center",
+    gap: 12,
+  },
+  modalIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "#F5C51820",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: "#1a1a1a",
+    textAlign: "center",
+  },
+  modalVehicleName: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#555",
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#8c8c8c",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+    marginTop: 4,
+  },
+  modalCancel: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#555",
+  },
+  modalConfirm: {
+    flex: 2,
+    flexDirection: "row",
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#F5C518",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  modalConfirmText: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: "#1a1a1a",
+  },
 });
