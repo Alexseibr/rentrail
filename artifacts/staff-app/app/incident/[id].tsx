@@ -13,6 +13,9 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSnackbar } from "@/contexts/SnackbarContext";
 import { getAccessToken } from "@/services/api";
+import { useNetwork } from "@/services/network";
+import { enqueue } from "@/services/sync-queue";
+import { isQueueable } from "@/services/offline-policy";
 import { MediaAttachments, type ExistingAttachment } from "@/components/MediaAttachments";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -129,6 +132,7 @@ export default function IncidentDetailScreen() {
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
   const { showSnackbar } = useSnackbar();
+  const { isConnected } = useNetwork();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
@@ -175,24 +179,58 @@ export default function IncidentDetailScreen() {
 
   const handleSaveEdit = async () => {
     if (!companyId || !incident) return;
-    if (!editTitle.trim()) {
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle) {
       showSnackbar(t("incidentDetail.editTitleRequired"), "error");
       return;
     }
+    const payload = {
+      title: trimmedTitle,
+      description: editDescription.trim(),
+      priority: editPriority,
+    };
+
+    if (!isConnected && isQueueable("edit_incident")) {
+      await enqueue({
+        actionType: "edit_incident",
+        payload,
+        endpoint: `/api/service-requests/${incident.id}`,
+        method: "PATCH",
+      });
+      setIncident((prev) => prev ? { ...prev, ...payload } : prev);
+      setEditVisible(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showSnackbar(t("incidentDetail.editQueued"), "success");
+      return;
+    }
+
     setEditSaving(true);
     try {
-      const updated = await patchIncident(companyId, incident.id, {
-        title: editTitle.trim(),
-        description: editDescription.trim(),
-        priority: editPriority,
-      });
+      const updated = await patchIncident(companyId, incident.id, payload);
       setIncident(updated);
       setEditVisible(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showSnackbar(t("incidentDetail.editSaved"), "success");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t("toast.actionFailed");
-      showSnackbar(msg, "error");
+      const isNetworkError =
+        err instanceof TypeError ||
+        (err instanceof Error && /network|fetch|failed to fetch/i.test(err.message));
+
+      if (isNetworkError && isQueueable("edit_incident")) {
+        await enqueue({
+          actionType: "edit_incident",
+          payload,
+          endpoint: `/api/service-requests/${incident.id}`,
+          method: "PATCH",
+        });
+        setIncident((prev) => (prev ? { ...prev, ...payload } : prev));
+        setEditVisible(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showSnackbar(t("incidentDetail.editQueued"), "success");
+      } else {
+        const msg = err instanceof Error ? err.message : t("toast.actionFailed");
+        showSnackbar(msg, "error");
+      }
     } finally {
       setEditSaving(false);
     }

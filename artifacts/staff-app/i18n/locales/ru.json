@@ -162,6 +162,7 @@
     "fieldPriority": "Приоритет",
     "saveChanges": "Сохранить",
     "editSaved": "Инцидент обновлён",
+    "editQueued": "Изменения сохранены — синхронизируются при восстановлении связи",
     "editTitleRequired": "Введите название",
     "updateStatus": "Изменить статус",
     "updateStatusConfirm": "Перевести инцидент в статус «{{status}}»?",
