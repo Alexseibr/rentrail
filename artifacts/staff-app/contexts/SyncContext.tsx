@@ -50,6 +50,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     let nextDeadline: number | null = null;
     for (const item of queueItems) {
       if (item.status !== "completed" && item.status !== "canceled") continue;
+      if (item.snoozed) continue;
       const completedAt = item.completedAt ? new Date(item.completedAt).getTime() : 0;
       const deadline = completedAt + AUTO_CLEAR_DELAY_MS;
       if (nextDeadline === null || deadline < nextDeadline) {

@@ -20,6 +20,7 @@ export interface QueueItem {
   companyId?: string;
   branchId?: string;
   completedAt?: string;
+  snoozed?: boolean;
 }
 
 export const AUTO_CLEAR_DELAY_MS = 30_000;
@@ -130,11 +131,30 @@ export async function clearCompletedOlderThan(ageMs: number) {
   const now = Date.now();
   const remaining = queue.filter((item) => {
     if (item.status !== "completed" && item.status !== "canceled") return true;
+    if (item.snoozed) return true;
     const completedAt = item.completedAt ? new Date(item.completedAt).getTime() : 0;
     return now - completedAt < ageMs;
   });
   if (remaining.length !== queue.length) {
     await saveQueue(remaining);
+  }
+}
+
+export async function setItemSnoozed(id: string, snoozed: boolean) {
+  const queue = await loadQueue();
+  let changed = false;
+  const updated = queue.map((item) => {
+    if (item.id !== id) return item;
+    if (item.status !== "completed" && item.status !== "canceled") return item;
+    if (!!item.snoozed === snoozed) return item;
+    changed = true;
+    if (snoozed) {
+      return { ...item, snoozed: true };
+    }
+    return { ...item, snoozed: false, completedAt: new Date().toISOString() };
+  });
+  if (changed) {
+    await saveQueue(updated);
   }
 }
 

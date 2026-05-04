@@ -274,6 +274,13 @@
     "noMatches": "No items match this filter",
     "tryDifferentFilter": "Try a different filter to see more items",
     "clearingIn": "Clearing in {{seconds}}s",
+    "snooze": {
+      "tapToKeep": "tap to keep",
+      "tapToRelease": "tap to release",
+      "pinned": "Pinned",
+      "pinAccessibility": "Pin this row to stop the auto-clear countdown",
+      "unpinAccessibility": "Release this row and resume the auto-clear countdown"
+    },
     "filter": {
       "all": "All",
       "pending": "Pending",

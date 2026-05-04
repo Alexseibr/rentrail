@@ -19,6 +19,7 @@ import {
   retryItem,
   retryAllFailed,
   clearCompleted,
+  setItemSnoozed,
   AUTO_CLEAR_DELAY_MS,
 } from "@/services/sync-queue";
 import { getActionDescription } from "@/services/offline-policy";
@@ -98,7 +99,10 @@ export default function SyncQueueScreen() {
   const hasClearingItems = useMemo(
     () =>
       queueItems.some(
-        (i) => (i.status === "completed" || i.status === "canceled") && i.completedAt,
+        (i) =>
+          (i.status === "completed" || i.status === "canceled") &&
+          i.completedAt &&
+          !i.snoozed,
       ),
     [queueItems],
   );
@@ -165,8 +169,15 @@ export default function SyncQueueScreen() {
     }
   };
 
+  const handleToggleSnooze = async (item: QueueItem) => {
+    await setItemSnoozed(item.id, !item.snoozed);
+    Haptics.selectionAsync();
+  };
+
   const renderItem = ({ item }: { item: QueueItem }) => {
-    const isClearing = (item.status === "completed" || item.status === "canceled") && !!item.completedAt;
+    const isDone = item.status === "completed" || item.status === "canceled";
+    const isSnoozed = isDone && !!item.snoozed;
+    const isClearing = isDone && !!item.completedAt && !isSnoozed;
     let secondsLeft: number | null = null;
     let fadeOpacity = 1;
     if (isClearing && item.completedAt) {
@@ -181,7 +192,12 @@ export default function SyncQueueScreen() {
     <View
       style={[
         styles.card,
-        { backgroundColor: colors.card, borderColor: colors.border, opacity: fadeOpacity },
+        {
+          backgroundColor: colors.card,
+          borderColor: isSnoozed ? statusColor + "60" : colors.border,
+          borderWidth: isSnoozed ? 1.5 : 1,
+          opacity: fadeOpacity,
+        },
       ]}
     >
       <View style={styles.cardHeader}>
@@ -193,6 +209,9 @@ export default function SyncQueueScreen() {
         <Text style={[styles.cardTitle, { color: colors.foreground }]}>
           {getActionDescription(item.actionType)}
         </Text>
+        {isSnoozed && (
+          <Feather name="bookmark" size={14} color={statusColor} />
+        )}
         <Text style={[styles.cardStatus, { color: statusColor }]}>
           {item.status}
         </Text>
@@ -207,7 +226,10 @@ export default function SyncQueueScreen() {
         </Text>
       )}
       {isClearing && secondsLeft !== null && (
-        <View
+        <TouchableOpacity
+          onPress={() => handleToggleSnooze(item)}
+          accessibilityRole="button"
+          accessibilityLabel={t("syncQueue.snooze.pinAccessibility")}
           style={[
             styles.clearingBadge,
             { backgroundColor: statusColor + "15", borderColor: statusColor + "40" },
@@ -217,7 +239,29 @@ export default function SyncQueueScreen() {
           <Text style={[styles.clearingText, { color: statusColor }]}>
             {t("syncQueue.clearingIn", { seconds: secondsLeft })}
           </Text>
-        </View>
+          <Text style={[styles.clearingHint, { color: statusColor }]}>
+            · {t("syncQueue.snooze.tapToKeep")}
+          </Text>
+        </TouchableOpacity>
+      )}
+      {isSnoozed && (
+        <TouchableOpacity
+          onPress={() => handleToggleSnooze(item)}
+          accessibilityRole="button"
+          accessibilityLabel={t("syncQueue.snooze.unpinAccessibility")}
+          style={[
+            styles.clearingBadge,
+            { backgroundColor: statusColor + "20", borderColor: statusColor + "60" },
+          ]}
+        >
+          <Feather name="bookmark" size={11} color={statusColor} />
+          <Text style={[styles.clearingText, { color: statusColor }]}>
+            {t("syncQueue.snooze.pinned")}
+          </Text>
+          <Text style={[styles.clearingHint, { color: statusColor }]}>
+            · {t("syncQueue.snooze.tapToRelease")}
+          </Text>
+        </TouchableOpacity>
       )}
       {(item.status === "queued" || item.status === "failed") && (
         <View style={styles.cardActions}>
@@ -355,6 +399,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   clearingText: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  clearingHint: { fontSize: 11, fontFamily: "Inter_400Regular", opacity: 0.85 },
   cardActions: { flexDirection: "row", gap: 8, marginTop: 4 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   actionText: { fontSize: 12, fontFamily: "Inter_500Medium" },
