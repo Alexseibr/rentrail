@@ -87,7 +87,7 @@ export default function DashboardScreen() {
 
   React.useEffect(() => {
     if (shouldRedirectToShift) {
-      router.replace("/my-shift" as `/service/work-order/${string}`);
+      router.replace("/my-shift" as never);
     }
   }, [shouldRedirectToShift, router]);
 
