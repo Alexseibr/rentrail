@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RideFlow — Описание продукта для заказчика</title>
+<style>
+  :root {
+    --brand: #F5A623;
+    --brand-dark: #d4891a;
+    --dark: #1a1a2e;
+    --dark2: #16213e;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #f9fafb;
+    --card: #ffffff;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --orange: #f97316;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  /* COVER */
+  .cover {
+    background: linear-gradient(135deg, var(--dark) 0%, var(--dark2) 60%, #0f3460 100%);
+    color: #fff;
+    padding: 80px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute; top: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(245,166,35,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover-logo {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 60px;
+  }
+  .cover-logo-icon {
+    width: 64px; height: 64px; background: var(--brand);
+    border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 28px; box-shadow: 0 8px 32px rgba(245,166,35,0.4);
+  }
+  .cover-logo-text { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; }
+  .cover-logo-sub { font-size: 14px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .cover h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 20px; }
+  .cover h1 span { color: var(--brand); }
+  .cover-desc { font-size: 20px; color: rgba(255,255,255,0.75); max-width: 640px; margin-bottom: 40px; }
+  .cover-meta {
+    display: flex; gap: 32px; flex-wrap: wrap;
+  }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-num { font-size: 36px; font-weight: 800; color: var(--brand); }
+  .cover-meta-label { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .cover-badge {
+    display: inline-block; background: rgba(245,166,35,0.2); border: 1px solid rgba(245,166,35,0.4);
+    color: var(--brand); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  /* NAV */
+  .toc {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 20px 60px; position: sticky; top: 0; z-index: 100;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .toc-label { font-weight: 700; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-right: 8px; }
+  .toc a {
+    color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500;
+    padding: 4px 12px; border-radius: 20px; transition: all 0.2s;
+  }
+  .toc a:hover { background: var(--brand); color: #fff; }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+  section { padding: 64px 0; }
+  section + section { border-top: 1px solid var(--border); }
+
+  h2 {
+    font-size: 34px; font-weight: 800; margin-bottom: 8px; color: var(--dark);
+    display: flex; align-items: center; gap: 12px;
+  }
+  h2 .icon { font-size: 32px; }
+  .section-sub { font-size: 17px; color: var(--text-muted); margin-bottom: 40px; max-width: 720px; }
+
+  h3 { font-size: 22px; font-weight: 700; margin: 32px 0 12px; color: var(--dark); }
+  h4 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; color: var(--dark); }
+  p { margin-bottom: 12px; }
+
+  /* CARDS */
+  .card-grid { display: grid; gap: 20px; }
+  .card-grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .card-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: var(--card); border-radius: 16px; padding: 24px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 16px;
+  }
+  .card h4 { margin-top: 0; font-size: 17px; }
+  .card p { font-size: 14px; color: var(--text-muted); margin-bottom: 0; }
+
+  /* ACCENT COLORS */
+  .accent-brand { background: rgba(245,166,35,0.12); color: var(--brand-dark); }
+  .accent-blue { background: rgba(59,130,246,0.12); color: var(--blue); }
+  .accent-green { background: rgba(34,197,94,0.12); color: #15803d; }
+  .accent-red { background: rgba(239,68,68,0.12); color: #b91c1c; }
+  .accent-purple { background: rgba(139,92,246,0.12); color: #6d28d9; }
+  .accent-orange { background: rgba(249,115,22,0.12); color: #c2410c; }
+
+  /* BADGE */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-yellow { background: #fef3c7; color: #b45309; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-gray { background: #f3f4f6; color: #4b5563; }
+  .badge-purple { background: #ede9fe; color: #6d28d9; }
+
+  /* SCREENSHOT BOX */
+  .screenshot-box {
+    background: var(--dark); border-radius: 20px; overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3); margin: 32px 0;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .screenshot-bar {
+    background: rgba(255,255,255,0.06); padding: 12px 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .screenshot-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .screenshot-url {
+    flex: 1; background: rgba(255,255,255,0.08); border-radius: 8px;
+    padding: 4px 12px; font-size: 12px; color: rgba(255,255,255,0.5);
+    margin: 0 12px;
+  }
+  .screenshot-img { display: block; width: 100%; }
+  .screenshot-caption {
+    text-align: center; font-size: 13px; color: var(--text-muted);
+    margin-top: 12px; font-style: italic;
+  }
+
+  /* MOBILE MOCKUP */
+  .mobile-row { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+  .mobile-frame {
+    width: 260px; min-width: 260px; background: var(--dark);
+    border-radius: 32px; overflow: hidden; padding: 12px;
+    box-shadow: 0 20px 48px rgba(0,0,0,0.25);
+    border: 2px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+  .mobile-screen {
+    background: #1c1c1e; border-radius: 22px; overflow: hidden; min-height: 480px;
+  }
+  .mobile-status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px 6px; font-size: 11px; color: rgba(255,255,255,0.8);
+    font-weight: 600;
+  }
+  .mobile-content { padding: 0 12px 12px; }
+  .mobile-desc { flex: 1; }
+
+  /* WORKFLOW */
+  .workflow {
+    display: flex; gap: 0; align-items: stretch; flex-wrap: wrap;
+    background: var(--card); border-radius: 16px; border: 1px solid var(--border);
+    overflow: hidden; margin: 24px 0;
+  }
+  .workflow-step {
+    flex: 1; min-width: 120px; padding: 20px 16px; text-align: center;
+    position: relative; border-right: 1px solid var(--border);
+  }
+  .workflow-step:last-child { border-right: none; }
+  .workflow-step::after {
+    content: '→';
+    position: absolute; right: -10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted); font-size: 16px; z-index: 1;
+  }
+  .workflow-step:last-child::after { display: none; }
+  .workflow-step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--brand); color: #fff; font-weight: 800; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+  }
+  .workflow-step-title { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .workflow-step-desc { font-size: 12px; color: var(--text-muted); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    background: var(--dark); color: #fff; padding: 12px 16px;
+    text-align: left; font-size: 13px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: #fafafa; }
+  .check { color: var(--green); font-size: 16px; }
+  .cross { color: #d1d5db; font-size: 16px; }
+
+  /* PROBLEM/SOLUTION */
+  .ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 32px 0; }
+  .ps-problem {
+    background: #fff5f5; border: 1px solid #fecaca; border-radius: 16px; padding: 24px;
+  }
+  .ps-solution {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 24px;
+  }
+  .ps-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .ps-problem .ps-label { color: #dc2626; }
+  .ps-solution .ps-label { color: #15803d; }
+  .ps-list { list-style: none; }
+  .ps-list li {
+    padding: 6px 0; font-size: 14px; border-bottom: 1px solid rgba(0,0,0,0.06);
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .ps-list li:last-child { border-bottom: none; }
+  .ps-list li::before { flex-shrink: 0; margin-top: 2px; }
+  .ps-problem .ps-list li::before { content: '✗'; color: #ef4444; }
+  .ps-solution .ps-list li::before { content: '✓'; color: #22c55e; }
+
+  /* ROLE TABLE */
+  .role-title { font-size: 13px; font-weight: 700; }
+  .role-desc { font-size: 12px; color: var(--text-muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+  /* KPI */
+  .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 24px 0; }
+  .kpi {
+    flex: 1; min-width: 160px; background: var(--card);
+    border-radius: 16px; padding: 20px; border: 1px solid var(--border);
+    text-align: center;
+  }
+  .kpi-num { font-size: 36px; font-weight: 800; color: var(--brand); }
+  .kpi-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  /* HIGHLIGHT */
+  .highlight-box {
+    background: linear-gradient(135deg, rgba(245,166,35,0.08), rgba(245,166,35,0.04));
+    border: 1px solid rgba(245,166,35,0.3); border-radius: 16px; padding: 24px; margin: 24px 0;
+  }
+  .highlight-box h4 { color: var(--brand-dark); margin-top: 0; }
+
+  /* STATUS PILLS */
+  .status-flow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+  .status-pill {
+    padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .arrow { color: var(--text-muted); font-size: 16px; }
+
+  /* LIST */
+  .feature-list { list-style: none; }
+  .feature-list li {
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start; font-size: 14px;
+  }
+  .feature-list li:last-child { border-bottom: none; }
+  .feature-list li span { flex-shrink: 0; }
+
+  /* FOOTER */
+  .footer {
+    background: var(--dark); color: rgba(255,255,255,0.6);
+    padding: 40px 60px; text-align: center; font-size: 13px;
+  }
+  .footer strong { color: var(--brand); }
+
+  /* APP MOCKUP SCREENS */
+  .mock-header {
+    background: var(--dark2); padding: 14px 16px;
+    font-size: 17px; font-weight: 700; color: #fff;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mock-kpi-row { display: flex; gap: 8px; padding: 12px; background: #111; }
+  .mock-kpi-card {
+    flex: 1; background: #1c1c1e; border-radius: 12px; padding: 12px;
+    text-align: center;
+  }
+  .mock-kpi-val { font-size: 22px; font-weight: 800; }
+  .mock-kpi-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+  .mock-section-title {
+    padding: 10px 14px 6px; font-size: 12px; font-weight: 700;
+    color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px;
+    background: #111;
+  }
+  .mock-order-card {
+    margin: 6px 12px; background: #1c1c1e; border-radius: 12px; padding: 12px;
+    border-left: 3px solid;
+  }
+  .mock-order-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .mock-order-meta { font-size: 11px; color: rgba(255,255,255,0.5); }
+  .mock-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700;
+  }
+  .mock-tab-bar {
+    background: #1c1c1e; display: flex; border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 0;
+  }
+  .mock-tab {
+    flex: 1; text-align: center; font-size: 9px;
+    color: rgba(255,255,255,0.4); padding: 4px;
+  }
+  .mock-tab.active { color: var(--brand); }
+  .mock-tab-icon { font-size: 18px; display: block; }
+
+  .mock-list-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: #111;
+  }
+  .mock-list-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .mock-list-title { font-size: 13px; font-weight: 600; color: #fff; }
+  .mock-list-sub { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+  /* ADMIN MOCKUP */
+  .admin-frame {
+    background: var(--card); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12); border: 1px solid var(--border);
+    margin: 24px 0;
+  }
+  .admin-topbar {
+    background: var(--dark); padding: 12px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .admin-logo { color: var(--brand); font-weight: 800; font-size: 16px; }
+  .admin-nav { display: flex; gap: 4px; flex: 1; }
+  .admin-nav-item {
+    padding: 5px 12px; border-radius: 8px; font-size: 12px;
+    color: rgba(255,255,255,0.6); cursor: pointer;
+  }
+  .admin-nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+  .admin-body { display: flex; min-height: 360px; }
+  .admin-sidebar {
+    width: 200px; background: #fafafa; border-right: 1px solid var(--border);
+    padding: 16px 0; flex-shrink: 0;
+  }
+  .admin-sidebar-item {
+    padding: 9px 20px; font-size: 13px; color: var(--text-muted); cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .admin-sidebar-item.active { background: rgba(245,166,35,0.1); color: var(--brand-dark); font-weight: 600; border-right: 3px solid var(--brand); }
+  .admin-main { flex: 1; padding: 20px 24px; overflow: hidden; }
+  .admin-kpi-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  .admin-kpi {
+    flex: 1; background: var(--card); border-radius: 12px; padding: 16px;
+    border: 1px solid var(--border); border-left: 4px solid;
+  }
+  .admin-kpi-val { font-size: 26px; font-weight: 800; }
+  .admin-kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .admin-table-head {
+    display: flex; gap: 8px; padding: 8px 12px;
+    background: #f8fafc; border-radius: 8px; margin-bottom: 6px;
+    font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+  }
+  .admin-table-row {
+    display: flex; gap: 8px; padding: 10px 12px; font-size: 13px;
+    border-bottom: 1px solid var(--border); align-items: center;
+  }
+  .admin-table-row:last-child { border-bottom: none; }
+  .col-1 { flex: 2; } .col-2 { flex: 1; } .col-3 { flex: 1; } .col-4 { flex: 1; }
+
+  @media (max-width: 768px) {
+    .cover { padding: 40px 24px; }
+    .cover h1 { font-size: 32px; }
+    .toc { padding: 12px 24px; }
+    .container { padding: 0 24px; }
+    .card-grid-2, .card-grid-3, .card-grid-4 { grid-template-columns: 1fr; }
+    .ps-grid { grid-template-columns: 1fr; }
+    .mobile-row { flex-direction: column; }
+    .mobile-frame { width: 100%; }
+  }
+  @media print {
+    .toc { display: none; }
+    section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ ОБЛОЖКА ══════════════════ -->
+<div class="cover">
+  <div class="cover-logo">
+    <div class="cover-logo-icon">🚲</div>
+    <div>
+      <div class="cover-logo-text">RideFlow</div>
+      <div class="cover-logo-sub">Платформа управления прокатом транспорта</div>
+    </div>
+  </div>
+  <div class="cover-badge">Версия 1.0 · Май 2025</div>
+  <h1>Полное описание<br><span>продукта</span></h1>
+  <p class="cover-desc">
+    Комплексная SaaS-система для управления прокатом велосипедов, электровелосипедов
+    и самокатов. Административный веб-кабинет + мобильное приложение для персонала и клиентов.
+  </p>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-num">3</div>
+      <div class="cover-meta-label">типа техники</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-num">8</div>
+      <div class="cover-meta-label">ролей пользователей</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-num">40+</div>
+      <div class="cover-meta-label">API-маршрутов</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-num">∞</div>
+      <div class="cover-meta-label">точек проката</div>
+    </div>
+  </div>
+</div>
+
+<!-- НАВИГАЦИЯ -->
+<div class="toc">
+  <span class="toc-label">Разделы:</span>
+  <a href="#overview">Обзор</a>
+  <a href="#problems">Бизнес-задачи</a>
+  <a href="#admin">Веб-кабинет</a>
+  <a href="#mobile">Мобильное приложение</a>
+  <a href="#roles">Роли и доступы</a>
+  <a href="#rental">Жизнецикл аренды</a>
+  <a href="#service">Сервис и ТО</a>
+  <a href="#client-app">Клиентская часть</a>
+  <a href="#tech">Технологии</a>
+  <a href="#pricing">Тарифы и внедрение</a>
+</div>
+
+<!-- ══════════════════ 1. ОБЗОР ══════════════════ -->
+<section id="overview">
+  <div class="container">
+    <h2><span class="icon">🎯</span> Что такое RideFlow?</h2>
+    <p class="section-sub">
+      RideFlow — это многофункциональная облачная платформа для компаний, занимающихся прокатом
+      велосипедов, электровелосипедов, самокатов и электросамокатов. Система охватывает
+      весь цикл работы: от регистрации клиента до возврата транспорта и формирования
+      бухгалтерских документов.
+    </p>
+
+    <!-- РЕАЛЬНЫЙ СКРИНШОТ ВХОДА -->
+    <div class="screenshot-box">
+      <div class="screenshot-bar">
+        <div class="screenshot-dot" style="background:#ef4444"></div>
+        <div class="screenshot-dot" style="background:#f59e0b"></div>
+        <div class="screenshot-dot" style="background:#22c55e"></div>
+        <div class="screenshot-url">rideflow.ru/admin — Вход в систему</div>
+      </div>
+      <img src="screenshots/admin-login.jpg" alt="Экран входа RideFlow" class="screenshot-img">
+    </div>
+    <p class="screenshot-caption">Экран входа в административный кабинет. Авторизация по номеру телефона в формате +7.</p>
+
+    <div class="card-grid card-grid-3" style="margin-top: 40px;">
+      <div class="card">
+        <div class="card-icon accent-blue">🖥️</div>
+        <h4>Веб-кабинет администратора</h4>
+        <p>Полное управление парком техники, арендами, клиентами, сотрудниками и аналитикой через браузер.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-brand">📱</div>
+        <h4>Мобильное приложение</h4>
+        <p>Приложение для iOS и Android — для сотрудников (операторы, механики) и клиентов-арендаторов.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-green">☁️</div>
+        <h4>Облачный бэкенд</h4>
+        <p>Надёжный API-сервер с PostgreSQL, ролевой моделью доступа и поддержкой нескольких компаний.</p>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 32px;">
+      <h4>🇷🇺 Российский рынок</h4>
+      <p>Система изначально адаптирована под российский рынок: авторизация по номеру телефона +7,
+      валюта — рубли (₽), форматы дат и времени соответствуют российским стандартам,
+      интерфейс полностью на русском языке. Тестовые номера: <strong>+7 999 000 0001</strong>, <strong>+7 999 000 0002</strong> и др.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 2. БИЗНЕС-ЗАДАЧИ ══════════════════ -->
+<section id="problems">
+  <div class="container">
+    <h2><span class="icon">💼</span> Какие бизнес-задачи решает система</h2>
+    <p class="section-sub">
+      Типичные проблемы компаний по прокату транспорта, которые RideFlow решает из коробки.
+    </p>
+
+    <div class="ps-grid">
+      <div class="ps-problem">
+        <div class="ps-label">❌ Проблема</div>
+        <ul class="ps-list">
+          <li>Учёт аренд ведётся в Excel или тетрадях — ошибки, потеря данных</li>
+          <li>Неизвестно, где находится конкретный велосипед и в каком состоянии</li>
+          <li>Клиент забронировал, но сотрудник не знает об этом</li>
+          <li>Нет контроля за мелким ремонтом — механики не отчитываются</li>
+          <li>Склад запчастей не учитывается, детали пропадают</li>
+          <li>Нет «чёрного списка» — одни и те же проблемные клиенты берут технику снова</li>
+          <li>Выручку считают в конце месяца вручную</li>
+          <li>Нельзя быстро узнать, сколько техники свободно прямо сейчас</li>
+        </ul>
+      </div>
+      <div class="ps-solution">
+        <div class="ps-label">✅ Решение RideFlow</div>
+        <ul class="ps-list">
+          <li>Все аренды в единой системе — история, статусы, оплаты в реальном времени</li>
+          <li>Карта парка с текущими статусами каждой единицы техники</li>
+          <li>Push-уведомления сотрудникам при новой брони или смене статуса</li>
+          <li>Система наряд-заказов: механик получает задание, фиксирует работу и детали</li>
+          <li>Склад запчастей с транзакциями — приход/расход привязан к нарядам</li>
+          <li>Чёрный список клиентов с проверкой при создании аренды</li>
+          <li>Аналитика выручки, загруженности и KPI в реальном времени</li>
+          <li>Дашборд с live-статусами: свободно, в аренде, на ТО, на зарядке</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-num">-80%</div>
+        <div class="kpi-label">Времени на ручной учёт</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num">+30%</div>
+        <div class="kpi-label">Эффективность парка</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num">0</div>
+        <div class="kpi-label">Потерянных аренд</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-num">24/7</div>
+        <div class="kpi-label">Доступность системы</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 3. ВЕБ-КАБИНЕТ ══════════════════ -->
+<section id="admin">
+  <div class="container">
+    <h2><span class="icon">🖥️</span> Веб-кабинет администратора</h2>
+    <p class="section-sub">
+      Доступен через любой браузер. Предназначен для владельцев, администраторов, менеджеров
+      и бухгалтеров. Адаптивный интерфейс на русском языке.
+    </p>
+
+    <!-- МАКЕТ ДАШБОРДА -->
+    <h3>📊 Главный дашборд</h3>
+    <p>Центральный экран показывает ключевые показатели прямо при входе в систему.</p>
+
+    <div class="admin-frame">
+      <div class="admin-topbar">
+        <div class="admin-logo">🚲 RideFlow</div>
+        <div class="admin-nav">
+          <div class="admin-nav-item active">Дашборд</div>
+          <div class="admin-nav-item">Парк</div>
+          <div class="admin-nav-item">Аренды</div>
+          <div class="admin-nav-item">Клиенты</div>
+          <div class="admin-nav-item">Сервис</div>
+          <div class="admin-nav-item">Аналитика</div>
+        </div>
+        <span style="color:rgba(255,255,255,0.5);font-size:13px;">Velocity Rides · Администратор</span>
+      </div>
+      <div class="admin-body">
+        <div class="admin-sidebar">
+          <div class="admin-sidebar-item active">📊 Обзор</div>
+          <div class="admin-sidebar-item">🚲 Парк техники</div>
+          <div class="admin-sidebar-item">📋 Аренды</div>
+          <div class="admin-sidebar-item">👥 Клиенты</div>
+          <div class="admin-sidebar-item">🗺️ Карта парка</div>
+          <div class="admin-sidebar-item">🔧 Сервис</div>
+          <div class="admin-sidebar-item">📍 Точки проката</div>
+          <div class="admin-sidebar-item">📈 Аналитика</div>
+          <div class="admin-sidebar-item">⚙️ Настройки</div>
+        </div>
+        <div class="admin-main">
+          <div style="font-size:20px;font-weight:800;margin-bottom:16px;color:var(--dark);">Доброе утро, Алексей 👋</div>
+          <div class="admin-kpi-row">
+            <div class="admin-kpi" style="border-color:var(--green);">
+              <div class="admin-kpi-label">Свободно</div>
+              <div class="admin-kpi-val" style="color:var(--green);">24</div>
+            </div>
+            <div class="admin-kpi" style="border-color:var(--blue);">
+              <div class="admin-kpi-label">В аренде</div>
+              <div class="admin-kpi-val" style="color:var(--blue);">18</div>
+            </div>
+            <div class="admin-kpi" style="border-color:var(--yellow);">
+              <div class="admin-kpi-label">На ТО</div>
+              <div class="admin-kpi-val" style="color:var(--yellow);">5</div>
+            </div>
+            <div class="admin-kpi" style="border-color:var(--red);">
+              <div class="admin-kpi-label">Просрочено</div>
+              <div class="admin-kpi-val" style="color:var(--red);">2</div>
+            </div>
+          </div>
+          <div class="admin-table-head">
+            <div class="col-1">Аренда</div>
+            <div class="col-2">Клиент</div>
+            <div class="col-3">Велосипед</div>
+            <div class="col-4">Статус</div>
+          </div>
+          <div class="admin-table-row">
+            <div class="col-1" style="font-weight:600;">АР-2025-0441</div>
+            <div class="col-2">Иванов И.И.</div>
+            <div class="col-2">Trek FX-3 · VL-007</div>
+            <div class="col-4"><span class="badge badge-blue">В аренде</span></div>
+          </div>
+          <div class="admin-table-row">
+            <div class="col-1" style="font-weight:600;">АР-2025-0440</div>
+            <div class="col-2">Петрова А.С.</div>
+            <div class="col-2">Merida · VL-012</div>
+            <div class="col-4"><span class="badge badge-yellow">Ожидает</span></div>
+          </div>
+          <div class="admin-table-row">
+            <div class="col-1" style="font-weight:600;">АР-2025-0439</div>
+            <div class="col-2">Сидоров П.В.</div>
+            <div class="col-2">Xiaomi Scooter · SC-003</div>
+            <div class="col-4"><span class="badge badge-red">Просрочена</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ПАРК ТЕХНИКИ -->
+    <h3>🚲 Управление парком техники</h3>
+    <p>Раздел «Парк» содержит полный каталог всей техники компании. Каждая единица имеет подробную карточку.</p>
+
+    <div class="card-grid card-grid-2">
+      <div>
+        <h4>Типы транспортных средств</h4>
+        <ul class="feature-list">
+          <li><span>🚲</span> <div><strong>Велосипед</strong> — обычный механический велосипед</div></li>
+          <li><span>⚡</span> <div><strong>Электровелосипед</strong> — с электроприводом и батареей</div></li>
+          <li><span>🛴</span> <div><strong>Самокат</strong> — механический самокат</div></li>
+          <li><span>🔋</span> <div><strong>Электросамокат</strong> — электрический самокат</div></li>
+        </ul>
+        <h4 style="margin-top:20px;">Статусы техники</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+          <div><span class="badge badge-green">Свободен</span> — доступен для аренды</div>
+          <div><span class="badge badge-blue">В аренде</span> — у клиента</div>
+          <div><span class="badge badge-yellow">На ТО</span> — в ремонте или обслуживании</div>
+          <div><span class="badge badge-purple">На зарядке</span> — заряжается</div>
+          <div><span class="badge" style="background:#e0f2fe;color:#0369a1;">Забронирован</span> — зарезервирован</div>
+          <div><span class="badge badge-red">Заблокирован</span> — недоступен</div>
+          <div><span class="badge badge-red">Потерян / Угнан</span></div>
+          <div><span class="badge badge-gray">Списан</span> — выведен из эксплуатации</div>
+        </div>
+      </div>
+      <div>
+        <h4>Карточка единицы техники</h4>
+        <ul class="feature-list">
+          <li><span>🔖</span> Внутренний код (напр. VL-007)</li>
+          <li><span>📱</span> QR-код для сканирования сотрудником или клиентом</li>
+          <li><span>🏭</span> Марка, модель, серийный номер</li>
+          <li><span>📍</span> Текущая точка проката (филиал, станция)</li>
+          <li><span>🔋</span> Заряд батареи (для электро-техники)</li>
+          <li><span>📡</span> GPS-координаты (если установлен трекер)</li>
+          <li><span>📋</span> История статусов с датами</li>
+          <li><span>🔧</span> История технического обслуживания</li>
+          <li><span>📎</span> Прикреплённые фотографии и документы</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- КАРТА ПАРКА -->
+    <h3>🗺️ Карта парка</h3>
+    <p>Визуальное отображение всей техники на карте в режиме реального времени. Цвет маркера
+    соответствует статусу единицы. Менеджер видит, где находится каждый велосипед или самокат,
+    может кликнуть на маркер и перейти к карточке.</p>
+
+    <div style="background:linear-gradient(135deg,#1a237e,#283593);border-radius:16px;padding:40px;text-align:center;margin:16px 0;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:20px;left:20px;font-size:12px;color:rgba(255,255,255,0.6);">Яндекс.Карты / OpenStreetMap</div>
+      <div style="font-size:48px;margin-bottom:16px;">🗺️</div>
+      <div style="color:rgba(255,255,255,0.9);font-size:15px;margin-bottom:16px;">Интерактивная карта с маркерами техники</div>
+      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+        <div style="background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.4);padding:6px 14px;border-radius:20px;color:#4ade80;font-size:13px;">● Свободна</div>
+        <div style="background:rgba(59,130,246,0.2);border:1px solid rgba(59,130,246,0.4);padding:6px 14px;border-radius:20px;color:#60a5fa;font-size:13px;">● В аренде</div>
+        <div style="background:rgba(245,158,11,0.2);border:1px solid rgba(245,158,11,0.4);padding:6px 14px;border-radius:20px;color:#fbbf24;font-size:13px;">● На ТО</div>
+        <div style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);padding:6px 14px;border-radius:20px;color:#f87171;font-size:13px;">● Проблема</div>
+      </div>
+    </div>
+
+    <!-- УПРАВЛЕНИЕ АРЕНДАМИ -->
+    <h3>📋 Управление арендами</h3>
+    <p>Полный журнал всех аренд с фильтрацией по статусу, дате, клиенту и точке проката.</p>
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-icon accent-blue">📝</div>
+        <h4>Создание аренды</h4>
+        <p>Оператор создаёт аренду вручную: выбирает клиента, транспорт, тариф, точку, даты. Автоматически рассчитывается стоимость в рублях.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-green">✅</div>
+        <h4>Подтверждение и выдача</h4>
+        <p>Менеджер подтверждает бронь, оператор фиксирует фактическую выдачу. Статус техники автоматически меняется на «В аренде».</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-orange">🔁</div>
+        <h4>Продление и возврат</h4>
+        <p>Аренду можно продлить с указанием причины. При возврате фиксируется состояние техники и сумма к оплате.</p>
+      </div>
+    </div>
+
+    <!-- CRM КЛИЕНТОВ -->
+    <h3>👥 CRM клиентов</h3>
+    <p>База данных всех клиентов с историей аренд, контактными данными и статусом.</p>
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <h4>Карточка клиента содержит:</h4>
+        <ul class="feature-list">
+          <li><span>📞</span> Телефон в формате +7 (российский номер)</li>
+          <li><span>👤</span> ФИО, email</li>
+          <li><span>📋</span> История всех аренд</li>
+          <li><span>💳</span> История платежей в рублях</li>
+          <li><span>🚫</span> Статус в чёрном списке</li>
+          <li><span>🏢</span> Принадлежность к компании (для B2B)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Чёрный список</h4>
+        <p>Система позволяет вносить клиентов в чёрный список с указанием причины (порча имущества, неоплата, нарушения). При попытке создать новую аренду для клиента из чёрного списка система выдаёт предупреждение. Список распространяется на всю компанию.</p>
+      </div>
+    </div>
+
+    <!-- АНАЛИТИКА -->
+    <h3>📈 Аналитика и отчёты</h3>
+    <div class="card-grid card-grid-4">
+      <div class="card">
+        <div class="card-icon accent-brand">💰</div>
+        <h4>Выручка</h4>
+        <p>Динамика выручки в рублях по дням, неделям, месяцам.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-blue">📊</div>
+        <h4>Загруженность</h4>
+        <p>Процент использования парка. Какой транспорт востребован больше.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-green">🔄</div>
+        <h4>Аренды</h4>
+        <p>Количество аренд, средняя длительность, возвраты.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-red">⚠️</div>
+        <h4>Инциденты</h4>
+        <p>Количество поломок, стоимость ремонтов, статистика по механикам.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 4. МОБИЛЬНОЕ ПРИЛОЖЕНИЕ ══════════════════ -->
+<section id="mobile">
+  <div class="container">
+    <h2><span class="icon">📱</span> Мобильное приложение для сотрудников</h2>
+    <p class="section-sub">
+      Приложение для iOS и Android используется оперативным персоналом на точках
+      проката: операторами, механиками, выездными сотрудниками.
+      Работает при нестабильном интернете благодаря офлайн-очереди синхронизации.
+    </p>
+
+    <!-- ЭКРАН МОЯ СМЕНА (МЕХАНИК) -->
+    <h3>🔧 Экран «Моя смена» — для механиков</h3>
+    <p>Специализированный экран для механиков: показывает только их задания на текущую смену,
+    расставленные по приоритету. Механик не видит лишнего — только то, что нужно сделать прямо сейчас.</p>
+
+    <div class="mobile-row">
+      <div class="mobile-frame">
+        <div class="mobile-screen">
+          <div class="mobile-status-bar">
+            <span>9:41</span><span>●●●● 100%</span>
+          </div>
+          <div class="mock-header">
+            Моя смена <span style="font-size:13px;color:rgba(255,255,255,0.5);">04 мая 2025</span>
+          </div>
+          <div class="mock-kpi-row">
+            <div class="mock-kpi-card">
+              <div class="mock-kpi-val" style="color:#f59e0b;">3</div>
+              <div class="mock-kpi-label">В работе</div>
+            </div>
+            <div class="mock-kpi-card">
+              <div class="mock-kpi-val" style="color:#3b82f6;">5</div>
+              <div class="mock-kpi-label">Назначено</div>
+            </div>
+            <div class="mock-kpi-card">
+              <div class="mock-kpi-val" style="color:#ef4444;">2</div>
+              <div class="mock-kpi-label">Ждут запчасти</div>
+            </div>
+          </div>
+          <div class="mock-section-title">СРОЧНЫЕ ЗАДАНИЯ</div>
+          <div class="mock-order-card" style="border-color:#ef4444;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span class="mock-badge" style="background:rgba(239,68,68,0.2);color:#f87171;">🚨 СРОЧНО</span>
+              <span class="mock-badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;">В работе</span>
+            </div>
+            <div class="mock-order-title">Замена тормозных колодок</div>
+            <div class="mock-order-meta">VL-007 · Trek FX-3 · 15 мин. назад</div>
+          </div>
+          <div class="mock-order-card" style="border-color:#f59e0b;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span class="mock-badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;">⬆ ВЫСОКИЙ</span>
+              <span class="mock-badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;">Назначено</span>
+            </div>
+            <div class="mock-order-title">Прокол заднего колеса</div>
+            <div class="mock-order-meta">SC-003 · Xiaomi Pro 2 · 42 мин. назад</div>
+          </div>
+          <div class="mock-order-card" style="border-color:#3b82f6;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span class="mock-badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;">СРЕДНИЙ</span>
+              <span class="mock-badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;">Назначено</span>
+            </div>
+            <div class="mock-order-title">Плановое ТО (1000 км)</div>
+            <div class="mock-order-meta">EB-012 · Merida · 2 ч. назад</div>
+          </div>
+          <div class="mock-tab-bar">
+            <div class="mock-tab active"><span class="mock-tab-icon">📋</span>Смена</div>
+            <div class="mock-tab"><span class="mock-tab-icon">🚲</span>Парк</div>
+            <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>Прочее</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mobile-desc">
+        <h4>Что видит механик на экране «Моя смена»:</h4>
+        <ul class="feature-list">
+          <li><span>📊</span> <div><strong>3 KPI-карточки</strong> — заданий в работе, назначено лично ему, ждут запчастей</div></li>
+          <li><span>🔴</span> <div><strong>Список активных нарядов</strong> — только «Назначено» и «В работе», отсортированы по приоритету (Срочно → Высокий → Средний → Низкий)</div></li>
+          <li><span>✅</span> <div><strong>Выполненные сегодня</strong> — сворачиваемый раздел (последние 5), показывает время завершения</div></li>
+          <li><span>👆</span> <div>Нажатие на наряд открывает полную карточку: детали, запчасти, смена статуса</div></li>
+          <li><span>🔄</span> <div>Pull-to-refresh — потяните вниз для обновления</div></li>
+        </ul>
+        <div class="highlight-box" style="margin-top: 20px;">
+          <h4>💡 Зачем это нужно бизнесу?</h4>
+          <p>Механик не тратит время на поиск задания — он сразу видит, что делать.
+          Руководитель видит в реальном времени, кто что делает. Нет риска, что срочная
+          поломка «потеряется» среди других задач.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ДРУГИЕ ЭКРАНЫ СОТРУДНИКА -->
+    <h3>Другие экраны сотрудника</h3>
+    <div class="mobile-row" style="margin-top: 24px; gap: 20px;">
+
+      <!-- ДАШБОРД -->
+      <div class="mobile-frame">
+        <div class="mobile-screen">
+          <div class="mobile-status-bar"><span>9:41</span><span>●●●● 100%</span></div>
+          <div class="mock-header">Velocity Rides</div>
+          <div class="mock-kpi-row">
+            <div class="mock-kpi-card">
+              <div class="mock-kpi-val" style="color:#22c55e;">24</div>
+              <div class="mock-kpi-label">Свободно</div>
+            </div>
+            <div class="mock-kpi-card">
+              <div class="mock-kpi-val" style="color:#3b82f6;">18</div>
+              <div class="mock-kpi-label">В аренде</div>
+            </div>
+            <div class="mock-kpi-card">
+              <div class="mock-kpi-val" style="color:#f59e0b;">5</div>
+              <div class="mock-kpi-label">На ТО</div>
+            </div>
+          </div>
+          <div class="mock-section-title">АКТИВНЫЕ АРЕНДЫ</div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(59,130,246,0.2);">📋</div>
+            <div>
+              <div class="mock-list-title">Иванов И.И.</div>
+              <div class="mock-list-sub">Trek FX-3 · до 18:00</div>
+            </div>
+            <span class="badge badge-blue">В аренде</span>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(239,68,68,0.2);">⏰</div>
+            <div>
+              <div class="mock-list-title">Сидоров П.В.</div>
+              <div class="mock-list-sub">Xiaomi Scooter · просрочена</div>
+            </div>
+            <span class="badge badge-red">Просрочена</span>
+          </div>
+          <div class="mock-tab-bar">
+            <div class="mock-tab active"><span class="mock-tab-icon">📊</span>Главная</div>
+            <div class="mock-tab"><span class="mock-tab-icon">🚲</span>Парк</div>
+            <div class="mock-tab"><span class="mock-tab-icon">📋</span>Аренды</div>
+            <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>Прочее</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ПАРК -->
+      <div class="mobile-frame">
+        <div class="mobile-screen">
+          <div class="mobile-status-bar"><span>9:41</span><span>●●●● 100%</span></div>
+          <div class="mock-header">Парк техники</div>
+          <div style="background:#111;padding:10px 12px;">
+            <div style="background:#1c1c1e;border-radius:10px;padding:8px 12px;color:rgba(255,255,255,0.4);font-size:13px;">🔍 Поиск по коду или модели...</div>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(34,197,94,0.2);color:#4ade80;">⚡</div>
+            <div style="flex:1;">
+              <div class="mock-list-title">Trek FX-3 E-Bike</div>
+              <div class="mock-list-sub">EB-001 · Точка «Центр»</div>
+            </div>
+            <span class="badge badge-green">Свободен</span>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(59,130,246,0.2);color:#60a5fa;">🚲</div>
+            <div style="flex:1;">
+              <div class="mock-list-title">Merida Crossway 100</div>
+              <div class="mock-list-sub">VL-007 · В аренде</div>
+            </div>
+            <span class="badge badge-blue">В аренде</span>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(245,158,11,0.2);color:#fbbf24;">🛴</div>
+            <div style="flex:1;">
+              <div class="mock-list-title">Xiaomi Pro 2</div>
+              <div class="mock-list-sub">SC-003 · Ремонт</div>
+            </div>
+            <span class="badge badge-yellow">На ТО</span>
+          </div>
+          <div class="mock-tab-bar">
+            <div class="mock-tab"><span class="mock-tab-icon">📊</span>Главная</div>
+            <div class="mock-tab active"><span class="mock-tab-icon">🚲</span>Парк</div>
+            <div class="mock-tab"><span class="mock-tab-icon">📋</span>Аренды</div>
+            <div class="mock-tab"><span class="mock-tab-icon">⚙️</span>Прочее</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ПРОЧЕЕ / ОПЕРАЦИИ -->
+      <div class="mobile-frame">
+        <div class="mobile-screen">
+          <div class="mobile-status-bar"><span>9:41</span><span>●●●● 100%</span></div>
+          <div class="mock-header">Операции</div>
+          <div class="mock-section-title">ПОЛЕВЫЕ ДЕЙСТВИЯ</div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(59,130,246,0.2);">📷</div>
+            <div><div class="mock-list-title">Сканировать QR</div><div class="mock-list-sub">Открыть карточку по QR-коду</div></div>
+            <span style="color:rgba(255,255,255,0.3);">›</span>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(239,68,68,0.2);">⚠️</div>
+            <div><div class="mock-list-title">Зафиксировать инцидент</div><div class="mock-list-sub">Поломка, ДТП, пропажа</div></div>
+            <span style="color:rgba(255,255,255,0.3);">›</span>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(139,92,246,0.2);">🔧</div>
+            <div><div class="mock-list-title">Новое ТО</div><div class="mock-list-sub">Создать задание на обслуживание</div></div>
+            <span style="color:rgba(255,255,255,0.3);">›</span>
+          </div>
+          <div class="mock-section-title">СЕРВИС</div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(59,130,246,0.2);">📋</div>
+            <div><div class="mock-list-title">Наряд-заказы</div></div>
+            <span style="color:rgba(255,255,255,0.3);">›</span>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(245,158,11,0.2);">📦</div>
+            <div><div class="mock-list-title">Склад запчастей</div></div>
+            <span style="color:rgba(255,255,255,0.3);">›</span>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(139,92,246,0.2);">📅</div>
+            <div><div class="mock-list-title">Расписание ТО</div></div>
+            <span style="color:rgba(255,255,255,0.3);">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR СКАНЕР -->
+    <h3>📷 QR-сканер</h3>
+    <p>Сотрудник наводит камеру смартфона на QR-код, приклеенный к транспорту, — система
+    мгновенно открывает карточку этой единицы. Можно быстро изменить статус, создать
+    наряд или привязать технику к аренде.</p>
+
+    <div class="highlight-box">
+      <h4>📡 Офлайн-синхронизация</h4>
+      <p>Если сотрудник работает в зоне плохого интернета (подвал, окраина), действия
+      сохраняются локально и синхронизируются автоматически при восстановлении связи.
+      Счётчик несинхронизированных действий всегда виден в приложении.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 5. РОЛИ И ДОСТУПЫ ══════════════════ -->
+<section id="roles">
+  <div class="container">
+    <h2><span class="icon">👤</span> Роли пользователей и права доступа</h2>
+    <p class="section-sub">
+      Гибкая ролевая модель позволяет дать каждому сотруднику ровно те права,
+      которые нужны для его работы — не больше и не меньше.
+    </p>
+
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Роль</th>
+          <th>Парк</th>
+          <th>Аренды</th>
+          <th>Клиенты</th>
+          <th>Финансы</th>
+          <th>Сервис</th>
+          <th>Настройки</th>
+          <th>Аналитика</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="role-title"><span class="dot" style="background:#8b5cf6;"></span>Владелец</div>
+            <div class="role-desc">Полный доступ ко всему</div>
+          </td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="role-title"><span class="dot" style="background:#3b82f6;"></span>Администратор</div>
+            <div class="role-desc">Управление без изменения компании</div>
+          </td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="cross">–</td>
+          <td class="check">✓</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="role-title"><span class="dot" style="background:#22c55e;"></span>Менеджер</div>
+            <div class="role-desc">Операционное управление</div>
+          </td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td class="check">✓</td>
+          <td>Частично</td>
+          <td class="check">✓</td>
+          <td class="cross">–</td>
+          <td>Частично</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="role-title"><span class="dot" style="background:#f59e0b;"></span>Бухгалтер</div>
+            <div class="role-desc">Финансовые операции</div>
+          </td>
+          <td>Только чтение</td>
+          <td>Только чтение</td>
+          <td>Только чтение</td>
+          <td class="check">✓</td>
+          <td class="cross">–</td>
+          <td class="cross">–</td>
+          <td>Только чтение</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="role-title"><span class="dot" style="background:#0ea5e9;"></span>Оператор</div>
+            <div class="role-desc">Выдача/возврат техники</div>
+          </td>
+          <td>Статусы</td>
+          <td class="check">✓</td>
+          <td>Частично</td>
+          <td class="cross">–</td>
+          <td class="cross">–</td>
+          <td class="cross">–</td>
+          <td class="cross">–</td>
+        </tr>
+        <tr style="background:#fff9f0;">
+          <td>
+            <div class="role-title"><span class="dot" style="background:#f97316;"></span>Механик</div>
+            <div class="role-desc">Экран «Моя смена» + сервис</div>
+          </td>
+          <td>Статусы + устройства</td>
+          <td class="cross">–</td>
+          <td class="cross">–</td>
+          <td class="cross">–</td>
+          <td class="check">✓</td>
+          <td class="cross">–</td>
+          <td class="cross">–</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="role-title"><span class="dot" style="background:#94a3b8;"></span>Наблюдатель</div>
+            <div class="role-desc">Только просмотр</div>
+          </td>
+          <td>Только чтение</td>
+          <td>Только чтение</td>
+          <td>Только чтение</td>
+          <td>Только чтение</td>
+          <td>Только чтение</td>
+          <td class="cross">–</td>
+          <td>Только чтение</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="highlight-box" style="margin-top: 32px;">
+      <h4>🔒 Как работает авторизация</h4>
+      <p>Каждый пользователь привязан к компании с конкретной ролью. Войти в систему
+      можно по номеру телефона +7 с OTP-кодом (SMS) или паролем. Один и тот же человек
+      может состоять в нескольких компаниях с разными ролями.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 6. ЖИЗНЕЦИКЛ АРЕНДЫ ══════════════════ -->
+<section id="rental">
+  <div class="container">
+    <h2><span class="icon">🔄</span> Жизненный цикл аренды</h2>
+    <p class="section-sub">
+      Полный путь от заявки клиента до закрытия аренды и формирования оплаты.
+    </p>
+
+    <div class="workflow">
+      <div class="workflow-step">
+        <div class="workflow-step-num">1</div>
+        <div class="workflow-step-title">Черновик</div>
+        <div class="workflow-step-desc">Аренда создана, не подтверждена</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">2</div>
+        <div class="workflow-step-title">Подтверждена</div>
+        <div class="workflow-step-desc">Менеджер одобрил бронь</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">3</div>
+        <div class="workflow-step-title">Ожидает выдачи</div>
+        <div class="workflow-step-desc">Клиент придёт забрать</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">4</div>
+        <div class="workflow-step-title">Активная</div>
+        <div class="workflow-step-desc">Техника у клиента</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">5</div>
+        <div class="workflow-step-title">Завершена</div>
+        <div class="workflow-step-desc">Возврат, оплата закрыта</div>
+      </div>
+    </div>
+
+    <div class="card-grid card-grid-2" style="margin-top: 24px;">
+      <div>
+        <h4>Что фиксируется при создании аренды:</h4>
+        <ul class="feature-list">
+          <li><span>🚲</span> Конкретная единица техники (по QR или вручную)</li>
+          <li><span>👤</span> Клиент (из базы или новый)</li>
+          <li><span>📍</span> Точка выдачи и возврата</li>
+          <li><span>📅</span> Дата и время начала и конца</li>
+          <li><span>💰</span> Тариф и стоимость в рублях (расчёт автоматический)</li>
+          <li><span>🏦</span> Залоговая сумма в рублях</li>
+          <li><span>📝</span> Примечания оператора</li>
+        </ul>
+      </div>
+      <div>
+        <h4>При возврате фиксируется:</h4>
+        <ul class="feature-list">
+          <li><span>📍</span> Точка возврата (может отличаться от выдачи)</li>
+          <li><span>🔧</span> Состояние техники при возврате</li>
+          <li><span>💰</span> Итоговая сумма к оплате</li>
+          <li><span>🕐</span> Фактическое время возврата</li>
+          <li><span>📝</span> Комментарий сотрудника</li>
+        </ul>
+        <h4 style="margin-top:20px;">Продление аренды</h4>
+        <p style="font-size:14px;color:var(--text-muted);">Менеджер может продлить действующую аренду с указанием новой даты окончания и причины. Автоматически пересчитывается стоимость.</p>
+      </div>
+    </div>
+
+    <h3>💳 Платежи</h3>
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-icon accent-green">₽</div>
+        <h4>Наличные</h4>
+        <p>Оператор фиксирует получение наличных в рублях.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-blue">💳</div>
+        <h4>Банковская карта</h4>
+        <p>Онлайн-оплата или терминал. Платёж привязывается к аренде.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-orange">📱</div>
+        <h4>QR / СБП</h4>
+        <p>Оплата через Систему быстрых платежей.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 7. СЕРВИС И ТО ══════════════════ -->
+<section id="service">
+  <div class="container">
+    <h2><span class="icon">🔧</span> Модуль сервиса и технического обслуживания</h2>
+    <p class="section-sub">
+      Полный цикл управления обслуживанием и ремонтом парка: от фиксации поломки
+      до закрытия наряда и списания запчастей со склада.
+    </p>
+
+    <h3>📋 Сервисные заявки</h3>
+    <p>Когда сотрудник или клиент замечает проблему с техникой, создаётся сервисная заявка.</p>
+
+    <div class="card-grid card-grid-2">
+      <div>
+        <h4>Типы заявок:</h4>
+        <ul class="feature-list">
+          <li><span>💥</span> Поломка</li>
+          <li><span>🔴</span> Прокол шины</li>
+          <li><span>🛑</span> Проблема с тормозами</li>
+          <li><span>🔋</span> Проблема с батареей</li>
+          <li><span>⚡</span> Электрическая неисправность</li>
+          <li><span>💔</span> Повреждение кузова</li>
+          <li><span>🗓️</span> Плановое ТО</li>
+          <li><span>🔍</span> Технический осмотр</li>
+          <li><span>🧹</span> Уборка/мойка</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Жизненный цикл заявки:</h4>
+        <div class="status-flow">
+          <span class="status-pill" style="background:#dbeafe;color:#1d4ed8;">Новая</span>
+          <span class="arrow">→</span>
+          <span class="status-pill" style="background:#e0f2fe;color:#0369a1;">Назначена</span>
+          <span class="arrow">→</span>
+          <span class="status-pill" style="background:#fef9c3;color:#854d0e;">В работе</span>
+        </div>
+        <div class="status-flow">
+          <span class="status-pill" style="background:#fef3c7;color:#92400e;">Приостановлена</span>
+          <span class="arrow">→</span>
+          <span class="status-pill" style="background:#dcfce7;color:#15803d;">Выполнена</span>
+          <span class="arrow">|</span>
+          <span class="status-pill" style="background:#f3f4f6;color:#4b5563;">Отменена</span>
+        </div>
+        <h4 style="margin-top: 20px;">Приоритеты:</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div><span class="badge badge-gray">Низкий</span> — не срочно, по расписанию</div>
+          <div><span class="badge badge-blue">Средний</span> — плановый ремонт</div>
+          <div><span class="badge badge-yellow">Высокий</span> — требует внимания</div>
+          <div><span class="badge badge-red">Срочный</span> — немедленное реагирование</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>📑 Наряд-заказы</h3>
+    <p>На основе заявки создаётся наряд-заказ — документ, который назначается конкретному механику.</p>
+
+    <div class="admin-frame">
+      <div class="admin-topbar">
+        <div class="admin-logo">🔧 Наряд-заказы</div>
+        <div style="color:rgba(255,255,255,0.5);font-size:13px;">Сервисный раздел</div>
+      </div>
+      <div style="padding:20px 24px;">
+        <div class="admin-kpi-row">
+          <div class="admin-kpi" style="border-color:var(--blue);">
+            <div class="admin-kpi-label">Новые</div>
+            <div class="admin-kpi-val" style="color:var(--blue);">4</div>
+          </div>
+          <div class="admin-kpi" style="border-color:var(--yellow);">
+            <div class="admin-kpi-label">В работе</div>
+            <div class="admin-kpi-val" style="color:var(--yellow);">8</div>
+          </div>
+          <div class="admin-kpi" style="border-color:var(--orange);">
+            <div class="admin-kpi-label">Ждут запчасти</div>
+            <div class="admin-kpi-val" style="color:var(--orange);">2</div>
+          </div>
+          <div class="admin-kpi" style="border-color:var(--green);">
+            <div class="admin-kpi-label">Выполнено сегодня</div>
+            <div class="admin-kpi-val" style="color:var(--green);">12</div>
+          </div>
+        </div>
+        <div class="admin-table-head">
+          <div class="col-1">Задание</div>
+          <div class="col-2">Техника</div>
+          <div class="col-2">Механик</div>
+          <div class="col-2">Приоритет</div>
+          <div class="col-2">Статус</div>
+        </div>
+        <div class="admin-table-row">
+          <div class="col-1" style="font-weight:600;">Замена тормозных колодок</div>
+          <div class="col-2">VL-007 Trek FX-3</div>
+          <div class="col-2">Петров А.С.</div>
+          <div class="col-2"><span class="badge badge-red">Срочный</span></div>
+          <div class="col-2"><span class="badge badge-yellow">В работе</span></div>
+        </div>
+        <div class="admin-table-row">
+          <div class="col-1" style="font-weight:600;">Плановое ТО 1000 км</div>
+          <div class="col-2">EB-012 Merida E-Bike</div>
+          <div class="col-2">Иванов М.В.</div>
+          <div class="col-2"><span class="badge badge-blue">Средний</span></div>
+          <div class="col-2"><span class="badge badge-blue">Назначено</span></div>
+        </div>
+        <div class="admin-table-row">
+          <div class="col-1" style="font-weight:600;">Замена камеры переднего колеса</div>
+          <div class="col-2">SC-003 Xiaomi Pro 2</div>
+          <div class="col-2">Сидоров К.Р.</div>
+          <div class="col-2"><span class="badge badge-yellow">Высокий</span></div>
+          <div class="col-2"><span class="badge" style="background:#fef3c7;color:#92400e;">Ждёт запчасти</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid card-grid-3" style="margin-top: 24px;">
+      <div class="card">
+        <div class="card-icon accent-purple">📦</div>
+        <h4>Склад запчастей</h4>
+        <p>Учёт всех деталей: поступление, расход, остатки. Каждое списание привязано к конкретному наряду.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-green">📅</div>
+        <h4>Расписание ТО</h4>
+        <p>Плановые работы настраиваются по километражу или периодичности. Система напоминает о предстоящем ТО.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-blue">📝</div>
+        <h4>Журнал обслуживания</h4>
+        <p>Полная история ремонтов по каждой единице техники. Типы работ: общее ТО, тормоза, цепь, электрика и др.</p>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <h4>💡 Типы наряд-заказов</h4>
+      <p>Выездной ремонт (механик едет к технике), ремонт в мастерской, плановое ТО, технический осмотр, эвакуация, уборка. Для каждого типа — своя логика выполнения.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 8. КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ ══════════════════ -->
+<section id="client-app">
+  <div class="container">
+    <h2><span class="icon">🙋</span> Мобильное приложение для клиентов</h2>
+    <p class="section-sub">
+      Клиент скачивает то же приложение, что и сотрудники, но видит только клиентский
+      интерфейс. Вход по номеру телефона +7.
+    </p>
+
+    <div class="mobile-row">
+      <!-- КАТАЛОГ ТРАНСПОРТА -->
+      <div class="mobile-frame">
+        <div class="mobile-screen">
+          <div class="mobile-status-bar"><span>9:41</span><span>●●●● 100%</span></div>
+          <div class="mock-header">Доступная техника</div>
+          <div style="background:#111;padding:10px 12px;">
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;background:#1c1c1e;border-radius:8px;padding:7px 12px;font-size:12px;color:var(--brand);font-weight:700;text-align:center;">Все</div>
+              <div style="flex:1;background:#1c1c1e;border-radius:8px;padding:7px 12px;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;">⚡ Эл/вело</div>
+              <div style="flex:1;background:#1c1c1e;border-radius:8px;padding:7px 12px;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;">🛴 Самокат</div>
+            </div>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(34,197,94,0.2);font-size:20px;">⚡</div>
+            <div style="flex:1;">
+              <div class="mock-list-title">Trek FX-3 E-Bike</div>
+              <div class="mock-list-sub">Точка «Центр» · 🔋 94%</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;color:var(--brand);">от 350 ₽/ч</div>
+              <span class="badge badge-green">Свободен</span>
+            </div>
+          </div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(34,197,94,0.2);font-size:20px;">🚲</div>
+            <div style="flex:1;">
+              <div class="mock-list-title">Merida Crossway 100</div>
+              <div class="mock-list-sub">Точка «Парк» · Велосипед</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;font-weight:700;color:var(--brand);">от 200 ₽/ч</div>
+              <span class="badge badge-green">Свободен</span>
+            </div>
+          </div>
+          <div class="mock-tab-bar">
+            <div class="mock-tab active"><span class="mock-tab-icon">🚲</span>Техника</div>
+            <div class="mock-tab"><span class="mock-tab-icon">📋</span>Мои аренды</div>
+            <div class="mock-tab"><span class="mock-tab-icon">👤</span>Профиль</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- МОИ АРЕНДЫ -->
+      <div class="mobile-frame">
+        <div class="mobile-screen">
+          <div class="mobile-status-bar"><span>9:41</span><span>●●●● 100%</span></div>
+          <div class="mock-header">Мои аренды</div>
+          <div class="mock-section-title">АКТИВНАЯ</div>
+          <div style="margin:8px 12px;background:#1c1c1e;border-radius:14px;padding:16px;border:1px solid rgba(59,130,246,0.3);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div style="color:#fff;font-weight:700;font-size:15px;">Trek FX-3 E-Bike</div>
+                <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:4px;">АР-2025-0441 · VL-007</div>
+              </div>
+              <span class="badge badge-blue">Активна</span>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:16px;">
+              <div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);">НАЧАЛО</div>
+                <div style="font-size:13px;color:#fff;">04.05.2025 10:00</div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:rgba(255,255,255,0.4);">КОНЕЦ</div>
+                <div style="font-size:13px;color:#fff;">04.05.2025 18:00</div>
+              </div>
+            </div>
+            <div style="margin-top:12px;background:rgba(245,166,35,0.1);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:11px;color:rgba(255,255,255,0.5);">К ОПЛАТЕ</div>
+              <div style="font-size:20px;font-weight:800;color:var(--brand);">2 800 ₽</div>
+            </div>
+          </div>
+          <div class="mock-section-title">ИСТОРИЯ</div>
+          <div class="mock-list-item">
+            <div class="mock-list-icon" style="background:rgba(34,197,94,0.2);">✅</div>
+            <div style="flex:1;">
+              <div class="mock-list-title">Merida Crossway 100</div>
+              <div class="mock-list-sub">01.05.2025 · Выполнена · 1 200 ₽</div>
+            </div>
+          </div>
+          <div class="mock-tab-bar">
+            <div class="mock-tab"><span class="mock-tab-icon">🚲</span>Техника</div>
+            <div class="mock-tab active"><span class="mock-tab-icon">📋</span>Мои аренды</div>
+            <div class="mock-tab"><span class="mock-tab-icon">👤</span>Профиль</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mobile-desc">
+        <h4>Что может клиент в приложении:</h4>
+        <ul class="feature-list">
+          <li><span>🔍</span> Просматривать доступную технику с фильтрацией по типу и точке</li>
+          <li><span>📋</span> Видеть детальную карточку каждой единицы</li>
+          <li><span>📅</span> Просматривать свои активные и завершённые аренды</li>
+          <li><span>💰</span> Видеть стоимость текущей аренды в рублях в реальном времени</li>
+          <li><span>📱</span> Сканировать QR-код для получения информации о технике</li>
+          <li><span>👤</span> Управлять профилем: имя, телефон (+7), фото</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 9. ТЕХНОЛОГИИ ══════════════════ -->
+<section id="tech">
+  <div class="container">
+    <h2><span class="icon">⚙️</span> Технологическая платформа</h2>
+    <p class="section-sub">
+      Современный технологический стек, обеспечивающий надёжность, масштабируемость
+      и простоту поддержки.
+    </p>
+
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-icon accent-blue">🖥️</div>
+        <h4>Бэкенд (API)</h4>
+        <ul class="feature-list">
+          <li><span>⚡</span> Node.js / Express 5</li>
+          <li><span>🐘</span> PostgreSQL — основная БД</li>
+          <li><span>🔗</span> Drizzle ORM — типизированные запросы</li>
+          <li><span>🔐</span> JWT-авторизация + OTP по SMS</li>
+          <li><span>📜</span> OpenAPI / Swagger-документация</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-green">🌐</div>
+        <h4>Веб-кабинет</h4>
+        <ul class="feature-list">
+          <li><span>⚛️</span> React + TypeScript</li>
+          <li><span>⚡</span> Vite — сборка</li>
+          <li><span>🎨</span> shadcn/ui — компоненты</li>
+          <li><span>📊</span> Recharts — графики</li>
+          <li><span>🌍</span> Полная локализация на русском</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-brand">📱</div>
+        <h4>Мобильное приложение</h4>
+        <ul class="feature-list">
+          <li><span>📱</span> React Native + Expo</li>
+          <li><span>🍎</span> iOS и Android</li>
+          <li><span>📷</span> Встроенный QR-сканер</li>
+          <li><span>📡</span> Офлайн-режим + синхронизация</li>
+          <li><span>🔔</span> Push-уведомления</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card-grid card-grid-2" style="margin-top: 20px;">
+      <div class="card">
+        <div class="card-icon accent-purple">🔐</div>
+        <h4>Безопасность</h4>
+        <ul class="feature-list">
+          <li><span>🔑</span> Авторизация по телефону +7 с OTP</li>
+          <li><span>🛡️</span> Ролевая модель доступа (RBAC)</li>
+          <li><span>🔒</span> JWT access + refresh токены</li>
+          <li><span>📋</span> Полный журнал аудита всех действий</li>
+          <li><span>🚫</span> Защита от брутфорс-атак</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-icon accent-orange">🏢</div>
+        <h4>Мультитенантность</h4>
+        <ul class="feature-list">
+          <li><span>🏢</span> Поддержка множества компаний на одной платформе</li>
+          <li><span>🔒</span> Полная изоляция данных между компаниями</li>
+          <li><span>🌐</span> White-label — своё название и логотип</li>
+          <li><span>📍</span> Несколько филиалов и точек проката</li>
+          <li><span>💳</span> Биллинг и подписки для каждого тенанта</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 10. ТАРИФЫ И ВНЕДРЕНИЕ ══════════════════ -->
+<section id="pricing">
+  <div class="container">
+    <h2><span class="icon">💰</span> Тарифы и внедрение</h2>
+    <p class="section-sub">
+      Гибкие условия для компаний любого размера — от небольшого проката на 10 велосипедов
+      до сети из нескольких городов.
+    </p>
+
+    <div class="card-grid card-grid-3">
+      <div class="card" style="border: 2px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:12px;">СТАРТ</div>
+        <div style="font-size:36px;font-weight:800;color:var(--dark);">9 900 ₽<span style="font-size:16px;color:var(--text-muted);">/мес</span></div>
+        <ul class="feature-list" style="margin-top:16px;">
+          <li><span>✓</span> До 30 единиц техники</li>
+          <li><span>✓</span> До 3 пользователей</li>
+          <li><span>✓</span> 1 точка проката</li>
+          <li><span>✓</span> Веб-кабинет + мобильное приложение</li>
+          <li><span>✓</span> Базовая аналитика</li>
+          <li><span>–</span> <span style="color:var(--text-muted);">Модуль сервиса</span></li>
+        </ul>
+      </div>
+      <div class="card" style="border: 2px solid var(--brand); position:relative;">
+        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;padding:4px 16px;border-radius:20px;font-size:12px;font-weight:700;">Популярный</div>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--brand-dark);margin-bottom:12px;">БИЗНЕС</div>
+        <div style="font-size:36px;font-weight:800;color:var(--dark);">24 900 ₽<span style="font-size:16px;color:var(--text-muted);">/мес</span></div>
+        <ul class="feature-list" style="margin-top:16px;">
+          <li><span>✓</span> До 150 единиц техники</li>
+          <li><span>✓</span> До 15 пользователей</li>
+          <li><span>✓</span> До 5 точек проката</li>
+          <li><span>✓</span> Полный модуль сервиса</li>
+          <li><span>✓</span> Расширенная аналитика</li>
+          <li><span>✓</span> API интеграции</li>
+        </ul>
+      </div>
+      <div class="card" style="border: 2px solid var(--dark);">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:12px;">КОРПОРАТИВНЫЙ</div>
+        <div style="font-size:36px;font-weight:800;color:var(--dark);">По запросу</div>
+        <ul class="feature-list" style="margin-top:16px;">
+          <li><span>✓</span> Неограниченный парк</li>
+          <li><span>✓</span> Неограниченные пользователи</li>
+          <li><span>✓</span> Неограниченные точки</li>
+          <li><span>✓</span> White-label оформление</li>
+          <li><span>✓</span> SLA-соглашение</li>
+          <li><span>✓</span> Приоритетная поддержка</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>🚀 Этапы внедрения</h3>
+    <div class="workflow">
+      <div class="workflow-step">
+        <div class="workflow-step-num">1</div>
+        <div class="workflow-step-title">Демо</div>
+        <div class="workflow-step-desc">Показ системы, ответы на вопросы</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">2</div>
+        <div class="workflow-step-title">Настройка</div>
+        <div class="workflow-step-desc">Заведение компании, точек, пользователей</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">3</div>
+        <div class="workflow-step-title">Миграция</div>
+        <div class="workflow-step-desc">Перенос данных из текущей системы</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">4</div>
+        <div class="workflow-step-title">Обучение</div>
+        <div class="workflow-step-desc">Инструктаж персонала</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">5</div>
+        <div class="workflow-step-title">Запуск</div>
+        <div class="workflow-step-desc">Старт коммерческой эксплуатации</div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <h4>📞 Контакты для уточнения деталей и внесения правок</h4>
+      <p>Этот документ является рабочей версией описания продукта. Заказчик может вносить
+      правки, добавлять свои требования или уточнять детали реализации любого модуля.
+      Все пожелания будут учтены в следующей версии документа и плане разработки.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ПОДВАЛ -->
+<div class="footer">
+  <div style="font-size:24px;margin-bottom:12px;">🚲</div>
+  <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;"><strong>RideFlow</strong> — Платформа управления прокатом транспорта</div>
+  <div>Документ подготовлен · Май 2025 · Конфиденциально</div>
+  <div style="margin-top:16px;font-size:12px;">
+    Версия 1.0 · Для обсуждения с заказчиком · При необходимости корректировки — обращайтесь к разработчикам
+  </div>
+</div>
+
+</body>
+</html>
