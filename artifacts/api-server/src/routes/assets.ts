@@ -83,8 +83,11 @@ router.get(
   requirePermission("asset:read"),
   async (req, res) => {
     const { branchId, status } = req.query as { branchId?: string; status?: string };
+    if (status && !assetStatusValues.includes(status as (typeof assetStatusValues)[number])) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid status value: ${status}` } });
+    }
     const assets = await assetService.listAssets(req.tenant!.companyId, branchId, status);
-    res.json({ data: assets });
+    return res.json({ data: assets });
   },
 );
 
