@@ -269,7 +269,15 @@
     "cancelConfirm": "Отменить \"{{action}}\"?",
     "no": "Нет",
     "yes": "Да",
-    "retries": "попыток"
+    "retries": "попыток",
+    "noMatches": "Нет элементов, соответствующих фильтру",
+    "tryDifferentFilter": "Выберите другой фильтр, чтобы увидеть элементы",
+    "filter": {
+      "all": "Все",
+      "pending": "В ожидании",
+      "failed": "Ошибки",
+      "done": "Готово"
+    }
   },
   "notifications": {
     "noNotifications": "Нет уведомлений"

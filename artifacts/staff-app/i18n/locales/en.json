@@ -269,7 +269,15 @@
     "cancelConfirm": "Cancel \"{{action}}\"?",
     "no": "No",
     "yes": "Yes",
-    "retries": "retries"
+    "retries": "retries",
+    "noMatches": "No items match this filter",
+    "tryDifferentFilter": "Try a different filter to see more items",
+    "filter": {
+      "all": "All",
+      "pending": "Pending",
+      "failed": "Failed",
+      "done": "Done"
+    }
   },
   "notifications": {
     "noNotifications": "No notifications"

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ScrollView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -14,7 +15,18 @@ import { useColors } from "@/hooks/useColors";
 import { useSync } from "@/contexts/SyncContext";
 import { cancelItem, retryItem, clearCompleted } from "@/services/sync-queue";
 import { getActionDescription } from "@/services/offline-policy";
-import type { QueueItem } from "@/services/sync-queue";
+import type { QueueItem, QueueItemStatus } from "@/services/sync-queue";
+
+type StatusFilter = "all" | "pending" | "failed" | "done";
+
+const FILTER_MATCHERS: Record<StatusFilter, (status: QueueItemStatus) => boolean> = {
+  all: () => true,
+  pending: (s) => s === "queued" || s === "syncing",
+  failed: (s) => s === "failed",
+  done: (s) => s === "completed" || s === "canceled",
+};
+
+const FILTER_ORDER: StatusFilter[] = ["all", "pending", "failed", "done"];
 
 const STATUS_ICONS: Record<string, string> = {
   queued: "clock",
@@ -36,6 +48,29 @@ export default function SyncQueueScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const { queueItems, isSyncing, syncNow } = useSync();
+  const [filter, setFilter] = useState<StatusFilter>("all");
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<StatusFilter, number> = { all: 0, pending: 0, failed: 0, done: 0 };
+    for (const item of queueItems) {
+      counts.all++;
+      if (FILTER_MATCHERS.pending(item.status)) counts.pending++;
+      if (FILTER_MATCHERS.failed(item.status)) counts.failed++;
+      if (FILTER_MATCHERS.done(item.status)) counts.done++;
+    }
+    return counts;
+  }, [queueItems]);
+
+  const visibleItems = useMemo(
+    () => queueItems.filter((i) => FILTER_MATCHERS[filter](i.status)),
+    [queueItems, filter],
+  );
+
+  const handleSelectFilter = (next: StatusFilter) => {
+    if (next === filter) return;
+    setFilter(next);
+    Haptics.selectionAsync();
+  };
 
   const handleCancel = (item: QueueItem) => {
     Alert.alert(t("syncQueue.cancelAction"), t("syncQueue.cancelConfirm", { action: getActionDescription(item.actionType) }), [
@@ -102,7 +137,8 @@ export default function SyncQueueScreen() {
     </View>
   );
 
-  const completedCount = queueItems.filter((i) => i.status === "completed" || i.status === "canceled").length;
+  const completedCount = filterCounts.done;
+  const isFiltered = filter !== "all";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -122,18 +158,56 @@ export default function SyncQueueScreen() {
         )}
       </View>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {FILTER_ORDER.map((key) => {
+          const selected = key === filter;
+          const count = filterCounts[key];
+          return (
+            <TouchableOpacity
+              key={key}
+              onPress={() => handleSelectFilter(key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              style={[
+                styles.filterPill,
+                {
+                  backgroundColor: selected ? colors.primary : colors.card,
+                  borderColor: selected ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  { color: selected ? "#fff" : colors.foreground },
+                ]}
+              >
+                {t(`syncQueue.filter.${key}`)}
+                {count > 0 ? ` · ${count}` : ""}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <FlatList
-        data={queueItems}
+        data={visibleItems}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
-        scrollEnabled={queueItems.length > 0}
+        scrollEnabled={visibleItems.length > 0}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Feather name="check-circle" size={40} color={colors.mutedForeground} />
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("syncQueue.queueEmpty")}</Text>
+            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+              {isFiltered ? t("syncQueue.noMatches") : t("syncQueue.queueEmpty")}
+            </Text>
             <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-              {t("syncQueue.offlineActions")}
+              {isFiltered ? t("syncQueue.tryDifferentFilter") : t("syncQueue.offlineActions")}
             </Text>
           </View>
         }
@@ -148,6 +222,9 @@ const styles = StyleSheet.create({
   syncBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   syncText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   clearText: { fontSize: 14, fontFamily: "Inter_500Medium" },
+  filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
+  filterPillText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   list: { padding: 16, gap: 10, paddingBottom: 40 },
   card: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 6 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
