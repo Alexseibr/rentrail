@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -41,6 +42,9 @@ const STATUS_FLOW: Record<string, string | null> = {
   completed: null,
   canceled: null,
 };
+
+const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+type Priority = (typeof PRIORITIES)[number];
 
 interface IncidentDetail {
   id: string;
@@ -99,6 +103,25 @@ async function updateStatus(companyId: string, id: string, status: string): Prom
   return (await res.json()).data as IncidentDetail;
 }
 
+async function patchIncident(
+  companyId: string,
+  id: string,
+  payload: { title: string; description: string; priority: Priority },
+): Promise<IncidentDetail> {
+  const token = await getAccessToken();
+  const res = await fetch(`${BASE_URL}/api/service-requests/${id}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "x-company-id": companyId,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to save changes");
+  return (await res.json()).data as IncidentDetail;
+}
+
 export default function IncidentDetailScreen() {
   const { t } = useTranslation();
   const colors = useColors();
@@ -113,6 +136,12 @@ export default function IncidentDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+
+  const [editVisible, setEditVisible] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editPriority, setEditPriority] = useState<Priority>("medium");
+  const [editSaving, setEditSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!companyId || !id) return;
@@ -135,6 +164,39 @@ export default function IncidentDetailScreen() {
   React.useEffect(() => {
     load();
   }, [load]);
+
+  const openEdit = () => {
+    if (!incident) return;
+    setEditTitle(incident.title);
+    setEditDescription(incident.description ?? "");
+    setEditPriority((incident.priority as Priority) ?? "medium");
+    setEditVisible(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!companyId || !incident) return;
+    if (!editTitle.trim()) {
+      showSnackbar(t("incidentDetail.editTitleRequired"), "error");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const updated = await patchIncident(companyId, incident.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        priority: editPriority,
+      });
+      setIncident(updated);
+      setEditVisible(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showSnackbar(t("incidentDetail.editSaved"), "success");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("toast.actionFailed");
+      showSnackbar(msg, "error");
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     if (!companyId || !incident) return;
@@ -205,7 +267,9 @@ export default function IncidentDetailScreen() {
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{incident.title}</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={openEdit} style={styles.editBtn}>
+          <Feather name="edit-2" size={18} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -316,6 +380,99 @@ export default function IncidentDetailScreen() {
           </TouchableOpacity>
         ) : null}
       </ScrollView>
+
+      <Modal
+        visible={editVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={[styles.modalSheet, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+                {t("incidentDetail.editTitle")}
+              </Text>
+              <TouchableOpacity onPress={() => setEditVisible(false)} disabled={editSaving}>
+                <Feather name="x" size={22} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+              {t("incidentDetail.fieldTitle")}
+            </Text>
+            <TextInput
+              style={[styles.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+              value={editTitle}
+              onChangeText={setEditTitle}
+              placeholder={t("incidentDetail.fieldTitlePlaceholder")}
+              placeholderTextColor={colors.mutedForeground}
+              maxLength={200}
+              editable={!editSaving}
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+              {t("incidentDetail.fieldDescription")}
+            </Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+              value={editDescription}
+              onChangeText={setEditDescription}
+              placeholder={t("incidentDetail.fieldDescriptionPlaceholder")}
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              editable={!editSaving}
+            />
+
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+              {t("incidentDetail.fieldPriority")}
+            </Text>
+            <View style={styles.priorityRow}>
+              {PRIORITIES.map((p) => {
+                const pColor = SEVERITY_COLORS[p];
+                const selected = editPriority === p;
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    style={[
+                      styles.priorityChip,
+                      {
+                        backgroundColor: selected ? pColor : pColor + "18",
+                        borderColor: pColor,
+                        borderWidth: selected ? 0 : 1,
+                      },
+                    ]}
+                    onPress={() => setEditPriority(p)}
+                    disabled={editSaving}
+                  >
+                    <Text style={[styles.priorityChipText, { color: selected ? "#fff" : pColor }]}>
+                      {t(`incidentDetail.priority_${p}`, { defaultValue: p })}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: YELLOW, opacity: editSaving ? 0.6 : 1 }]}
+              onPress={handleSaveEdit}
+              disabled={editSaving}
+              activeOpacity={0.8}
+            >
+              {editSaving ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.saveBtnText}>{t("incidentDetail.saveChanges")}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -359,6 +516,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
+  editBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "flex-end" },
   headerTitle: {
     flex: 1,
     fontSize: 17,
@@ -413,4 +571,67 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   actionBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#000" },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+    gap: 8,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  fieldLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+  },
+  textArea: {
+    height: 100,
+    paddingTop: 11,
+  },
+  priorityRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+    marginBottom: 4,
+  },
+  priorityChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  priorityChipText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize",
+  },
+  saveBtn: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#000" },
 });
