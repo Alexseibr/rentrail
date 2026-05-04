@@ -2,6 +2,7 @@ export type QueueableAction =
   | "mark_inquiry_contacted"
   | "create_incident"
   | "edit_incident"
+  | "change_incident_status"
   | "create_maintenance"
   | "change_asset_status"
   | "upload_attachment";
@@ -19,6 +20,7 @@ const QUEUEABLE_ACTIONS: Set<string> = new Set<QueueableAction>([
   "mark_inquiry_contacted",
   "create_incident",
   "edit_incident",
+  "change_incident_status",
   "create_maintenance",
   "change_asset_status",
   "upload_attachment",
@@ -51,6 +53,7 @@ export function getActionDescription(action: string): string {
     mark_inquiry_contacted: "Mark inquiry as contacted",
     create_incident: "Create incident report",
     edit_incident: "Edit incident",
+    change_incident_status: "Change incident status",
     create_maintenance: "Create maintenance task",
     change_asset_status: "Change asset status",
     upload_attachment: "Upload photo/attachment",

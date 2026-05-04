@@ -252,6 +252,23 @@ export default function IncidentDetailScreen() {
         {
           text: t("common.confirm"),
           onPress: async () => {
+            if (!isConnected && isQueueable("change_incident_status")) {
+              try {
+                await enqueue({
+                  actionType: "change_incident_status",
+                  payload: { status: newStatus },
+                  endpoint: `/api/service-requests/${incident.id}/status`,
+                  method: "POST",
+                });
+                setIncident((prev) => prev ? { ...prev, status: newStatus } : prev);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                showSnackbar(t("incidentDetail.statusQueued"), "success");
+              } catch {
+                showSnackbar(t("toast.actionFailed"), "error");
+              }
+              return;
+            }
+
             setActionLoading(true);
             try {
               const updated = await updateStatus(companyId, incident.id, newStatus);
@@ -259,8 +276,28 @@ export default function IncidentDetailScreen() {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               showSnackbar(t("toast.statusChanged"), "success");
             } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : t("toast.actionFailed");
-              showSnackbar(msg, "error");
+              const isNetworkError =
+                err instanceof TypeError ||
+                (err instanceof Error && /network|fetch|failed to fetch/i.test(err.message));
+
+              if (isNetworkError && isQueueable("change_incident_status")) {
+                try {
+                  await enqueue({
+                    actionType: "change_incident_status",
+                    payload: { status: newStatus },
+                    endpoint: `/api/service-requests/${incident.id}/status`,
+                    method: "POST",
+                  });
+                  setIncident((prev) => prev ? { ...prev, status: newStatus } : prev);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  showSnackbar(t("incidentDetail.statusQueued"), "success");
+                } catch {
+                  showSnackbar(t("toast.actionFailed"), "error");
+                }
+              } else {
+                const msg = err instanceof Error ? err.message : t("toast.actionFailed");
+                showSnackbar(msg, "error");
+              }
             } finally {
               setActionLoading(false);
             }

@@ -163,6 +163,7 @@
     "saveChanges": "Save Changes",
     "editSaved": "Incident updated",
     "editQueued": "Edit saved — will sync when you're back online",
+    "statusQueued": "Status change saved — will sync when you're back online",
     "editTitleRequired": "Please enter a title",
     "updateStatus": "Update Status",
     "updateStatusConfirm": "Move this incident to \"{{status}}\"?",
