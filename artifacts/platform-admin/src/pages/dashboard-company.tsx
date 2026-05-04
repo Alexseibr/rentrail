@@ -183,7 +183,7 @@ export default function CompanyDashboardPage() {
         </Button>
       </div>
 
-      {!isLoading && assets.length === 0 && branches.length === 0 && (
+      {!isLoading && assets.length === 0 && (
         <Card className="border-dashed border-2 border-primary/20 bg-primary/[0.02]">
           <CardContent className="pt-6">
             <Empty className="border-0 p-0">
@@ -195,7 +195,7 @@ export default function CompanyDashboardPage() {
               {(canWriteBranch || canWriteAsset) && (
                 <EmptyContent>
                   <div className="flex gap-3">
-                    {canWriteBranch && (
+                    {canWriteBranch && branches.length === 0 && (
                       <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("/branches")}>
                         <MapPin className="h-3.5 w-3.5" />
                         {t("companyDashboard.addFirstBranch")}
