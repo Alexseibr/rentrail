@@ -8,6 +8,12 @@ import { createAuditLog } from "../lib/audit";
 
 const router: IRouter = Router();
 
+const VALID_RENTAL_STATUSES = [
+  "draft", "pending_approval", "awaiting_payment", "awaiting_pickup",
+  "active", "extended", "overdue", "return_requested",
+  "completed", "canceled", "disputed", "defaulted",
+] as const;
+
 const createRentalSchema = z.object({
   branchId: z.string().uuid().optional(),
   stationId: z.string().uuid().optional(),
@@ -72,8 +78,11 @@ router.get(
   requirePermission("rental:read"),
   async (req, res) => {
     const status = req.query.status as string | undefined;
+    if (status && !VALID_RENTAL_STATUSES.includes(status as (typeof VALID_RENTAL_STATUSES)[number])) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid status value: ${status}` } });
+    }
     const rentals = await rentalService.listRentals(req.tenant!.companyId, status);
-    res.json({ data: rentals });
+    return res.json({ data: rentals });
   },
 );
 

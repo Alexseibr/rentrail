@@ -7,12 +7,18 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
+const VALID_SERVICE_REQUEST_STATUSES = ["new", "assigned", "in_progress", "on_hold", "completed", "canceled"] as const;
+
 router.get("/service-requests", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
   try {
+    const statusParam = req.query.status as string | undefined;
+    if (statusParam && !VALID_SERVICE_REQUEST_STATUSES.includes(statusParam as (typeof VALID_SERVICE_REQUEST_STATUSES)[number])) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid status value: ${statusParam}` } });
+    }
     const items = await serviceService.listServiceRequests(
       req.tenant!.companyId,
       req.query.branchId as string | undefined,
-      req.query.status as string | undefined
+      statusParam
     );
     return res.json({ data: items });
   } catch (err: any) {
