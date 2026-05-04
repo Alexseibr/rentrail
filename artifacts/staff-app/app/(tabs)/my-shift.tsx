@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator,
@@ -150,7 +150,7 @@ export default function MyShiftScreen() {
   const [completedExpanded, setCompletedExpanded] = React.useState(false);
   const [manualRefreshing, setManualRefreshing] = React.useState(false);
 
-  const { data: items = [], isLoading: loading, isRefetching, refetch } = useQuery({
+  const { data: items = [], isLoading: loading, isRefetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["myShiftWorkOrders", companyId, user?.id],
     queryFn: () => fetchMyWorkOrders(companyId!, user!.id),
     enabled: !!companyId && !!user?.id,
@@ -161,6 +161,21 @@ export default function MyShiftScreen() {
   React.useEffect(() => {
     if (!isRefetching) setManualRefreshing(false);
   }, [isRefetching]);
+
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(id);
+  }, []);
+
+  const lastUpdatedLabel = useMemo(() => {
+    if (!dataUpdatedAt) return null;
+    const diffSec = Math.floor((now - dataUpdatedAt) / 1000);
+    if (diffSec < 15) return t("myShift.justUpdated");
+    if (diffSec < 60) return t("myShift.updatedAgo", { time: t("myShift.secondsShort", { s: diffSec }) });
+    const diffMin = Math.floor(diffSec / 60);
+    return t("myShift.updatedAgo", { time: t("myShift.minutesShort", { m: diffMin }) });
+  }, [dataUpdatedAt, now, t]);
 
   const onRefresh = () => {
     setManualRefreshing(true);
@@ -314,6 +329,12 @@ export default function MyShiftScreen() {
         />
       </View>
 
+      {lastUpdatedLabel ? (
+        <Text style={[styles.lastUpdated, { color: colors.mutedForeground }]}>
+          {lastUpdatedLabel}
+        </Text>
+      ) : null}
+
       <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
         {t("myShift.urgentSection")}
       </Text>
@@ -395,7 +416,14 @@ export default function MyShiftScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: 16, paddingBottom: 100 },
-  kpiRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
+  kpiRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
+  lastUpdated: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textAlign: "right",
+    marginBottom: 16,
+    opacity: 0.6,
+  },
   sectionTitle: {
     fontSize: 16,
     fontFamily: "Inter_700Bold",

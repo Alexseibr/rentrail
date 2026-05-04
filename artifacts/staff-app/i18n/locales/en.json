@@ -353,7 +353,10 @@
     "justNow": "Just now",
     "minutesShort": "{{m}}m",
     "hoursShort": "{{h}}h",
-    "daysShort": "{{d}}d"
+    "daysShort": "{{d}}d",
+    "secondsShort": "{{s}}s",
+    "updatedAgo": "Updated {{time}} ago",
+    "justUpdated": "Just updated"
   },
   "serviceModule": {
     "workOrders": "Work Orders",

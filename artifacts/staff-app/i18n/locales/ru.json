@@ -353,7 +353,10 @@
     "justNow": "Только что",
     "minutesShort": "{{m}} мин",
     "hoursShort": "{{h}} ч",
-    "daysShort": "{{d}} д"
+    "daysShort": "{{d}} д",
+    "secondsShort": "{{s}} с",
+    "updatedAgo": "Обновлено {{time}} назад",
+    "justUpdated": "Только что обновлено"
   },
   "serviceModule": {
     "workOrders": "Наряды на работу",
