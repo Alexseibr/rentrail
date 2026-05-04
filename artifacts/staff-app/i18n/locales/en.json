@@ -247,7 +247,12 @@
     "vehicleNotFound": "Vehicle not found",
     "lookupFailed": "Failed to find vehicle",
     "tryScanning": "Scan a QR code or enter the vehicle code manually",
-    "available": "Available"
+    "available": "Available",
+    "status_available": "Available",
+    "status_reserved": "Reserved",
+    "status_maintenance": "Maintenance",
+    "status_rented": "Rented",
+    "status_blocked": "Blocked"
   },
   "clientRentals": {
     "noRentals": "No rentals yet",

@@ -247,7 +247,12 @@
     "vehicleNotFound": "Транспорт не найден",
     "lookupFailed": "Не удалось найти транспорт",
     "tryScanning": "Отсканируйте QR-код или введите код вручную",
-    "available": "Доступен"
+    "available": "Доступен",
+    "status_available": "Доступен",
+    "status_reserved": "Забронирован",
+    "status_maintenance": "На обслуживании",
+    "status_rented": "В аренде",
+    "status_blocked": "Заблокирован"
   },
   "clientRentals": {
     "noRentals": "Аренд пока нет",

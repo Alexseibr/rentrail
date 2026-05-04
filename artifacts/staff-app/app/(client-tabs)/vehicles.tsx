@@ -188,7 +188,7 @@ export default function VehiclesScreen() {
           <View style={[styles.availBadge, { backgroundColor: statusStyle.bg }]}>
             <View style={[styles.availDot, { backgroundColor: statusStyle.color }]} />
             <Text style={[styles.availText, { color: statusStyle.color }]}>
-              {t(`clientVehicles.status_${item.status}`, t("clientVehicles.available"))}
+              {String(t(`clientVehicles.status_${item.status}`, item.status))}
             </Text>
           </View>
           {item.branchName && (
