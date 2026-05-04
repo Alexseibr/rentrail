@@ -88,18 +88,30 @@ export default function WorkOrdersScreen() {
     { key: "completed", label: t("serviceModule.statusCompleted") },
   ];
 
-  const renderItem = ({ item }: { item: any }) => (
+  const ACTIVE_STATUSES = ["assigned", "en_route", "in_progress", "waiting_parts"];
+
+  const renderItem = ({ item }: { item: any }) => {
+    const isActive = ACTIVE_STATUSES.includes(item.status);
+    const isUrgent = item.priority === "urgent";
+    const accentColor = STATUS_COLORS[item.status] ?? "#94a3b8";
+
+    return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card }]}
+      style={[styles.card, { backgroundColor: colors.card }, isActive && styles.cardActive]}
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push(`/service/work-order/${item.id}` as any);
       }}
       activeOpacity={0.7}
     >
+      {isActive && <View style={[styles.cardAccent, { backgroundColor: accentColor }]} />}
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleRow}>
-          <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[item.priority] ?? "#94a3b8" }]} />
+          {isUrgent ? (
+            <Feather name="alert-triangle" size={14} color={PRIORITY_COLORS.urgent} />
+          ) : (
+            <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[item.priority] ?? "#94a3b8" }]} />
+          )}
           <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
             {item.title}
           </Text>
@@ -148,7 +160,8 @@ export default function WorkOrdersScreen() {
         </Text>
       )}
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -255,6 +268,21 @@ const styles = StyleSheet.create({
     borderRadius: 16, padding: 16, marginBottom: 10,
     shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    overflow: "hidden",
+  },
+  cardActive: {
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardAccent: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
   },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   cardTitleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },

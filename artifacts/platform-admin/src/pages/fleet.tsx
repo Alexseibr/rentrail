@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Archive, RotateCcw, RefreshCw, Search, Bike } from "lucide-react";
+import { Plus, Pencil, Archive, RotateCcw, RefreshCw, Search, Bike, Zap, Wind, Gauge } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
@@ -29,6 +29,28 @@ const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-800",
   stolen: "bg-red-300 text-red-900",
   retired: "bg-gray-200 text-gray-600",
+};
+
+const ASSET_TYPE_ICONS: Record<string, typeof Bike> = {
+  bike: Bike,
+  ebike: Zap,
+  scooter: Wind,
+  escooter: Gauge,
+};
+
+const ASSET_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
+  bike: { bg: "bg-green-50", text: "text-green-600" },
+  ebike: { bg: "bg-blue-50", text: "text-blue-600" },
+  scooter: { bg: "bg-orange-50", text: "text-orange-600" },
+  escooter: { bg: "bg-purple-50", text: "text-purple-600" },
+};
+
+const ROW_ACCENT_STATUSES: Record<string, string> = {
+  blocked: "bg-red-50/60",
+  lost: "bg-red-50/60",
+  stolen: "bg-red-50/60",
+  maintenance: "bg-yellow-50/60",
+  overdue: "bg-orange-50/60",
 };
 
 const ASSET_TYPES = ["bike", "ebike", "scooter", "escooter"] as const;
@@ -275,6 +297,7 @@ export default function FleetPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs w-10"></TableHead>
                   <TableHead className="text-xs">{t("fleet.code", "Код")}</TableHead>
                   <TableHead className="text-xs">{t("fleet.type", "Тип")}</TableHead>
                   <TableHead className="text-xs">{t("fleet.brand", "Марка")}</TableHead>
@@ -284,8 +307,17 @@ export default function FleetPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((asset: any) => (
-                  <TableRow key={asset.id} className="cursor-pointer hover:bg-muted/30" onClick={() => navigate(`/fleet/${asset.id}`)}>
+                {items.map((asset: any) => {
+                  const TypeIcon = ASSET_TYPE_ICONS[asset.assetType] || Bike;
+                  const typeColor = ASSET_TYPE_COLORS[asset.assetType] || ASSET_TYPE_COLORS.bike;
+                  const rowAccent = ROW_ACCENT_STATUSES[asset.status] || "";
+                  return (
+                  <TableRow key={asset.id} className={`cursor-pointer hover:bg-muted/30 ${rowAccent}`} onClick={() => navigate(`/fleet/${asset.id}`)}>
+                    <TableCell className="pr-0 w-10">
+                      <div className={`h-8 w-8 rounded-lg ${typeColor.bg} flex items-center justify-center`}>
+                        <TypeIcon className={`h-4 w-4 ${typeColor.text}`} />
+                      </div>
+                    </TableCell>
                     <TableCell className="font-mono text-sm font-medium">{asset.internalCode}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{String(t(`assetType.${asset.assetType}`, asset.assetType))}</TableCell>
                     <TableCell className="text-sm">{asset.brand || "—"}</TableCell>
@@ -317,10 +349,11 @@ export default function FleetPage() {
                       </TableCell>
                     )}
                   </TableRow>
-                ))}
+                  );
+                })}
                 {items.length === 0 && allItems.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-6">
+                    <TableCell colSpan={canWriteAsset ? 7 : 6} className="py-6">
                       <Empty className="border-0">
                         <EmptyHeader>
                           <EmptyMedia variant="icon"><Bike className="h-5 w-5" /></EmptyMedia>
@@ -341,7 +374,7 @@ export default function FleetPage() {
                 )}
                 {items.length === 0 && allItems.length > 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-6">
+                    <TableCell colSpan={canWriteAsset ? 7 : 6} className="py-6">
                       <Empty className="border-0">
                         <EmptyHeader>
                           <EmptyMedia variant="icon"><Search className="h-5 w-5" /></EmptyMedia>

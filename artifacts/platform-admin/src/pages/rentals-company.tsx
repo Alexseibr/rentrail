@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search, ClipboardList, AlertCircle, Clock } from "lucide-react";
+import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search, ClipboardList, AlertCircle, Clock, AlertTriangle } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
@@ -236,10 +236,13 @@ export default function RentalsCompanyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((rental: any) => (
+                {items.map((rental: any) => {
+                  const isOverdue = rental.status === "overdue";
+                  const isActive = rental.status === "active";
+                  return (
                   <TableRow
                     key={rental.id}
-                    className="cursor-pointer hover:bg-muted/30"
+                    className={`cursor-pointer hover:bg-muted/30 ${isOverdue ? "bg-red-50/60" : ""}`}
                     onClick={() => navigate(`/rentals/${rental.id}`)}
                   >
                     <TableCell className="font-medium text-sm">{rental.clientName || rental.clientId?.slice(0, 8) || "—"}</TableCell>
@@ -255,7 +258,9 @@ export default function RentalsCompanyPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`text-xs ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}>
+                      <Badge className={`text-xs gap-1 ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}>
+                        {isOverdue && <AlertTriangle className="h-3 w-3" />}
+                        {isActive && <Clock className="h-3 w-3" />}
                         {String(t(`status.${rental.status}`, rental.status))}
                       </Badge>
                     </TableCell>
@@ -278,7 +283,8 @@ export default function RentalsCompanyPage() {
                       </TableCell>
                     )}
                   </TableRow>
-                ))}
+                  );
+                })}
                 {items.length === 0 && allItems.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-6">
