@@ -430,6 +430,9 @@
     "statusChanged": "Status updated",
     "orderCompleted": "Work order completed",
     "transactionSuccess": "Transaction completed",
-    "transactionFailed": "Transaction failed"
+    "transactionFailed": "Transaction failed",
+    "maintenanceCreated": "Maintenance log created",
+    "maintenanceQueued": "Queued for later",
+    "maintenanceCreateFailed": "Failed to create maintenance log"
   }
 }

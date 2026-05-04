@@ -77,7 +77,7 @@ export default function MaintenanceLogsScreen() {
     : logs;
 
   const renderItem = ({ item }: { item: any }) => {
-    const iconName = (LOG_TYPE_ICONS[item.logType] ?? "tool") as any;
+    const iconName = (LOG_TYPE_ICONS[item.logType] ?? "tool") as React.ComponentProps<typeof Feather>["name"];
     return (
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.cardLeft}>

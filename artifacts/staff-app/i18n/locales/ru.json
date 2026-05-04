@@ -430,6 +430,9 @@
     "statusChanged": "Статус обновлён",
     "orderCompleted": "Наряд завершён",
     "transactionSuccess": "Операция выполнена",
-    "transactionFailed": "Не удалось выполнить операцию"
+    "transactionFailed": "Не удалось выполнить операцию",
+    "maintenanceCreated": "Запись о ТО создана",
+    "maintenanceQueued": "Запись поставлена в очередь",
+    "maintenanceCreateFailed": "Не удалось создать запись о ТО"
   }
 }

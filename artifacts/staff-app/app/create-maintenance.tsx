@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
+import { useSnackbar } from "@/contexts/SnackbarContext";
 import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
@@ -26,6 +27,7 @@ export default function CreateMaintenanceScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
+  const { showSnackbar } = useSnackbar();
   const { isConnected } = useNetwork();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -51,9 +53,8 @@ export default function CreateMaintenanceScreen() {
         method: "POST",
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(t("maintenance.queued"), t("maintenance.queuedMessage"), [
-        { text: t("common.ok"), onPress: () => router.back() },
-      ]);
+      showSnackbar(t("toast.maintenanceQueued"), "success");
+      router.back();
       return;
     }
 
@@ -81,12 +82,9 @@ export default function CreateMaintenanceScreen() {
       const { data } = await res.json();
       setCreatedId(data.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(t("maintenance.success"), t("maintenance.successMessage"), [
-        { text: t("maintenance.done"), onPress: () => router.back() },
-        { text: t("maintenance.addPhotos"), style: "cancel" },
-      ]);
+      showSnackbar(t("toast.maintenanceCreated"), "success");
     } catch (err: unknown) {
-      Alert.alert(t("common.error"), err instanceof Error ? err.message : t("maintenance.failedToCreate"));
+      showSnackbar(err instanceof Error ? err.message : t("toast.maintenanceCreateFailed"), "error");
     } finally {
       setLoading(false);
     }
