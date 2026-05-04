@@ -138,6 +138,22 @@
     "createIncident": "Создать инцидент",
     "failedToCreate": "Не удалось создать инцидент"
   },
+  "incidents": {
+    "listTitle": "Инциденты",
+    "viewAll": "Все инциденты",
+    "noIncidents": "Инцидентов нет",
+    "noIncidentsHint": "Зарегистрированные инциденты появятся здесь",
+    "status_open": "Открыт",
+    "status_in_progress": "В работе",
+    "status_resolved": "Решён",
+    "status_closed": "Закрыт",
+    "type_incident": "Инцидент",
+    "type_breakdown": "Поломка",
+    "type_accident": "ДТП",
+    "type_theft": "Кража",
+    "type_vandalism": "Вандализм",
+    "type_other": "Другое"
+  },
   "maintenance": {
     "title": "Название",
     "maintenanceTitle": "Название задачи ТО...",
@@ -154,7 +170,11 @@
     "created": "Создано",
     "queueForLater": "Добавить в очередь",
     "createTask": "Создать задачу",
-    "failedToCreate": "Не удалось создать задачу ТО"
+    "failedToCreate": "Не удалось создать задачу ТО",
+    "listTitle": "История ТО",
+    "viewAll": "История обслуживания",
+    "noLogs": "Записей нет",
+    "noLogsHint": "Выполненные работы по обслуживанию появятся здесь"
   },
   "scanner": {
     "cameraAccessNeeded": "Требуется доступ к камере",

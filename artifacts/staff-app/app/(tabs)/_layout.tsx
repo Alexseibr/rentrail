@@ -216,6 +216,20 @@ function ClassicTabLayout() {
             ),
         }}
       />
+      <Tabs.Screen
+        name="incidents"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="maintenance"
+        options={{
+          href: null,
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }

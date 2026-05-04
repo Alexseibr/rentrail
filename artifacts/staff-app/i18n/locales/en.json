@@ -138,6 +138,22 @@
     "createIncident": "Create Incident",
     "failedToCreate": "Failed to create incident"
   },
+  "incidents": {
+    "listTitle": "Incidents",
+    "viewAll": "View All Incidents",
+    "noIncidents": "No incidents",
+    "noIncidentsHint": "Reported incidents will appear here",
+    "status_open": "Open",
+    "status_in_progress": "In Progress",
+    "status_resolved": "Resolved",
+    "status_closed": "Closed",
+    "type_incident": "Incident",
+    "type_breakdown": "Breakdown",
+    "type_accident": "Accident",
+    "type_theft": "Theft",
+    "type_vandalism": "Vandalism",
+    "type_other": "Other"
+  },
   "maintenance": {
     "title": "Title",
     "maintenanceTitle": "Maintenance title...",
@@ -154,7 +170,11 @@
     "created": "Created",
     "queueForLater": "Queue for Later",
     "createTask": "Create Task",
-    "failedToCreate": "Failed to create maintenance task"
+    "failedToCreate": "Failed to create maintenance task",
+    "listTitle": "Maintenance History",
+    "viewAll": "View Maintenance History",
+    "noLogs": "No maintenance records",
+    "noLogsHint": "Completed maintenance records will appear here"
   },
   "scanner": {
     "cameraAccessNeeded": "Camera access needed",

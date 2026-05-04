@@ -60,8 +60,9 @@ export default function OperationsScreen() {
       title: t("serviceModule.serviceSection"),
       items: [
         { label: t("serviceModule.workOrders"), icon: "clipboard", route: "/service/work-orders", color: "#3b82f6" },
+        { label: t("incidents.listTitle"), icon: "alert-circle", route: "/incidents", color: "#ef4444" },
         { label: t("serviceModule.spareParts"), icon: "package", route: "/service/spare-parts", color: "#f59e0b" },
-        { label: t("serviceModule.maintenanceLogs"), icon: "file-text", route: "/service/maintenance-logs", color: "#8b5cf6" },
+        { label: t("maintenance.listTitle"), icon: "tool", route: "/maintenance", color: "#8b5cf6" },
         { label: t("serviceModule.schedules"), icon: "calendar", route: "/service/schedules", color: "#22c55e" },
       ],
     },
