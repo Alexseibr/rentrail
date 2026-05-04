@@ -17,6 +17,7 @@ import { useSync } from "@/contexts/SyncContext";
 import {
   cancelItem,
   retryItem,
+  retryAllFailed,
   clearCompleted,
   AUTO_CLEAR_DELAY_MS,
 } from "@/services/sync-queue";
@@ -157,6 +158,13 @@ export default function SyncQueueScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const handleRetryAllFailed = async () => {
+    const count = await retryAllFailed();
+    if (count > 0) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
   const renderItem = ({ item }: { item: QueueItem }) => {
     const isClearing = (item.status === "completed" || item.status === "canceled") && !!item.completedAt;
     let secondsLeft: number | null = null;
@@ -230,6 +238,7 @@ export default function SyncQueueScreen() {
   };
 
   const completedCount = filterCounts.done;
+  const failedCount = filterCounts.failed;
   const isFiltered = filter !== "all";
 
   return (
@@ -243,11 +252,20 @@ export default function SyncQueueScreen() {
           <Feather name="refresh-cw" size={16} color="#fff" />
           <Text style={styles.syncText}>{isSyncing ? t("syncQueue.syncing") : t("syncQueue.syncNow")}</Text>
         </TouchableOpacity>
-        {completedCount > 0 && (
-          <TouchableOpacity onPress={handleClearCompleted}>
-            <Text style={[styles.clearText, { color: colors.primary }]}>{t("syncQueue.clearDone")}</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerActions}>
+          {failedCount > 0 && (
+            <TouchableOpacity onPress={handleRetryAllFailed} accessibilityRole="button">
+              <Text style={[styles.headerActionText, { color: colors.destructive }]}>
+                {t("syncQueue.retryAllFailed", { count: failedCount })}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {completedCount > 0 && (
+            <TouchableOpacity onPress={handleClearCompleted}>
+              <Text style={[styles.headerActionText, { color: colors.primary }]}>{t("syncQueue.clearDone")}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView
@@ -311,9 +329,10 @@ export default function SyncQueueScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, paddingBottom: 0 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 14 },
   syncBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   syncText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  clearText: { fontSize: 14, fontFamily: "Inter_500Medium" },
+  headerActionText: { fontSize: 14, fontFamily: "Inter_500Medium" },
   filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
   filterPillText: { fontSize: 13, fontFamily: "Inter_500Medium" },

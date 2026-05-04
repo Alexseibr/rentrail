@@ -105,6 +105,20 @@ export async function retryItem(id: string) {
   await saveQueue(updated);
 }
 
+export async function retryAllFailed(): Promise<number> {
+  const queue = await loadQueue();
+  let count = 0;
+  const updated = queue.map((item) => {
+    if (item.status !== "failed") return item;
+    count++;
+    return { ...item, status: "queued" as const, retryCount: 0, lastError: undefined };
+  });
+  if (count > 0) {
+    await saveQueue(updated);
+  }
+  return count;
+}
+
 export async function clearCompleted() {
   const queue = await loadQueue();
   const active = queue.filter((i) => i.status !== "completed" && i.status !== "canceled");

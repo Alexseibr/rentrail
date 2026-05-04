@@ -261,6 +261,7 @@
     "syncing": "Syncing...",
     "syncNow": "Sync Now",
     "clearDone": "Clear Done",
+    "retryAllFailed": "Retry {{count}} failed",
     "queueEmpty": "Queue is empty",
     "offlineActions": "Actions performed offline will appear here",
     "retry": "Retry",
