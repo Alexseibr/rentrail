@@ -16,6 +16,7 @@ import { useLocation } from "wouter";
 import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search, ClipboardList, AlertCircle, Clock, AlertTriangle } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
+import { toast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -88,6 +89,10 @@ export default function RentalsCompanyPage() {
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
       setShowCreate(false);
       setForm({ clientId: "", assetId: "", startAt: "", plannedEndAt: "", notes: "" });
+      toast({ title: t("toast.rentalCreated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -98,12 +103,16 @@ export default function RentalsCompanyPage() {
         body: body ? JSON.stringify(body) : JSON.stringify({}),
         headers: companyHeaders,
       }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       setActionDialog(null);
       setReturnNotes("");
       setCancelReason("");
+      toast({ title: t(`toast.rental_${variables.action}`) });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 

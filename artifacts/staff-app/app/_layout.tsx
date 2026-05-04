@@ -18,6 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SyncProvider } from "@/contexts/SyncContext";
+import { SnackbarProvider } from "@/contexts/SnackbarContext";
 import { setupNotificationHandler } from "@/services/push";
 import "../i18n/i18n";
 
@@ -109,7 +110,9 @@ export default function RootLayout() {
             <KeyboardProvider>
               <AuthProvider>
                 <SyncProvider>
-                  <RootLayoutNav />
+                  <SnackbarProvider>
+                    <RootLayoutNav />
+                  </SnackbarProvider>
                 </SyncProvider>
               </AuthProvider>
             </KeyboardProvider>

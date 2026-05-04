@@ -421,5 +421,11 @@
     "logType_cleaning": "Cleaning",
     "logType_inspection": "Inspection",
     "logType_other": "Other"
+  },
+  "toast": {
+    "returnSuccess": "Vehicle returned successfully",
+    "returnFailed": "Failed to return vehicle",
+    "error": "Error",
+    "actionFailed": "Action failed"
   }
 }

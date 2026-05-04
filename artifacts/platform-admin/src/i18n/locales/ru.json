@@ -597,5 +597,32 @@
     "welcomeDescription": "Начните с добавления филиала и первого транспортного средства, чтобы запустить бизнес.",
     "addFirstVehicle": "Добавить транспорт",
     "addFirstBranch": "Создать филиал"
+  },
+  "toast": {
+    "error": "Ошибка",
+    "saveFailed": "Не удалось сохранить данные",
+    "actionFailed": "Не удалось выполнить действие",
+    "assetCreated": "Транспорт добавлен",
+    "assetUpdated": "Транспорт обновлён",
+    "assetStatusChanged": "Статус транспорта изменён",
+    "assetArchived": "Транспорт архивирован",
+    "assetRestored": "Транспорт восстановлен",
+    "rentalCreated": "Аренда создана",
+    "rental_approve": "Аренда одобрена",
+    "rental_start": "Аренда начата",
+    "rental_return": "Возврат оформлен",
+    "rental_cancel": "Аренда отменена",
+    "clientCreated": "Клиент добавлен",
+    "clientUpdated": "Данные клиента обновлены",
+    "clientArchived": "Клиент архивирован",
+    "clientRestored": "Клиент восстановлен",
+    "requestCreated": "Заявка создана",
+    "workOrderCreated": "Наряд-заказ создан",
+    "mechanicAssigned": "Мастер назначен",
+    "statusChanged": "Статус обновлён",
+    "branchCreated": "Филиал создан",
+    "branchUpdated": "Филиал обновлён",
+    "branchActivated": "Филиал активирован",
+    "branchDeactivated": "Филиал деактивирован"
   }
 }

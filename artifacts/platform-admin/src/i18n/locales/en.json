@@ -597,5 +597,32 @@
     "welcomeDescription": "Start by adding a branch and your first vehicle to get your business running.",
     "addFirstVehicle": "Add Vehicle",
     "addFirstBranch": "Create Branch"
+  },
+  "toast": {
+    "error": "Error",
+    "saveFailed": "Failed to save",
+    "actionFailed": "Action failed",
+    "assetCreated": "Vehicle added",
+    "assetUpdated": "Vehicle updated",
+    "assetStatusChanged": "Vehicle status changed",
+    "assetArchived": "Vehicle archived",
+    "assetRestored": "Vehicle restored",
+    "rentalCreated": "Rental created",
+    "rental_approve": "Rental approved",
+    "rental_start": "Rental started",
+    "rental_return": "Return processed",
+    "rental_cancel": "Rental canceled",
+    "clientCreated": "Client added",
+    "clientUpdated": "Client updated",
+    "clientArchived": "Client archived",
+    "clientRestored": "Client restored",
+    "requestCreated": "Service request created",
+    "workOrderCreated": "Work order created",
+    "mechanicAssigned": "Mechanic assigned",
+    "statusChanged": "Status updated",
+    "branchCreated": "Branch created",
+    "branchUpdated": "Branch updated",
+    "branchActivated": "Branch activated",
+    "branchDeactivated": "Branch deactivated"
   }
 }

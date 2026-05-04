@@ -421,5 +421,11 @@
     "logType_cleaning": "Чистка",
     "logType_inspection": "Осмотр",
     "logType_other": "Прочее"
+  },
+  "toast": {
+    "returnSuccess": "Транспорт успешно возвращён",
+    "returnFailed": "Не удалось вернуть транспорт",
+    "error": "Ошибка",
+    "actionFailed": "Не удалось выполнить действие"
   }
 }

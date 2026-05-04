@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Archive, RotateCcw, Search, Users, UserCheck, UserX } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
+import { toast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -70,6 +71,10 @@ export default function ClientsCompanyPage() {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowCreate(false);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.clientCreated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -80,15 +85,23 @@ export default function ClientsCompanyPage() {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setEditClient(null);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.clientUpdated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, restore }: { id: string; restore: boolean }) =>
       api(`/clients/${id}/${restore ? "restore" : "archive"}`, { method: "POST", headers: companyHeaders }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setArchiveConfirm(null);
+      toast({ title: variables.restore ? t("toast.clientRestored") : t("toast.clientArchived") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 

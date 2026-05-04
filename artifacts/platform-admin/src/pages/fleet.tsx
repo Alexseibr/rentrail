@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Archive, RotateCcw, RefreshCw, Search, Bike, Zap, Wind, Gauge } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
+import { toast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
   available: "bg-green-100 text-green-800",
@@ -121,6 +122,10 @@ export default function FleetPage() {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       setShowCreate(false);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.assetCreated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -131,6 +136,10 @@ export default function FleetPage() {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       setEditAsset(null);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.assetUpdated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -146,15 +155,23 @@ export default function FleetPage() {
       setStatusChange(null);
       setNewStatus("");
       setStatusReason("");
+      toast({ title: t("toast.assetStatusChanged") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, restore }: { id: string; restore: boolean }) =>
       api(`/assets/${id}/${restore ? "restore" : "archive"}`, { method: "POST", headers: companyHeaders }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       setArchiveConfirm(null);
+      toast({ title: variables.restore ? t("toast.assetRestored") : t("toast.assetArchived") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 

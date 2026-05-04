@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
+import { toast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
@@ -195,6 +196,10 @@ export default function ServicePage() {
       queryClient.invalidateQueries({ queryKey: ["service-requests"] });
       setShowCreate(false);
       setSrForm({ branchId: "", assetId: "", requestType: "breakdown", priority: "medium", title: "", description: "" });
+      toast({ title: t("toast.requestCreated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -205,6 +210,10 @@ export default function ServicePage() {
       queryClient.invalidateQueries({ queryKey: ["work-orders"] });
       setShowCreateWO(false);
       setWoForm({ branchId: "", assetId: "", orderType: "field_repair", priority: "medium", title: "", description: "", assignedToUserId: "", estimatedCost: "" });
+      toast({ title: t("toast.workOrderCreated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -215,6 +224,10 @@ export default function ServicePage() {
       queryClient.invalidateQueries({ queryKey: ["service-requests"] });
       setAssignDialog(null);
       setSelectedMechanic("");
+      toast({ title: t("toast.mechanicAssigned") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 
@@ -226,6 +239,10 @@ export default function ServicePage() {
       queryClient.invalidateQueries({ queryKey: ["work-orders"] });
       setStatusDialog(null);
       setNewStatus("");
+      toast({ title: t("toast.statusChanged") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 

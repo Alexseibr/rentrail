@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Plus, Pencil, Power, PowerOff, MapPin } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
+import { toast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -57,6 +58,10 @@ export default function BranchesPage() {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
       setShowCreate(false);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.branchCreated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
@@ -67,15 +72,23 @@ export default function BranchesPage() {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
       setEditBranch(null);
       setForm({ ...emptyForm });
+      toast({ title: t("toast.branchUpdated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
     },
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, activate }: { id: string; activate: boolean }) =>
       api(`/branches/${id}/${activate ? "activate" : "deactivate"}`, { method: "POST", headers: companyHeaders }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["branches"] });
       setToggleConfirm(null);
+      toast({ title: variables.activate ? t("toast.branchActivated") : t("toast.branchDeactivated") });
+    },
+    onError: () => {
+      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
     },
   });
 

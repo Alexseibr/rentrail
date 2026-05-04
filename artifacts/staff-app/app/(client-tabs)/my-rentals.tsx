@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSnackbar } from "@/contexts/SnackbarContext";
 import { getAccessToken } from "@/services/api";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -107,6 +108,7 @@ export default function MyRentalsScreen() {
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
   const router = useRouter();
+  const { showSnackbar } = useSnackbar();
 
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,8 +167,12 @@ export default function MyRentalsScreen() {
       });
       if (res.ok) {
         fetchRentals();
+        showSnackbar(t("toast.returnSuccess"), "success");
+      } else {
+        showSnackbar(t("toast.returnFailed"), "error");
       }
     } catch {
+      showSnackbar(t("toast.returnFailed"), "error");
     } finally {
       setReturning(null);
     }

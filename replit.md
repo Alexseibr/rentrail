@@ -23,6 +23,8 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 
 **Empty States & Onboarding:** All list pages in Platform Admin (Fleet, Rentals, Clients, Branches, Service tabs) use the `Empty` component from `components/ui/empty.tsx` with contextual icons, localized titles/descriptions, and permission-gated CTA buttons. The company dashboard shows a welcome banner with onboarding steps when the company has no branches or vehicles. Staff App screens (assets, work-orders) include descriptive empty state hints.
 
+**Toast & Snackbar Feedback:** All mutations in Platform Admin pages (fleet, rentals, clients, service, branches) show toast notifications on success and error via `toast()` from `@/hooks/use-toast`. Staff App uses a custom `SnackbarContext` (`contexts/SnackbarContext.tsx`) providing `useSnackbar()` hook with animated snackbar (success green / error red). All toast/snackbar messages are localized (ru/en) under the `toast.*` i18n namespace.
+
 ### Technical Implementations
 - **Multi-Tenancy:** Enforced via `x-company-id` header and `companyId` filtering on all database queries.
 - **Authentication & Authorization:** Phone number-based login with OTP or password. JWT for access/refresh tokens and a permission-based RBAC system.
