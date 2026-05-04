@@ -8,7 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,11 +55,13 @@ export default function SparePartsScreen() {
   const [txModal, setTxModal] = useState<{ part: any; type: "in" | "out" | "adjustment" } | null>(null);
   const [qty, setQty] = useState("1");
   const [txNote, setTxNote] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [manualRefreshing, setManualRefreshing] = useState(false);
 
+  const queryClient = useQueryClient();
+  const partsQueryKey = ["spareParts", companyId, lowStockOnly];
+
   const { data: parts = [], isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ["spareParts", companyId, lowStockOnly],
+    queryKey: partsQueryKey,
     queryFn: () => fetchParts(companyId!, lowStockOnly),
     enabled: !!companyId,
     staleTime: 20000,
@@ -67,6 +69,52 @@ export default function SparePartsScreen() {
   });
 
   useAppStateFocus(() => { refetch(); });
+
+  const baseQueryKey = ["spareParts", companyId];
+
+  const applyOptimisticUpdate = (parts: any[] | undefined, payload: { partId: string; transactionType: string; qty: number }) => {
+    if (!parts) return parts;
+    return parts.map((part) => {
+      if (part.id !== payload.partId) return part;
+      let newQty = parseFloat(part.qtyInStock);
+      if (payload.transactionType === "in") {
+        newQty += payload.qty;
+      } else if (payload.transactionType === "out") {
+        newQty -= payload.qty;
+      } else {
+        newQty = payload.qty;
+      }
+      return { ...part, qtyInStock: String(newQty) };
+    });
+  };
+
+  const txMutation = useMutation({
+    mutationFn: (payload: { partId: string; transactionType: string; qty: number; notes?: string }) =>
+      createTransaction(companyId!, payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: baseQueryKey });
+      const previousActive = queryClient.getQueryData<any[]>(partsQueryKey);
+      const altKey = ["spareParts", companyId, !lowStockOnly];
+      const previousAlt = queryClient.getQueryData<any[]>(altKey);
+      queryClient.setQueryData<any[]>(partsQueryKey, (old) => applyOptimisticUpdate(old, payload));
+      if (previousAlt) {
+        queryClient.setQueryData<any[]>(altKey, (old) => applyOptimisticUpdate(old, payload));
+      }
+      return { previousActive, previousAlt };
+    },
+    onError: (_err, _payload, context) => {
+      if (context?.previousActive) {
+        queryClient.setQueryData(partsQueryKey, context.previousActive);
+      }
+      const altKey = ["spareParts", companyId, !lowStockOnly];
+      if (context?.previousAlt) {
+        queryClient.setQueryData(altKey, context.previousAlt);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: baseQueryKey });
+    },
+  });
 
   React.useEffect(() => {
     if (!isRefetching) setManualRefreshing(false);
@@ -91,9 +139,8 @@ export default function SparePartsScreen() {
       Alert.alert(t("common.error"), t("serviceModule.invalidQty"));
       return;
     }
-    setSubmitting(true);
     try {
-      await createTransaction(companyId, {
+      await txMutation.mutateAsync({
         partId: txModal.part.id,
         transactionType: txModal.type,
         qty: q,
@@ -103,12 +150,9 @@ export default function SparePartsScreen() {
       setTxModal(null);
       setQty("1");
       setTxNote("");
-      refetch();
       showSnackbar(t("toast.transactionSuccess"), "success");
     } catch (e: any) {
       showSnackbar(e.message || t("toast.transactionFailed"), "error");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -256,9 +300,9 @@ export default function SparePartsScreen() {
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: YELLOW }]}
                 onPress={handleTransaction}
-                disabled={submitting}
+                disabled={txMutation.isPending}
               >
-                {submitting ? <ActivityIndicator color="#000" size="small" /> : (
+                {txMutation.isPending ? <ActivityIndicator color="#000" size="small" /> : (
                   <Text style={[styles.modalBtnText, { color: "#000" }]}>{t("common.confirm")}</Text>
                 )}
               </TouchableOpacity>
