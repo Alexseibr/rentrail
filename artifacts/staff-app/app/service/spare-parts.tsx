@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSnackbar } from "@/contexts/SnackbarContext";
 import { getAccessToken } from "@/services/api";
@@ -64,6 +65,8 @@ export default function SparePartsScreen() {
     staleTime: 20000,
     refetchInterval: 30000,
   });
+
+  useAppStateFocus(() => { refetch(); });
 
   React.useEffect(() => {
     if (!isRefetching) setManualRefreshing(false);
