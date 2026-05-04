@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo, useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 import { canAccessRoute } from "@/lib/permissions";
 
 interface NavItem {
@@ -39,25 +40,50 @@ interface NavItem {
   roles?: string[] | null;
 }
 
-const platformNavItems: NavItem[] = [
-  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: null },
-  { path: "/companies", labelKey: "nav.companies", icon: Building2, roles: ["superAdmin", "platformAdmin", "platformSupport"] },
-  { path: "/billing", labelKey: "nav.billing", icon: CreditCard, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
-  { path: "/blacklist", labelKey: "nav.blacklist", icon: ShieldBan, roles: ["superAdmin", "platformAdmin", "platformRisk"] },
-  { path: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity, roles: ["superAdmin", "platformAdmin"] },
-  { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
-  { path: "/white-label", labelKey: "nav.whiteLabel", icon: Palette, roles: ["superAdmin", "platformAdmin"] },
+interface NavGroup {
+  labelKey: string;
+  items: NavItem[];
+}
+
+const platformNavGroups: NavGroup[] = [
+  {
+    labelKey: "nav.groupMain",
+    items: [
+      { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: null },
+      { path: "/companies", labelKey: "nav.companies", icon: Building2, roles: ["superAdmin", "platformAdmin", "platformSupport"] },
+    ],
+  },
+  {
+    labelKey: "nav.groupTools",
+    items: [
+      { path: "/billing", labelKey: "nav.billing", icon: CreditCard, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
+      { path: "/blacklist", labelKey: "nav.blacklist", icon: ShieldBan, roles: ["superAdmin", "platformAdmin", "platformRisk"] },
+      { path: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity, roles: ["superAdmin", "platformAdmin"] },
+      { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
+      { path: "/white-label", labelKey: "nav.whiteLabel", icon: Palette, roles: ["superAdmin", "platformAdmin"] },
+    ],
+  },
 ];
 
-const companyNavItems: NavItem[] = [
-  { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { path: "/fleet", labelKey: "nav.fleet", icon: Bike },
-  { path: "/map", labelKey: "nav.map", icon: Map },
-  { path: "/service", labelKey: "nav.service", icon: Wrench },
-  { path: "/rentals", labelKey: "nav.rentals", icon: ClipboardList },
-  { path: "/clients", labelKey: "nav.clients", icon: Users },
-  { path: "/branches", labelKey: "nav.branches", icon: MapPin },
-  { path: "/settings", labelKey: "nav.settings", icon: Settings },
+const companyNavGroups: NavGroup[] = [
+  {
+    labelKey: "nav.groupMain",
+    items: [
+      { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard },
+      { path: "/fleet", labelKey: "nav.fleet", icon: Bike },
+      { path: "/map", labelKey: "nav.map", icon: Map },
+      { path: "/rentals", labelKey: "nav.rentals", icon: ClipboardList },
+    ],
+  },
+  {
+    labelKey: "nav.groupManagement",
+    items: [
+      { path: "/clients", labelKey: "nav.clients", icon: Users },
+      { path: "/service", labelKey: "nav.service", icon: Wrench },
+      { path: "/branches", labelKey: "nav.branches", icon: MapPin },
+      { path: "/settings", labelKey: "nav.settings", icon: Settings },
+    ],
+  },
 ];
 
 const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
@@ -103,17 +129,29 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return user.memberships[0].roleCode;
   }, [user]);
 
-  const navItems = useMemo(() => {
+  const navGroups = useMemo(() => {
     if (isPlatformUser) {
-      return platformNavItems.filter((item) => {
-        if (!item.roles) return true;
-        if (user?.isSuperAdmin) return true;
-        const userRoles = user?.platformRoles || [];
-        return item.roles.some((r) => userRoles.includes(r));
-      });
+      return platformNavGroups
+        .map((group) => ({
+          ...group,
+          items: group.items.filter((item) => {
+            if (!item.roles) return true;
+            if (user?.isSuperAdmin) return true;
+            const userRoles = user?.platformRoles || [];
+            return item.roles.some((r) => userRoles.includes(r));
+          }),
+        }))
+        .filter((group) => group.items.length > 0);
     }
-    return companyNavItems.filter((item) => canAccessRoute(roleCode, item.path));
+    return companyNavGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => canAccessRoute(roleCode, item.path)),
+      }))
+      .filter((group) => group.items.length > 0);
   }, [isPlatformUser, user, roleCode]);
+
+  const navItems = useMemo(() => navGroups.flatMap((g) => g.items), [navGroups]);
 
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
@@ -170,7 +208,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </Button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto py-3 px-3">
           {collapsed && (
             <Button
               variant="ghost"
@@ -181,28 +219,42 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}
-          {navItems.map((item) => {
-            const active =
-              item.path === "/"
-                ? location === "/" || location === ""
-                : location.startsWith(item.path);
-            return (
-              <Link key={item.path} href={item.path}>
-                <div
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
-                    active
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                    collapsed && "justify-center px-2",
-                  )}
-                >
-                  <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
-                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
-                </div>
-              </Link>
-            );
-          })}
+          {navGroups.map((group, gi) => (
+            <div key={gi} className={cn(gi > 0 && "mt-4")}>
+              {!collapsed && (
+                <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                  {t(group.labelKey)}
+                </p>
+              )}
+              {collapsed && gi > 0 && (
+                <Separator className="my-2 bg-sidebar-foreground/10" />
+              )}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const active =
+                    item.path === "/"
+                      ? location === "/" || location === ""
+                      : location.startsWith(item.path);
+                  return (
+                    <Link key={item.path} href={item.path}>
+                      <div
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
+                          active
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                          collapsed && "justify-center px-2",
+                        )}
+                      >
+                        <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
+                        {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="p-3 space-y-1">
@@ -265,28 +317,37 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-1">
-          {navItems.map((item) => {
-            const active =
-              item.path === "/"
-                ? location === "/" || location === ""
-                : location.startsWith(item.path);
-            return (
-              <Link key={item.path} href={item.path}>
-                <div
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
-                    active
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  )}
-                >
-                  <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
-                  <span className="truncate">{t(item.labelKey)}</span>
-                </div>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto py-3 px-3">
+          {navGroups.map((group, gi) => (
+            <div key={gi} className={cn(gi > 0 && "mt-4")}>
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                {t(group.labelKey)}
+              </p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const active =
+                    item.path === "/"
+                      ? location === "/" || location === ""
+                      : location.startsWith(item.path);
+                  return (
+                    <Link key={item.path} href={item.path}>
+                      <div
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
+                          active
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                        )}
+                      >
+                        <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
+                        <span className="truncate">{t(item.labelKey)}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
         <div className="p-3 space-y-1 border-t border-sidebar-border">
           <button

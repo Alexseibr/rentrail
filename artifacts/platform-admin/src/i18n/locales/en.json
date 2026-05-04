@@ -80,7 +80,10 @@
     "branches": "Branches",
     "settings": "Settings",
     "service": "Service",
-    "map": "Map"
+    "map": "Map",
+    "groupMain": "Main",
+    "groupManagement": "Management",
+    "groupTools": "Tools"
   },
   "lang": {
     "en": "English",

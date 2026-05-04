@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute, useLocation } from "wouter";
+import { useRoute } from "wouter";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
+import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -18,7 +18,6 @@ const statusColors: Record<string, string> = {
 export default function SubscriptionDetailPage() {
   const { t } = useTranslation();
   const [, params] = useRoute("/billing/subscriptions/:id");
-  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const subId = params?.id;
 
@@ -48,7 +47,8 @@ export default function SubscriptionDetailPage() {
 
   if (!data) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-4">
+        <PageBreadcrumb items={[{ label: t("nav.billing"), href: "/billing" }]} />
         <p className="text-muted-foreground">{t("subscriptionDetail.notFound")}</p>
       </div>
     );
@@ -58,13 +58,10 @@ export default function SubscriptionDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/billing")}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {t("common.back")}
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight">{t("subscriptionDetail.title")}</h1>
-      </div>
+      <PageBreadcrumb items={[
+        { label: t("nav.billing"), href: "/billing" },
+        { label: t("subscriptionDetail.title") },
+      ]} />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>

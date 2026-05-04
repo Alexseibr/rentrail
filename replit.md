@@ -25,6 +25,10 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 
 **Toast & Snackbar Feedback:** All mutations in Platform Admin pages (fleet, rentals, clients, service, branches) show toast notifications on success and error via `toast()` from `@/hooks/use-toast`. Staff App uses a custom `SnackbarContext` (`contexts/SnackbarContext.tsx`) providing `useSnackbar()` hook with animated snackbar (success green / error red). All toast/snackbar messages are localized (ru/en) under the `toast.*` i18n namespace.
 
+**Sidebar Navigation Grouping:** Platform Admin sidebar items are organized into labeled groups. Company sidebar: "Основное" (Dashboard, Fleet, Map, Rentals) and "Управление" (Clients, Service, Branches, Settings). Platform sidebar: "Основное" (Dashboard, Companies) and "Инструменты" (Billing, Blacklist, Diagnostics, Analytics, White Label). Groups use `NavGroup` interface in `app-layout.tsx`. Collapsed sidebar shows separators between groups; mobile sidebar shows group labels.
+
+**Breadcrumbs:** Detail pages (asset-detail, rental-detail, company-detail, invoice-detail, subscription-detail) use `PageBreadcrumb` component (`components/page-breadcrumb.tsx`) for hierarchical navigation. Pattern: "Parent Page > Current Item". Breadcrumbs replace previous back buttons. In not-found states, a single clickable breadcrumb links back to the parent list.
+
 ### Technical Implementations
 - **Multi-Tenancy:** Enforced via `x-company-id` header and `companyId` filtering on all database queries.
 - **Authentication & Authorization:** Phone number-based login with OTP or password. JWT for access/refresh tokens and a permission-based RBAC system.

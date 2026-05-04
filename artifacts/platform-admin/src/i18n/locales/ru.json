@@ -80,7 +80,10 @@
     "branches": "Филиалы",
     "settings": "Настройки",
     "service": "Сервис",
-    "map": "Карта"
+    "map": "Карта",
+    "groupMain": "Основное",
+    "groupManagement": "Управление",
+    "groupTools": "Инструменты"
   },
   "lang": {
     "en": "English",

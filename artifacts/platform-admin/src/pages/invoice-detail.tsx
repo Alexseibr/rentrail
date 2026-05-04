@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute, useLocation } from "wouter";
+import { useRoute } from "wouter";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
+import { PageBreadcrumb } from "@/components/page-breadcrumb";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,6 @@ const statusColors: Record<string, string> = {
 export default function InvoiceDetailPage() {
   const { t } = useTranslation();
   const [, params] = useRoute("/billing/invoices/:id");
-  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const invoiceId = params?.id;
   const [showMarkPaid, setShowMarkPaid] = useState(false);
@@ -80,7 +79,8 @@ export default function InvoiceDetailPage() {
 
   if (!data) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-4">
+        <PageBreadcrumb items={[{ label: t("nav.billing"), href: "/billing" }]} />
         <p className="text-muted-foreground">{t("invoiceDetail.notFound")}</p>
       </div>
     );
@@ -90,13 +90,10 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/billing")}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {t("common.back")}
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight">{t("invoiceDetail.title")}</h1>
-      </div>
+      <PageBreadcrumb items={[
+        { label: t("nav.billing"), href: "/billing" },
+        { label: t("invoiceDetail.title") },
+      ]} />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>

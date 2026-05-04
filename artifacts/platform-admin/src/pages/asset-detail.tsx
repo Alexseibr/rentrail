@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { useParams, useLocation } from "wouter";
+import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Bike, Hash, Tag, MapPin, Calendar, DollarSign } from "lucide-react";
+import { Bike, Hash, Tag, MapPin, Calendar, DollarSign } from "lucide-react";
+import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
 const STATUS_COLORS: Record<string, string> = {
   available: "bg-green-100 text-green-800",
@@ -28,7 +28,6 @@ export default function AssetDetailPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams<{ id: string }>();
-  const [, navigate] = useLocation();
   const companyId = user?.memberships?.[0]?.companyId;
   const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
 
@@ -61,12 +60,9 @@ export default function AssetDetailPage() {
 
   if (!asset) {
     return (
-      <div className="p-6">
-        <Button variant="ghost" onClick={() => navigate("/fleet")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("common.back", "Назад")}
-        </Button>
-        <p className="mt-4 text-muted-foreground">{t("common.noData")}</p>
+      <div className="p-6 space-y-4">
+        <PageBreadcrumb items={[{ label: t("nav.fleet"), href: "/fleet" }]} />
+        <p className="text-muted-foreground">{t("common.noData")}</p>
       </div>
     );
   }
@@ -85,11 +81,11 @@ export default function AssetDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <PageBreadcrumb items={[
+        { label: t("nav.fleet"), href: "/fleet" },
+        { label: asset.internalCode },
+      ]} />
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/fleet")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {t("common.back", "Назад")}
-        </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight">{asset.internalCode}</h1>
           <p className="text-muted-foreground">
