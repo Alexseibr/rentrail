@@ -7,7 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  Modal,
+  Pressable,
+  Dimensions,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -15,9 +18,23 @@ import { useColors } from "@/hooks/useColors";
 import { captureOrPick, type CapturedMedia } from "@/services/media";
 import { uploadAndAttach } from "@/services/upload";
 
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+
+export interface ExistingAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  objectPath: string;
+}
+
 interface MediaAttachmentsProps {
   entityType: string;
   entityId: string;
+  existingAttachments?: ExistingAttachment[];
+  authToken?: string | null;
+  readOnly?: boolean;
   onAttachmentCreated?: () => void;
 }
 
@@ -27,13 +44,28 @@ interface LocalPhoto {
   error?: string;
 }
 
+interface FullScreenItem {
+  uri: string;
+  headers?: Record<string, string>;
+  label: string;
+}
+
 export function MediaAttachments({
   entityType,
   entityId,
+  existingAttachments = [],
+  authToken,
+  readOnly = false,
   onAttachmentCreated,
 }: MediaAttachmentsProps) {
   const colors = useColors();
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
+  const [fullScreen, setFullScreen] = useState<FullScreenItem | null>(null);
+
+  const openFullScreen = (item: FullScreenItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFullScreen(item);
+  };
 
   const addPhoto = async () => {
     const media = await captureOrPick();
@@ -91,28 +123,65 @@ export function MediaAttachments({
     setPhotos((prev) => prev.filter((p) => p.media.uri !== uri));
   };
 
+  const hasContent = existingAttachments.length > 0 || photos.length > 0;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.label, { color: colors.foreground }]}>Photos</Text>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.secondary }]}
-          onPress={addPhoto}
-          activeOpacity={0.7}
-        >
-          <Feather name="camera" size={16} color={colors.primary} />
-          <Text style={[styles.addText, { color: colors.primary }]}>Add</Text>
-        </TouchableOpacity>
+        <Text style={[styles.label, { color: colors.foreground }]}>
+          Photos{existingAttachments.length > 0 ? ` (${existingAttachments.length})` : ""}
+        </Text>
+        {!readOnly && (
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: colors.secondary }]}
+            onPress={addPhoto}
+            activeOpacity={0.7}
+          >
+            <Feather name="camera" size={16} color={colors.primary} />
+            <Text style={[styles.addText, { color: colors.primary }]}>Add</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {photos.length > 0 && (
+      {hasContent && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scroll}
         >
+          {existingAttachments.map((att) => {
+            const uri = `${BASE_URL}/api/storage${att.objectPath}`;
+            const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+            return (
+              <TouchableOpacity
+                key={att.id}
+                style={styles.photoWrap}
+                activeOpacity={0.85}
+                onPress={() => openFullScreen({ uri, headers, label: att.fileName })}
+              >
+                <Image
+                  source={headers ? { uri, headers } : { uri }}
+                  style={styles.photo}
+                  resizeMode="cover"
+                />
+                <View style={[styles.existingBadge, { backgroundColor: colors.card }]}>
+                  <Feather name="maximize-2" size={10} color={colors.mutedForeground} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+
           {photos.map((photo) => (
-            <View key={photo.media.uri} style={styles.photoWrap}>
+            <TouchableOpacity
+              key={photo.media.uri}
+              style={styles.photoWrap}
+              activeOpacity={photo.status === "uploaded" ? 0.85 : 1}
+              onPress={() =>
+                photo.status === "uploaded"
+                  ? openFullScreen({ uri: photo.media.uri, label: "Photo" })
+                  : undefined
+              }
+            >
               <Image source={{ uri: photo.media.uri }} style={styles.photo} />
               {photo.status === "uploading" && (
                 <View style={styles.overlay}>
@@ -132,16 +201,57 @@ export function MediaAttachments({
                   <Feather name="refresh-cw" size={10} color="#fff" />
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                style={styles.removeBtn}
-                onPress={() => removePhoto(photo.media.uri)}
-              >
-                <Feather name="x" size={12} color="#fff" />
-              </TouchableOpacity>
-            </View>
+              {!readOnly && (
+                <TouchableOpacity
+                  style={styles.removeBtn}
+                  onPress={() => removePhoto(photo.media.uri)}
+                >
+                  <Feather name="x" size={12} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
+
+      {!hasContent && readOnly && (
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+          No photos attached
+        </Text>
+      )}
+
+      <Modal
+        visible={fullScreen !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFullScreen(null)}
+        statusBarTranslucent={Platform.OS === "android"}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFullScreen(null)} />
+          {fullScreen && (
+            <View style={styles.modalContent}>
+              <Image
+                source={
+                  fullScreen.headers
+                    ? { uri: fullScreen.uri, headers: fullScreen.headers }
+                    : { uri: fullScreen.uri }
+                }
+                style={styles.fullImage}
+                resizeMode="contain"
+              />
+              {fullScreen.label ? (
+                <Text style={styles.imageLabel} numberOfLines={1}>
+                  {fullScreen.label}
+                </Text>
+              ) : null}
+            </View>
+          )}
+          <TouchableOpacity style={styles.closeBtn} onPress={() => setFullScreen(null)}>
+            <Feather name="x" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -178,6 +288,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  existingBadge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    opacity: 0.85,
+  },
   removeBtn: {
     position: "absolute",
     top: 4,
@@ -186,6 +307,40 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyText: { fontSize: 13, fontFamily: "Inter_400Regular", fontStyle: "italic" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: SCREEN_WIDTH,
+    alignItems: "center",
+    gap: 10,
+  },
+  fullImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT * 0.75,
+  },
+  imageLabel: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    paddingHorizontal: 24,
+    textAlign: "center",
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 52,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
     justifyContent: "center",
     alignItems: "center",
   },

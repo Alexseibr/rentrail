@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Image,
+  ActivityIndicator, Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -12,11 +12,10 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSnackbar } from "@/contexts/SnackbarContext";
 import { getAccessToken } from "@/services/api";
+import { MediaAttachments, type ExistingAttachment } from "@/components/MediaAttachments";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
-
-type Colors = ReturnType<typeof useColors>;
 
 const SEVERITY_COLORS: Record<string, string> = {
   low: "#94a3b8",
@@ -64,12 +63,6 @@ interface IncidentDetail {
   updatedAt: string;
 }
 
-interface Attachment {
-  id: string;
-  fileName: string;
-  mimeType: string;
-  objectPath: string;
-}
 
 async function fetchIncident(companyId: string, id: string): Promise<IncidentDetail> {
   const token = await getAccessToken();
@@ -80,7 +73,7 @@ async function fetchIncident(companyId: string, id: string): Promise<IncidentDet
   return (await res.json()).data as IncidentDetail;
 }
 
-async function fetchAttachments(companyId: string, id: string): Promise<Attachment[]> {
+async function fetchAttachments(companyId: string, id: string): Promise<ExistingAttachment[]> {
   const token = await getAccessToken();
   const res = await fetch(
     `${BASE_URL}/api/attachments?entityType=incident&entityId=${id}`,
@@ -88,7 +81,7 @@ async function fetchAttachments(companyId: string, id: string): Promise<Attachme
   );
   if (!res.ok) return [];
   const json = await res.json();
-  return (json.data ?? []) as Attachment[];
+  return (json.data ?? []) as ExistingAttachment[];
 }
 
 async function updateStatus(companyId: string, id: string, status: string): Promise<IncidentDetail> {
@@ -116,7 +109,7 @@ export default function IncidentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachments, setAttachments] = useState<ExistingAttachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -291,24 +284,13 @@ export default function IncidentDetailScreen() {
 
         {attachments.length > 0 ? (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
-              {t("incidentDetail.photos")} ({attachments.length})
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.photoList}
-            >
-              {attachments.map((att) => (
-                <AttachmentThumb
-                  key={att.id}
-                  objectPath={att.objectPath}
-                  fileName={att.fileName}
-                  token={authToken}
-                  colors={colors}
-                />
-              ))}
-            </ScrollView>
+            <MediaAttachments
+              entityType="incident"
+              entityId={id!}
+              existingAttachments={attachments}
+              authToken={authToken}
+              readOnly
+            />
           </View>
         ) : null}
 
@@ -356,38 +338,7 @@ function buildStatusHistory(incident: IncidentDetail): Array<{ status: string; a
   return history;
 }
 
-function AttachmentThumb({
-  objectPath, fileName, token, colors,
-}: {
-  objectPath: string;
-  fileName: string;
-  token: string | null;
-  colors: Colors;
-}) {
-  const BASE_URL_INNER = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
-  const uri = `${BASE_URL_INNER}/api/storage${objectPath}`;
-
-  return (
-    <View style={styles.thumbWrap}>
-      {token ? (
-        <Image
-          source={{ uri, headers: { Authorization: `Bearer ${token}` } }}
-          style={styles.thumbImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={[styles.thumbPlaceholder, { backgroundColor: colors.muted }]}>
-          <Feather name="image" size={20} color={colors.mutedForeground} />
-        </View>
-      )}
-      <Text style={[styles.thumbName, { color: colors.mutedForeground }]} numberOfLines={1}>
-        {fileName}
-      </Text>
-    </View>
-  );
-}
-
-function Row({ label, value, colors }: { label: string; value: string; colors: Colors }) {
+function Row({ label, value, colors }: { label: string; value: string; colors: ReturnType<typeof useColors> }) {
   return (
     <View style={styles.row}>
       <Text style={[styles.rowLabel, { color: colors.mutedForeground }]}>{label}</Text>
@@ -452,17 +403,6 @@ const styles = StyleSheet.create({
   historyContent: { flex: 1 },
   historyStatus: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   historyTime: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  photoList: { gap: 10, flexDirection: "row", flexWrap: "wrap" },
-  thumbWrap: { width: 90, alignItems: "center", gap: 4 },
-  thumbImage: { width: 90, height: 90, borderRadius: 10 },
-  thumbPlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  thumbName: { fontSize: 10, fontFamily: "Inter_400Regular", textAlign: "center" },
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
