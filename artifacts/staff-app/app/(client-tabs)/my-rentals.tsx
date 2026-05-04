@@ -33,7 +33,7 @@ interface Rental {
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
   active: { bg: "#E8F5E9", text: "#2E7D32", accent: "#4CAF50" },
-  overdue: { bg: "#FFF3E0", text: "#E65100", accent: "#FF9800" },
+  overdue: { bg: "#FFEBEE", text: "#C62828", accent: "#E53935" },
   completed: { bg: "#E3F2FD", text: "#1565C0", accent: "#2196F3" },
   canceled: { bg: "#FAFAFA", text: "#757575", accent: "#9E9E9E" },
 };
@@ -358,10 +358,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
-    right: 0,
-    height: 3,
+    bottom: 0,
+    width: 4,
     borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 16,
   },
   cardHeader: {
     flexDirection: "row",

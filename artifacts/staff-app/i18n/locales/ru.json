@@ -246,7 +246,8 @@
     "noActiveRentalForVehicle": "Нет активной аренды для этого транспорта",
     "vehicleNotFound": "Транспорт не найден",
     "lookupFailed": "Не удалось найти транспорт",
-    "tryScanning": "Отсканируйте QR-код или введите код вручную"
+    "tryScanning": "Отсканируйте QR-код или введите код вручную",
+    "available": "Доступен"
   },
   "clientRentals": {
     "noRentals": "Аренд пока нет",

@@ -178,6 +178,12 @@ export default function VehiclesScreen() {
         </Text>
 
         <View style={styles.infoRow}>
+          <View style={[styles.availBadge, { backgroundColor: "#4CAF5020" }]}>
+            <View style={[styles.availDot, { backgroundColor: "#4CAF50" }]} />
+            <Text style={[styles.availText, { color: "#2E7D32" }]}>
+              {t("clientVehicles.available", "Доступен")}
+            </Text>
+          </View>
           {item.branchName && (
             <View style={styles.infoItem}>
               <Feather name="map-pin" size={13} color="#8c8c8c" />
@@ -319,7 +325,13 @@ const styles = StyleSheet.create({
   typeText: { fontSize: 11, fontFamily: "Inter_700Bold" },
   codeText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8c8c8c" },
   vehicleName: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
-  infoRow: { flexDirection: "row", gap: 16 },
+  infoRow: { flexDirection: "row", gap: 12, alignItems: "center", flexWrap: "wrap" },
+  availBadge: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+  },
+  availDot: { width: 6, height: 6, borderRadius: 3 },
+  availText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   infoItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   infoText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
   rentButton: {
