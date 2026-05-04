@@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
-import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
 
@@ -81,8 +80,6 @@ export default function SchedulesScreen() {
 
   const isLoading = schedulesLoading || overdueLoading;
   const isRefetching = schedulesRefetching || overdueRefetching;
-
-  useAppStateFocus(() => { refetchSchedules(); refetchOverdue(); });
 
   React.useEffect(() => {
     if (!isRefetching) setManualRefreshing(false);

@@ -5,12 +5,12 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, AppState, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -24,6 +24,13 @@ import "../i18n/i18n";
 
 SplashScreen.preventAutoHideAsync();
 setupNotificationHandler();
+
+focusManager.setEventListener((handleFocus) => {
+  const subscription = AppState.addEventListener("change", (state) => {
+    handleFocus(state === "active");
+  });
+  return () => subscription.remove();
+});
 
 const queryClient = new QueryClient();
 

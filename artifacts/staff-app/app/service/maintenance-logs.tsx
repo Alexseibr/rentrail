@@ -9,7 +9,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
-import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
 
@@ -59,8 +58,6 @@ export default function MaintenanceLogsScreen() {
     staleTime: 20000,
     refetchInterval: 30000,
   });
-
-  useAppStateFocus(() => { refetch(); });
 
   React.useEffect(() => {
     if (!isRefetching) setManualRefreshing(false);
