@@ -168,7 +168,8 @@ export default function AssetsScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="inbox" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("assets.noAssets")}</Text>
+              <Text style={[styles.emptyText, { color: colors.foreground }]}>{t("assets.noAssets")}</Text>
+              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("assets.emptyHint")}</Text>
             </View>
           }
         />
@@ -223,6 +224,7 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  empty: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
+  empty: { alignItems: "center", paddingTop: 80, gap: 8 },
+  emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 40 },
 });

@@ -59,8 +59,7 @@
     "confirmAction": "Confirm {{action}}",
     "refresh": "Refresh",
     "view": "View",
-    "viewAll": "All",
-    "processing": "Processing..."
+    "viewAll": "All"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -77,7 +76,9 @@
     "rentals": "Rentals",
     "clients": "Clients",
     "branches": "Branches",
-    "settings": "Settings"
+    "settings": "Settings",
+    "service": "Service",
+    "map": "Map"
   },
   "lang": {
     "en": "English",
@@ -420,7 +421,10 @@
     "purchasePrice": "Purchase Price",
     "currentValue": "Current Value",
     "createdAt": "Added",
-    "lastStatusChange": "Last Changed"
+    "lastStatusChange": "Last Changed",
+    "emptyTitle": "No vehicles yet",
+    "emptyDescription": "Add your first vehicle to start managing your fleet.",
+    "addFirst": "Add Vehicle"
   },
   "rentals": {
     "subtitle": "All company rentals",
@@ -439,7 +443,9 @@
     "approveConfirm": "Approve this rental?",
     "startConfirm": "Start this rental?",
     "returnConfirm": "Process vehicle return?",
-    "cancelConfirm": "Cancel this rental?"
+    "cancelConfirm": "Cancel this rental?",
+    "emptyTitle": "No rentals yet",
+    "emptyDescription": "All company rentals will be displayed here. Create the first rental for a client."
   },
   "clients": {
     "subtitle": "Company clients",
@@ -460,7 +466,10 @@
     "archiveConfirm": "Archive client {{name}}?",
     "restoreConfirm": "Restore client {{name}}?",
     "suspended": "Suspended",
-    "blocked": "Blocked"
+    "blocked": "Blocked",
+    "emptyTitle": "No clients yet",
+    "emptyDescription": "Add your first client to start processing rentals.",
+    "addFirst": "Add Client"
   },
   "branches": {
     "subtitle": "Branches and stations",
@@ -474,7 +483,10 @@
     "activate": "Activate",
     "deactivate": "Deactivate",
     "activateConfirm": "Activate branch \"{{name}}\"?",
-    "deactivateConfirm": "Deactivate branch \"{{name}}\"? It will be unavailable for new operations."
+    "deactivateConfirm": "Deactivate branch \"{{name}}\"? It will be unavailable for new operations.",
+    "emptyTitle": "No branches yet",
+    "emptyDescription": "Create your first branch — a pickup and return point for vehicles.",
+    "addFirst": "Create Branch"
   },
   "settings": {
     "subtitle": "Company settings",
@@ -486,6 +498,84 @@
     "website": "Website",
     "address": "Address",
     "created": "Created"
+  },
+  "service": {
+    "title": "Service",
+    "subtitle": "Service requests and work orders",
+    "requests": "Requests",
+    "workOrders": "Work Orders",
+    "newRequest": "New Request",
+    "newWorkOrder": "Work Order",
+    "requestTitle": "Title",
+    "requestTypeLabel": "Issue Type",
+    "orderTypeLabel": "Work Type",
+    "assetLabel": "Vehicle",
+    "branchLabel": "Branch",
+    "priorityLabel": "Priority",
+    "assignee": "Assignee",
+    "assign": "Assign",
+    "assignMechanic": "Assign Mechanic",
+    "selectMechanic": "Select mechanic",
+    "descriptionLabel": "Description",
+    "emptyRequests": "No service requests",
+    "emptyRequestsDesc": "Service requests from staff and clients will appear here.",
+    "emptyWorkOrders": "No work orders",
+    "emptyWorkOrdersDesc": "Create a work order to assign tasks to a mechanic.",
+    "emptyParts": "Spare parts inventory is empty",
+    "emptyPartsDesc": "Add spare parts to track inventory and stock levels.",
+    "emptyLogs": "No maintenance history",
+    "emptyLogsDesc": "Vehicle maintenance records will appear here.",
+    "emptySchedules": "No maintenance schedules",
+    "emptySchedulesDesc": "Set up scheduled maintenance plans for your vehicles.",
+    "status": {
+      "new": "New",
+      "assigned": "Assigned",
+      "in_progress": "In Progress",
+      "on_hold": "On Hold",
+      "completed": "Completed",
+      "canceled": "Canceled",
+      "draft": "Draft",
+      "en_route": "En Route",
+      "waiting_parts": "Waiting Parts"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "type": {
+      "breakdown": "Breakdown",
+      "flat_tire": "Flat Tire",
+      "brake_issue": "Brake Issue",
+      "battery_issue": "Battery Issue",
+      "electrical": "Electrical",
+      "body_damage": "Body Damage",
+      "scheduled_maintenance": "Scheduled Maintenance",
+      "inspection": "Inspection",
+      "cleaning": "Cleaning",
+      "other": "Other"
+    },
+    "orderType": {
+      "field_repair": "Field Repair",
+      "workshop_repair": "Workshop Repair",
+      "scheduled_maintenance": "Scheduled Maintenance",
+      "inspection": "Inspection",
+      "recovery": "Recovery",
+      "cleaning": "Cleaning"
+    }
+  },
+  "map": {
+    "title": "Vehicle Map",
+    "subtitle": "Real-time vehicle location and status",
+    "totalVehicles": "Total Vehicles",
+    "onMap": "On Map",
+    "offline": "No coordinates",
+    "avgBattery": "Avg Battery",
+    "battery": "Battery",
+    "lock": "Lock",
+    "speed": "Speed",
+    "lastSeen": "Last Updated"
   },
   "companyDashboard": {
     "title": "Overview",
@@ -500,6 +590,10 @@
     "noRentals": "No rentals",
     "fleetHealth": "Fleet Health",
     "utilization": "utilization",
-    "overdueAlert": "rentals overdue — require attention"
+    "overdueAlert": "rentals overdue — require attention",
+    "welcomeTitle": "Welcome!",
+    "welcomeDescription": "Start by adding a branch and your first vehicle to get your business running.",
+    "addFirstVehicle": "Add Vehicle",
+    "addFirstBranch": "Create Branch"
   }
 }

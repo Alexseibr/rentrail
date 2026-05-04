@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Pencil, Power, PowerOff } from "lucide-react";
+import { Plus, Pencil, Power, PowerOff, MapPin } from "lucide-react";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -185,7 +186,23 @@ export default function BranchesPage() {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t("common.noData", "Нет данных")}</TableCell>
+                    <TableCell colSpan={6} className="py-6">
+                      <Empty className="border-0">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon"><MapPin className="h-5 w-5" /></EmptyMedia>
+                          <EmptyTitle>{t("branches.emptyTitle")}</EmptyTitle>
+                          <EmptyDescription>{t("branches.emptyDescription")}</EmptyDescription>
+                        </EmptyHeader>
+                        {canWriteBranch && (
+                          <EmptyContent>
+                            <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                              <Plus className="h-3.5 w-3.5" />
+                              {t("branches.addFirst")}
+                            </Button>
+                          </EmptyContent>
+                        )}
+                      </Empty>
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>

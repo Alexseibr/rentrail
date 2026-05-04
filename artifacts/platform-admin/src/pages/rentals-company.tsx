@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation } from "wouter";
 import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search, ClipboardList, AlertCircle, Clock } from "lucide-react";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -280,9 +281,22 @@ export default function RentalsCompanyPage() {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-12 text-center">
-                      <ClipboardList className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
-                      <p className="text-sm text-muted-foreground">{t("common.noData", "Нет данных")}</p>
+                    <TableCell colSpan={6} className="py-6">
+                      <Empty className="border-0">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon"><ClipboardList className="h-5 w-5" /></EmptyMedia>
+                          <EmptyTitle>{t("rentals.emptyTitle")}</EmptyTitle>
+                          <EmptyDescription>{t("rentals.emptyDescription")}</EmptyDescription>
+                        </EmptyHeader>
+                        {canWriteRental && (
+                          <EmptyContent>
+                            <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                              <Plus className="h-3.5 w-3.5" />
+                              {t("rentals.create")}
+                            </Button>
+                          </EmptyContent>
+                        )}
+                      </Empty>
                     </TableCell>
                   </TableRow>
                 )}

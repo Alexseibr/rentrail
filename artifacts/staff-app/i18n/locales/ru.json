@@ -71,7 +71,8 @@
     "type_bike": "Велосипед",
     "type_ebike": "Электровелосипед",
     "type_scooter": "Самокат",
-    "type_escooter": "Электросамокат"
+    "type_escooter": "Электросамокат",
+    "emptyHint": "Потяните вниз для обновления или измените фильтры"
   },
   "rentals": {
     "rental": "аренда",
@@ -318,6 +319,7 @@
     "schedules": "Планировщик ТО",
     "serviceSection": "Сервисный модуль",
     "noWorkOrders": "Нет нарядов",
+    "noWorkOrdersHint": "Назначенные вам наряды на работу будут здесь",
     "noParts": "Нет запчастей",
     "searchPlaceholder": "Поиск по наряду или коду...",
     "searchParts": "Поиск по названию или SKU...",

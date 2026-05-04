@@ -18,6 +18,7 @@ import {
   Plus, Wrench, UserCheck, Search, AlertTriangle, Clock, CheckCircle, Loader2,
   Package, FileText, Calendar, TrendingDown, DollarSign, CalendarClock,
 } from "lucide-react";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -479,9 +480,14 @@ export default function ServicePage() {
                     ))}
                     {filteredRequests.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="py-12 text-center">
-                          <Wrench className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
-                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        <TableCell colSpan={8} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><Wrench className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("service.emptyRequests")}</EmptyTitle>
+                              <EmptyDescription>{t("service.emptyRequestsDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
                         </TableCell>
                       </TableRow>
                     )}
@@ -554,9 +560,14 @@ export default function ServicePage() {
                     ))}
                     {workOrders.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} className="py-12 text-center">
-                          <Wrench className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
-                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        <TableCell colSpan={9} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><Wrench className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("service.emptyWorkOrders")}</EmptyTitle>
+                              <EmptyDescription>{t("service.emptyWorkOrdersDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
                         </TableCell>
                       </TableRow>
                     )}
@@ -639,9 +650,14 @@ export default function ServicePage() {
                     })}
                     {filteredParts.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="py-12 text-center">
-                          <Package className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
-                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        <TableCell colSpan={8} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><Package className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("service.emptyParts")}</EmptyTitle>
+                              <EmptyDescription>{t("service.emptyPartsDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
                         </TableCell>
                       </TableRow>
                     )}
@@ -710,9 +726,14 @@ export default function ServicePage() {
                     ))}
                     {filteredLogs.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="py-12 text-center">
-                          <FileText className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
-                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        <TableCell colSpan={7} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><FileText className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("service.emptyLogs")}</EmptyTitle>
+                              <EmptyDescription>{t("service.emptyLogsDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
                         </TableCell>
                       </TableRow>
                     )}
@@ -796,9 +817,14 @@ export default function ServicePage() {
                     })}
                     {schedules.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-12 text-center">
-                          <Calendar className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
-                          <p className="text-sm text-muted-foreground">{t("common.noData")}</p>
+                        <TableCell colSpan={6} className="py-6">
+                          <Empty className="border-0">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon"><Calendar className="h-5 w-5" /></EmptyMedia>
+                              <EmptyTitle>{t("service.emptySchedules")}</EmptyTitle>
+                              <EmptyDescription>{t("service.emptySchedulesDesc")}</EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
                         </TableCell>
                       </TableRow>
                     )}

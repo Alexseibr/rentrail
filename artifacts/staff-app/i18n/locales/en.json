@@ -71,7 +71,8 @@
     "type_bike": "Bike",
     "type_ebike": "E-Bike",
     "type_scooter": "Scooter",
-    "type_escooter": "E-Scooter"
+    "type_escooter": "E-Scooter",
+    "emptyHint": "Pull down to refresh or adjust filters"
   },
   "rentals": {
     "rental": "rental",
@@ -318,6 +319,7 @@
     "schedules": "Maintenance Schedules",
     "serviceSection": "Service Module",
     "noWorkOrders": "No work orders",
+    "noWorkOrdersHint": "Work orders assigned to you will appear here",
     "noParts": "No spare parts",
     "searchPlaceholder": "Search by title or code...",
     "searchParts": "Search by name or SKU...",

@@ -11,8 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Bike, ClipboardList, Users, MapPin,
   TrendingUp, AlertCircle, CheckCircle2, Wrench,
-  ArrowRight, RefreshCw,
+  ArrowRight, RefreshCw, Plus, Sparkles,
 } from "lucide-react";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
+import { useRolePermissions } from "@/hooks/use-role-permissions";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
@@ -97,6 +99,7 @@ export default function CompanyDashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const { canWriteAsset, canWriteBranch } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
   const companyName = user?.memberships?.[0]?.companyName;
   const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
@@ -179,6 +182,38 @@ export default function CompanyDashboardPage() {
           {t("common.refresh", "Обновить")}
         </Button>
       </div>
+
+      {!isLoading && assets.length === 0 && branches.length === 0 && (
+        <Card className="border-dashed border-2 border-primary/20 bg-primary/[0.02]">
+          <CardContent className="pt-6">
+            <Empty className="border-0 p-0">
+              <EmptyHeader>
+                <EmptyMedia variant="icon"><Sparkles className="h-5 w-5" /></EmptyMedia>
+                <EmptyTitle>{t("companyDashboard.welcomeTitle")}</EmptyTitle>
+                <EmptyDescription>{t("companyDashboard.welcomeDescription")}</EmptyDescription>
+              </EmptyHeader>
+              {(canWriteBranch || canWriteAsset) && (
+                <EmptyContent>
+                  <div className="flex gap-3">
+                    {canWriteBranch && (
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("/branches")}>
+                        <MapPin className="h-3.5 w-3.5" />
+                        {t("companyDashboard.addFirstBranch")}
+                      </Button>
+                    )}
+                    {canWriteAsset && (
+                      <Button size="sm" className="gap-1.5" onClick={() => navigate("/fleet")}>
+                        <Plus className="h-3.5 w-3.5" />
+                        {t("companyDashboard.addFirstVehicle")}
+                      </Button>
+                    )}
+                  </div>
+                </EmptyContent>
+              )}
+            </Empty>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <KpiCard

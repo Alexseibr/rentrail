@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Archive, RotateCcw, RefreshCw, Search, Bike } from "lucide-react";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -319,9 +320,22 @@ export default function FleetPage() {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-12 text-center">
-                      <Bike className="h-10 w-10 mx-auto mb-2 text-muted-foreground opacity-20" />
-                      <p className="text-sm text-muted-foreground">{t("common.noData", "Нет данных")}</p>
+                    <TableCell colSpan={6} className="py-6">
+                      <Empty className="border-0">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon"><Bike className="h-5 w-5" /></EmptyMedia>
+                          <EmptyTitle>{t("fleet.emptyTitle")}</EmptyTitle>
+                          <EmptyDescription>{t("fleet.emptyDescription")}</EmptyDescription>
+                        </EmptyHeader>
+                        {canWriteAsset && (
+                          <EmptyContent>
+                            <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                              <Plus className="h-3.5 w-3.5" />
+                              {t("fleet.addFirst")}
+                            </Button>
+                          </EmptyContent>
+                        )}
+                      </Empty>
                     </TableCell>
                   </TableRow>
                 )}

@@ -215,8 +215,9 @@ export default function WorkOrdersScreen() {
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>
-              <Feather name="tool" size={32} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("serviceModule.noWorkOrders")}</Text>
+              <Feather name="tool" size={36} color={colors.mutedForeground} />
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("serviceModule.noWorkOrders")}</Text>
+              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("serviceModule.noWorkOrdersHint")}</Text>
             </View>
           )
         }
@@ -267,6 +268,7 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   costText: { fontSize: 12, fontFamily: "Inter_500Medium", marginTop: 4 },
   loader: { marginTop: 60 },
-  empty: { alignItems: "center", marginTop: 60, gap: 12 },
-  emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
+  empty: { alignItems: "center", marginTop: 60, gap: 8 },
+  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 40 },
 });
