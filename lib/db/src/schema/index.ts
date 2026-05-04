@@ -56,4 +56,5 @@ export * from "./spare-part-transactions";
 export * from "./work-order-parts";
 export * from "./client-payment-methods";
 export * from "./rental-blackout-dates";
+export * from "./incidents";
 export * from "./relations";
