@@ -4,6 +4,7 @@ import { requireCompanyAccess, requirePermission } from "../middlewares/authoriz
 import * as serviceService from "../services/service.service";
 import * as maintenanceService from "../services/maintenance.service";
 import { logger } from "../lib/logger";
+import { maintenanceLogTypeEnum } from "@workspace/db/schema";
 
 const router = Router();
 
@@ -229,12 +230,19 @@ router.get("/fleet-map", authenticate, requireCompanyAccess, requirePermission("
 
 // ─── Maintenance Logs ──────────────────────────────────────────────────────────
 
+const VALID_MAINTENANCE_LOG_TYPES = maintenanceLogTypeEnum.enumValues;
+
 router.get("/maintenance-logs", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
   try {
+    const logTypeParam = req.query.logType as string | undefined;
+    if (logTypeParam && !VALID_MAINTENANCE_LOG_TYPES.includes(logTypeParam as (typeof VALID_MAINTENANCE_LOG_TYPES)[number])) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid logType value: ${logTypeParam}` } });
+    }
     const items = await maintenanceService.listMaintenanceLogs(
       req.tenant!.companyId,
       req.query.assetId as string | undefined,
       req.query.limit ? parseInt(req.query.limit as string) : 50,
+      logTypeParam,
     );
     return res.json({ data: items });
   } catch (err: any) {

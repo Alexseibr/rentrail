@@ -5,8 +5,12 @@ import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
 import * as deviceService from "../services/device.service";
 import { createAuditLog } from "../lib/audit";
+import { deviceStatusEnum, deviceTypeEnum } from "@workspace/db/schema";
 
 const router: IRouter = Router();
+
+const VALID_DEVICE_STATUSES = deviceStatusEnum.enumValues;
+const VALID_DEVICE_TYPES = deviceTypeEnum.enumValues;
 
 const idParams = z.object({ id: z.string().uuid() });
 
@@ -48,8 +52,14 @@ router.post("/devices", authenticate, requireCompanyAccess, requirePermission("d
 
 router.get("/devices", authenticate, requireCompanyAccess, requirePermission("device:read"), async (req, res) => {
   const { status, deviceType, branchId, provider } = req.query as Record<string, string>;
+  if (status && !VALID_DEVICE_STATUSES.includes(status as (typeof VALID_DEVICE_STATUSES)[number])) {
+    return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid status value: ${status}` } });
+  }
+  if (deviceType && !VALID_DEVICE_TYPES.includes(deviceType as (typeof VALID_DEVICE_TYPES)[number])) {
+    return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid deviceType value: ${deviceType}` } });
+  }
   const list = await deviceService.listDevices(req.tenant!.companyId, { status, deviceType, branchId, provider });
-  res.json({ data: list });
+  return res.json({ data: list });
 });
 
 router.get("/devices/:id", authenticate, requireCompanyAccess, requirePermission("device:read"),

@@ -8,10 +8,11 @@ import { logger } from "../lib/logger";
 
 // ─── Maintenance Logs ─────────────────────────────────────────────────────────
 
-export async function listMaintenanceLogs(companyId: string, assetId?: string, limit = 50) {
-  const conditions = assetId
-    ? and(eq(maintenanceLogs.companyId, companyId), eq(maintenanceLogs.assetId, assetId))
-    : eq(maintenanceLogs.companyId, companyId);
+export async function listMaintenanceLogs(companyId: string, assetId?: string, limit = 50, logType?: string) {
+  const clauses = [eq(maintenanceLogs.companyId, companyId)];
+  if (assetId) clauses.push(eq(maintenanceLogs.assetId, assetId));
+  if (logType) clauses.push(eq(maintenanceLogs.logType, logType as typeof maintenanceLogs.$inferSelect["logType"]));
+  const conditions = and(...clauses);
 
   return db
     .select({
