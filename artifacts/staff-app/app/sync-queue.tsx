@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,8 @@ import { getActionDescription } from "@/services/offline-policy";
 import type { QueueItem, QueueItemStatus } from "@/services/sync-queue";
 
 type StatusFilter = "all" | "pending" | "failed" | "done";
+
+const FILTER_STORAGE_KEY = "sync_queue_filter";
 
 const FILTER_MATCHERS: Record<StatusFilter, (status: QueueItemStatus) => boolean> = {
   all: () => true,
@@ -49,6 +52,26 @@ export default function SyncQueueScreen() {
   const colors = useColors();
   const { queueItems, isSyncing, syncNow } = useSync();
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const hydratedRef = React.useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(FILTER_STORAGE_KEY)
+      .then((saved) => {
+        if (cancelled || hydratedRef.current) return;
+        hydratedRef.current = true;
+        if (!saved) return;
+        if (saved === "all" || saved === "pending" || saved === "failed" || saved === "done") {
+          setFilter(saved);
+        }
+      })
+      .catch(() => {
+        hydratedRef.current = true;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filterCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = { all: 0, pending: 0, failed: 0, done: 0 };
@@ -68,7 +91,9 @@ export default function SyncQueueScreen() {
 
   const handleSelectFilter = (next: StatusFilter) => {
     if (next === filter) return;
+    hydratedRef.current = true;
     setFilter(next);
+    AsyncStorage.setItem(FILTER_STORAGE_KEY, next).catch(() => {});
     Haptics.selectionAsync();
   };
 
