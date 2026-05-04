@@ -86,7 +86,14 @@ export default function IncidentsScreen() {
     const isUrgent = item.priority === "urgent" || item.priority === "critical";
 
     return (
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
+      <TouchableOpacity
+        activeOpacity={0.75}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push(`/incident/${item.id}` as `/incident/${string}`);
+        }}
+        style={[styles.card, { backgroundColor: colors.card }]}
+      >
         <View style={[styles.cardAccent, { backgroundColor: priorityColor }]} />
         <View style={styles.cardContent}>
           <View style={styles.cardHeader}>
@@ -136,7 +143,7 @@ export default function IncidentsScreen() {
             </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
