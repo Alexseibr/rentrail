@@ -46,6 +46,12 @@ const ASSET_TYPE_COLORS: Record<string, string> = {
   escooter: "#9C27B0",
 };
 
+const VEHICLE_STATUS_STYLE: Record<string, { color: string; bg: string }> = {
+  available: { color: "#2E7D32", bg: "#4CAF5020" },
+  reserved: { color: "#1565C0", bg: "#2196F320" },
+  maintenance: { color: "#E65100", bg: "#FF980020" },
+};
+
 export default function VehiclesScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -154,6 +160,7 @@ export default function VehiclesScreen() {
   const renderVehicle = ({ item }: { item: Vehicle }) => {
     const typeColor = ASSET_TYPE_COLORS[item.assetType] || "#666";
     const typeIcon = ASSET_TYPE_ICONS[item.assetType] || "circle";
+    const statusStyle = VEHICLE_STATUS_STYLE[item.status] || VEHICLE_STATUS_STYLE.available;
 
     return (
       <TouchableOpacity
@@ -178,10 +185,10 @@ export default function VehiclesScreen() {
         </Text>
 
         <View style={styles.infoRow}>
-          <View style={[styles.availBadge, { backgroundColor: "#4CAF5020" }]}>
-            <View style={[styles.availDot, { backgroundColor: "#4CAF50" }]} />
-            <Text style={[styles.availText, { color: "#2E7D32" }]}>
-              {t("clientVehicles.available", "Доступен")}
+          <View style={[styles.availBadge, { backgroundColor: statusStyle.bg }]}>
+            <View style={[styles.availDot, { backgroundColor: statusStyle.color }]} />
+            <Text style={[styles.availText, { color: statusStyle.color }]}>
+              {t(`clientVehicles.status_${item.status}`, t("clientVehicles.available"))}
             </Text>
           </View>
           {item.branchName && (
