@@ -393,7 +393,6 @@
     "cat_accessories": "Accessories",
     "cat_other": "Other",
     "searchLogs": "Search by code, type, notes...",
-    "noLogs": "No maintenance history",
     "noSchedules": "No maintenance schedules",
     "noOverdue": "No overdue schedules",
     "overdueCount": "{{count}} schedules overdue — tap to view",
