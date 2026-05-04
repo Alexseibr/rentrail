@@ -1,13 +1,14 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, SectionList,
+  RefreshControl, ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
@@ -48,29 +49,47 @@ export default function SchedulesScreen() {
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
 
-  const [schedules, setSchedules] = useState<any[]>([]);
-  const [overdue, setOverdue] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
+  const [manualRefreshing, setManualRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!companyId) return;
-    try {
-      const [all, ov] = await Promise.all([fetchSchedules(companyId), fetchOverdue(companyId)]);
-      setSchedules(all);
-      setOverdue(ov);
-    } catch {
-      setSchedules([]);
-      setOverdue([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [companyId]);
+  const {
+    data: schedules = [],
+    isLoading: schedulesLoading,
+    isRefetching: schedulesRefetching,
+    refetch: refetchSchedules,
+  } = useQuery({
+    queryKey: ["maintenanceSchedules", companyId],
+    queryFn: () => fetchSchedules(companyId!),
+    enabled: !!companyId,
+    staleTime: 20000,
+    refetchInterval: 30000,
+  });
 
-  React.useEffect(() => { load(); }, [load]);
-  const onRefresh = () => { setRefreshing(true); load(); };
+  const {
+    data: overdue = [],
+    isLoading: overdueLoading,
+    isRefetching: overdueRefetching,
+    refetch: refetchOverdue,
+  } = useQuery({
+    queryKey: ["maintenanceSchedulesOverdue", companyId],
+    queryFn: () => fetchOverdue(companyId!),
+    enabled: !!companyId,
+    staleTime: 20000,
+    refetchInterval: 30000,
+  });
+
+  const isLoading = schedulesLoading || overdueLoading;
+  const isRefetching = schedulesRefetching || overdueRefetching;
+
+  React.useEffect(() => {
+    if (!isRefetching) setManualRefreshing(false);
+  }, [isRefetching]);
+
+  const onRefresh = () => {
+    setManualRefreshing(true);
+    refetchSchedules();
+    refetchOverdue();
+  };
 
   const displayed = showOverdueOnly ? overdue : schedules;
 
@@ -201,9 +220,9 @@ export default function SchedulesScreen() {
         data={displayed}
         keyExtractor={i => i.id}
         renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          loading ? (
+          isLoading ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>

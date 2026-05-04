@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator, TextInput, ScrollView,
@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
@@ -49,28 +50,26 @@ export default function WorkOrdersScreen() {
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
 
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState("");
+  const [manualRefreshing, setManualRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!companyId) return;
-    try {
-      const data = await fetchWorkOrders(companyId, filter);
-      setItems(data);
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [companyId, filter]);
+  const { data: items = [], isLoading, isRefetching, refetch } = useQuery({
+    queryKey: ["workOrders", companyId, filter],
+    queryFn: () => fetchWorkOrders(companyId!, filter),
+    enabled: !!companyId,
+    staleTime: 20000,
+    refetchInterval: 30000,
+  });
 
-  React.useEffect(() => { load(); }, [load]);
+  React.useEffect(() => {
+    if (!isRefetching) setManualRefreshing(false);
+  }, [isRefetching]);
 
-  const onRefresh = () => { setRefreshing(true); load(); };
+  const onRefresh = () => {
+    setManualRefreshing(true);
+    refetch();
+  };
 
   const filtered = search.trim()
     ? items.filter(i =>
@@ -222,9 +221,9 @@ export default function WorkOrdersScreen() {
         data={filtered}
         keyExtractor={i => i.id}
         renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          loading ? (
+          isLoading ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator, TextInput,
@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
@@ -47,26 +48,25 @@ export default function MaintenanceLogsScreen() {
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
 
-  const [logs, setLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
+  const [manualRefreshing, setManualRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!companyId) return;
-    try {
-      const data = await fetchLogs(companyId);
-      setLogs(data);
-    } catch {
-      setLogs([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [companyId]);
+  const { data: logs = [], isLoading, isRefetching, refetch } = useQuery({
+    queryKey: ["maintenanceLogs", companyId],
+    queryFn: () => fetchLogs(companyId!),
+    enabled: !!companyId,
+    staleTime: 20000,
+    refetchInterval: 30000,
+  });
 
-  React.useEffect(() => { load(); }, [load]);
-  const onRefresh = () => { setRefreshing(true); load(); };
+  React.useEffect(() => {
+    if (!isRefetching) setManualRefreshing(false);
+  }, [isRefetching]);
+
+  const onRefresh = () => {
+    setManualRefreshing(true);
+    refetch();
+  };
 
   const filtered = search.trim()
     ? logs.filter(l =>
@@ -154,9 +154,9 @@ export default function MaintenanceLogsScreen() {
         data={filtered}
         keyExtractor={i => i.id}
         renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          loading ? (
+          isLoading ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>

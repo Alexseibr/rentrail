@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator, TextInput, Alert, Modal, KeyboardAvoidingView, Platform,
@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSnackbar } from "@/contexts/SnackbarContext";
@@ -48,31 +49,30 @@ export default function SparePartsScreen() {
   const { companyId } = useAuth();
   const { showSnackbar } = useSnackbar();
 
-  const [parts, setParts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [txModal, setTxModal] = useState<{ part: any; type: "in" | "out" | "adjustment" } | null>(null);
   const [qty, setQty] = useState("1");
   const [txNote, setTxNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [manualRefreshing, setManualRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!companyId) return;
-    try {
-      const data = await fetchParts(companyId, lowStockOnly);
-      setParts(data);
-    } catch {
-      setParts([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [companyId, lowStockOnly]);
+  const { data: parts = [], isLoading, isRefetching, refetch } = useQuery({
+    queryKey: ["spareParts", companyId, lowStockOnly],
+    queryFn: () => fetchParts(companyId!, lowStockOnly),
+    enabled: !!companyId,
+    staleTime: 20000,
+    refetchInterval: 30000,
+  });
 
-  React.useEffect(() => { load(); }, [load]);
-  const onRefresh = () => { setRefreshing(true); load(); };
+  React.useEffect(() => {
+    if (!isRefetching) setManualRefreshing(false);
+  }, [isRefetching]);
+
+  const onRefresh = () => {
+    setManualRefreshing(true);
+    refetch();
+  };
 
   const filtered = search.trim()
     ? parts.filter(p =>
@@ -100,7 +100,7 @@ export default function SparePartsScreen() {
       setTxModal(null);
       setQty("1");
       setTxNote("");
-      load();
+      refetch();
       showSnackbar(t("toast.transactionSuccess"), "success");
     } catch (e: any) {
       showSnackbar(e.message || t("toast.transactionFailed"), "error");
@@ -197,9 +197,9 @@ export default function SparePartsScreen() {
         data={filtered}
         keyExtractor={i => i.id}
         renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          loading ? (
+          isLoading ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>
