@@ -23,3 +23,9 @@ id = "BDrKMhs-SvOzGi2ERx-3n"
 uri = "file://VeloRent_Documentation.docx"
 type = "word_document"
 title = "VeloRent Platform — Техническая документация"
+
+[[outputs]]
+id = "6RLYvcaxezIzSWqy5XZb2"
+uri = "file://product-description.pdf"
+type = "pdf"
+title = "RideFlow — Описание продукта (PDF)"
