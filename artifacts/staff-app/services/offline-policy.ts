@@ -5,7 +5,9 @@ export type QueueableAction =
   | "change_incident_status"
   | "create_maintenance"
   | "change_asset_status"
-  | "upload_attachment";
+  | "upload_attachment"
+  | "change_work_order_status"
+  | "change_maintenance_status";
 
 export type OnlineOnlyAction =
   | "login"
@@ -24,6 +26,8 @@ const QUEUEABLE_ACTIONS: Set<string> = new Set<QueueableAction>([
   "create_maintenance",
   "change_asset_status",
   "upload_attachment",
+  "change_work_order_status",
+  "change_maintenance_status",
 ]);
 
 const ONLINE_ONLY_ACTIONS: Set<string> = new Set<OnlineOnlyAction>([
@@ -57,6 +61,8 @@ export function getActionDescription(action: string): string {
     create_maintenance: "Create maintenance task",
     change_asset_status: "Change asset status",
     upload_attachment: "Upload photo/attachment",
+    change_work_order_status: "Change work order status",
+    change_maintenance_status: "Change maintenance status",
     login: "Login (requires internet)",
     rental_start: "Start rental (requires internet)",
     rental_return: "Return rental (requires internet)",

@@ -8,6 +8,56 @@ import { logger } from "../lib/logger";
 
 // ─── Maintenance Logs ─────────────────────────────────────────────────────────
 
+export async function getMaintenanceLog(id: string, companyId: string) {
+  const [row] = await db
+    .select({
+      id: maintenanceLogs.id,
+      assetId: maintenanceLogs.assetId,
+      workOrderId: maintenanceLogs.workOrderId,
+      logType: maintenanceLogs.logType,
+      performedAt: maintenanceLogs.performedAt,
+      odometerKm: maintenanceLogs.odometerKm,
+      cost: maintenanceLogs.cost,
+      partsUsed: maintenanceLogs.partsUsed,
+      notes: maintenanceLogs.notes,
+      nextServiceKm: maintenanceLogs.nextServiceKm,
+      nextServiceDate: maintenanceLogs.nextServiceDate,
+      createdAt: maintenanceLogs.createdAt,
+      updatedAt: maintenanceLogs.updatedAt,
+      assetCode: assets.internalCode,
+      assetType: assets.assetType,
+      assetBrand: assets.brand,
+      assetModel: assets.model,
+      performedByName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
+    })
+    .from(maintenanceLogs)
+    .leftJoin(assets, eq(maintenanceLogs.assetId, assets.id))
+    .leftJoin(users, eq(maintenanceLogs.performedByUserId, users.id))
+    .where(and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.companyId, companyId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function updateMaintenanceLog(
+  id: string,
+  companyId: string,
+  data: { notes?: string; cost?: string; odometerKm?: string },
+) {
+  const updateData: Partial<typeof maintenanceLogs.$inferInsert> & { updatedAt: Date } = {
+    updatedAt: new Date(),
+  };
+  if (data.notes !== undefined) updateData.notes = data.notes;
+  if (data.cost !== undefined) updateData.cost = data.cost;
+  if (data.odometerKm !== undefined) updateData.odometerKm = data.odometerKm;
+
+  const [row] = await db
+    .update(maintenanceLogs)
+    .set(updateData)
+    .where(and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.companyId, companyId)))
+    .returning();
+  return row ?? null;
+}
+
 export async function listMaintenanceLogs(companyId: string, assetId?: string, limit = 50, logType?: string) {
   const clauses = [eq(maintenanceLogs.companyId, companyId)];
   if (assetId) clauses.push(eq(maintenanceLogs.assetId, assetId));

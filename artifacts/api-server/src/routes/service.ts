@@ -278,6 +278,43 @@ router.post("/maintenance-logs", authenticate, requireCompanyAccess, requirePerm
   }
 });
 
+router.get("/maintenance-logs/:id", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
+  try {
+    const item = await maintenanceService.getMaintenanceLog(req.params.id as string, req.tenant!.companyId);
+    if (!item) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Maintenance log not found" } });
+    return res.json({ data: item });
+  } catch (err: any) {
+    logger.error({ err }, "GET /maintenance-logs/:id error");
+    return res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
+  }
+});
+
+router.patch("/maintenance-logs/:id", authenticate, requireCompanyAccess, requirePermission("asset:update"), async (req, res) => {
+  try {
+    const hasFields =
+      req.body.notes !== undefined ||
+      req.body.cost !== undefined ||
+      req.body.odometerKm !== undefined;
+    if (!hasFields) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: "No valid fields to update" } });
+    }
+    const row = await maintenanceService.updateMaintenanceLog(
+      req.params.id as string,
+      req.tenant!.companyId,
+      {
+        notes: req.body.notes !== undefined ? String(req.body.notes) : undefined,
+        cost: req.body.cost !== undefined ? String(req.body.cost) : undefined,
+        odometerKm: req.body.odometerKm !== undefined ? String(req.body.odometerKm) : undefined,
+      },
+    );
+    if (!row) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Maintenance log not found" } });
+    return res.json({ data: row });
+  } catch (err: any) {
+    logger.error({ err }, "PATCH /maintenance-logs/:id error");
+    return res.status(500).json({ error: { code: "INTERNAL", message: err?.message } });
+  }
+});
+
 // ─── Maintenance Schedules ─────────────────────────────────────────────────────
 
 router.get("/maintenance-schedules", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {

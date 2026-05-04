@@ -224,7 +224,22 @@
     "listTitle": "Maintenance History",
     "viewAll": "View Maintenance History",
     "noLogs": "No maintenance records",
-    "noLogsHint": "Completed maintenance records will appear here"
+    "noLogsHint": "Completed maintenance records will appear here",
+    "noTasks": "No maintenance tasks",
+    "noTasksHint": "Maintenance-type work orders will appear here",
+    "taskCompleted": "Maintenance task completed",
+    "statusQueued": "Status change saved — will sync when you're back online",
+    "logNotFound": "Maintenance log not found",
+    "performedBy": "Performed By",
+    "odometer": "Odometer",
+    "nextService": "Next Service",
+    "addNotes": "Add / Update Notes",
+    "editNotes": "Edit Notes",
+    "notesPlaceholder": "Enter notes for this maintenance record…",
+    "saveNotes": "Save Notes",
+    "queueNotes": "Queue for Later",
+    "notesSaved": "Notes updated",
+    "notesQueued": "Notes saved — will sync when you're back online"
   },
   "scanner": {
     "cameraAccessNeeded": "Camera access needed",
@@ -511,6 +526,9 @@
     "logType_cleaning": "Cleaning",
     "logType_inspection": "Inspection",
     "logType_other": "Other"
+  },
+  "workOrder": {
+    "statusQueued": "Status change saved — will sync when you're back online"
   },
   "toast": {
     "returnSuccess": "Vehicle returned successfully",

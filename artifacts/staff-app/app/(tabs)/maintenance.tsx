@@ -16,44 +16,54 @@ import { SyncStatusBanner } from "@/components/SyncStatusBanner";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-interface MaintenanceLog {
+const MAINTENANCE_ORDER_TYPES = new Set([
+  "scheduled_maintenance",
+  "inspection",
+  "cleaning",
+  "recovery",
+]);
+
+interface WorkOrder {
   id: string;
-  assetId: string;
+  title: string;
+  orderType: string;
+  status: string;
+  priority: string;
   assetCode: string | null;
   assetType: string | null;
-  branchId: string | null;
-  logType: string;
-  performedAt: string;
-  performedByName: string | null;
-  odometerKm: string | null;
-  cost: string | null;
-  notes: string | null;
-  nextServiceDate: string | null;
+  branchName: string | null;
+  assignedToName: string | null;
+  createdAt: string;
+  completedAt: string | null;
 }
 
-const LOG_TYPE_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
-  general_service: "tool",
-  tire_change: "disc",
-  brake_service: "alert-circle",
-  battery_replacement: "battery-charging",
-  chain_lubrication: "link",
-  cable_adjustment: "sliders",
-  bearing_replacement: "settings",
-  body_repair: "shield",
-  electrical_repair: "zap",
-  cleaning: "wind",
-  inspection: "eye",
-  other: "more-horizontal",
+const STATUS_COLORS: Record<string, string> = {
+  draft: "#94a3b8",
+  assigned: "#3b82f6",
+  en_route: "#8b5cf6",
+  in_progress: "#f59e0b",
+  waiting_parts: "#ef4444",
+  completed: "#22c55e",
+  canceled: "#94a3b8",
 };
 
-async function fetchMaintenanceLogs(companyId: string): Promise<MaintenanceLog[]> {
+const ORDER_TYPE_ICONS: Record<string, React.ComponentProps<typeof Feather>["name"]> = {
+  scheduled_maintenance: "tool",
+  inspection: "eye",
+  cleaning: "wind",
+  recovery: "truck",
+  field_repair: "zap",
+  workshop_repair: "settings",
+};
+
+async function fetchWorkOrders(companyId: string): Promise<WorkOrder[]> {
   const token = await getAccessToken();
-  const res = await fetch(`${BASE_URL}/api/maintenance-logs?limit=50`, {
+  const res = await fetch(`${BASE_URL}/api/work-orders`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
-  if (!res.ok) throw new Error("Failed to fetch maintenance logs");
+  if (!res.ok) throw new Error("Failed to fetch work orders");
   const json = await res.json();
-  return json.data;
+  return (json.data as WorkOrder[]).filter((wo) => MAINTENANCE_ORDER_TYPES.has(wo.orderType));
 }
 
 export default function MaintenanceScreen() {
@@ -65,8 +75,8 @@ export default function MaintenanceScreen() {
   const [manualRefreshing, setManualRefreshing] = React.useState(false);
 
   const { data: items = [], isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ["maintenanceLogs", companyId],
-    queryFn: () => fetchMaintenanceLogs(companyId!),
+    queryKey: ["maintenanceWorkOrders", companyId],
+    queryFn: () => fetchWorkOrders(companyId!),
     enabled: !!companyId,
     staleTime: 20000,
     refetchInterval: 30000,
@@ -83,62 +93,61 @@ export default function MaintenanceScreen() {
     refetch();
   };
 
-  const renderItem = ({ item }: { item: MaintenanceLog }) => {
-    const iconName = LOG_TYPE_ICONS[item.logType] ?? "tool";
+  const renderItem = ({ item }: { item: WorkOrder }) => {
+    const iconName = ORDER_TYPE_ICONS[item.orderType] ?? "tool";
+    const statusColor = STATUS_COLORS[item.status] ?? "#94a3b8";
 
     return (
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push(`/maintenance/${item.id}` as Parameters<typeof router.push>[0]);
+        }}
+        activeOpacity={0.8}
+      >
         <View style={[styles.iconBox, { backgroundColor: colors.primary + "18" }]}>
           <Feather name={iconName} size={18} color={colors.primary} />
         </View>
         <View style={styles.cardBody}>
           <View style={styles.cardTop}>
-            <Text style={[styles.logType, { color: colors.foreground }]}>
-              {t(`serviceModule.logType_${item.logType}`, { defaultValue: item.logType })}
+            <Text style={[styles.orderTitle, { color: colors.foreground }]} numberOfLines={1}>
+              {item.title}
             </Text>
-            {item.assetCode ? (
-              <Text style={[styles.assetCode, { color: colors.primary }]}>{item.assetCode}</Text>
-            ) : null}
+            <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {t(`serviceModule.status_${item.status}`, { defaultValue: item.status })}
+              </Text>
+            </View>
           </View>
 
-          {item.notes ? (
-            <Text style={[styles.notes, { color: colors.mutedForeground }]} numberOfLines={2}>
-              {item.notes}
-            </Text>
-          ) : null}
+          <Text style={[styles.orderType, { color: colors.mutedForeground }]}>
+            {t(`serviceModule.type_${item.orderType}`, { defaultValue: item.orderType })}
+          </Text>
 
           <View style={styles.metaRow}>
+            {item.assetCode ? (
+              <View style={styles.metaItem}>
+                <Feather name="cpu" size={12} color={colors.mutedForeground} />
+                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assetCode}</Text>
+              </View>
+            ) : null}
+            {item.assignedToName?.trim() ? (
+              <View style={styles.metaItem}>
+                <Feather name="user" size={12} color={colors.mutedForeground} />
+                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assignedToName}</Text>
+              </View>
+            ) : null}
             <View style={styles.metaItem}>
               <Feather name="calendar" size={12} color={colors.mutedForeground} />
               <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                {new Date(item.performedAt).toLocaleDateString()}
+                {new Date(item.createdAt).toLocaleDateString()}
               </Text>
             </View>
-            {item.cost && parseFloat(item.cost) > 0 ? (
-              <View style={styles.metaItem}>
-                <Feather name="dollar-sign" size={12} color={colors.mutedForeground} />
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                  {parseFloat(item.cost).toLocaleString()}
-                </Text>
-              </View>
-            ) : null}
-            {item.odometerKm ? (
-              <View style={styles.metaItem}>
-                <Feather name="activity" size={12} color={colors.mutedForeground} />
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                  {parseFloat(item.odometerKm).toLocaleString()} km
-                </Text>
-              </View>
-            ) : null}
-            {item.performedByName ? (
-              <View style={styles.metaItem}>
-                <Feather name="user" size={12} color={colors.mutedForeground} />
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.performedByName}</Text>
-              </View>
-            ) : null}
           </View>
         </View>
-      </View>
+        <Feather name="chevron-right" size={18} color={colors.mutedForeground} style={styles.chevron} />
+      </TouchableOpacity>
     );
   };
 
@@ -155,16 +164,10 @@ export default function MaintenanceScreen() {
         >
           <Feather name="arrow-left" size={22} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.screenTitle, { color: colors.foreground }]}>{t("maintenance.listTitle")}</Text>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push("/create-maintenance");
-          }}
-        >
-          <Feather name="plus" size={22} color={colors.primary} />
-        </TouchableOpacity>
+        <Text style={[styles.screenTitle, { color: colors.foreground }]}>
+          {t("maintenance.listTitle")}
+        </Text>
+        <View style={{ width: 36 }} />
       </View>
 
       {isLoading ? (
@@ -181,10 +184,10 @@ export default function MaintenanceScreen() {
             <View style={styles.empty}>
               <Feather name="tool" size={36} color={colors.mutedForeground} />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-                {t("maintenance.noLogs")}
+                {t("maintenance.noTasks")}
               </Text>
               <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>
-                {t("maintenance.noLogsHint")}
+                {t("maintenance.noTasksHint")}
               </Text>
             </View>
           }
@@ -205,7 +208,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backBtn: { width: 36, height: 36, justifyContent: "center" },
-  addBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "flex-end" },
   screenTitle: { flex: 1, fontSize: 17, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   list: { padding: 16, paddingBottom: 100 },
   card: {
@@ -218,6 +220,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   iconBox: {
@@ -233,14 +236,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
+    gap: 8,
+    marginBottom: 2,
   },
-  logType: { fontSize: 14, fontFamily: "Inter_600SemiBold", flex: 1 },
-  assetCode: { fontSize: 12, fontFamily: "Inter_700Bold" },
-  notes: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 6 },
+  orderTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", flex: 1 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  statusText: { fontSize: 11, fontFamily: "Inter_700Bold" },
+  orderType: { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 6 },
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  chevron: { flexShrink: 0 },
   loader: { marginTop: 60 },
   empty: { alignItems: "center", marginTop: 60, gap: 8 },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },

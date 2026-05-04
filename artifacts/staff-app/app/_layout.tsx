@@ -89,6 +89,7 @@ function RootLayoutNav() {
       <Stack.Screen name="asset/[id]" options={{ title: t("screens.asset") }} />
       <Stack.Screen name="rental/[id]" options={{ title: t("screens.rental") }} />
       <Stack.Screen name="incident/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="maintenance/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="client-scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
     </Stack>
   );
