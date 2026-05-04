@@ -80,7 +80,8 @@ router.get("/work-orders", authenticate, requireCompanyAccess, requirePermission
     const items = await serviceService.listWorkOrders(
       req.tenant!.companyId,
       req.query.branchId as string | undefined,
-      req.query.status as string | undefined
+      req.query.status as string | undefined,
+      req.query.assignedToUserId as string | undefined
     );
     return res.json({ data: items });
   } catch (err: any) {

@@ -29,6 +29,8 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 
 **Breadcrumbs:** Detail pages (asset-detail, rental-detail, company-detail, invoice-detail, subscription-detail) use `PageBreadcrumb` component (`components/page-breadcrumb.tsx`) for hierarchical navigation. Pattern: "Parent Page > Current Item". Breadcrumbs replace previous back buttons. In not-found states, a single clickable breadcrumb links back to the parent list.
 
+**Mechanic "My Shift" Screen:** Staff App has a dedicated "My Shift" tab (`app/(tabs)/my-shift.tsx`) for mechanics showing: KPI cards (in progress, assigned, waiting parts), active work orders sorted by priority, and a collapsible "completed today" section. Data is filtered server-side via `GET /api/work-orders?assignedToUserId={userId}`. The tab is visible to mechanic, admin, and owner roles. It's the first tab for mechanics (who don't see the index/dashboard tab).
+
 ### Technical Implementations
 - **Multi-Tenancy:** Enforced via `x-company-id` header and `companyId` filtering on all database queries.
 - **Authentication & Authorization:** Phone number-based login with OTP or password. JWT for access/refresh tokens and a permission-based RBAC system.

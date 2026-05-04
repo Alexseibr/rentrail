@@ -5,7 +5,8 @@
     "rentals": "Rentals",
     "ops": "Ops",
     "settings": "Settings",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "myShift": "My Shift"
   },
   "screens": {
     "newIncident": "New Incident",
@@ -317,6 +318,22 @@
     "cancel": "Cancel",
     "success": "Success",
     "confirm": "Confirm"
+  },
+  "myShift": {
+    "title": "My Shift",
+    "inProgress": "In Progress",
+    "assignedToMe": "Assigned",
+    "waitingParts": "Waiting Parts",
+    "urgentSection": "Active Orders",
+    "completedToday": "Completed Today",
+    "noActiveOrders": "No active orders",
+    "noActiveOrdersHint": "Orders assigned to you will appear here",
+    "noCompletedToday": "Nothing completed yet today",
+    "timeAgo": "{{time}} ago",
+    "justNow": "Just now",
+    "minutesShort": "{{m}}m",
+    "hoursShort": "{{h}}h",
+    "daysShort": "{{d}}d"
   },
   "serviceModule": {
     "workOrders": "Work Orders",

@@ -1,9 +1,9 @@
 const ROLE_TAB_ACCESS: Record<string, string[]> = {
-  owner: ["index", "assets", "rentals", "operations", "settings"],
-  admin: ["index", "assets", "rentals", "operations", "settings"],
+  owner: ["index", "my-shift", "assets", "rentals", "operations", "settings"],
+  admin: ["index", "my-shift", "assets", "rentals", "operations", "settings"],
   manager: ["index", "assets", "rentals", "operations"],
   operator: ["index", "assets", "rentals"],
-  mechanic: ["assets", "operations"],
+  mechanic: ["my-shift", "assets", "operations"],
   accountant: ["index", "rentals"],
   viewer: ["index", "assets", "rentals", "operations", "settings"],
 };

@@ -106,7 +106,12 @@ export async function updateServiceRequest(id: string, companyId: string, data: 
   return row;
 }
 
-export async function listWorkOrders(companyId: string, branchId?: string, status?: string) {
+export async function listWorkOrders(companyId: string, branchId?: string, status?: string, assignedToUserId?: string) {
+  const conditions = [eq(workOrders.companyId, companyId)];
+  if (branchId) conditions.push(eq(workOrders.branchId, branchId));
+  if (status) conditions.push(eq(workOrders.status, status as WorkOrderStatus));
+  if (assignedToUserId) conditions.push(eq(workOrders.assignedToUserId, assignedToUserId));
+
   const rows = await db
     .select({
       id: workOrders.id,
@@ -136,11 +141,7 @@ export async function listWorkOrders(companyId: string, branchId?: string, statu
     .leftJoin(assets, eq(workOrders.assetId, assets.id))
     .leftJoin(branches, eq(workOrders.branchId, branches.id))
     .leftJoin(users, eq(workOrders.assignedToUserId, users.id))
-    .where(
-      branchId
-        ? and(eq(workOrders.companyId, companyId), eq(workOrders.branchId, branchId), status ? eq(workOrders.status, status as WorkOrderStatus) : undefined)
-        : and(eq(workOrders.companyId, companyId), status ? eq(workOrders.status, status as WorkOrderStatus) : undefined)
-    )
+    .where(and(...conditions))
     .orderBy(desc(workOrders.createdAt));
   return rows;
 }

@@ -27,6 +27,12 @@ function NativeTabLayout() {
           <Label>{t("nav.home")}</Label>
         </NativeTabs.Trigger>
       )}
+      {canAccessTab(roleCode, "my-shift") && (
+        <NativeTabs.Trigger name="my-shift">
+          <Icon sf={{ default: "clipboard", selected: "clipboard.fill" }} />
+          <Label>{t("nav.myShift")}</Label>
+        </NativeTabs.Trigger>
+      )}
       {canAccessTab(roleCode, "assets") && (
         <NativeTabs.Trigger name="assets">
           <Icon sf={{ default: "bicycle", selected: "bicycle" }} />
@@ -131,6 +137,21 @@ function ClassicTabLayout() {
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="home" size={22} color={color} />
+              </View>
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="my-shift"
+        options={{
+          title: t("nav.myShift"),
+          href: canAccessTab(roleCode, "my-shift") ? undefined : null,
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? (
+              <SymbolView name={focused ? "clipboard.fill" : "clipboard"} tintColor={color} size={24} />
+            ) : (
+              <View style={focused ? tabStyles.activeIconWrap : undefined}>
+                <Feather name="clipboard" size={22} color={color} />
               </View>
             ),
         }}

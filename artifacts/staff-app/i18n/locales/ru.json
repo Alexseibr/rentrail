@@ -5,7 +5,8 @@
     "rentals": "Аренды",
     "ops": "Операции",
     "settings": "Настройки",
-    "dashboard": "Обзор"
+    "dashboard": "Обзор",
+    "myShift": "Моя смена"
   },
   "screens": {
     "newIncident": "Новый инцидент",
@@ -317,6 +318,22 @@
     "cancel": "Отмена",
     "success": "Успешно",
     "confirm": "Подтвердить"
+  },
+  "myShift": {
+    "title": "Моя смена",
+    "inProgress": "В работе",
+    "assignedToMe": "Назначено",
+    "waitingParts": "Ожидает запчасти",
+    "urgentSection": "Активные наряды",
+    "completedToday": "Завершённые сегодня",
+    "noActiveOrders": "Нет активных нарядов",
+    "noActiveOrdersHint": "Назначенные вам наряды появятся здесь",
+    "noCompletedToday": "Сегодня ещё ничего не завершено",
+    "timeAgo": "{{time}} назад",
+    "justNow": "Только что",
+    "minutesShort": "{{m}} мин",
+    "hoursShort": "{{h}} ч",
+    "daysShort": "{{d}} д"
   },
   "serviceModule": {
     "workOrders": "Наряды на работу",
