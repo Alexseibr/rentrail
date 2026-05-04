@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken } from "@/services/api";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -92,6 +93,8 @@ export default function VehiclesScreen() {
       fetchVehicles();
     }, [fetchVehicles]),
   );
+
+  useAppStateFocus(() => { fetchVehicles(); });
 
   const handleLookup = async () => {
     const code = searchCode.trim();

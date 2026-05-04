@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
 
@@ -65,6 +66,8 @@ export default function RentalsScreen() {
     queryFn: fetchRentals,
     staleTime: 30000,
   });
+
+  useAppStateFocus(() => { refetch(); });
 
   const filtered = rentals.filter((r) => {
     const q = search.trim().toLowerCase();

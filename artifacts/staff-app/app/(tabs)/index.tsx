@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessTab } from "@/utils/permissions";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
@@ -100,6 +101,8 @@ export default function DashboardScreen() {
     queryFn: fetchDashboard,
     staleTime: 30000,
   });
+
+  useAppStateFocus(() => { refetch(); });
 
   const statValues = [
     data?.activeRentals ?? 0,

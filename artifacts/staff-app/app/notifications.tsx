@@ -12,6 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken, getCompanyId } from "@/services/api";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -59,6 +60,8 @@ export default function NotificationsScreen() {
     queryFn: fetchNotifications,
     staleTime: 15000,
   });
+
+  useAppStateFocus(() => { refetch(); });
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
