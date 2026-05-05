@@ -130,7 +130,11 @@ export default function AssetDetailScreen() {
     enabled: !!id,
   });
 
-  const { data: telemetry, isSuccess: isTelemetrySuccess } = useQuery({
+  const {
+    data: telemetry,
+    isLoading: isTelemetryLoading,
+    isSuccess: isTelemetrySuccess,
+  } = useQuery({
     queryKey: ["asset-telemetry", id],
     queryFn: () => fetchTelemetry(id!),
     enabled: !!id,
@@ -330,7 +334,13 @@ export default function AssetDetailScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("assetDetail.vehicleControls")}</Text>
 
-        {isTelemetrySuccess && !telemetry && (
+        {isTelemetryLoading && (
+          <View style={[styles.telemetrySkeleton, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <ActivityIndicator size="small" color={colors.mutedForeground} />
+          </View>
+        )}
+
+        {!isTelemetryLoading && isTelemetrySuccess && !telemetry && (
           <Text style={[styles.noDeviceHint, { color: colors.mutedForeground }]}>
             {t("assetDetail.noDeviceData")}
           </Text>
@@ -365,7 +375,7 @@ export default function AssetDetailScreen() {
           </View>
         )}
 
-        <View style={styles.commandsGrid}>
+        {!isTelemetryLoading && !!telemetry && <View style={styles.commandsGrid}>
           {lockStateKnown ? (
             <TouchableOpacity
               style={[styles.commandBtn, {
@@ -451,7 +461,7 @@ export default function AssetDetailScreen() {
               })}
             </>
           )}
-        </View>
+        </View>}
 
         {telemetry?.recordedAt && (
           <Text style={[styles.lastUpdate, { color: colors.mutedForeground }]}>
@@ -575,4 +585,5 @@ const styles = StyleSheet.create({
   commandHistoryRight: { alignItems: "flex-end", gap: 2 },
   commandHistoryStatus: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
   commandHistoryTime: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  telemetrySkeleton: { borderRadius: 10, borderWidth: 1, paddingVertical: 16, alignItems: "center", justifyContent: "center" },
 });
