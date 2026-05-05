@@ -88,7 +88,7 @@ export default function AssetDetailScreen() {
     enabled: !!id,
   });
 
-  const { data: telemetry } = useQuery({
+  const { data: telemetry, isSuccess: isTelemetrySuccess } = useQuery({
     queryKey: ["asset-telemetry", id],
     queryFn: () => fetchTelemetry(id!),
     enabled: !!id,
@@ -274,6 +274,12 @@ export default function AssetDetailScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("assetDetail.vehicleControls")}</Text>
 
+        {isTelemetrySuccess && !telemetry && (
+          <Text style={[styles.noDeviceHint, { color: colors.mutedForeground }]}>
+            {t("assetDetail.noDeviceData")}
+          </Text>
+        )}
+
         {(lockStateKnown || alarmStateKnown) && (
           <View style={styles.stateRow}>
             {lockStateKnown && (
@@ -435,4 +441,5 @@ const styles = StyleSheet.create({
   commandBtn: { flexBasis: "47%", flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12, borderWidth: 1 },
   commandText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   lastUpdate: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 4 },
+  noDeviceHint: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginVertical: 4 },
 });

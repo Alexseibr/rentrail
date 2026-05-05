@@ -330,7 +330,8 @@
     "unlocked": "Unlocked",
     "armed": "Armed",
     "disarmed": "Disarmed",
-    "lastUpdate": "Last updated"
+    "lastUpdate": "Last updated",
+    "noDeviceData": "No device data available"
   },
   "rentalDetail": {
     "title": "Rental Details",
