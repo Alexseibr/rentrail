@@ -155,7 +155,10 @@ export default function SyncQueueScreen() {
   };
 
   const handleCancel = (item: QueueItem) => {
-    Alert.alert(t("syncQueue.cancelAction"), t("syncQueue.cancelConfirm", { action: getActionDescription(item.actionType), queued: new Date(item.createdAt).toLocaleString() }), [
+    const confirmMsg = item.retryCount > 0
+      ? t("syncQueue.cancelConfirmWithRetries", { action: getActionDescription(item.actionType), queued: new Date(item.createdAt).toLocaleString(), retries: item.retryCount })
+      : t("syncQueue.cancelConfirm", { action: getActionDescription(item.actionType), queued: new Date(item.createdAt).toLocaleString() });
+    Alert.alert(t("syncQueue.cancelAction"), confirmMsg, [
       { text: t("syncQueue.no"), style: "cancel" },
       {
         text: t("syncQueue.yes"),

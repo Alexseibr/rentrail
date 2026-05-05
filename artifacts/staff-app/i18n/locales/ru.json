@@ -278,6 +278,7 @@
     "cancel": "Отмена",
     "cancelAction": "Отменить действие",
     "cancelConfirm": "Отменить \"{{action}}\"?\n\nДобавлено в очередь: {{queued}}",
+    "cancelConfirmWithRetries": "Отменить \"{{action}}\"?\n\nДобавлено в очередь: {{queued}}\nПопыток: {{retries}}",
     "no": "Нет",
     "yes": "Да",
     "retries": "попыток",

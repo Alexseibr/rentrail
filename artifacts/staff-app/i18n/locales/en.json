@@ -276,6 +276,7 @@
     "cancel": "Cancel",
     "cancelAction": "Cancel Action",
     "cancelConfirm": "Cancel \"{{action}}\"?\n\nQueued: {{queued}}",
+    "cancelConfirmWithRetries": "Cancel \"{{action}}\"?\n\nQueued: {{queued}}\nRetries: {{retries}}",
     "no": "No",
     "yes": "Yes",
     "retries": "retries",
