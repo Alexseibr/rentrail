@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -88,7 +89,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-function buildFleetMapHtml(pins: PinData[]): string {
+function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
   const serialized = JSON.stringify(
     pins.map((p) => ({
       ...p,
@@ -107,6 +108,7 @@ function buildFleetMapHtml(pins: PinData[]): string {
   };
 
   const colorsJson = JSON.stringify(statusColors);
+  const escapedLabel = escapeHtml(openInMapsLabel);
 
   const avgLat = pins.length > 0 ? pins.reduce((s, p) => s + p.lat, 0) / pins.length : 48.8566;
   const avgLng = pins.length > 0 ? pins.reduce((s, p) => s + p.lng, 0) / pins.length : 2.3522;
@@ -140,12 +142,28 @@ function buildFleetMapHtml(pins: PinData[]): string {
   .popup-status{font-size:11px;padding:2px 6px;border-radius:10px;display:inline-block;margin-bottom:4px;}
   .popup-cached{font-size:10px;color:#888;margin-top:2px;}
   .popup-live{font-size:10px;color:#16a34a;font-weight:600;}
+  .popup-nav-btn{
+    display:block;width:100%;margin-top:8px;padding:6px 10px;
+    background:#F5C518;color:#1a1a1a;border:none;border-radius:8px;
+    font-size:12px;font-weight:700;cursor:pointer;text-align:center;
+    font-family:system-ui,sans-serif;
+  }
+  .popup-nav-btn:active{background:#d4a800;}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <script>
 (function(){
+  function sendNavigate(lat,lng){
+    var msg=JSON.stringify({type:'navigate',lat:lat,lng:lng});
+    if(window.ReactNativeWebView){
+      window.ReactNativeWebView.postMessage(msg);
+    } else {
+      window.parent.postMessage(msg,'*');
+    }
+  }
+
   var pins=${serialized};
   var statusColors=${colorsJson};
   var map=L.map('map',{zoomControl:true,attributionControl:false}).setView([${avgLat},${avgLng}],${pins.length > 0 ? 13 : 10});
@@ -175,10 +193,11 @@ function buildFleetMapHtml(pins: PinData[]): string {
       +'<span class="popup-status" style="background:'+sc+'22;color:'+sc+'">'+p.status+'</span><br/>'
       +(p.isLive
         ?'<span class="popup-live">&#x2022; Live</span>'
-        :'<span class="popup-cached">&#x23F0; Last known'+(p.cachedAt?' &middot; '+new Date(p.cachedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'')+'</span>');
+        :'<span class="popup-cached">&#x23F0; Last known'+(p.cachedAt?' &middot; '+new Date(p.cachedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'')+'</span>')
+      +'<button class="popup-nav-btn" onclick="sendNavigate('+p.lat+','+p.lng+')">${escapedLabel}</button>';
 
     var marker=L.marker([p.lat,p.lng],{icon:icon});
-    marker.bindPopup(popupHtml);
+    marker.bindPopup(popupHtml,{minWidth:160});
     marker.addTo(map);
     group.push(marker);
   });
@@ -205,6 +224,8 @@ export default function FleetMapScreen() {
   const memberships = user?.memberships || user?.companies;
   const roleCode = memberships?.find((c: { companyId: string }) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
   const hasAccess = canAccessTab(roleCode, "assets");
+
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [pins, setPins] = useState<PinData[]>([]);
@@ -308,9 +329,50 @@ export default function FleetMapScreen() {
     loadMap(false);
   }, [loadMap]);
 
-  const mapHtml = useMemo(() => buildFleetMapHtml(pins), [pins]);
+  const openInMapsLabel = t("fleetMap.openInMaps");
+  const mapHtml = useMemo(() => buildFleetMapHtml(pins, openInMapsLabel), [pins, openInMapsLabel]);
 
   const isWeb = Platform.OS === "web";
+
+  const handleNavigate = useCallback((lat: number, lng: number) => {
+    const url = Platform.select({
+      ios: `maps://maps.apple.com/?daddr=${lat},${lng}`,
+      android: `geo:${lat},${lng}?q=${lat},${lng}(Vehicle)`,
+      default: `https://maps.google.com/maps?daddr=${lat},${lng}`,
+    });
+    Linking.openURL(url).catch(() => {
+      Linking.openURL(`https://maps.google.com/maps?daddr=${lat},${lng}`);
+    });
+  }, []);
+
+  const handleWebViewMessage = useCallback(
+    (event: { nativeEvent: { data: string } }) => {
+      try {
+        const msg = JSON.parse(event.nativeEvent.data);
+        if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
+          handleNavigate(msg.lat, msg.lng);
+        }
+      } catch {
+      }
+    },
+    [handleNavigate],
+  );
+
+  useEffect(() => {
+    if (!isWeb) return;
+    const listener = (event: MessageEvent) => {
+      if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
+      try {
+        const msg = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
+          handleNavigate(msg.lat, msg.lng);
+        }
+      } catch {
+      }
+    };
+    window.addEventListener("message", listener);
+    return () => window.removeEventListener("message", listener);
+  }, [isWeb, handleNavigate]);
 
   if (!hasAccess) {
     return (
@@ -369,6 +431,7 @@ export default function FleetMapScreen() {
           {isWeb ? (
             <iframe
               key={mapKey}
+              ref={iframeRef}
               srcDoc={mapHtml}
               style={{ width: "100%", height: "100%", border: "none" } as React.CSSProperties}
             />
@@ -380,6 +443,7 @@ export default function FleetMapScreen() {
               originWhitelist={["*"]}
               javaScriptEnabled={true}
               scrollEnabled={false}
+              onMessage={handleWebViewMessage}
             />
           )}
 

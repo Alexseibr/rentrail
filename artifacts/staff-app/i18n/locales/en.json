@@ -511,7 +511,8 @@
     "live": "{{count}} live",
     "cached": "{{count}} last known",
     "noLocation": "{{count}} no location",
-    "noAccess": "You don't have permission to view the fleet map"
+    "noAccess": "You don't have permission to view the fleet map",
+    "openInMaps": "Open in Maps"
   },
   "common": {
     "error": "Error",
