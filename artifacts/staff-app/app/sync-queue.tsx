@@ -155,7 +155,7 @@ export default function SyncQueueScreen() {
   };
 
   const handleCancel = (item: QueueItem) => {
-    Alert.alert(t("syncQueue.cancelAction"), t("syncQueue.cancelConfirm", { action: getActionDescription(item.actionType) }), [
+    Alert.alert(t("syncQueue.cancelAction"), t("syncQueue.cancelConfirm", { action: getActionDescription(item.actionType), queued: new Date(item.createdAt).toLocaleString() }), [
       { text: t("syncQueue.no"), style: "cancel" },
       {
         text: t("syncQueue.yes"),
