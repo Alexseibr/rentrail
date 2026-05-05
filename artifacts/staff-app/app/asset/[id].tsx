@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Alert,
+  Animated,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -126,6 +127,18 @@ export default function AssetDetailScreen() {
   const [commandFilter, setCommandFilter] = useState<"all" | "failed" | "acknowledged">("all");
   const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
   const prevTelemetryFetching = useRef(false);
+
+  const skeletonOpacity = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(skeletonOpacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(skeletonOpacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [skeletonOpacity]);
 
   const { data: asset, isLoading } = useQuery({
     queryKey: ["asset", id],
@@ -399,17 +412,57 @@ export default function AssetDetailScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("assetDetail.vehicleControls")}</Text>
 
-        {isTelemetryLoading && (
-          <View style={[styles.telemetrySkeleton, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ActivityIndicator size="small" color={colors.mutedForeground} />
-          </View>
-        )}
-
-        {!isTelemetryLoading && isTelemetrySuccess && !telemetry && (
-          <Text style={[styles.noDeviceHint, { color: colors.mutedForeground }]}>
-            {t("assetDetail.noDeviceData")}
-          </Text>
-        )}
+        <View style={[styles.telemetryStatsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {isTelemetryLoading ? (
+            <>
+              {[
+                t("assetDetail.battery"),
+                t("assetDetail.speed"),
+                t("assetDetail.odometer"),
+              ].map((label, i, arr) => (
+                <View
+                  key={label}
+                  style={[
+                    styles.statsRow,
+                    i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                  ]}
+                >
+                  <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{label}</Text>
+                  <Animated.View
+                    style={[styles.skeletonPill, { backgroundColor: colors.border, opacity: skeletonOpacity }]}
+                  />
+                </View>
+              ))}
+            </>
+          ) : !telemetry ? (
+            <View style={styles.statsEmpty}>
+              <Text style={[styles.noDeviceHint, { color: colors.mutedForeground }]}>
+                {t("assetDetail.noDeviceData")}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.battery")}</Text>
+                <Text style={[styles.statsValue, { color: colors.foreground }]}>
+                  {telemetry.batteryPercent != null ? `${telemetry.batteryPercent}%` : "—"}
+                </Text>
+              </View>
+              <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.speed")}</Text>
+                <Text style={[styles.statsValue, { color: colors.foreground }]}>
+                  {telemetry.speed != null ? `${telemetry.speed} km/h` : "—"}
+                </Text>
+              </View>
+              <View style={styles.statsRow}>
+                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.odometer")}</Text>
+                <Text style={[styles.statsValue, { color: colors.foreground }]}>
+                  {telemetry.odometer != null ? `${telemetry.odometer.toLocaleString()} km` : "—"}
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
 
         {refreshingTelemetry && (
           <View style={styles.refreshingRow}>
@@ -695,4 +748,10 @@ const styles = StyleSheet.create({
   commandFilterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 2 },
   commandFilterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
   commandFilterChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  telemetryStatsCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  statsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 13 },
+  statsLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  statsValue: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  skeletonPill: { width: 72, height: 14, borderRadius: 7 },
+  statsEmpty: { paddingVertical: 14, alignItems: "center" },
 });
