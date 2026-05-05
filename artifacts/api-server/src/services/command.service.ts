@@ -45,6 +45,13 @@ export async function listDeviceCommands(deviceId: string, companyId: string) {
     .orderBy(desc(deviceCommands.queuedAt));
 }
 
+export async function listAssetCommands(assetId: string, companyId: string) {
+  return db.select().from(deviceCommands)
+    .where(and(eq(deviceCommands.assetId, assetId), eq(deviceCommands.companyId, companyId)))
+    .orderBy(desc(deviceCommands.queuedAt))
+    .limit(20);
+}
+
 const COMMAND_STATUS_TRANSITIONS: Record<string, string[]> = {
   queued: ["sent", "failed", "expired", "canceled"],
   sent: ["acknowledged", "failed", "expired"],

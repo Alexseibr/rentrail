@@ -41,6 +41,12 @@ router.get("/commands/:id", authenticate, requireCompanyAccess, requirePermissio
 
 const assetIdParams = z.object({ id: z.string().uuid() });
 
+router.get("/assets/:id/commands", authenticate, requireCompanyAccess, requirePermission("command:read"),
+  validate({ params: assetIdParams }), async (req, res) => {
+    const cmds = await commandService.listAssetCommands(req.params.id as string, req.tenant!.companyId);
+    res.json({ data: cmds });
+  });
+
 router.post("/assets/:id/lock", authenticate, requireCompanyAccess, requirePermission("command:create"),
   validate({ params: assetIdParams }), async (req, res) => {
     const cmd = await commandService.enqueueAssetCommand(req.tenant!.companyId, req.params.id as string, "lock", req.user!.userId);

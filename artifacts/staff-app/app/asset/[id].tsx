@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -61,6 +61,28 @@ async function fetchTelemetry(id: string): Promise<TelemetrySnapshot | null> {
   return data;
 }
 
+async function fetchAssetCommands(id: string) {
+  const token = await getAccessToken();
+  const companyId = await getCompanyId();
+  if (!token || !companyId) return [];
+
+  const res = await fetch(`${BASE_URL}/api/assets/${id}/commands`, {
+    headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
+  });
+  if (!res.ok) return [];
+  const { data } = await res.json();
+  return data as Array<{
+    id: string;
+    commandType: string;
+    status: string;
+    queuedAt: string;
+    sentAt: string | null;
+    acknowledgedAt: string | null;
+    failedAt: string | null;
+    errorMessage: string | null;
+  }>;
+}
+
 type VehicleCommand = "lock" | "unlock" | "arm" | "disarm";
 
 const COMMAND_ENDPOINTS: Record<VehicleCommand, string> = {
@@ -69,6 +91,25 @@ const COMMAND_ENDPOINTS: Record<VehicleCommand, string> = {
   arm: "alarm/arm",
   disarm: "alarm/disarm",
 };
+
+const STATUS_ICON: Record<string, { name: string; color: string }> = {
+  queued: { name: "clock", color: "#F59E0B" },
+  sent: { name: "send", color: "#3B82F6" },
+  acknowledged: { name: "check-circle", color: "#10B981" },
+  failed: { name: "x-circle", color: "#EF4444" },
+  expired: { name: "alert-circle", color: "#9CA3AF" },
+  canceled: { name: "slash", color: "#9CA3AF" },
+};
+
+function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("assetDetail.timeJustNow");
+  if (minutes < 60) return t("assetDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("assetDetail.timeHoursAgo", { count: hours });
+  return t("assetDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
+}
 
 export default function AssetDetailScreen() {
   const { t } = useTranslation();
@@ -81,6 +122,7 @@ export default function AssetDetailScreen() {
   const { queueItems } = useSync();
   const queryClient = useQueryClient();
   const [commanding, setCommanding] = useState<VehicleCommand | null>(null);
+  const [commandsExpanded, setCommandsExpanded] = useState(true);
 
   const { data: asset, isLoading } = useQuery({
     queryKey: ["asset", id],
@@ -91,6 +133,19 @@ export default function AssetDetailScreen() {
   const { data: telemetry, isSuccess: isTelemetrySuccess } = useQuery({
     queryKey: ["asset-telemetry", id],
     queryFn: () => fetchTelemetry(id!),
+    enabled: !!id,
+    refetchInterval: 15000,
+  });
+
+  const fetchCommands = useCallback(() => fetchAssetCommands(id!), [id]);
+
+  const {
+    data: commands = [],
+    isLoading: commandsLoading,
+    refetch: refetchCommands,
+  } = useQuery({
+    queryKey: ["asset-commands", id],
+    queryFn: fetchCommands,
     enabled: !!id,
     refetchInterval: 15000,
   });
@@ -154,6 +209,7 @@ export default function AssetDetailScreen() {
               setTimeout(() => {
                 queryClient.invalidateQueries({ queryKey: ["asset-telemetry", id] });
               }, 3000);
+              setTimeout(() => refetchCommands(), 2000);
             } else {
               const json = await res.json().catch(() => ({}));
               showSnackbar(json?.error?.message ?? t("assetDetail.commandFailed"), "error");
@@ -402,6 +458,72 @@ export default function AssetDetailScreen() {
             {t("assetDetail.lastUpdate")}: {new Date(telemetry.recordedAt).toLocaleString()}
           </Text>
         )}
+
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={() => setCommandsExpanded((v) => !v)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginTop: 0 }]}>
+            {t("assetDetail.recentCommands")}
+          </Text>
+          <Feather
+            name={commandsExpanded ? "chevron-up" : "chevron-down"}
+            size={16}
+            color={colors.mutedForeground}
+          />
+        </TouchableOpacity>
+
+        {commandsExpanded && (
+          <View style={[styles.commandHistoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {commandsLoading ? (
+              <View style={styles.commandHistoryEmpty}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : commands.length === 0 ? (
+              <View style={styles.commandHistoryEmpty}>
+                <Feather name="inbox" size={20} color={colors.mutedForeground} />
+                <Text style={[styles.commandHistoryEmptyText, { color: colors.mutedForeground }]}>
+                  {t("assetDetail.noRecentCommands")}
+                </Text>
+              </View>
+            ) : (
+              commands.map((cmd, index) => {
+                const iconMeta = STATUS_ICON[cmd.status] ?? STATUS_ICON.queued;
+                const isLast = index === commands.length - 1;
+                return (
+                  <View
+                    key={cmd.id}
+                    style={[
+                      styles.commandHistoryRow,
+                      !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    ]}
+                  >
+                    <Feather name={iconMeta.name as any} size={16} color={iconMeta.color} />
+                    <View style={styles.commandHistoryInfo}>
+                      <Text style={[styles.commandHistoryType, { color: colors.foreground }]}>
+                        {t(`assetDetail.cmdType_${cmd.commandType}`, { defaultValue: cmd.commandType.replace(/_/g, " ") })}
+                      </Text>
+                      {cmd.errorMessage ? (
+                        <Text style={[styles.commandHistoryError, { color: "#EF4444" }]} numberOfLines={1}>
+                          {cmd.errorMessage}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={styles.commandHistoryRight}>
+                      <Text style={[styles.commandHistoryStatus, { color: iconMeta.color }]}>
+                        {t(`assetDetail.cmdStatus_${cmd.status}`, { defaultValue: cmd.status })}
+                      </Text>
+                      <Text style={[styles.commandHistoryTime, { color: colors.mutedForeground }]}>
+                        {formatRelativeTime(cmd.queuedAt, t)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -425,6 +547,7 @@ const styles = StyleSheet.create({
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12 },
   actionText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1, marginTop: 4, marginLeft: 4 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingHorizontal: 4 },
   stateRow: { flexDirection: "row", gap: 8 },
   stateItem: {
     flex: 1,
@@ -442,4 +565,14 @@ const styles = StyleSheet.create({
   commandText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   lastUpdate: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 4 },
   noDeviceHint: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginVertical: 4 },
+  commandHistoryCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  commandHistoryEmpty: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 20 },
+  commandHistoryEmptyText: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  commandHistoryRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
+  commandHistoryInfo: { flex: 1 },
+  commandHistoryType: { fontSize: 13, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  commandHistoryError: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  commandHistoryRight: { alignItems: "flex-end", gap: 2 },
+  commandHistoryStatus: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  commandHistoryTime: { fontSize: 11, fontFamily: "Inter_400Regular" },
 });
