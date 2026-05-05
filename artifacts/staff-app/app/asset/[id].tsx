@@ -127,6 +127,7 @@ export default function AssetDetailScreen() {
   const [commandFilter, setCommandFilter] = useState<"all" | "failed" | "acknowledged">("all");
   const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
   const prevTelemetryFetching = useRef(false);
+  const fastPollUntilRef = useRef<number>(0);
 
   const skeletonOpacity = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
@@ -168,7 +169,7 @@ export default function AssetDetailScreen() {
     queryKey: ["asset-commands", id],
     queryFn: fetchCommands,
     enabled: !!id,
-    refetchInterval: 15000,
+    refetchInterval: () => (Date.now() < fastPollUntilRef.current ? 5000 : 15000),
   });
 
   useEffect(() => {
@@ -206,6 +207,7 @@ export default function AssetDetailScreen() {
         text: t("common.confirm"),
         onPress: async () => {
           if (!isConnected && isQueueable("vehicle_command")) {
+            fastPollUntilRef.current = Date.now() + 30000;
             const offlineOptimisticId = `optimistic-${Date.now()}`;
             queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
               {
@@ -238,6 +240,7 @@ export default function AssetDetailScreen() {
             return;
           }
 
+          fastPollUntilRef.current = Date.now() + 30000;
           const optimisticId = `optimistic-${Date.now()}`;
           queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
             {
