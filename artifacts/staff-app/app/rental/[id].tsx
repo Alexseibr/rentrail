@@ -8,6 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Linking,
+  Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -38,6 +40,8 @@ interface TelemetrySnapshot {
   onlineState: string | null;
   batteryPercent: number | null;
   recordedAt: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 async function fetchTelemetry(assetId: string): Promise<TelemetrySnapshot | null> {
@@ -216,6 +220,42 @@ export default function RentalDetailScreen() {
   const isOnline = telemetry?.onlineState === "online";
   const hasTelemetryBadges = lockStateKnown || onlineStateKnown;
 
+  const hasLocation = telemetry != null && telemetry.lat != null && telemetry.lng != null;
+
+  const handleOpenLocation = () => {
+    if (!hasLocation) return;
+    const lat = telemetry!.lat!;
+    const lng = telemetry!.lng!;
+    const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
+    Alert.alert(
+      t("rentalDetail.openMapTitle"),
+      `${coordsLabel}\n\n${t("rentalDetail.openMapMessage")}`,
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("rentalDetail.copyCoords"),
+          onPress: () => {
+            Share.share({ message: coordsLabel }).catch(() => {});
+          },
+        },
+        {
+          text: t("rentalDetail.openMapConfirm"),
+          onPress: () => {
+            Linking.canOpenURL(mapsUrl)
+              .then((supported) => {
+                if (supported) return Linking.openURL(mapsUrl);
+                Alert.alert(t("common.error"), t("rentalDetail.noLocation"));
+              })
+              .catch(() => {
+                Alert.alert(t("common.error"), t("rentalDetail.noLocation"));
+              });
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -291,6 +331,25 @@ export default function RentalDetailScreen() {
                   </View>
                 )}
               </View>
+            )}
+
+            {hasLocation && (
+              <TouchableOpacity
+                style={[styles.locationRow, { borderColor: colors.border }]}
+                onPress={handleOpenLocation}
+                activeOpacity={0.7}
+              >
+                <Feather name="map-pin" size={14} color={colors.primary} />
+                <View style={styles.locationBody}>
+                  <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
+                    {t("rentalDetail.location")}
+                  </Text>
+                  <Text style={[styles.locationText, { color: colors.foreground }]}>
+                    {telemetry!.lat!.toFixed(5)}, {telemetry!.lng!.toFixed(5)}
+                  </Text>
+                </View>
+                <Feather name="external-link" size={13} color={colors.mutedForeground} style={styles.locationChevron} />
+              </TouchableOpacity>
             )}
 
             {!isTelemetryLoading && !!telemetry && lockStateKnown && canReturn && (
@@ -401,6 +460,11 @@ const styles = StyleSheet.create({
   badgesRowFading: { opacity: 0.4 },
   badge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   badgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
+  locationBody: { flex: 1, gap: 1 },
+  locationLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" as const, letterSpacing: 0.3 },
+  locationText: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  locationChevron: { marginLeft: 2 },
   commandsRow: { flexDirection: "row", gap: 8 },
   commandBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
   commandBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },

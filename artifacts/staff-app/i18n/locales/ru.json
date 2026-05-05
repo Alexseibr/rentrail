@@ -379,7 +379,13 @@
     "commandUnlock": "Разблокировать",
     "confirmCommandTitle": "Отправить команду",
     "confirmCommand": "Отправить команду {{command}} на это транспортное средство?",
-    "commandFailed": "Не удалось отправить команду"
+    "commandFailed": "Не удалось отправить команду",
+    "location": "Местоположение",
+    "openMapTitle": "Открыть карту",
+    "openMapMessage": "Открыть координаты в Картах?",
+    "openMapConfirm": "Открыть Карты",
+    "copyCoords": "Скопировать координаты",
+    "noLocation": "Местоположение недоступно"
   },
   "clientNav": {
     "vehicles": "Транспорт",

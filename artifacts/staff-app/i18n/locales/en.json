@@ -401,7 +401,13 @@
     "commandUnlock": "Unlock",
     "confirmCommandTitle": "Send Command",
     "confirmCommand": "Send {{command}} command to this vehicle?",
-    "commandFailed": "Failed to send command"
+    "commandFailed": "Failed to send command",
+    "location": "Location",
+    "openMapTitle": "Open Location",
+    "openMapMessage": "Open these coordinates in Maps?",
+    "openMapConfirm": "Open Maps",
+    "copyCoords": "Copy Coordinates",
+    "noLocation": "Location unavailable"
   },
   "clientNav": {
     "vehicles": "Vehicles",
