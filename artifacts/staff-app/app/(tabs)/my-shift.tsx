@@ -337,34 +337,57 @@ export default function MyShiftScreen() {
     );
   };
 
-  const renderCompletedCard = (item: WorkOrder) => (
-    <TouchableOpacity
-      key={item.id}
-      style={[styles.completedCard, { backgroundColor: colors.card }]}
-      onPress={() => navigateToOrder(item.id)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.completedRow}>
-        <View style={[styles.completedDot, { backgroundColor: STATUS_COLORS.completed }]} />
-        <View style={styles.completedInfo}>
-          <Text style={[styles.completedTitle, { color: colors.foreground }]} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <View style={styles.completedMeta}>
-            {item.assetCode && (
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assetCode}</Text>
-            )}
-            {item.completedAt && (
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                {new Date(item.completedAt).toLocaleTimeString(i18n.language === "ru" ? "ru-RU" : "en-US", { hour: "2-digit", minute: "2-digit" })}
-              </Text>
-            )}
+  const renderCompletedCard = (item: WorkOrder) => {
+    const coords = item.assetId ? (coordsMap[item.assetId] ?? null) : null;
+
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={[styles.completedCard, { backgroundColor: colors.card }]}
+        onPress={() => navigateToOrder(item.id)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.completedRow}>
+          <View style={[styles.completedDot, { backgroundColor: STATUS_COLORS.completed }]} />
+          <View style={styles.completedInfo}>
+            <Text style={[styles.completedTitle, { color: colors.foreground }]} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <View style={styles.completedMeta}>
+              {item.assetCode && (
+                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assetCode}</Text>
+              )}
+              {item.completedAt && (
+                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+                  {new Date(item.completedAt).toLocaleTimeString(i18n.language === "ru" ? "ru-RU" : "en-US", { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+              )}
+            </View>
           </View>
+          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
         </View>
-        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-      </View>
-    </TouchableOpacity>
-  );
+
+        {coords && (
+          <TouchableOpacity
+            style={[styles.locationChip, { borderTopColor: colors.border }]}
+            onPress={() => openMaps(coords.lat, coords.lng)}
+            activeOpacity={0.7}
+          >
+            <Feather name="map-pin" size={11} color={colors.primary} />
+            <Text style={[styles.locationText, { color: colors.primary }]}>
+              {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+            </Text>
+            {coords.cachedAt ? (
+              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+                {formatRelativeTime(coords.cachedAt, t)}
+              </Text>
+            ) : null}
+            <Feather name="external-link" size={11} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const ListHeader = () => (
     <View>
