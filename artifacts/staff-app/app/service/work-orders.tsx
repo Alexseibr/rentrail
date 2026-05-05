@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, TextInput, ScrollView,
+  RefreshControl, ActivityIndicator, TextInput, ScrollView, Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -12,6 +12,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
+import { readManyCoordsFromCache } from "@/services/coordsCache";
+import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -31,6 +33,24 @@ const PRIORITY_COLORS: Record<string, string> = {
   high: "#f59e0b",
   urgent: "#ef4444",
 };
+
+function openMaps(lat: number, lng: number) {
+  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  Linking.canOpenURL(geoUrl)
+    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
+    .catch(() => Linking.openURL(webUrl).catch(() => {}));
+}
+
+function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("rentalDetail.timeJustNow");
+  if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours });
+  return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
+}
 
 async function fetchWorkOrders(companyId: string, status?: string) {
   const token = await getAccessToken();
@@ -53,6 +73,7 @@ export default function WorkOrdersScreen() {
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState("");
   const [manualRefreshing, setManualRefreshing] = useState(false);
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
 
   const { data: items = [], isLoading, isRefetching, refetch } = useQuery({
     queryKey: ["workOrders", companyId, filter],
@@ -65,6 +86,14 @@ export default function WorkOrdersScreen() {
   React.useEffect(() => {
     if (!isRefetching) setManualRefreshing(false);
   }, [isRefetching]);
+
+  useEffect(() => {
+    const ids = items
+      .map((o: any) => o.assetId)
+      .filter((id: unknown): id is string => !!id);
+    if (ids.length === 0) return;
+    readManyCoordsFromCache(ids).then(setCoordsMap);
+  }, [items]);
 
   const onRefresh = () => {
     setManualRefreshing(true);
@@ -93,6 +122,7 @@ export default function WorkOrdersScreen() {
     const isActive = ACTIVE_STATUSES.includes(item.status);
     const isUrgent = item.priority === "urgent";
     const accentColor = STATUS_COLORS[item.status] ?? "#94a3b8";
+    const coords = item.assetId ? (coordsMap[item.assetId] ?? null) : null;
 
     return (
     <TouchableOpacity
@@ -157,6 +187,25 @@ export default function WorkOrdersScreen() {
         <Text style={[styles.costText, { color: colors.mutedForeground }]}>
           {t("serviceModule.estimated")}: {parseFloat(item.estimatedCost).toLocaleString("ru-RU")} ₽
         </Text>
+      )}
+
+      {coords && (
+        <TouchableOpacity
+          style={[styles.locationChip, { borderTopColor: colors.border }]}
+          onPress={() => openMaps(coords.lat, coords.lng)}
+          activeOpacity={0.7}
+        >
+          <Feather name="map-pin" size={11} color={colors.primary} />
+          <Text style={[styles.locationText, { color: colors.primary }]}>
+            {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+          </Text>
+          {coords.cachedAt ? (
+            <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+              {formatRelativeTime(coords.cachedAt, t)}
+            </Text>
+          ) : null}
+          <Feather name="external-link" size={11} color={colors.mutedForeground} />
+        </TouchableOpacity>
       )}
     </TouchableOpacity>
     );
@@ -294,6 +343,24 @@ const styles = StyleSheet.create({
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   costText: { fontSize: 12, fontFamily: "Inter_500Medium", marginTop: 4 },
+  locationChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    marginTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+  },
+  cacheAgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+  },
   loader: { marginTop: 60 },
   empty: { alignItems: "center", marginTop: 60, gap: 8 },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
