@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useQuery } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
 import { readManyCoordsFromCache } from "@/services/coordsCache";
@@ -81,6 +82,19 @@ export default function WorkOrdersScreen() {
     enabled: !!companyId,
     staleTime: 20000,
     refetchInterval: 30000,
+  });
+
+  const itemsRef = React.useRef(items);
+  itemsRef.current = items;
+
+  useAppStateFocus(() => {
+    refetch();
+    const ids = itemsRef.current
+      .map((o) => o.assetId)
+      .filter((id: unknown): id is string => !!id);
+    if (ids.length > 0) {
+      readManyCoordsFromCache(ids).then(setCoordsMap);
+    }
   });
 
   React.useEffect(() => {
