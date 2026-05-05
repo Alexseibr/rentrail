@@ -69,6 +69,16 @@ const STATUS_COLORS: Record<string, string> = {
   canceled: "#6b7280",
 };
 
+function formatElapsed(ms: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const mins = Math.floor(ms / 60_000);
+  const hours = Math.floor(ms / 3_600_000);
+  const days = Math.floor(ms / 86_400_000);
+  if (mins < 1) return t("myShift.justNow");
+  if (hours < 1) return t("myShift.timeAgo", { time: t("myShift.minutesShort", { m: mins }) });
+  if (days < 1) return t("myShift.timeAgo", { time: t("myShift.hoursShort", { h: hours }) });
+  return t("myShift.timeAgo", { time: t("myShift.daysShort", { d: days }) });
+}
+
 export default function SyncQueueScreen() {
   const { t } = useTranslation();
   const colors = useColors();
@@ -107,12 +117,17 @@ export default function SyncQueueScreen() {
     [queueItems],
   );
 
+  const hasSnoozedItems = useMemo(
+    () => queueItems.some((i) => i.snoozed && i.completedAt),
+    [queueItems],
+  );
+
   useEffect(() => {
-    if (!hasClearingItems) return;
+    if (!hasClearingItems && !hasSnoozedItems) return;
     setNow(Date.now());
     const handle = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(handle);
-  }, [hasClearingItems]);
+  }, [hasClearingItems, hasSnoozedItems]);
 
   const filterCounts = useMemo(() => {
     const counts: Record<StatusFilter, number> = { all: 0, pending: 0, failed: 0, done: 0 };
@@ -275,7 +290,11 @@ export default function SyncQueueScreen() {
         >
           <Feather name="bookmark" size={11} color={statusColor} />
           <Text style={[styles.clearingText, { color: statusColor }]}>
-            {t("syncQueue.snooze.pinned")}
+            {item.completedAt
+              ? t("syncQueue.snooze.pinnedFor", {
+                  time: formatElapsed(now - new Date(item.completedAt).getTime(), t),
+                })
+              : t("syncQueue.snooze.pinned")}
           </Text>
           <Text style={[styles.clearingHint, { color: statusColor }]}>
             · {t("syncQueue.snooze.tapToRelease")}

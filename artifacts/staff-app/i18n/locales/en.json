@@ -283,6 +283,7 @@
       "tapToKeep": "tap to keep",
       "tapToRelease": "tap to release",
       "pinned": "Pinned",
+      "pinnedFor": "Pinned · {{time}}",
       "pinAccessibility": "Pin this row to stop the auto-clear countdown",
       "unpinAccessibility": "Release this row and resume the auto-clear countdown"
     },
