@@ -19,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/useColors";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { MediaAttachments } from "@/components/MediaAttachments";
+import { useCachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -64,6 +65,19 @@ const COMMAND_ENDPOINTS: Record<VehicleCommand, string> = {
   unlock: "unlock",
 };
 
+function formatCacheAge(
+  cachedAt: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+  const diff = Date.now() - new Date(cachedAt).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("rentalDetail.timeJustNow");
+  if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours });
+  return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
+}
+
 export default function RentalDetailScreen() {
   const { t } = useTranslation();
   const colors = useColors();
@@ -96,6 +110,14 @@ export default function RentalDetailScreen() {
     enabled: !!assetId,
     refetchInterval: ["active", "overdue", "extended"].includes(rental?.status) ? 15000 : false,
   });
+
+  const { cachedCoords, saveCoords } = useCachedCoordinates(assetId);
+
+  useEffect(() => {
+    if (telemetry?.lat != null && telemetry?.lng != null) {
+      saveCoords(telemetry.lat, telemetry.lng);
+    }
+  }, [telemetry, saveCoords]);
 
   useEffect(() => {
     rentalStatusRef.current = rental?.status;
@@ -235,12 +257,18 @@ export default function RentalDetailScreen() {
   const isOnline = telemetry?.onlineState === "online";
   const hasTelemetryBadges = lockStateKnown || onlineStateKnown;
 
-  const hasLocation = telemetry != null && telemetry.lat != null && telemetry.lng != null;
+  const liveLat = telemetry?.lat ?? null;
+  const liveLng = telemetry?.lng ?? null;
+  const hasLiveLocation = liveLat != null && liveLng != null;
+  const displayLat = hasLiveLocation ? liveLat : cachedCoords?.lat ?? null;
+  const displayLng = hasLiveLocation ? liveLng : cachedCoords?.lng ?? null;
+  const hasLocation = displayLat != null && displayLng != null;
+  const isLastKnownLocation = hasLocation && !hasLiveLocation;
 
   const handleOpenLocation = () => {
     if (!hasLocation) return;
-    const lat = telemetry!.lat!;
-    const lng = telemetry!.lng!;
+    const lat = displayLat!;
+    const lng = displayLng!;
     const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
     Alert.alert(
@@ -350,17 +378,19 @@ export default function RentalDetailScreen() {
 
             {hasLocation && (
               <TouchableOpacity
-                style={[styles.locationRow, { borderColor: colors.border }]}
+                style={[styles.locationRow, { borderColor: isLastKnownLocation ? colors.border : colors.border }]}
                 onPress={handleOpenLocation}
                 activeOpacity={0.7}
               >
-                <Feather name="map-pin" size={14} color={colors.primary} />
+                <Feather name="map-pin" size={14} color={isLastKnownLocation ? colors.mutedForeground : colors.primary} />
                 <View style={styles.locationBody}>
                   <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
-                    {t("rentalDetail.location")}
+                    {isLastKnownLocation
+                      ? t("rentalDetail.locationLastKnown", { time: formatCacheAge(cachedCoords!.cachedAt, t) })
+                      : t("rentalDetail.location")}
                   </Text>
-                  <Text style={[styles.locationText, { color: colors.foreground }]}>
-                    {telemetry!.lat!.toFixed(5)}, {telemetry!.lng!.toFixed(5)}
+                  <Text style={[styles.locationText, { color: isLastKnownLocation ? colors.mutedForeground : colors.foreground }]}>
+                    {displayLat!.toFixed(5)}, {displayLng!.toFixed(5)}
                   </Text>
                 </View>
                 <Feather name="external-link" size={13} color={colors.mutedForeground} style={styles.locationChevron} />

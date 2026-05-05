@@ -25,6 +25,7 @@ import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
 import { useSync } from "@/contexts/SyncContext";
 import { MediaAttachments } from "@/components/MediaAttachments";
+import { useCachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -189,6 +190,8 @@ export default function AssetDetailScreen() {
   const prevTelemetryFetching = useRef(false);
   const fastPollUntilRef = useRef<number>(0);
 
+  const { cachedCoords, saveCoords } = useCachedCoordinates(id);
+
   const skeletonOpacity = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
     const anim = Animated.loop(
@@ -233,6 +236,12 @@ export default function AssetDetailScreen() {
     enabled: !!id,
     refetchInterval: () => (Date.now() < fastPollUntilRef.current ? 5000 : 15000),
   });
+
+  useEffect(() => {
+    if (telemetry?.lat != null && telemetry?.lng != null) {
+      saveCoords(telemetry.lat, telemetry.lng);
+    }
+  }, [telemetry, saveCoords]);
 
   useEffect(() => {
     if (prevTelemetryFetching.current && !telemetryFetching && refreshingTelemetry) {
@@ -622,33 +631,81 @@ export default function AssetDetailScreen() {
                   {telemetry.speed != null ? `${telemetry.speed} km/h` : "—"}
                 </Text>
               </View>
-              <View style={hasLocation ? [styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }] : styles.statsRow}>
+              <View style={styles.statsRow}>
                 <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.odometer")}</Text>
                 <Text style={[styles.statsValue, { color: colors.foreground }]}>
                   {telemetry.odometer != null ? `${telemetry.odometer.toLocaleString()} km` : "—"}
                 </Text>
               </View>
-              {hasLocation && (
-                <TouchableOpacity
-                  style={[styles.locationRow, { borderTopColor: colors.border }]}
-                  onPress={handleOpenLocation}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="map-pin" size={14} color={colors.primary} />
-                  <View style={styles.locationBody}>
-                    <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
-                      {t("assetDetail.location")}
-                    </Text>
-                    <Text style={[styles.locationText, { color: colors.foreground }]}>
-                      {telemetry!.lat!.toFixed(5)}, {telemetry!.lng!.toFixed(5)}
-                    </Text>
-                  </View>
-                  <Feather name="external-link" size={13} color={colors.mutedForeground} style={styles.locationChevron} />
-                </TouchableOpacity>
-              )}
             </>
           )}
         </View>
+
+        {(() => {
+          const liveLat = telemetry?.lat ?? null;
+          const liveLng = telemetry?.lng ?? null;
+          const hasLiveLocation = liveLat != null && liveLng != null;
+          const displayLat = hasLiveLocation ? liveLat : cachedCoords?.lat ?? null;
+          const displayLng = hasLiveLocation ? liveLng : cachedCoords?.lng ?? null;
+          const hasLocation = displayLat != null && displayLng != null;
+          const isLastKnown = hasLocation && !hasLiveLocation;
+
+          if (!hasLocation) return null;
+
+          const handleOpenLocation = () => {
+            const lat = displayLat!;
+            const lng = displayLng!;
+            const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
+            Alert.alert(
+              t("assetDetail.openMapTitle"),
+              `${coordsLabel}\n\n${t("assetDetail.openMapMessage")}`,
+              [
+                { text: t("common.cancel"), style: "cancel" },
+                {
+                  text: t("assetDetail.copyCoords"),
+                  onPress: () => {
+                    Share.share({ message: coordsLabel }).catch(() => {});
+                  },
+                },
+                {
+                  text: t("assetDetail.openMapConfirm"),
+                  onPress: () => {
+                    Linking.canOpenURL(mapsUrl)
+                      .then((supported) => {
+                        if (supported) return Linking.openURL(mapsUrl);
+                        Alert.alert(t("common.error"), t("assetDetail.noLocation"));
+                      })
+                      .catch(() => {
+                        Alert.alert(t("common.error"), t("assetDetail.noLocation"));
+                      });
+                  },
+                },
+              ],
+            );
+          };
+
+          return (
+            <TouchableOpacity
+              style={[styles.locationRow, { borderColor: colors.border }]}
+              onPress={handleOpenLocation}
+              activeOpacity={0.7}
+            >
+              <Feather name="map-pin" size={14} color={isLastKnown ? colors.mutedForeground : colors.primary} />
+              <View style={styles.locationBody}>
+                <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
+                  {isLastKnown
+                    ? t("assetDetail.locationLastKnown", { time: formatRelativeTime(cachedCoords!.cachedAt, t) })
+                    : t("assetDetail.location")}
+                </Text>
+                <Text style={[styles.locationText, { color: isLastKnown ? colors.mutedForeground : colors.foreground }]}>
+                  {displayLat!.toFixed(5)}, {displayLng!.toFixed(5)}
+                </Text>
+              </View>
+              <Feather name="external-link" size={13} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          );
+        })()}
 
         {refreshingTelemetry && (
           <View style={styles.refreshingRow}>
@@ -944,9 +1001,8 @@ const styles = StyleSheet.create({
   statsEmpty: { paddingVertical: 14, alignItems: "center" },
   onlineStateBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
   onlineDot: { width: 8, height: 8, borderRadius: 4 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 13 },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
   locationBody: { flex: 1, gap: 1 },
   locationLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" as const, letterSpacing: 0.3 },
   locationText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  locationChevron: { marginLeft: 2 },
 });
