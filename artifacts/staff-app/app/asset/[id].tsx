@@ -38,6 +38,29 @@ async function fetchAsset(id: string) {
   return data;
 }
 
+interface TelemetrySnapshot {
+  lockState: string | null;
+  alarmState: string | null;
+  onlineState: string | null;
+  batteryPercent: number | null;
+  speed: number | null;
+  odometer: number | null;
+  recordedAt: string | null;
+}
+
+async function fetchTelemetry(id: string): Promise<TelemetrySnapshot | null> {
+  const token = await getAccessToken();
+  const companyId = await getCompanyId();
+  if (!token || !companyId) return null;
+
+  const res = await fetch(`${BASE_URL}/api/telemetry/assets/${id}/latest`, {
+    headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
+  });
+  if (!res.ok) return null;
+  const { data } = await res.json();
+  return data;
+}
+
 type VehicleCommand = "lock" | "unlock" | "arm" | "disarm";
 
 const COMMAND_ENDPOINTS: Record<VehicleCommand, string> = {
@@ -63,6 +86,18 @@ export default function AssetDetailScreen() {
     queryFn: () => fetchAsset(id!),
     enabled: !!id,
   });
+
+  const { data: telemetry } = useQuery({
+    queryKey: ["asset-telemetry", id],
+    queryFn: () => fetchTelemetry(id!),
+    enabled: !!id,
+    refetchInterval: 15000,
+  });
+
+  const lockStateKnown = telemetry != null && telemetry.lockState != null;
+  const alarmStateKnown = telemetry != null && telemetry.alarmState != null;
+  const isLocked = telemetry?.lockState === "locked";
+  const isArmed = telemetry?.alarmState === "armed";
 
   const handleCommand = (command: VehicleCommand, label: string) => {
     if (!id) return;
@@ -175,7 +210,15 @@ export default function AssetDetailScreen() {
     { label: t("assetDetail.status"), value: asset.status },
   ].filter((f) => f.value);
 
-  const commandButtons: { command: VehicleCommand; labelKey: string; icon: string }[] = [
+  const lockCommand: VehicleCommand = isLocked ? "unlock" : "lock";
+  const lockLabel = isLocked ? t("assetDetail.commandUnlock") : t("assetDetail.commandLock");
+  const lockIcon = isLocked ? "unlock" : "lock";
+
+  const alarmCommand: VehicleCommand = isArmed ? "disarm" : "arm";
+  const alarmLabel = isArmed ? t("assetDetail.commandDisarm") : t("assetDetail.commandArm");
+  const alarmIcon = isArmed ? "shield-off" : "shield";
+
+  const unknownStateButtons: { command: VehicleCommand; labelKey: string; icon: string }[] = [
     { command: "lock", labelKey: "assetDetail.commandLock", icon: "lock" },
     { command: "unlock", labelKey: "assetDetail.commandUnlock", icon: "unlock" },
     { command: "arm", labelKey: "assetDetail.commandArm", icon: "shield" },
@@ -226,27 +269,129 @@ export default function AssetDetailScreen() {
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("assetDetail.vehicleControls")}</Text>
+
+        {(lockStateKnown || alarmStateKnown) && (
+          <View style={styles.stateRow}>
+            {lockStateKnown && (
+              <View style={[styles.stateItem, { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" }]}>
+                <Feather
+                  name={isLocked ? "lock" : "unlock"}
+                  size={15}
+                  color={isLocked ? "#2E7D32" : "#C62828"}
+                />
+                <Text style={[styles.stateText, { color: isLocked ? "#2E7D32" : "#C62828" }]}>
+                  {isLocked ? t("assetDetail.locked") : t("assetDetail.unlocked")}
+                </Text>
+              </View>
+            )}
+            {alarmStateKnown && (
+              <View style={[styles.stateItem, { backgroundColor: isArmed ? "#E8F5E9" : "#FFF3E0" }]}>
+                <Feather
+                  name={isArmed ? "shield" : "shield-off"}
+                  size={15}
+                  color={isArmed ? "#2E7D32" : "#E65100"}
+                />
+                <Text style={[styles.stateText, { color: isArmed ? "#2E7D32" : "#E65100" }]}>
+                  {isArmed ? t("assetDetail.armed") : t("assetDetail.disarmed")}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <View style={styles.commandsGrid}>
-          {commandButtons.map(({ command, labelKey, icon }) => {
-            const isActive = commanding === command;
-            return (
-              <TouchableOpacity
-                key={command}
-                style={[styles.commandBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => handleCommand(command, t(labelKey))}
-                disabled={!!commanding}
-                activeOpacity={0.7}
-              >
-                {isActive ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Feather name={icon as any} size={20} color={colors.foreground} />
-                )}
-                <Text style={[styles.commandText, { color: colors.foreground }]}>{t(labelKey)}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {lockStateKnown ? (
+            <TouchableOpacity
+              style={[styles.commandBtn, {
+                backgroundColor: isLocked ? "#FFEBEE" : colors.card,
+                borderColor: colors.border,
+              }]}
+              onPress={() => handleCommand(lockCommand, lockLabel)}
+              disabled={!!commanding}
+              activeOpacity={0.7}
+            >
+              {commanding === "lock" || commanding === "unlock" ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Feather name={lockIcon as any} size={20} color={isLocked ? "#C62828" : colors.foreground} />
+              )}
+              <Text style={[styles.commandText, { color: isLocked ? "#C62828" : colors.foreground }]}>
+                {lockLabel}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              {(["lock", "unlock"] as VehicleCommand[]).map((cmd) => {
+                const btn = unknownStateButtons.find((b) => b.command === cmd)!;
+                return (
+                  <TouchableOpacity
+                    key={cmd}
+                    style={[styles.commandBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => handleCommand(cmd, t(btn.labelKey))}
+                    disabled={!!commanding}
+                    activeOpacity={0.7}
+                  >
+                    {commanding === cmd ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Feather name={btn.icon as any} size={20} color={colors.foreground} />
+                    )}
+                    <Text style={[styles.commandText, { color: colors.foreground }]}>{t(btn.labelKey)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
+
+          {alarmStateKnown ? (
+            <TouchableOpacity
+              style={[styles.commandBtn, {
+                backgroundColor: isArmed ? "#FFF3E0" : "#E8F5E9",
+                borderColor: colors.border,
+              }]}
+              onPress={() => handleCommand(alarmCommand, alarmLabel)}
+              disabled={!!commanding}
+              activeOpacity={0.7}
+            >
+              {commanding === "arm" || commanding === "disarm" ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Feather name={alarmIcon as any} size={20} color={isArmed ? "#E65100" : "#2E7D32"} />
+              )}
+              <Text style={[styles.commandText, { color: isArmed ? "#E65100" : "#2E7D32" }]}>
+                {alarmLabel}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              {(["arm", "disarm"] as VehicleCommand[]).map((cmd) => {
+                const btn = unknownStateButtons.find((b) => b.command === cmd)!;
+                return (
+                  <TouchableOpacity
+                    key={cmd}
+                    style={[styles.commandBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => handleCommand(cmd, t(btn.labelKey))}
+                    disabled={!!commanding}
+                    activeOpacity={0.7}
+                  >
+                    {commanding === cmd ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Feather name={btn.icon as any} size={20} color={colors.foreground} />
+                    )}
+                    <Text style={[styles.commandText, { color: colors.foreground }]}>{t(btn.labelKey)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
         </View>
+
+        {telemetry?.recordedAt && (
+          <Text style={[styles.lastUpdate, { color: colors.mutedForeground }]}>
+            {t("assetDetail.lastUpdate")}: {new Date(telemetry.recordedAt).toLocaleString()}
+          </Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -270,7 +415,20 @@ const styles = StyleSheet.create({
   actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12 },
   actionText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1, marginTop: 4, marginLeft: 4 },
+  stateRow: { flexDirection: "row", gap: 8 },
+  stateItem: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  stateText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   commandsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   commandBtn: { flexBasis: "47%", flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12, borderWidth: 1 },
   commandText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  lastUpdate: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 4 },
 });

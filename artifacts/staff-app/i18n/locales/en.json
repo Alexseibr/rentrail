@@ -325,7 +325,12 @@
     "confirmCommandWithRetries": "Send {{command}} command to this vehicle?\n\nRetries: {{retries}}",
     "commandSent": "Command sent",
     "commandQueued": "Command queued — will send when online",
-    "commandFailed": "Failed to send command"
+    "commandFailed": "Failed to send command",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "armed": "Armed",
+    "disarmed": "Disarmed",
+    "lastUpdate": "Last updated"
   },
   "rentalDetail": {
     "title": "Rental Details",
