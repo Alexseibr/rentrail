@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView,
-  Platform,
+  Platform, Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -18,6 +18,9 @@ import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
 import { useSync } from "@/contexts/SyncContext";
 import { MediaAttachments, type ExistingAttachment } from "@/components/MediaAttachments";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
+import { readCoordsFromCache } from "@/services/coordsCache";
+import { type CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
@@ -49,6 +52,24 @@ const STATUS_FLOW: Record<string, string | null> = {
 
 const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 type Priority = (typeof PRIORITIES)[number];
+
+function openMaps(lat: number, lng: number) {
+  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  Linking.canOpenURL(geoUrl)
+    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
+    .catch(() => Linking.openURL(webUrl).catch(() => {}));
+}
+
+function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("rentalDetail.timeJustNow");
+  if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours });
+  return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
+}
 
 interface IncidentDetail {
   id: string;
@@ -143,6 +164,8 @@ export default function IncidentDetailScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
+  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(null);
+
   const [editVisible, setEditVisible] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -160,6 +183,12 @@ export default function IncidentDetailScreen() {
       setIncident(data);
       setAttachments(atts);
       setAuthToken(token);
+      if (data.assetId) {
+        const coords = await readCoordsFromCache(data.assetId);
+        setCachedCoords(coords);
+      } else {
+        setCachedCoords(null);
+      }
     } catch {
       setIncident(null);
     } finally {
@@ -167,9 +196,17 @@ export default function IncidentDetailScreen() {
     }
   }, [companyId, id]);
 
+  const refreshCoords = useCallback(async () => {
+    if (!incident?.assetId) return;
+    const coords = await readCoordsFromCache(incident.assetId);
+    setCachedCoords(coords);
+  }, [incident?.assetId]);
+
   React.useEffect(() => {
     load();
   }, [load]);
+
+  useAppStateFocus(refreshCoords);
 
   const openEdit = () => {
     if (!incident) return;
@@ -418,6 +455,25 @@ export default function IncidentDetailScreen() {
             <Row label={t("incidentDetail.location")} value={incident.locationAddress} colors={colors} />
           ) : null}
         </View>
+
+        {cachedCoords ? (
+          <TouchableOpacity
+            style={[styles.locationChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => openMaps(cachedCoords.lat, cachedCoords.lng)}
+            activeOpacity={0.7}
+          >
+            <Feather name="map-pin" size={13} color={colors.primary} />
+            <Text style={[styles.locationText, { color: colors.primary }]}>
+              {cachedCoords.lat.toFixed(4)}, {cachedCoords.lng.toFixed(4)}
+            </Text>
+            {cachedCoords.cachedAt ? (
+              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+                {formatRelativeTime(cachedCoords.cachedAt, t)}
+              </Text>
+            ) : null}
+            <Feather name="external-link" size={13} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        ) : null}
 
         {incident.description ? (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -677,6 +733,24 @@ const styles = StyleSheet.create({
   historyContent: { flex: 1 },
   historyStatus: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   historyTime: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  locationChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
+  cacheAgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",
