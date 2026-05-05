@@ -26,6 +26,7 @@ import { isQueueable } from "@/services/offline-policy";
 import { useSync } from "@/contexts/SyncContext";
 import { MediaAttachments } from "@/components/MediaAttachments";
 import { useCachedCoordinates } from "@/hooks/useCachedCoordinates";
+import { MiniMapPreview } from "@/components/MiniMapPreview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -635,36 +636,18 @@ export default function AssetDetailScreen() {
           };
 
           return (
-            <View style={[styles.locationRow, { borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.locationRowMain}
-                onPress={openMaps}
-                onLongPress={copyCoords}
-                activeOpacity={0.7}
-              >
-                <Feather name="map-pin" size={14} color={isLastKnown ? colors.mutedForeground : colors.primary} />
-                <View style={styles.locationBody}>
-                  <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
-                    {isLastKnown
-                      ? t("assetDetail.locationLastKnown", { time: formatRelativeTime(cachedCoords!.cachedAt, t) })
-                      : t("assetDetail.location")}
-                  </Text>
-                  <Text style={[styles.locationText, { color: isLastKnown ? colors.mutedForeground : colors.foreground }]}>
-                    {displayLat!.toFixed(5)}, {displayLng!.toFixed(5)}
-                  </Text>
-                </View>
-                <Feather name="external-link" size={13} color={colors.mutedForeground} />
-              </TouchableOpacity>
-              <View style={[styles.locationDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity
-                style={styles.locationCopyBtn}
-                onPress={copyCoords}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                activeOpacity={0.6}
-              >
-                <Feather name="copy" size={13} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            </View>
+            <MiniMapPreview
+              lat={displayLat!}
+              lng={displayLng!}
+              isLastKnown={isLastKnown}
+              label={
+                isLastKnown
+                  ? t("assetDetail.locationLastKnown", { time: formatRelativeTime(cachedCoords!.cachedAt, t) })
+                  : t("assetDetail.location")
+              }
+              onPress={openMaps}
+              onCopy={copyCoords}
+            />
           );
         })()}
 
@@ -962,11 +945,4 @@ const styles = StyleSheet.create({
   statsEmpty: { paddingVertical: 14, alignItems: "center" },
   onlineStateBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
   onlineDot: { width: 8, height: 8, borderRadius: 4 },
-  locationRow: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, overflow: "hidden" },
-  locationRowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 11, paddingVertical: 9 },
-  locationBody: { flex: 1, gap: 1 },
-  locationLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" as const, letterSpacing: 0.3 },
-  locationText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  locationDivider: { width: 1, alignSelf: "stretch" },
-  locationCopyBtn: { paddingHorizontal: 11, paddingVertical: 9 },
 });
