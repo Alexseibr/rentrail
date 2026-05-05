@@ -157,9 +157,28 @@ export default function SyncQueueScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleClearCompleted = async () => {
-    await clearCompleted();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleClearCompleted = () => {
+    const pinnedCount = queueItems.filter(
+      (i) => (i.status === "completed" || i.status === "canceled") && i.snoozed,
+    ).length;
+
+    const doClear = async () => {
+      await clearCompleted();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+
+    if (pinnedCount > 0) {
+      Alert.alert(
+        t("syncQueue.clearDoneConfirmTitle"),
+        t("syncQueue.clearDoneConfirmMessage", { count: pinnedCount }),
+        [
+          { text: t("syncQueue.no"), style: "cancel" },
+          { text: t("syncQueue.clearDoneConfirmOk"), style: "destructive", onPress: doClear },
+        ],
+      );
+    } else {
+      doClear();
+    }
   };
 
   const handleRetryAllFailed = async () => {
