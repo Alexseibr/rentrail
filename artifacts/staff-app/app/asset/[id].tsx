@@ -123,6 +123,7 @@ export default function AssetDetailScreen() {
   const queryClient = useQueryClient();
   const [commanding, setCommanding] = useState<VehicleCommand | null>(null);
   const [commandsExpanded, setCommandsExpanded] = useState(true);
+  const [commandFilter, setCommandFilter] = useState<"all" | "failed" | "acknowledged">("all");
 
   const { data: asset, isLoading } = useQuery({
     queryKey: ["asset", id],
@@ -320,6 +321,12 @@ export default function AssetDetailScreen() {
     { label: t("assetDetail.qrCode"), value: asset.qrCode },
     { label: t("assetDetail.status"), value: asset.status },
   ].filter((f) => f.value);
+
+  const filteredCommands = commands.filter((cmd) => {
+    if (commandFilter === "failed") return cmd.status === "failed";
+    if (commandFilter === "acknowledged") return cmd.status === "acknowledged";
+    return true;
+  });
 
   const lockCommand: VehicleCommand = isLocked ? "unlock" : "lock";
   const lockLabel = isLocked ? t("assetDetail.commandUnlock") : t("assetDetail.commandLock");
@@ -532,54 +539,83 @@ export default function AssetDetailScreen() {
         </TouchableOpacity>
 
         {commandsExpanded && (
-          <View style={[styles.commandHistoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {commandsLoading ? (
-              <View style={styles.commandHistoryEmpty}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : commands.length === 0 ? (
-              <View style={styles.commandHistoryEmpty}>
-                <Feather name="inbox" size={20} color={colors.mutedForeground} />
-                <Text style={[styles.commandHistoryEmptyText, { color: colors.mutedForeground }]}>
-                  {t("assetDetail.noRecentCommands")}
-                </Text>
-              </View>
-            ) : (
-              commands.map((cmd, index) => {
-                const iconMeta = STATUS_ICON[cmd.status] ?? STATUS_ICON.queued;
-                const isLast = index === commands.length - 1;
-                return (
-                  <View
-                    key={cmd.id}
+          <>
+            <View style={styles.commandFilterRow}>
+              {(["all", "failed", "acknowledged"] as const).map((f) => (
+                <TouchableOpacity
+                  key={f}
+                  style={[
+                    styles.commandFilterChip,
+                    commandFilter === f
+                      ? { backgroundColor: colors.primary }
+                      : { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 },
+                  ]}
+                  onPress={() => setCommandFilter(f)}
+                  activeOpacity={0.7}
+                >
+                  <Text
                     style={[
-                      styles.commandHistoryRow,
-                      !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                      styles.commandFilterChipText,
+                      { color: commandFilter === f ? "#fff" : colors.mutedForeground },
                     ]}
                   >
-                    <Feather name={iconMeta.name as any} size={16} color={iconMeta.color} />
-                    <View style={styles.commandHistoryInfo}>
-                      <Text style={[styles.commandHistoryType, { color: colors.foreground }]}>
-                        {t(`assetDetail.cmdType_${cmd.commandType}`, { defaultValue: cmd.commandType.replace(/_/g, " ") })}
-                      </Text>
-                      {cmd.errorMessage ? (
-                        <Text style={[styles.commandHistoryError, { color: "#EF4444" }]} numberOfLines={1}>
-                          {cmd.errorMessage}
+                    {t(`assetDetail.filterCmd_${f}`)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={[styles.commandHistoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {commandsLoading ? (
+                <View style={styles.commandHistoryEmpty}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : filteredCommands.length === 0 ? (
+                <View style={styles.commandHistoryEmpty}>
+                  <Feather name="inbox" size={20} color={colors.mutedForeground} />
+                  <Text style={[styles.commandHistoryEmptyText, { color: colors.mutedForeground }]}>
+                    {commandFilter === "all"
+                      ? t("assetDetail.noRecentCommands")
+                      : t("assetDetail.noCommandsForFilter")}
+                  </Text>
+                </View>
+              ) : (
+                filteredCommands.map((cmd, index) => {
+                  const iconMeta = STATUS_ICON[cmd.status] ?? STATUS_ICON.queued;
+                  const isLast = index === filteredCommands.length - 1;
+                  return (
+                    <View
+                      key={cmd.id}
+                      style={[
+                        styles.commandHistoryRow,
+                        !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                      ]}
+                    >
+                      <Feather name={iconMeta.name as any} size={16} color={iconMeta.color} />
+                      <View style={styles.commandHistoryInfo}>
+                        <Text style={[styles.commandHistoryType, { color: colors.foreground }]}>
+                          {t(`assetDetail.cmdType_${cmd.commandType}`, { defaultValue: cmd.commandType.replace(/_/g, " ") })}
                         </Text>
-                      ) : null}
+                        {cmd.errorMessage ? (
+                          <Text style={[styles.commandHistoryError, { color: "#EF4444" }]} numberOfLines={1}>
+                            {cmd.errorMessage}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={styles.commandHistoryRight}>
+                        <Text style={[styles.commandHistoryStatus, { color: iconMeta.color }]}>
+                          {t(`assetDetail.cmdStatus_${cmd.status}`, { defaultValue: cmd.status })}
+                        </Text>
+                        <Text style={[styles.commandHistoryTime, { color: colors.mutedForeground }]}>
+                          {formatRelativeTime(cmd.queuedAt, t)}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.commandHistoryRight}>
-                      <Text style={[styles.commandHistoryStatus, { color: iconMeta.color }]}>
-                        {t(`assetDetail.cmdStatus_${cmd.status}`, { defaultValue: cmd.status })}
-                      </Text>
-                      <Text style={[styles.commandHistoryTime, { color: colors.mutedForeground }]}>
-                        {formatRelativeTime(cmd.queuedAt, t)}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })
-            )}
-          </View>
+                  );
+                })
+              )}
+            </View>
+          </>
         )}
       </ScrollView>
     </View>
@@ -633,4 +669,7 @@ const styles = StyleSheet.create({
   commandHistoryStatus: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
   commandHistoryTime: { fontSize: 11, fontFamily: "Inter_400Regular" },
   telemetrySkeleton: { borderRadius: 10, borderWidth: 1, paddingVertical: 16, alignItems: "center", justifyContent: "center" },
+  commandFilterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 2 },
+  commandFilterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  commandFilterChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
 });

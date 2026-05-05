@@ -351,7 +351,11 @@
     "cmdType_locate": "Locate",
     "cmdType_ping": "Ping",
     "cmdType_disable": "Disable",
-    "cmdType_set_speed_limit": "Set Speed Limit"
+    "cmdType_set_speed_limit": "Set Speed Limit",
+    "filterCmd_all": "All",
+    "filterCmd_failed": "Failed",
+    "filterCmd_acknowledged": "Acknowledged",
+    "noCommandsForFilter": "No commands match this filter"
   },
   "rentalDetail": {
     "title": "Rental Details",
