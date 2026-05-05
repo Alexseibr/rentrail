@@ -174,9 +174,10 @@ export default function SyncQueueScreen() {
   };
 
   const handleClearCompleted = () => {
-    const pinnedCount = queueItems.filter(
+    const pinnedItems = queueItems.filter(
       (i) => (i.status === "completed" || i.status === "canceled") && i.snoozed,
-    ).length;
+    );
+    const pinnedCount = pinnedItems.length;
 
     const doClear = async () => {
       await clearCompleted();
@@ -184,9 +185,21 @@ export default function SyncQueueScreen() {
     };
 
     if (pinnedCount > 0) {
+      const MAX_SHOWN = 5;
+      const shown = pinnedItems.slice(0, MAX_SHOWN);
+      const remaining = pinnedCount - shown.length;
+
+      const lines: string[] = [t("syncQueue.clearDoneConfirmHeader", { count: pinnedCount })];
+      for (const item of shown) {
+        lines.push(`• ${getActionDescription(item.actionType)}`);
+      }
+      if (remaining > 0) {
+        lines.push(t("syncQueue.clearDoneConfirmAndMore", { count: remaining }));
+      }
+
       Alert.alert(
         t("syncQueue.clearDoneConfirmTitle"),
-        t("syncQueue.clearDoneConfirmMessage", { count: pinnedCount }),
+        lines.join("\n"),
         [
           { text: t("syncQueue.no"), style: "cancel" },
           { text: t("syncQueue.clearDoneConfirmOk"), style: "destructive", onPress: doClear },
