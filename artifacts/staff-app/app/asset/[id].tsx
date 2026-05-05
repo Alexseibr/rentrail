@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
@@ -79,6 +79,7 @@ export default function AssetDetailScreen() {
   const { showSnackbar } = useSnackbar();
   const { isConnected } = useNetwork();
   const { queueItems } = useSync();
+  const queryClient = useQueryClient();
   const [commanding, setCommanding] = useState<VehicleCommand | null>(null);
 
   const { data: asset, isLoading } = useQuery({
@@ -150,6 +151,9 @@ export default function AssetDetailScreen() {
             if (res.ok) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               showSnackbar(t("assetDetail.commandSent"), "success");
+              setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ["asset-telemetry", id] });
+              }, 3000);
             } else {
               const json = await res.json().catch(() => ({}));
               showSnackbar(json?.error?.message ?? t("assetDetail.commandFailed"), "error");
