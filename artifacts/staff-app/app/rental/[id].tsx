@@ -101,6 +101,7 @@ export default function RentalDetailScreen() {
 
   const handleVehicleCommand = (command: VehicleCommand) => {
     if (!assetId) return;
+    if (!canReturn) return;
     const label = command === "lock" ? t("rentalDetail.commandLock") : t("rentalDetail.commandUnlock");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
@@ -292,7 +293,7 @@ export default function RentalDetailScreen() {
               </View>
             )}
 
-            {!isTelemetryLoading && !!telemetry && lockStateKnown && (
+            {!isTelemetryLoading && !!telemetry && lockStateKnown && canReturn && (
               <View style={styles.commandsRow}>
                 <TouchableOpacity
                   style={[
