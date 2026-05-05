@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
+import { type MapLayer, getMapLayer, setMapLayer } from "@/store/mapLayerStore";
 
 interface MiniMapPreviewProps {
   lat: number;
@@ -13,7 +14,17 @@ interface MiniMapPreviewProps {
   onCopy: () => void;
 }
 
-function buildMapHtml(lat: number, lng: number): string {
+function buildMapHtml(lat: number, lng: number, layer: MapLayer): string {
+  const tileUrl =
+    layer === "satellite"
+      ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+      : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+  const attribution =
+    layer === "satellite"
+      ? "© Esri, Maxar, Earthstar Geographics"
+      : "© OpenStreetMap contributors";
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -49,8 +60,9 @@ function buildMapHtml(lat: number, lng: number): string {
       keyboard: false,
       tap: false
     });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
+    L.tileLayer('${tileUrl}', {
+      maxZoom: 19,
+      attribution: '${attribution}'
     }).addTo(map);
     var icon = L.divIcon({
       className: '',
@@ -66,7 +78,17 @@ function buildMapHtml(lat: number, lng: number): string {
 
 export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }: MiniMapPreviewProps) {
   const colors = useColors();
-  const html = buildMapHtml(lat, lng);
+  const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
+
+  const html = buildMapHtml(lat, lng, layer);
+
+  function toggleLayer() {
+    const next: MapLayer = layer === "street" ? "satellite" : "street";
+    setMapLayer(next);
+    setLayerState(next);
+  }
+
+  const isSatellite = layer === "satellite";
 
   return (
     <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -85,6 +107,24 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
           onPress={onPress}
           activeOpacity={0.85}
         />
+        <TouchableOpacity
+          style={[
+            styles.layerToggle,
+            isSatellite ? styles.layerToggleSatellite : styles.layerToggleStreet,
+          ]}
+          onPress={toggleLayer}
+          activeOpacity={0.8}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+        >
+          <Feather
+            name={isSatellite ? "map" : "globe"}
+            size={11}
+            color={isSatellite ? "#fff" : "#1a1a1a"}
+          />
+          <Text style={[styles.layerToggleText, { color: isSatellite ? "#fff" : "#1a1a1a" }]}>
+            {isSatellite ? "Street" : "Satellite"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={[styles.bottomRow, { borderTopColor: colors.border }]}>
@@ -138,6 +178,33 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     backgroundColor: "#E8E8E8",
+  },
+  layerToggle: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  layerToggleStreet: {
+    backgroundColor: "rgba(255,255,255,0.92)",
+  },
+  layerToggleSatellite: {
+    backgroundColor: "rgba(30,30,30,0.82)",
+  },
+  layerToggleText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.1,
   },
   bottomRow: {
     flexDirection: "row",
