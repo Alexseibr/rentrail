@@ -220,6 +220,15 @@ export async function listAssets(companyId: string, branchId?: string, status?: 
         ORDER BY ts.recorded_at DESC
         LIMIT 1
       )`,
+      onlineState: sql<string | null>`(
+        SELECT ts.online_state
+        FROM telemetry_snapshots ts
+        WHERE ts.asset_id = ${assets.id}
+          AND ts.company_id = ${companyId}
+          AND ts.online_state IS NOT NULL
+        ORDER BY ts.recorded_at DESC
+        LIMIT 1
+      )`,
     })
     .from(assets)
     .where(and(...conditions));

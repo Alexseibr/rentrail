@@ -29,6 +29,7 @@ interface Asset {
   status: string;
   qrCode: string | null;
   batteryPercent: number | null;
+  onlineState: string | null;
 }
 
 function getBatteryColor(pct: number): string {
@@ -163,14 +164,24 @@ export default function AssetsScreen() {
         </Text>
       </View>
       <View style={styles.cardRight}>
-        {item.batteryPercent != null && (
-          <View style={styles.batteryRow}>
-            <BatteryIcon percent={item.batteryPercent} size={14} />
-            <Text style={[styles.batteryText, { color: getBatteryColor(item.batteryPercent) }]}>
-              {item.batteryPercent}%
-            </Text>
-          </View>
-        )}
+        <View style={styles.cardRightTop}>
+          {item.batteryPercent != null && (
+            <View style={styles.batteryRow}>
+              <BatteryIcon percent={item.batteryPercent} size={14} />
+              <Text style={[styles.batteryText, { color: getBatteryColor(item.batteryPercent) }]}>
+                {item.batteryPercent}%
+              </Text>
+            </View>
+          )}
+          {(item.onlineState === "online" || item.onlineState === "offline") && (
+            <View
+              style={[
+                styles.connectionDot,
+                { backgroundColor: item.onlineState === "online" ? "#10B981" : "#EF4444" },
+              ]}
+            />
+          )}
+        </View>
         <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
           <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
           <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
@@ -289,6 +300,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   cardSub: { fontSize: 12, fontFamily: "Inter_400Regular" },
   cardRight: { alignItems: "flex-end", gap: 6 },
+  cardRightTop: { flexDirection: "row", alignItems: "center", gap: 6 },
+  connectionDot: { width: 8, height: 8, borderRadius: 4 },
   batteryRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   batteryText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   statusBadge: {
