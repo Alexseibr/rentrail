@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -124,6 +124,8 @@ export default function AssetDetailScreen() {
   const [commanding, setCommanding] = useState<VehicleCommand | null>(null);
   const [commandsExpanded, setCommandsExpanded] = useState(true);
   const [commandFilter, setCommandFilter] = useState<"all" | "failed" | "acknowledged">("all");
+  const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
+  const prevTelemetryFetching = useRef(false);
 
   const { data: asset, isLoading } = useQuery({
     queryKey: ["asset", id],
@@ -135,6 +137,7 @@ export default function AssetDetailScreen() {
     data: telemetry,
     isLoading: isTelemetryLoading,
     isSuccess: isTelemetrySuccess,
+    isFetching: telemetryFetching,
   } = useQuery({
     queryKey: ["asset-telemetry", id],
     queryFn: () => fetchTelemetry(id!),
@@ -154,6 +157,13 @@ export default function AssetDetailScreen() {
     enabled: !!id,
     refetchInterval: 15000,
   });
+
+  useEffect(() => {
+    if (prevTelemetryFetching.current && !telemetryFetching && refreshingTelemetry) {
+      setRefreshingTelemetry(false);
+    }
+    prevTelemetryFetching.current = telemetryFetching;
+  }, [telemetryFetching, refreshingTelemetry]);
 
   const lockStateKnown = telemetry != null && telemetry.lockState != null;
   const alarmStateKnown = telemetry != null && telemetry.alarmState != null;
@@ -243,6 +253,7 @@ export default function AssetDetailScreen() {
             if (res.ok) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               showSnackbar(t("assetDetail.commandSent"), "success");
+              setRefreshingTelemetry(true);
               try {
                 await refetchCommands();
               } catch {
@@ -400,8 +411,17 @@ export default function AssetDetailScreen() {
           </Text>
         )}
 
+        {refreshingTelemetry && (
+          <View style={styles.refreshingRow}>
+            <ActivityIndicator size="small" color={colors.mutedForeground} />
+            <Text style={[styles.refreshingText, { color: colors.mutedForeground }]}>
+              {t("assetDetail.refreshing")}
+            </Text>
+          </View>
+        )}
+
         {(lockStateKnown || alarmStateKnown) && (
-          <View style={styles.stateRow}>
+          <View style={[styles.stateRow, refreshingTelemetry && styles.stateRowFading]}>
             {lockStateKnown && (
               <View style={[styles.stateItem, { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" }]}>
                 <Feather
@@ -653,6 +673,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   stateText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  refreshingRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  refreshingText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  stateRowFading: { opacity: 0.4 },
   commandsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   commandBtn: { flexBasis: "47%", flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12, borderWidth: 1 },
   commandText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },

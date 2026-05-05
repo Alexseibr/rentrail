@@ -355,7 +355,8 @@
     "filterCmd_all": "All",
     "filterCmd_failed": "Failed",
     "filterCmd_acknowledged": "Acknowledged",
-    "noCommandsForFilter": "No commands match this filter"
+    "noCommandsForFilter": "No commands match this filter",
+    "refreshing": "Refreshing…"
   },
   "rentalDetail": {
     "title": "Rental Details",
