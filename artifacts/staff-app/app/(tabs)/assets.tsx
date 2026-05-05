@@ -28,6 +28,63 @@ interface Asset {
   internalCode: string | null;
   status: string;
   qrCode: string | null;
+  batteryPercent: number | null;
+}
+
+function getBatteryColor(pct: number): string {
+  if (pct <= 20) return "#EF4444";
+  if (pct <= 40) return "#F97316";
+  if (pct <= 70) return "#EAB308";
+  return "#22C55E";
+}
+
+function BatteryIcon({ percent, size = 16 }: { percent: number; size?: number }) {
+  const safe = Math.min(100, Math.max(0, percent));
+  const color = getBatteryColor(safe);
+  const bodyWidth = size * 1.6;
+  const bodyHeight = size * 0.8;
+  const borderRadius = size * 0.12;
+  const borderWidth = size * 0.08;
+  const terminalWidth = size * 0.12;
+  const terminalHeight = bodyHeight * 0.4;
+  const innerWidth = bodyWidth - borderWidth * 2;
+  const innerHeight = bodyHeight - borderWidth * 2;
+  const fillWidth = (safe / 100) * innerWidth;
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <View
+        style={{
+          width: bodyWidth,
+          height: bodyHeight,
+          borderRadius,
+          borderWidth,
+          borderColor: color,
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: borderWidth,
+        }}
+      >
+        <View
+          style={{
+            width: fillWidth,
+            height: innerHeight,
+            borderRadius: borderRadius * 0.5,
+            backgroundColor: color,
+          }}
+        />
+      </View>
+      <View
+        style={{
+          width: terminalWidth,
+          height: terminalHeight,
+          backgroundColor: color,
+          borderTopRightRadius: size * 0.06,
+          borderBottomRightRadius: size * 0.06,
+        }}
+      />
+    </View>
+  );
 }
 
 async function fetchAssets(): Promise<Asset[]> {
@@ -105,11 +162,21 @@ export default function AssetsScreen() {
           {item.internalCode ?? item.id.slice(0, 8)}
         </Text>
       </View>
-      <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
-        <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
-        <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
-          {t(`assets.status_${item.status}`, { defaultValue: item.status })}
-        </Text>
+      <View style={styles.cardRight}>
+        {item.batteryPercent != null && (
+          <View style={styles.batteryRow}>
+            <BatteryIcon percent={item.batteryPercent} size={14} />
+            <Text style={[styles.batteryText, { color: getBatteryColor(item.batteryPercent) }]}>
+              {item.batteryPercent}%
+            </Text>
+          </View>
+        )}
+        <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
+          <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
+          <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
+            {t(`assets.status_${item.status}`, { defaultValue: item.status })}
+          </Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -221,6 +288,9 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1, gap: 2 },
   cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   cardSub: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  cardRight: { alignItems: "flex-end", gap: 6 },
+  batteryRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  batteryText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   statusBadge: {
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,

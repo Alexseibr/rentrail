@@ -1,5 +1,5 @@
 import { db, assets, assetStatusHistory, branches, stations, type InsertAsset } from "@workspace/db";
-import { eq, and, isNull, inArray } from "drizzle-orm";
+import { eq, and, isNull, inArray, sql } from "drizzle-orm";
 import { NotFoundError, AppError, InvalidStatusTransitionError } from "../lib/errors";
 
 type AssetStatus = typeof assets.$inferSelect.status;
@@ -191,5 +191,38 @@ export async function listAssets(companyId: string, branchId?: string, status?: 
   if (branchId) conditions.push(eq(assets.branchId, branchId));
   if (status) conditions.push(eq(assets.status, status as AssetStatus));
 
-  return db.select().from(assets).where(and(...conditions));
+  const rows = await db
+    .select({
+      id: assets.id,
+      companyId: assets.companyId,
+      branchId: assets.branchId,
+      stationId: assets.stationId,
+      assetType: assets.assetType,
+      brand: assets.brand,
+      model: assets.model,
+      serialNumber: assets.serialNumber,
+      internalCode: assets.internalCode,
+      qrCode: assets.qrCode,
+      status: assets.status,
+      purchasePrice: assets.purchasePrice,
+      currentValue: assets.currentValue,
+      isPublic: assets.isPublic,
+      notes: assets.notes,
+      archivedAt: assets.archivedAt,
+      createdAt: assets.createdAt,
+      updatedAt: assets.updatedAt,
+      batteryPercent: sql<number | null>`(
+        SELECT ts.battery_percent
+        FROM telemetry_snapshots ts
+        WHERE ts.asset_id = ${assets.id}
+          AND ts.company_id = ${companyId}
+          AND ts.battery_percent IS NOT NULL
+        ORDER BY ts.recorded_at DESC
+        LIMIT 1
+      )`,
+    })
+    .from(assets)
+    .where(and(...conditions));
+
+  return rows;
 }
