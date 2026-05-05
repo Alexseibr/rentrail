@@ -197,6 +197,8 @@ export default function AssetDetailScreen() {
     return () => anim.stop();
   }, [skeletonOpacity]);
 
+  const stateOpacity = useRef(new Animated.Value(1)).current;
+
   const { data: asset, isLoading } = useQuery({
     queryKey: ["asset", id],
     queryFn: () => fetchAsset(id!),
@@ -234,6 +236,18 @@ export default function AssetDetailScreen() {
     }
     prevTelemetryFetching.current = telemetryFetching;
   }, [telemetryFetching, refreshingTelemetry]);
+
+  useEffect(() => {
+    if (refreshingTelemetry) {
+      stateOpacity.setValue(0.4);
+    } else {
+      Animated.timing(stateOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [refreshingTelemetry, stateOpacity]);
 
   const lockStateKnown = telemetry != null && telemetry.lockState != null;
   const alarmStateKnown = telemetry != null && telemetry.alarmState != null;
@@ -574,7 +588,7 @@ export default function AssetDetailScreen() {
         )}
 
         {(lockStateKnown || alarmStateKnown) && (
-          <View style={[styles.stateRow, refreshingTelemetry && styles.stateRowFading]}>
+          <Animated.View style={[styles.stateRow, { opacity: stateOpacity }]}>
             {lockStateKnown && (
               <View style={[styles.stateItem, { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" }]}>
                 <Feather
@@ -599,7 +613,7 @@ export default function AssetDetailScreen() {
                 </Text>
               </View>
             )}
-          </View>
+          </Animated.View>
         )}
 
         {!isTelemetryLoading && !!telemetry && <View style={styles.commandsGrid}>
@@ -828,7 +842,6 @@ const styles = StyleSheet.create({
   stateText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   refreshingRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   refreshingText: { fontSize: 12, fontFamily: "Inter_400Regular" },
-  stateRowFading: { opacity: 0.4 },
   commandsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   commandBtn: { flexBasis: "47%", flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12, borderWidth: 1 },
   commandText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
