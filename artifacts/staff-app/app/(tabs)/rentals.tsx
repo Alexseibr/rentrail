@@ -44,6 +44,16 @@ async function fetchRentals(): Promise<Rental[]> {
   return data;
 }
 
+function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("rentalDetail.timeJustNow");
+  if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours });
+  return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
+}
+
 const STATUS_COLORS: Record<string, string> = {
   active: "#43A047",
   overdue: "#E53935",
@@ -138,6 +148,11 @@ export default function RentalsScreen() {
             <Text style={[styles.locationText, { color: colors.primary }]}>
               {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
             </Text>
+            {coords.cachedAt ? (
+              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+                {formatRelativeTime(coords.cachedAt, t)}
+              </Text>
+            ) : null}
             <Feather name="external-link" size={11} color={colors.mutedForeground} />
           </TouchableOpacity>
         )}
@@ -269,6 +284,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11,
     fontFamily: "Inter_500Medium",
+  },
+  cacheAgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
   },
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },

@@ -106,6 +106,16 @@ async function fetchAssets(): Promise<Asset[]> {
   return data;
 }
 
+function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("assetDetail.timeJustNow");
+  if (minutes < 60) return t("assetDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("assetDetail.timeHoursAgo", { count: hours });
+  return t("assetDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
+}
+
 const STATUS_COLORS: Record<string, string> = {
   available: "#43A047",
   rented: "#1E88E5",
@@ -228,6 +238,11 @@ export default function AssetsScreen() {
             <Text style={[styles.locationText, { color: colors.primary }]}>
               {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
             </Text>
+            {coords.cachedAt ? (
+              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+                {formatRelativeTime(coords.cachedAt, t)}
+              </Text>
+            ) : null}
             <Feather name="external-link" size={11} color={colors.mutedForeground} />
           </TouchableOpacity>
         )}
@@ -395,6 +410,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11,
     fontFamily: "Inter_500Medium",
+  },
+  cacheAgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
   },
   connectionDot: { width: 8, height: 8, borderRadius: 4 },
   batteryRow: { flexDirection: "row", alignItems: "center", gap: 4 },
