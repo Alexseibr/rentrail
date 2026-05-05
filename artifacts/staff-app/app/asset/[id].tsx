@@ -475,6 +475,7 @@ export default function AssetDetailScreen() {
           {isTelemetryLoading ? (
             <>
               {[
+                t("assetDetail.onlineState"),
                 t("assetDetail.battery"),
                 t("assetDetail.speed"),
                 t("assetDetail.odometer"),
@@ -501,6 +502,39 @@ export default function AssetDetailScreen() {
             </View>
           ) : (
             <>
+              <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.onlineState")}</Text>
+                {telemetry.onlineState != null ? (
+                  <View style={styles.onlineStateBadge}>
+                    <View
+                      style={[
+                        styles.onlineDot,
+                        {
+                          backgroundColor:
+                            telemetry.onlineState === "online" ? "#10B981"
+                            : telemetry.onlineState === "offline" ? "#EF4444"
+                            : "#9CA3AF",
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statsValue,
+                        {
+                          color:
+                            telemetry.onlineState === "online" ? "#10B981"
+                            : telemetry.onlineState === "offline" ? "#EF4444"
+                            : colors.mutedForeground,
+                        },
+                      ]}
+                    >
+                      {t(`assetDetail.onlineState_${telemetry.onlineState}`, { defaultValue: telemetry.onlineState })}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.statsValue, { color: colors.foreground }]}>—</Text>
+                )}
+              </View>
               <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
                 <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.battery")}</Text>
                 {telemetry.batteryPercent != null ? (
@@ -821,4 +855,6 @@ const styles = StyleSheet.create({
   batteryValueRow: { flexDirection: "row", alignItems: "center" },
   skeletonPill: { width: 72, height: 14, borderRadius: 7 },
   statsEmpty: { paddingVertical: 14, alignItems: "center" },
+  onlineStateBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
+  onlineDot: { width: 8, height: 8, borderRadius: 4 },
 });

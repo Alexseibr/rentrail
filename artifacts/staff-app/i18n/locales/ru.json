@@ -337,7 +337,10 @@
     "odometer": "Одометр",
     "lastUpdate": "Обновлено",
     "noDeviceData": "Данные устройства недоступны",
-    "refreshing": "Обновление…"
+    "refreshing": "Обновление…",
+    "onlineState": "Подключение",
+    "onlineState_online": "В сети",
+    "onlineState_offline": "Не в сети"
   },
   "rentalDetail": {
     "title": "Детали аренды",

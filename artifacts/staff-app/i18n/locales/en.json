@@ -359,7 +359,10 @@
     "filterCmd_failed": "Failed",
     "filterCmd_acknowledged": "Acknowledged",
     "noCommandsForFilter": "No commands match this filter",
-    "refreshing": "Refreshing…"
+    "refreshing": "Refreshing…",
+    "onlineState": "Connection",
+    "onlineState_online": "Online",
+    "onlineState_offline": "Offline"
   },
   "rentalDetail": {
     "title": "Rental Details",
