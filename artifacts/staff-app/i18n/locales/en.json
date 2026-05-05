@@ -314,7 +314,18 @@
     "qrCode": "QR Code",
     "status": "Status",
     "reportIssue": "Report Issue",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "vehicleControls": "Vehicle Controls",
+    "commandLock": "Lock",
+    "commandUnlock": "Unlock",
+    "commandArm": "Arm Alarm",
+    "commandDisarm": "Disarm Alarm",
+    "confirmCommandTitle": "Send Command",
+    "confirmCommand": "Send {{command}} command to this vehicle?",
+    "confirmCommandWithRetries": "Send {{command}} command to this vehicle?\n\nRetries: {{retries}}",
+    "commandSent": "Command sent",
+    "commandQueued": "Command queued — will send when online",
+    "commandFailed": "Failed to send command"
   },
   "rentalDetail": {
     "title": "Rental Details",

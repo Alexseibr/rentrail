@@ -316,7 +316,18 @@
     "qrCode": "QR-код",
     "status": "Статус",
     "reportIssue": "Сообщить о проблеме",
-    "maintenance": "Обслуживание"
+    "maintenance": "Обслуживание",
+    "vehicleControls": "Управление транспортом",
+    "commandLock": "Заблокировать",
+    "commandUnlock": "Разблокировать",
+    "commandArm": "Включить охрану",
+    "commandDisarm": "Выключить охрану",
+    "confirmCommandTitle": "Отправить команду",
+    "confirmCommand": "Отправить команду «{{command}}» транспортному средству?",
+    "confirmCommandWithRetries": "Отправить команду «{{command}}» транспортному средству?\n\nПопыток: {{retries}}",
+    "commandSent": "Команда отправлена",
+    "commandQueued": "Команда в очереди — будет отправлена при восстановлении связи",
+    "commandFailed": "Не удалось отправить команду"
   },
   "rentalDetail": {
     "title": "Детали аренды",

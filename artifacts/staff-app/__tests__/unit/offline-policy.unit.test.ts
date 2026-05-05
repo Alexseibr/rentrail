@@ -3,25 +3,34 @@ import { describe, it, expect } from "vitest";
 type QueueableAction =
   | "mark_inquiry_contacted"
   | "create_incident"
+  | "edit_incident"
+  | "change_incident_status"
   | "create_maintenance"
   | "change_asset_status"
-  | "upload_attachment";
+  | "upload_attachment"
+  | "change_work_order_status"
+  | "change_maintenance_status"
+  | "vehicle_command";
 
 type OnlineOnlyAction =
   | "login"
   | "rental_start"
   | "rental_return"
   | "payment_process"
-  | "device_command"
   | "create_rental"
   | "scan_resolve";
 
 const QUEUEABLE_ACTIONS: Set<string> = new Set<QueueableAction>([
   "mark_inquiry_contacted",
   "create_incident",
+  "edit_incident",
+  "change_incident_status",
   "create_maintenance",
   "change_asset_status",
   "upload_attachment",
+  "change_work_order_status",
+  "change_maintenance_status",
+  "vehicle_command",
 ]);
 
 const ONLINE_ONLY_ACTIONS: Set<string> = new Set<OnlineOnlyAction>([
@@ -29,7 +38,6 @@ const ONLINE_ONLY_ACTIONS: Set<string> = new Set<OnlineOnlyAction>([
   "rental_start",
   "rental_return",
   "payment_process",
-  "device_command",
   "create_rental",
   "scan_resolve",
 ]);
@@ -47,9 +55,14 @@ describe("Offline Action Policy", () => {
     const queueable = [
       "mark_inquiry_contacted",
       "create_incident",
+      "edit_incident",
+      "change_incident_status",
       "create_maintenance",
       "change_asset_status",
       "upload_attachment",
+      "change_work_order_status",
+      "change_maintenance_status",
+      "vehicle_command",
     ];
 
     it.each(queueable)("%s is queueable", (action) => {
@@ -64,7 +77,6 @@ describe("Offline Action Policy", () => {
       "rental_start",
       "rental_return",
       "payment_process",
-      "device_command",
       "create_rental",
       "scan_resolve",
     ];
@@ -98,8 +110,8 @@ describe("Offline Action Policy", () => {
 
   describe("queue size limits", () => {
     it("queueable set is small and bounded (MVP pragmatic)", () => {
-      expect(QUEUEABLE_ACTIONS.size).toBeLessThanOrEqual(10);
-      expect(QUEUEABLE_ACTIONS.size).toBe(5);
+      expect(QUEUEABLE_ACTIONS.size).toBeLessThanOrEqual(15);
+      expect(QUEUEABLE_ACTIONS.size).toBe(10);
     });
   });
 });

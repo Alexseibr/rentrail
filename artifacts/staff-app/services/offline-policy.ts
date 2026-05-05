@@ -7,14 +7,14 @@ export type QueueableAction =
   | "change_asset_status"
   | "upload_attachment"
   | "change_work_order_status"
-  | "change_maintenance_status";
+  | "change_maintenance_status"
+  | "vehicle_command";
 
 export type OnlineOnlyAction =
   | "login"
   | "rental_start"
   | "rental_return"
   | "payment_process"
-  | "device_command"
   | "create_rental"
   | "scan_resolve";
 
@@ -28,6 +28,7 @@ const QUEUEABLE_ACTIONS: Set<string> = new Set<QueueableAction>([
   "upload_attachment",
   "change_work_order_status",
   "change_maintenance_status",
+  "vehicle_command",
 ]);
 
 const ONLINE_ONLY_ACTIONS: Set<string> = new Set<OnlineOnlyAction>([
@@ -35,7 +36,6 @@ const ONLINE_ONLY_ACTIONS: Set<string> = new Set<OnlineOnlyAction>([
   "rental_start",
   "rental_return",
   "payment_process",
-  "device_command",
   "create_rental",
   "scan_resolve",
 ]);
@@ -63,11 +63,11 @@ export function getActionDescription(action: string): string {
     upload_attachment: "Upload photo/attachment",
     change_work_order_status: "Change work order status",
     change_maintenance_status: "Change maintenance status",
+    vehicle_command: "Send vehicle command",
     login: "Login (requires internet)",
     rental_start: "Start rental (requires internet)",
     rental_return: "Return rental (requires internet)",
     payment_process: "Process payment (requires internet)",
-    device_command: "Send device command (requires internet)",
     create_rental: "Create rental (requires internet)",
     scan_resolve: "Scan & resolve (requires internet)",
   };
