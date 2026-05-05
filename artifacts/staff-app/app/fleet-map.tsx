@@ -1,0 +1,487 @@
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import WebView from "react-native-webview";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { getAccessToken, getCompanyId } from "@/services/api";
+import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccessTab } from "@/utils/permissions";
+import { writeCoordsToCache, readManyCoordsFromCache } from "@/services/coordsCache";
+import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
+
+const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+interface AssetItem {
+  id: string;
+  assetType: string;
+  brand: string | null;
+  model: string | null;
+  internalCode: string | null;
+  status: string;
+}
+
+interface TelemetryResult {
+  lat: number | null;
+  lng: number | null;
+  recordedAt: string | null;
+}
+
+interface PinData {
+  id: string;
+  lat: number;
+  lng: number;
+  label: string;
+  isLive: boolean;
+  cachedAt?: string;
+  status: string;
+  assetType: string;
+}
+
+async function fetchAllAssets(): Promise<AssetItem[]> {
+  const token = await getAccessToken();
+  const companyId = await getCompanyId();
+  if (!token || !companyId) return [];
+  const res = await fetch(`${BASE_URL}/api/assets`, {
+    headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
+  });
+  if (!res.ok) return [];
+  const { data } = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+async function fetchTelemetry(id: string): Promise<TelemetryResult | null> {
+  const token = await getAccessToken();
+  const companyId = await getCompanyId();
+  if (!token || !companyId) return null;
+  try {
+    const res = await fetch(`${BASE_URL}/api/telemetry/assets/${id}/latest`, {
+      headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
+    });
+    if (!res.ok) return null;
+    const { data } = await res.json();
+    return data as TelemetryResult;
+  } catch {
+    return null;
+  }
+}
+
+function assetLabel(asset: AssetItem): string {
+  return (asset.internalCode ?? `${asset.brand ?? ""} ${asset.model ?? ""}`.trim()) || asset.id.slice(0, 6);
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
+function buildFleetMapHtml(pins: PinData[]): string {
+  const serialized = JSON.stringify(
+    pins.map((p) => ({
+      ...p,
+      label: escapeHtml(p.label),
+      status: escapeHtml(p.status),
+    })),
+  );
+
+  const statusColors: Record<string, string> = {
+    available: "#22C55E",
+    rented: "#3B82F6",
+    maintenance: "#F97316",
+    blocked: "#EF4444",
+    draft: "#8c8c8c",
+    retired: "#8c8c8c",
+  };
+
+  const colorsJson = JSON.stringify(statusColors);
+
+  const avgLat = pins.length > 0 ? pins.reduce((s, p) => s + p.lat, 0) / pins.length : 48.8566;
+  const avgLng = pins.length > 0 ? pins.reduce((s, p) => s + p.lng, 0) / pins.length : 2.3522;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body,#map{width:100%;height:100%;background:#1a1a1a;}
+  .live-pin{
+    background:#F5C518;border:2.5px solid #1a1a1a;border-radius:50%;
+    width:16px;height:16px;box-shadow:0 2px 8px rgba(0,0,0,0.5);
+  }
+  .stale-pin{
+    background:#888;border:2px dashed #555;border-radius:50%;
+    width:14px;height:14px;opacity:0.65;box-shadow:0 1px 4px rgba(0,0,0,0.4);
+  }
+  .stale-pin-wrap{position:relative;display:inline-block;}
+  .clock-badge{
+    position:absolute;top:-5px;right:-5px;
+    background:#555;border-radius:50%;width:10px;height:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:7px;color:#ccc;border:1px solid #333;
+  }
+  .leaflet-popup-content{font-family:system-ui,sans-serif;font-size:13px;line-height:1.5;}
+  .popup-code{font-weight:700;font-size:14px;margin-bottom:2px;}
+  .popup-status{font-size:11px;padding:2px 6px;border-radius:10px;display:inline-block;margin-bottom:4px;}
+  .popup-cached{font-size:10px;color:#888;margin-top:2px;}
+  .popup-live{font-size:10px;color:#16a34a;font-weight:600;}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+(function(){
+  var pins=${serialized};
+  var statusColors=${colorsJson};
+  var map=L.map('map',{zoomControl:true,attributionControl:false}).setView([${avgLat},${avgLng}],${pins.length > 0 ? 13 : 10});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+  if(pins.length===0) return;
+
+  var group=[];
+  pins.forEach(function(p){
+    var icon;
+    if(p.isLive){
+      icon=L.divIcon({
+        className:'',
+        html:'<div class="live-pin"></div>',
+        iconSize:[16,16],iconAnchor:[8,8],popupAnchor:[0,-10]
+      });
+    } else {
+      icon=L.divIcon({
+        className:'',
+        html:'<div class="stale-pin-wrap"><div class="stale-pin"></div><div class="clock-badge">&#x23F0;</div></div>',
+        iconSize:[18,18],iconAnchor:[7,7],popupAnchor:[0,-10]
+      });
+    }
+
+    var sc=statusColors[p.status]||'#888';
+    var popupHtml='<div class="popup-code">'+p.label+'</div>'
+      +'<span class="popup-status" style="background:'+sc+'22;color:'+sc+'">'+p.status+'</span><br/>'
+      +(p.isLive
+        ?'<span class="popup-live">&#x2022; Live</span>'
+        :'<span class="popup-cached">&#x23F0; Last known'+(p.cachedAt?' &middot; '+new Date(p.cachedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'')+'</span>');
+
+    var marker=L.marker([p.lat,p.lng],{icon:icon});
+    marker.bindPopup(popupHtml);
+    marker.addTo(map);
+    group.push(marker);
+  });
+
+  if(group.length>1){
+    var bounds=L.featureGroup(group).getBounds();
+    map.fitBounds(bounds,{padding:[40,40]});
+  } else if(group.length===1){
+    map.setView([pins[0].lat,pins[0].lng],15);
+  }
+})();
+</script>
+</body>
+</html>`;
+}
+
+export default function FleetMapScreen() {
+  const { t } = useTranslation();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { user, companyId } = useAuth();
+
+  const memberships = user?.memberships || user?.companies;
+  const roleCode = memberships?.find((c: { companyId: string }) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const hasAccess = canAccessTab(roleCode, "assets");
+
+  const [loading, setLoading] = useState(true);
+  const [pins, setPins] = useState<PinData[]>([]);
+  const [liveCount, setLiveCount] = useState(0);
+  const [cachedCount, setCachedCount] = useState(0);
+  const [noLocationCount, setNoLocationCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
+
+  const loadMap = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const assets = await fetchAllAssets();
+      if (assets.length === 0) {
+        setPins([]);
+        setLiveCount(0);
+        setCachedCount(0);
+        setNoLocationCount(0);
+        return;
+      }
+
+      const telemetryResults = await Promise.all(
+        assets.map((a) => fetchTelemetry(a.id))
+      );
+
+      const assetsWithoutLive: AssetItem[] = [];
+      assets.forEach((a, i) => {
+        const tel = telemetryResults[i];
+        if (!(tel?.lat != null && tel?.lng != null)) {
+          assetsWithoutLive.push(a);
+        }
+      });
+
+      const cachedEntries: Record<string, CachedCoordinates> = await readManyCoordsFromCache(
+        assetsWithoutLive.map((a) => a.id),
+      );
+
+      await Promise.all(
+        assets.map(async (a, i) => {
+          const tel = telemetryResults[i];
+          if (tel?.lat != null && tel?.lng != null) {
+            await writeCoordsToCache(a.id, tel.lat, tel.lng, tel.recordedAt ?? undefined);
+          }
+        }),
+      );
+
+      const newPins: PinData[] = [];
+      let live = 0;
+      let cached = 0;
+      let noLoc = 0;
+
+      assets.forEach((a, i) => {
+        const tel = telemetryResults[i];
+        const hasLive = tel?.lat != null && tel?.lng != null;
+
+        if (hasLive) {
+          newPins.push({
+            id: a.id,
+            lat: tel!.lat!,
+            lng: tel!.lng!,
+            label: assetLabel(a),
+            isLive: true,
+            status: a.status,
+            assetType: a.assetType,
+          });
+          live++;
+        } else {
+          const entry = cachedEntries[a.id];
+          if (entry) {
+            newPins.push({
+              id: a.id,
+              lat: entry.lat,
+              lng: entry.lng,
+              label: assetLabel(a),
+              isLive: false,
+              cachedAt: entry.cachedAt,
+              status: a.status,
+              assetType: a.assetType,
+            });
+            cached++;
+          } else {
+            noLoc++;
+          }
+        }
+      });
+
+      setPins(newPins);
+      setLiveCount(live);
+      setCachedCount(cached);
+      setNoLocationCount(noLoc);
+      setMapKey((k) => k + 1);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMap(false);
+  }, [loadMap]);
+
+  const mapHtml = useMemo(() => buildFleetMapHtml(pins), [pins]);
+
+  const isWeb = Platform.OS === "web";
+
+  if (!hasAccess) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.dark, paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Feather name="arrow-left" size={22} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t("fleetMap.title")}</Text>
+          <View style={styles.refreshBtn} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Feather name="lock" size={40} color={colors.mutedForeground} />
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("common.error")}</Text>
+          <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("fleetMap.noAccess")}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.dark, paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Feather name="arrow-left" size={22} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t("fleetMap.title")}</Text>
+        <TouchableOpacity
+          style={styles.refreshBtn}
+          onPress={() => loadMap(true)}
+          disabled={refreshing || loading}
+        >
+          {refreshing ? (
+            <ActivityIndicator size="small" color="#F5C518" />
+          ) : (
+            <Feather name="refresh-cw" size={20} color="#F5C518" />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+            {t("fleetMap.loading")}
+          </Text>
+        </View>
+      ) : pins.length === 0 && noLocationCount === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Feather name="map" size={48} color={colors.mutedForeground} />
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("fleetMap.noData")}</Text>
+          <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("fleetMap.noDataHint")}</Text>
+        </View>
+      ) : (
+        <View style={styles.mapWrapper}>
+          {isWeb ? (
+            <iframe
+              key={mapKey}
+              srcDoc={mapHtml}
+              style={{ width: "100%", height: "100%", border: "none" } as React.CSSProperties}
+            />
+          ) : (
+            <WebView
+              key={mapKey}
+              source={{ html: mapHtml }}
+              style={styles.webview}
+              originWhitelist={["*"]}
+              javaScriptEnabled={true}
+              scrollEnabled={false}
+            />
+          )}
+
+          <View style={[styles.legend, { backgroundColor: colors.card }]}>
+            {liveCount > 0 && (
+              <View style={styles.legendRow}>
+                <View style={styles.liveDot} />
+                <Text style={[styles.legendText, { color: colors.foreground }]}>
+                  {t("fleetMap.live", { count: liveCount })}
+                </Text>
+              </View>
+            )}
+            {cachedCount > 0 && (
+              <View style={styles.legendRow}>
+                <View style={styles.cachedDot} />
+                <Text style={[styles.legendText, { color: colors.mutedForeground }]}>
+                  {t("fleetMap.cached", { count: cachedCount })}
+                </Text>
+              </View>
+            )}
+            {noLocationCount > 0 && (
+              <View style={styles.legendRow}>
+                <Feather name="help-circle" size={10} color={colors.mutedForeground} />
+                <Text style={[styles.legendText, { color: colors.mutedForeground }]}>
+                  {t("fleetMap.noLocation", { count: noLocationCount })}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  backBtn: { padding: 4 },
+  headerTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+  },
+  refreshBtn: { padding: 4 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 40,
+  },
+  emptyTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold" },
+  emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  mapWrapper: { flex: 1, position: "relative" },
+  webview: { flex: 1 },
+  legend: {
+    position: "absolute",
+    bottom: 20,
+    left: 12,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    minWidth: 140,
+  },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  legendText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  liveDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#F5C518",
+    borderWidth: 1.5,
+    borderColor: "#1a1a1a",
+  },
+  cachedDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#888",
+    borderWidth: 1.5,
+    borderColor: "#555",
+    opacity: 0.65,
+  },
+});

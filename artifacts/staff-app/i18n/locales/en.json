@@ -503,6 +503,16 @@
     "lastUpdate": "Updated",
     "noLocation": "Location unavailable"
   },
+  "fleetMap": {
+    "title": "Fleet Map",
+    "loading": "Loading fleet positions…",
+    "noData": "No vehicles on the map",
+    "noDataHint": "Vehicle positions will appear here once telemetry is available",
+    "live": "{{count}} live",
+    "cached": "{{count}} last known",
+    "noLocation": "{{count}} no location",
+    "noAccess": "You don't have permission to view the fleet map"
+  },
   "common": {
     "error": "Error",
     "ok": "OK",

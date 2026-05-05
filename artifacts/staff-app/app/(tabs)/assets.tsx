@@ -17,6 +17,8 @@ import { useColors } from "@/hooks/useColors";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccessTab } from "@/utils/permissions";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -123,6 +125,10 @@ export default function AssetsScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
+  const { user, companyId } = useAuth();
+  const memberships = user?.memberships || user?.companies;
+  const roleCode = memberships?.find((c: { companyId: string }) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const canSeeMap = canAccessTab(roleCode, "assets");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [onlineFilter, setOnlineFilter] = useState<string | null>(null);
@@ -198,20 +204,31 @@ export default function AssetsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SyncStatusBanner />
 
-      <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Feather name="search" size={16} color={colors.mutedForeground} />
-        <TextInput
-          style={[styles.searchInput, { color: colors.foreground }]}
-          placeholder={t("assets.search")}
-          placeholderTextColor={colors.mutedForeground}
-          value={search}
-          onChangeText={setSearch}
-        />
-        {search ? (
-          <TouchableOpacity onPress={() => setSearch("")}>
-            <Feather name="x" size={16} color={colors.mutedForeground} />
+      <View style={styles.topRow}>
+        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}>
+          <Feather name="search" size={16} color={colors.mutedForeground} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.foreground }]}
+            placeholder={t("assets.search")}
+            placeholderTextColor={colors.mutedForeground}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search ? (
+            <TouchableOpacity onPress={() => setSearch("")}>
+              <Feather name="x" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        {canSeeMap && (
+          <TouchableOpacity
+            style={[styles.mapBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => router.push("/fleet-map" as never)}
+            activeOpacity={0.7}
+          >
+            <Feather name="map" size={18} color={colors.primary} />
           </TouchableOpacity>
-        ) : null}
+        )}
       </View>
 
       <View style={styles.filterRow}>
@@ -281,11 +298,18 @@ export default function AssetsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  topRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 8,
+  },
   searchBar: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    marginHorizontal: 12, marginTop: 12, marginBottom: 8,
     paddingHorizontal: 12, paddingVertical: 10,
     borderRadius: 12, borderWidth: 1,
+  },
+  mapBtn: {
+    width: 44, height: 44, borderRadius: 12, borderWidth: 1,
+    justifyContent: "center", alignItems: "center",
   },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   filterRow: {
