@@ -242,11 +242,21 @@ export default function IncidentDetailScreen() {
     if (!companyId || !incident) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    const pendingStatusItem = queueItems.find(
+      (item) =>
+        item.actionType === "change_incident_status" &&
+        item.endpoint === `/api/service-requests/${incident.id}/status` &&
+        (item.status === "queued" || item.status === "syncing" || item.status === "failed"),
+    );
+    const queuedRetries = pendingStatusItem?.retryCount ?? 0;
+    const statusLabel = t(`incidents.status_${newStatus}`, { defaultValue: newStatus });
+    const confirmMsg = queuedRetries > 0
+      ? t("incidentDetail.updateStatusConfirmWithRetries", { status: statusLabel, retries: queuedRetries })
+      : t("incidentDetail.updateStatusConfirm", { status: statusLabel });
+
     Alert.alert(
       t("incidentDetail.updateStatus"),
-      t("incidentDetail.updateStatusConfirm", {
-        status: t(`incidents.status_${newStatus}`, { defaultValue: newStatus }),
-      }),
+      confirmMsg,
       [
         { text: t("common.cancel"), style: "cancel" },
         {

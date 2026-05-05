@@ -15,6 +15,7 @@ import { getAccessToken } from "@/services/api";
 import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
+import { useSync } from "@/contexts/SyncContext";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
@@ -67,6 +68,7 @@ export default function WorkOrderDetailScreen() {
   const { companyId } = useAuth();
   const { showSnackbar } = useSnackbar();
   const { isConnected } = useNetwork();
+  const { queueItems } = useSync();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [order, setOrder] = useState<any>(null);
@@ -104,6 +106,17 @@ export default function WorkOrderDetailScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (newStatus === "completed") {
+      const pendingStatusItem = queueItems.find(
+        (item) =>
+          item.actionType === "change_work_order_status" &&
+          item.endpoint === `/api/work-orders/${order.id}/status` &&
+          (item.status === "queued" || item.status === "syncing" || item.status === "failed"),
+      );
+      const queuedRetries = pendingStatusItem?.retryCount ?? 0;
+      const completeConfirmMsg = queuedRetries > 0
+        ? t("serviceModule.completeConfirmWithRetries", { retries: queuedRetries })
+        : t("serviceModule.completeConfirm");
+
       const doComplete = async (resolution: string) => {
         const extra = { resolution, actualCost: order.estimatedCost };
 
@@ -181,15 +194,19 @@ export default function WorkOrderDetailScreen() {
         }
       };
 
+      const promptMessage = queuedRetries > 0
+        ? `${t("serviceModule.enterResolution")}\n\n${t("serviceModule.retriesNote", { retries: queuedRetries })}`
+        : t("serviceModule.enterResolution");
+
       Alert.prompt
         ? Alert.prompt(
             t("serviceModule.completeOrder"),
-            t("serviceModule.enterResolution"),
+            promptMessage,
             (resolution) => doComplete(resolution ?? ""),
           )
         : Alert.alert(
             t("serviceModule.completeOrder"),
-            t("serviceModule.completeConfirm"),
+            completeConfirmMsg,
             [
               { text: t("common.cancel"), style: "cancel" },
               { text: t("serviceModule.complete"), onPress: () => doComplete("") },
