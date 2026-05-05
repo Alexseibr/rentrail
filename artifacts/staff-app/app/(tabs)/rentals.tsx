@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   TextInput,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -17,6 +18,8 @@ import { useColors } from "@/hooks/useColors";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
+import { readManyCoordsFromCache } from "@/services/coordsCache";
+import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -25,6 +28,7 @@ interface Rental {
   status: string;
   rentalType: string;
   createdAt: string;
+  assetId: string | null;
 }
 
 async function fetchRentals(): Promise<Rental[]> {
@@ -54,12 +58,21 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_FILTER_KEYS = ["active", "overdue", "awaiting_pickup", "pending_approval"] as const;
 
+function openMaps(lat: number, lng: number) {
+  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  Linking.canOpenURL(geoUrl)
+    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
+    .catch(() => Linking.openURL(webUrl).catch(() => {}));
+}
+
 export default function RentalsScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
 
   const { data: rentals = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["rentals"],
@@ -68,6 +81,14 @@ export default function RentalsScreen() {
   });
 
   useAppStateFocus(() => { refetch(); });
+
+  useEffect(() => {
+    const assetIds = rentals
+      .map((r) => r.assetId)
+      .filter((id): id is string => !!id);
+    if (assetIds.length === 0) return;
+    readManyCoordsFromCache(assetIds).then(setCoordsMap);
+  }, [rentals]);
 
   const filtered = rentals.filter((r) => {
     const q = search.trim().toLowerCase();
@@ -80,31 +101,49 @@ export default function RentalsScreen() {
     return matchesSearch && matchesStatus;
   });
 
-  const renderItem = ({ item }: { item: Rental }) => (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card }]}
-      onPress={() => router.push(`/rental/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.icon, { backgroundColor: colors.primary + "18" }]}>
-        <Feather name="file-text" size={18} color={colors.primary} />
-      </View>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          {t(`rentals.type_${item.rentalType}`, { defaultValue: item.rentalType })}
-        </Text>
-        <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-          {new Date(item.createdAt).toLocaleDateString("ru-RU")}
-        </Text>
-      </View>
-      <View style={[styles.badge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
-        <View style={[styles.badgeDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
-        <Text style={[styles.badgeText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
-          {t(`rentals.status_${item.status}`, { defaultValue: item.status })}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }: { item: Rental }) => {
+    const coords = item.assetId ? (coordsMap[item.assetId] ?? null) : null;
+    return (
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card }]}
+        onPress={() => router.push(`/rental/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardMainRow}>
+          <View style={[styles.icon, { backgroundColor: colors.primary + "18" }]}>
+            <Feather name="file-text" size={18} color={colors.primary} />
+          </View>
+          <View style={styles.content}>
+            <Text style={[styles.title, { color: colors.foreground }]}>
+              {t(`rentals.type_${item.rentalType}`, { defaultValue: item.rentalType })}
+            </Text>
+            <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+              {new Date(item.createdAt).toLocaleDateString("ru-RU")}
+            </Text>
+          </View>
+          <View style={[styles.badge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
+            <View style={[styles.badgeDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
+            <Text style={[styles.badgeText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
+              {t(`rentals.status_${item.status}`, { defaultValue: item.status })}
+            </Text>
+          </View>
+        </View>
+        {coords && (
+          <TouchableOpacity
+            style={[styles.locationChip, { borderTopColor: colors.border }]}
+            onPress={() => openMaps(coords.lat, coords.lng)}
+            activeOpacity={0.7}
+          >
+            <Feather name="map-pin" size={11} color={colors.primary} />
+            <Text style={[styles.locationText, { color: colors.primary }]}>
+              {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+            </Text>
+            <Feather name="external-link" size={11} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -194,10 +233,19 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   list: { padding: 12, gap: 10, paddingBottom: 100 },
   card: {
-    flexDirection: "row", alignItems: "center",
-    padding: 14, borderRadius: 16, gap: 12,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardMainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    gap: 12,
   },
   icon: { width: 42, height: 42, borderRadius: 12, justifyContent: "center", alignItems: "center" },
   content: { flex: 1, gap: 2 },
@@ -209,6 +257,19 @@ const styles = StyleSheet.create({
   },
   badgeDot: { width: 6, height: 6, borderRadius: 3 },
   badgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  locationChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+  },
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
 });

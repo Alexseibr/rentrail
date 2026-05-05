@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   TextInput,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -19,6 +20,8 @@ import { getAccessToken, getCompanyId } from "@/services/api";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessTab } from "@/utils/permissions";
+import { readManyCoordsFromCache } from "@/services/coordsCache";
+import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -121,6 +124,14 @@ const TYPE_ICONS: Record<string, string> = {
 
 const STATUS_FILTER_KEYS = ["available", "rented", "maintenance", "blocked"] as const;
 
+function openMaps(lat: number, lng: number) {
+  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  Linking.canOpenURL(geoUrl)
+    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
+    .catch(() => Linking.openURL(webUrl).catch(() => {}));
+}
+
 export default function AssetsScreen() {
   const { t } = useTranslation();
   const colors = useColors();
@@ -132,6 +143,7 @@ export default function AssetsScreen() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [onlineFilter, setOnlineFilter] = useState<string | null>(null);
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
 
   const { data: assets = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["assets"],
@@ -140,6 +152,11 @@ export default function AssetsScreen() {
   });
 
   useAppStateFocus(() => { refetch(); });
+
+  useEffect(() => {
+    if (assets.length === 0) return;
+    readManyCoordsFromCache(assets.map((a) => a.id)).then(setCoordsMap);
+  }, [assets]);
 
   const filtered = assets.filter((a) => {
     const q = search.trim().toLowerCase();
@@ -154,51 +171,69 @@ export default function AssetsScreen() {
     return matchesSearch && matchesStatus && matchesOnline;
   });
 
-  const renderItem = ({ item }: { item: Asset }) => (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card }]}
-      onPress={() => router.push(`/asset/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.typeIcon, { backgroundColor: colors.primary + "18" }]}>
-        <Feather name={(TYPE_ICONS[item.assetType] ?? "circle") as any} size={18} color={colors.primary} />
-      </View>
-      <View style={styles.cardContent}>
-        <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-          {item.brand ?? t(`assets.type_${item.assetType}`, { defaultValue: item.assetType })} {item.model ?? ""}
-        </Text>
-        <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-          {item.internalCode ?? item.id.slice(0, 8)}
-        </Text>
-      </View>
-      <View style={styles.cardRight}>
-        <View style={styles.cardRightTop}>
-          {item.batteryPercent != null && (
-            <View style={styles.batteryRow}>
-              <BatteryIcon percent={item.batteryPercent} size={14} />
-              <Text style={[styles.batteryText, { color: getBatteryColor(item.batteryPercent) }]}>
-                {item.batteryPercent}%
+  const renderItem = ({ item }: { item: Asset }) => {
+    const coords = coordsMap[item.id] ?? null;
+    return (
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card }]}
+        onPress={() => router.push(`/asset/${item.id}`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.cardMainRow}>
+          <View style={[styles.typeIcon, { backgroundColor: colors.primary + "18" }]}>
+            <Feather name={(TYPE_ICONS[item.assetType] ?? "circle") as any} size={18} color={colors.primary} />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+              {item.brand ?? t(`assets.type_${item.assetType}`, { defaultValue: item.assetType })} {item.model ?? ""}
+            </Text>
+            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+              {item.internalCode ?? item.id.slice(0, 8)}
+            </Text>
+          </View>
+          <View style={styles.cardRight}>
+            <View style={styles.cardRightTop}>
+              {item.batteryPercent != null && (
+                <View style={styles.batteryRow}>
+                  <BatteryIcon percent={item.batteryPercent} size={14} />
+                  <Text style={[styles.batteryText, { color: getBatteryColor(item.batteryPercent) }]}>
+                    {item.batteryPercent}%
+                  </Text>
+                </View>
+              )}
+              {(item.onlineState === "online" || item.onlineState === "offline") && (
+                <View
+                  style={[
+                    styles.connectionDot,
+                    { backgroundColor: item.onlineState === "online" ? "#10B981" : "#EF4444" },
+                  ]}
+                />
+              )}
+            </View>
+            <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
+              <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
+              <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
+                {t(`assets.status_${item.status}`, { defaultValue: item.status })}
               </Text>
             </View>
-          )}
-          {(item.onlineState === "online" || item.onlineState === "offline") && (
-            <View
-              style={[
-                styles.connectionDot,
-                { backgroundColor: item.onlineState === "online" ? "#10B981" : "#EF4444" },
-              ]}
-            />
-          )}
+          </View>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
-          <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
-          <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
-            {t(`assets.status_${item.status}`, { defaultValue: item.status })}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+        {coords && (
+          <TouchableOpacity
+            style={[styles.locationChip, { borderTopColor: colors.border }]}
+            onPress={() => openMaps(coords.lat, coords.lng)}
+            activeOpacity={0.7}
+          >
+            <Feather name="map-pin" size={11} color={colors.primary} />
+            <Text style={[styles.locationText, { color: colors.primary }]}>
+              {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+            </Text>
+            <Feather name="external-link" size={11} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -325,16 +360,19 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   list: { padding: 12, gap: 10, paddingBottom: 100 },
   card: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
     borderRadius: 16,
-    gap: 12,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+  },
+  cardMainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    gap: 12,
   },
   typeIcon: {
     width: 42, height: 42, borderRadius: 12,
@@ -345,6 +383,19 @@ const styles = StyleSheet.create({
   cardSub: { fontSize: 12, fontFamily: "Inter_400Regular" },
   cardRight: { alignItems: "flex-end", gap: 6 },
   cardRightTop: { flexDirection: "row", alignItems: "center", gap: 6 },
+  locationChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+  },
   connectionDot: { width: 8, height: 8, borderRadius: 4 },
   batteryRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   batteryText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
