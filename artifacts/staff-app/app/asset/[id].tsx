@@ -447,9 +447,24 @@ export default function AssetDetailScreen() {
           <View style={[styles.statusBadge, { backgroundColor: colors.secondary }]}>
             <Text style={[styles.statusText, { color: colors.primary }]}>{asset.status}</Text>
           </View>
-          <Text style={[styles.assetTitle, { color: colors.foreground }]}>
-            {asset.brand ?? asset.assetType} {asset.model ?? ""}
-          </Text>
+          <View style={styles.assetTitleRow}>
+            <Text style={[styles.assetTitle, { color: colors.foreground }]}>
+              {asset.brand ?? asset.assetType} {asset.model ?? ""}
+            </Text>
+            {telemetry?.onlineState != null && (
+              <View
+                style={[
+                  styles.headerOnlineDot,
+                  {
+                    backgroundColor:
+                      telemetry.onlineState === "online" ? "#10B981"
+                      : telemetry.onlineState === "offline" ? "#EF4444"
+                      : "#9CA3AF",
+                  },
+                ]}
+              />
+            )}
+          </View>
           <Text style={[styles.assetSub, { color: colors.mutedForeground }]}>
             {asset.internalCode ?? asset.id.slice(0, 8)}
           </Text>
@@ -817,6 +832,8 @@ const styles = StyleSheet.create({
   headerCard: { borderRadius: 12, borderWidth: 1, padding: 16, gap: 6 },
   statusBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  assetTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerOnlineDot: { width: 10, height: 10, borderRadius: 5, marginTop: 2 },
   assetTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
   assetSub: { fontSize: 14, fontFamily: "Inter_400Regular" },
   detailCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
