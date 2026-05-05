@@ -269,34 +269,22 @@ export default function RentalDetailScreen() {
     if (!hasLocation) return;
     const lat = displayLat!;
     const lng = displayLng!;
-    const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
-    Alert.alert(
-      t("rentalDetail.openMapTitle"),
-      `${coordsLabel}\n\n${t("rentalDetail.openMapMessage")}`,
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("rentalDetail.copyCoords"),
-          onPress: () => {
-            Share.share({ message: coordsLabel }).catch(() => {});
-          },
-        },
-        {
-          text: t("rentalDetail.openMapConfirm"),
-          onPress: () => {
-            Linking.canOpenURL(mapsUrl)
-              .then((supported) => {
-                if (supported) return Linking.openURL(mapsUrl);
-                Alert.alert(t("common.error"), t("rentalDetail.noLocation"));
-              })
-              .catch(() => {
-                Alert.alert(t("common.error"), t("rentalDetail.noLocation"));
-              });
-          },
-        },
-      ],
-    );
+    Linking.canOpenURL(mapsUrl)
+      .then((supported) => {
+        if (supported) return Linking.openURL(mapsUrl);
+        Alert.alert(t("common.error"), t("rentalDetail.noLocation"));
+      })
+      .catch(() => {
+        Alert.alert(t("common.error"), t("rentalDetail.noLocation"));
+      });
+  };
+
+  const handleCopyCoords = () => {
+    if (!hasLocation) return;
+    const lat = displayLat!;
+    const lng = displayLng!;
+    Share.share({ message: `${lat.toFixed(5)}, ${lng.toFixed(5)}` }).catch(() => {});
   };
 
   return (
@@ -377,24 +365,36 @@ export default function RentalDetailScreen() {
             )}
 
             {hasLocation && (
-              <TouchableOpacity
-                style={[styles.locationRow, { borderColor: isLastKnownLocation ? colors.border : colors.border }]}
-                onPress={handleOpenLocation}
-                activeOpacity={0.7}
-              >
-                <Feather name="map-pin" size={14} color={isLastKnownLocation ? colors.mutedForeground : colors.primary} />
-                <View style={styles.locationBody}>
-                  <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
-                    {isLastKnownLocation
-                      ? t("rentalDetail.locationLastKnown", { time: formatCacheAge(cachedCoords!.cachedAt, t) })
-                      : t("rentalDetail.location")}
-                  </Text>
-                  <Text style={[styles.locationText, { color: isLastKnownLocation ? colors.mutedForeground : colors.foreground }]}>
-                    {displayLat!.toFixed(5)}, {displayLng!.toFixed(5)}
-                  </Text>
-                </View>
-                <Feather name="external-link" size={13} color={colors.mutedForeground} style={styles.locationChevron} />
-              </TouchableOpacity>
+              <View style={[styles.locationRow, { borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.locationRowMain}
+                  onPress={handleOpenLocation}
+                  onLongPress={handleCopyCoords}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="map-pin" size={14} color={isLastKnownLocation ? colors.mutedForeground : colors.primary} />
+                  <View style={styles.locationBody}>
+                    <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
+                      {isLastKnownLocation
+                        ? t("rentalDetail.locationLastKnown", { time: formatCacheAge(cachedCoords!.cachedAt, t) })
+                        : t("rentalDetail.location")}
+                    </Text>
+                    <Text style={[styles.locationText, { color: isLastKnownLocation ? colors.mutedForeground : colors.foreground }]}>
+                      {displayLat!.toFixed(5)}, {displayLng!.toFixed(5)}
+                    </Text>
+                  </View>
+                  <Feather name="external-link" size={13} color={colors.mutedForeground} />
+                </TouchableOpacity>
+                <View style={[styles.locationDivider, { backgroundColor: colors.border }]} />
+                <TouchableOpacity
+                  style={styles.locationCopyBtn}
+                  onPress={handleCopyCoords}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.6}
+                >
+                  <Feather name="copy" size={13} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
             )}
 
             {!isTelemetryLoading && !!telemetry && lockStateKnown && canReturn && (
@@ -505,11 +505,13 @@ const styles = StyleSheet.create({
   badgesRowFading: { opacity: 0.4 },
   badge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   badgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
+  locationRow: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, overflow: "hidden" },
+  locationRowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 11, paddingVertical: 9 },
   locationBody: { flex: 1, gap: 1 },
   locationLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" as const, letterSpacing: 0.3 },
   locationText: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  locationChevron: { marginLeft: 2 },
+  locationDivider: { width: 1, alignSelf: "stretch" },
+  locationCopyBtn: { paddingHorizontal: 11, paddingVertical: 9 },
   commandsRow: { flexDirection: "row", gap: 8 },
   commandBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
   commandBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },

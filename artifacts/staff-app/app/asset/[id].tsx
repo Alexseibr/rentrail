@@ -266,42 +266,6 @@ export default function AssetDetailScreen() {
   const alarmStateKnown = telemetry != null && telemetry.alarmState != null;
   const isLocked = telemetry?.lockState === "locked";
   const isArmed = telemetry?.alarmState === "armed";
-  const hasLocation = telemetry != null && telemetry.lat != null && telemetry.lng != null;
-
-  const handleOpenLocation = () => {
-    if (!hasLocation) return;
-    const lat = telemetry!.lat!;
-    const lng = telemetry!.lng!;
-    const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
-    Alert.alert(
-      t("assetDetail.openMapTitle"),
-      `${coordsLabel}\n\n${t("assetDetail.openMapMessage")}`,
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("assetDetail.copyCoords"),
-          onPress: () => {
-            Share.share({ message: coordsLabel }).catch(() => {});
-          },
-        },
-        {
-          text: t("assetDetail.openMapConfirm"),
-          onPress: () => {
-            Linking.canOpenURL(mapsUrl)
-              .then((supported) => {
-                if (supported) return Linking.openURL(mapsUrl);
-                Alert.alert(t("common.error"), t("assetDetail.noLocation"));
-              })
-              .catch(() => {
-                Alert.alert(t("common.error"), t("assetDetail.noLocation"));
-              });
-          },
-        },
-      ],
-    );
-  };
-
   const handleCommand = (command: VehicleCommand, label: string) => {
     if (!id) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -652,58 +616,55 @@ export default function AssetDetailScreen() {
 
           if (!hasLocation) return null;
 
-          const handleOpenLocation = () => {
+          const openMaps = () => {
             const lat = displayLat!;
             const lng = displayLng!;
-            const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
             const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
-            Alert.alert(
-              t("assetDetail.openMapTitle"),
-              `${coordsLabel}\n\n${t("assetDetail.openMapMessage")}`,
-              [
-                { text: t("common.cancel"), style: "cancel" },
-                {
-                  text: t("assetDetail.copyCoords"),
-                  onPress: () => {
-                    Share.share({ message: coordsLabel }).catch(() => {});
-                  },
-                },
-                {
-                  text: t("assetDetail.openMapConfirm"),
-                  onPress: () => {
-                    Linking.canOpenURL(mapsUrl)
-                      .then((supported) => {
-                        if (supported) return Linking.openURL(mapsUrl);
-                        Alert.alert(t("common.error"), t("assetDetail.noLocation"));
-                      })
-                      .catch(() => {
-                        Alert.alert(t("common.error"), t("assetDetail.noLocation"));
-                      });
-                  },
-                },
-              ],
-            );
+            Linking.canOpenURL(mapsUrl)
+              .then((supported) => {
+                if (supported) return Linking.openURL(mapsUrl);
+                Alert.alert(t("common.error"), t("assetDetail.noLocation"));
+              })
+              .catch(() => {
+                Alert.alert(t("common.error"), t("assetDetail.noLocation"));
+              });
+          };
+
+          const copyCoords = () => {
+            Share.share({ message: `${displayLat!.toFixed(5)}, ${displayLng!.toFixed(5)}` }).catch(() => {});
           };
 
           return (
-            <TouchableOpacity
-              style={[styles.locationRow, { borderColor: colors.border }]}
-              onPress={handleOpenLocation}
-              activeOpacity={0.7}
-            >
-              <Feather name="map-pin" size={14} color={isLastKnown ? colors.mutedForeground : colors.primary} />
-              <View style={styles.locationBody}>
-                <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
-                  {isLastKnown
-                    ? t("assetDetail.locationLastKnown", { time: formatRelativeTime(cachedCoords!.cachedAt, t) })
-                    : t("assetDetail.location")}
-                </Text>
-                <Text style={[styles.locationText, { color: isLastKnown ? colors.mutedForeground : colors.foreground }]}>
-                  {displayLat!.toFixed(5)}, {displayLng!.toFixed(5)}
-                </Text>
-              </View>
-              <Feather name="external-link" size={13} color={colors.mutedForeground} />
-            </TouchableOpacity>
+            <View style={[styles.locationRow, { borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.locationRowMain}
+                onPress={openMaps}
+                onLongPress={copyCoords}
+                activeOpacity={0.7}
+              >
+                <Feather name="map-pin" size={14} color={isLastKnown ? colors.mutedForeground : colors.primary} />
+                <View style={styles.locationBody}>
+                  <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
+                    {isLastKnown
+                      ? t("assetDetail.locationLastKnown", { time: formatRelativeTime(cachedCoords!.cachedAt, t) })
+                      : t("assetDetail.location")}
+                  </Text>
+                  <Text style={[styles.locationText, { color: isLastKnown ? colors.mutedForeground : colors.foreground }]}>
+                    {displayLat!.toFixed(5)}, {displayLng!.toFixed(5)}
+                  </Text>
+                </View>
+                <Feather name="external-link" size={13} color={colors.mutedForeground} />
+              </TouchableOpacity>
+              <View style={[styles.locationDivider, { backgroundColor: colors.border }]} />
+              <TouchableOpacity
+                style={styles.locationCopyBtn}
+                onPress={copyCoords}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.6}
+              >
+                <Feather name="copy" size={13} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
           );
         })()}
 
@@ -1001,8 +962,11 @@ const styles = StyleSheet.create({
   statsEmpty: { paddingVertical: 14, alignItems: "center" },
   onlineStateBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
   onlineDot: { width: 8, height: 8, borderRadius: 4 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
+  locationRow: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, overflow: "hidden" },
+  locationRowMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 11, paddingVertical: 9 },
   locationBody: { flex: 1, gap: 1 },
   locationLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" as const, letterSpacing: 0.3 },
   locationText: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  locationDivider: { width: 1, alignSelf: "stretch" },
+  locationCopyBtn: { paddingHorizontal: 11, paddingVertical: 9 },
 });
