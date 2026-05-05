@@ -140,6 +140,21 @@ export async function clearCompletedOlderThan(ageMs: number) {
   }
 }
 
+export async function dismissItem(id: string) {
+  const queue = await loadQueue();
+  const filtered = queue.filter(
+    (item) =>
+      !(
+        item.id === id &&
+        (item.status === "completed" || item.status === "canceled") &&
+        item.snoozed
+      ),
+  );
+  if (filtered.length !== queue.length) {
+    await saveQueue(filtered);
+  }
+}
+
 export async function setItemSnoozed(id: string, snoozed: boolean) {
   const queue = await loadQueue();
   let changed = false;

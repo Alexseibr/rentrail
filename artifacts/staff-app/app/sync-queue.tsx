@@ -20,6 +20,7 @@ import {
   retryAllFailed,
   clearCompleted,
   setItemSnoozed,
+  dismissItem,
   AUTO_CLEAR_DELAY_MS,
 } from "@/services/sync-queue";
 import { getActionDescription } from "@/services/offline-policy";
@@ -208,6 +209,11 @@ export default function SyncQueueScreen() {
     Haptics.selectionAsync();
   };
 
+  const handleDismiss = async (item: QueueItem) => {
+    await dismissItem(item.id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const renderItem = ({ item }: { item: QueueItem }) => {
     const isDone = item.status === "completed" || item.status === "canceled";
     const isSnoozed = isDone && !!item.snoozed;
@@ -279,27 +285,43 @@ export default function SyncQueueScreen() {
         </TouchableOpacity>
       )}
       {isSnoozed && (
-        <TouchableOpacity
-          onPress={() => handleToggleSnooze(item)}
-          accessibilityRole="button"
-          accessibilityLabel={t("syncQueue.snooze.unpinAccessibility")}
-          style={[
-            styles.clearingBadge,
-            { backgroundColor: statusColor + "20", borderColor: statusColor + "60" },
-          ]}
-        >
-          <Feather name="bookmark" size={11} color={statusColor} />
-          <Text style={[styles.clearingText, { color: statusColor }]}>
-            {item.completedAt
-              ? t("syncQueue.snooze.pinnedFor", {
-                  time: formatElapsed(now - new Date(item.completedAt).getTime(), t),
-                })
-              : t("syncQueue.snooze.pinned")}
-          </Text>
-          <Text style={[styles.clearingHint, { color: statusColor }]}>
-            · {t("syncQueue.snooze.tapToRelease")}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.snoozedRow}>
+          <TouchableOpacity
+            onPress={() => handleToggleSnooze(item)}
+            accessibilityRole="button"
+            accessibilityLabel={t("syncQueue.snooze.unpinAccessibility")}
+            style={[
+              styles.clearingBadge,
+              { backgroundColor: statusColor + "20", borderColor: statusColor + "60", flex: 1 },
+            ]}
+          >
+            <Feather name="bookmark" size={11} color={statusColor} />
+            <Text style={[styles.clearingText, { color: statusColor }]}>
+              {item.completedAt
+                ? t("syncQueue.snooze.pinnedFor", {
+                    time: formatElapsed(now - new Date(item.completedAt).getTime(), t),
+                  })
+                : t("syncQueue.snooze.pinned")}
+            </Text>
+            <Text style={[styles.clearingHint, { color: statusColor }]}>
+              · {t("syncQueue.snooze.tapToRelease")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleDismiss(item)}
+            accessibilityRole="button"
+            accessibilityLabel={t("syncQueue.snooze.dismissAccessibility")}
+            style={[
+              styles.dismissBtn,
+              { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "40" },
+            ]}
+          >
+            <Feather name="x" size={13} color={colors.destructive} />
+            <Text style={[styles.dismissText, { color: colors.destructive }]}>
+              {t("syncQueue.snooze.dismiss")}
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
       {(item.status === "queued" || item.status === "failed") && (
         <View style={styles.cardActions}>
@@ -438,6 +460,17 @@ const styles = StyleSheet.create({
   },
   clearingText: { fontSize: 11, fontFamily: "Inter_500Medium" },
   clearingHint: { fontSize: 11, fontFamily: "Inter_400Regular", opacity: 0.85 },
+  snoozedRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
+  dismissBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  dismissText: { fontSize: 11, fontFamily: "Inter_500Medium" },
   cardActions: { flexDirection: "row", gap: 8, marginTop: 4 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   actionText: { fontSize: 12, fontFamily: "Inter_500Medium" },

@@ -285,7 +285,9 @@
       "pinned": "Pinned",
       "pinnedFor": "Pinned · {{time}}",
       "pinAccessibility": "Pin this row to stop the auto-clear countdown",
-      "unpinAccessibility": "Release this row and resume the auto-clear countdown"
+      "unpinAccessibility": "Release this row and resume the auto-clear countdown",
+      "dismiss": "Dismiss",
+      "dismissAccessibility": "Dismiss and remove this row from the queue"
     },
     "filter": {
       "all": "All",
