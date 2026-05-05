@@ -75,6 +75,7 @@ export default function RentalDetailScreen() {
   const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
   const [commanding, setCommanding] = useState<VehicleCommand | null>(null);
   const prevTelemetryFetching = useRef(false);
+  const rentalStatusRef = useRef<string | undefined>(undefined);
 
   const { data: rental, isLoading } = useQuery({
     queryKey: ["rental", id],
@@ -95,6 +96,10 @@ export default function RentalDetailScreen() {
     enabled: !!assetId,
     refetchInterval: ["active", "overdue", "extended"].includes(rental?.status) ? 15000 : false,
   });
+
+  useEffect(() => {
+    rentalStatusRef.current = rental?.status;
+  }, [rental?.status]);
 
   useEffect(() => {
     if (prevTelemetryFetching.current && !telemetryFetching && refreshingTelemetry) {
@@ -132,10 +137,15 @@ export default function RentalDetailScreen() {
               );
               if (res.ok) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                setRefreshingTelemetry(true);
-                setTimeout(() => {
-                  queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
-                }, 3000);
+                const activeStatuses = ["active", "overdue", "extended"];
+                if (activeStatuses.includes(rentalStatusRef.current ?? "")) {
+                  setRefreshingTelemetry(true);
+                  setTimeout(() => {
+                    if (activeStatuses.includes(rentalStatusRef.current ?? "")) {
+                      queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
+                    }
+                  }, 3000);
+                }
               } else {
                 const json = await res.json().catch(() => ({}));
                 Alert.alert(t("common.error"), json?.error?.message ?? t("rentalDetail.commandFailed"));
@@ -176,10 +186,15 @@ export default function RentalDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ["rental", id] });
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
       if (assetId) {
-        setRefreshingTelemetry(true);
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
-        }, 3000);
+        const activeStatuses = ["active", "overdue", "extended"];
+        if (activeStatuses.includes(rentalStatusRef.current ?? "")) {
+          setRefreshingTelemetry(true);
+          setTimeout(() => {
+            if (activeStatuses.includes(rentalStatusRef.current ?? "")) {
+              queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
+            }
+          }, 3000);
+        }
       }
       setShowReturn(false);
       Alert.alert(t("rentalDetail.success"), t("rentalDetail.returnCompleted"));
