@@ -90,7 +90,18 @@ export default function RentalsScreen() {
     staleTime: 30000,
   });
 
-  useAppStateFocus(() => { refetch(); });
+  const rentalsRef = React.useRef(rentals);
+  rentalsRef.current = rentals;
+
+  useAppStateFocus(() => {
+    refetch();
+    const ids = rentalsRef.current
+      .map((r) => r.assetId)
+      .filter((id): id is string => !!id);
+    if (ids.length > 0) {
+      readManyCoordsFromCache(ids).then(setCoordsMap);
+    }
+  });
 
   useEffect(() => {
     const assetIds = rentals

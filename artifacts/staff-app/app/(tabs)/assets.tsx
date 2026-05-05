@@ -161,7 +161,16 @@ export default function AssetsScreen() {
     staleTime: 30000,
   });
 
-  useAppStateFocus(() => { refetch(); });
+  const assetsRef = React.useRef(assets);
+  assetsRef.current = assets;
+
+  useAppStateFocus(() => {
+    refetch();
+    const ids = assetsRef.current.map((a) => a.id);
+    if (ids.length > 0) {
+      readManyCoordsFromCache(ids).then(setCoordsMap);
+    }
+  });
 
   useEffect(() => {
     if (assets.length === 0) return;
