@@ -340,7 +340,13 @@
     "refreshing": "Обновление…",
     "onlineState": "Подключение",
     "onlineState_online": "В сети",
-    "onlineState_offline": "Не в сети"
+    "onlineState_offline": "Не в сети",
+    "location": "Местоположение",
+    "openMapTitle": "Открыть карту",
+    "openMapMessage": "Открыть координаты в Картах?",
+    "openMapConfirm": "Открыть Карты",
+    "copyCoords": "Скопировать координаты",
+    "noLocation": "Местоположение недоступно"
   },
   "rentalDetail": {
     "title": "Детали аренды",

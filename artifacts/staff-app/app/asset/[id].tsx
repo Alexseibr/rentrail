@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
+  Linking,
+  Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -47,6 +49,8 @@ interface TelemetrySnapshot {
   speed: number | null;
   odometer: number | null;
   recordedAt: string | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 async function fetchTelemetry(id: string): Promise<TelemetrySnapshot | null> {
@@ -253,6 +257,41 @@ export default function AssetDetailScreen() {
   const alarmStateKnown = telemetry != null && telemetry.alarmState != null;
   const isLocked = telemetry?.lockState === "locked";
   const isArmed = telemetry?.alarmState === "armed";
+  const hasLocation = telemetry != null && telemetry.lat != null && telemetry.lng != null;
+
+  const handleOpenLocation = () => {
+    if (!hasLocation) return;
+    const lat = telemetry!.lat!;
+    const lng = telemetry!.lng!;
+    const coordsLabel = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
+    Alert.alert(
+      t("assetDetail.openMapTitle"),
+      `${coordsLabel}\n\n${t("assetDetail.openMapMessage")}`,
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("assetDetail.copyCoords"),
+          onPress: () => {
+            Share.share({ message: coordsLabel }).catch(() => {});
+          },
+        },
+        {
+          text: t("assetDetail.openMapConfirm"),
+          onPress: () => {
+            Linking.canOpenURL(mapsUrl)
+              .then((supported) => {
+                if (supported) return Linking.openURL(mapsUrl);
+                Alert.alert(t("common.error"), t("assetDetail.noLocation"));
+              })
+              .catch(() => {
+                Alert.alert(t("common.error"), t("assetDetail.noLocation"));
+              });
+          },
+        },
+      ],
+    );
+  };
 
   const handleCommand = (command: VehicleCommand, label: string) => {
     if (!id) return;
@@ -583,12 +622,30 @@ export default function AssetDetailScreen() {
                   {telemetry.speed != null ? `${telemetry.speed} km/h` : "—"}
                 </Text>
               </View>
-              <View style={styles.statsRow}>
+              <View style={hasLocation ? [styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }] : styles.statsRow}>
                 <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.odometer")}</Text>
                 <Text style={[styles.statsValue, { color: colors.foreground }]}>
                   {telemetry.odometer != null ? `${telemetry.odometer.toLocaleString()} km` : "—"}
                 </Text>
               </View>
+              {hasLocation && (
+                <TouchableOpacity
+                  style={[styles.locationRow, { borderTopColor: colors.border }]}
+                  onPress={handleOpenLocation}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="map-pin" size={14} color={colors.primary} />
+                  <View style={styles.locationBody}>
+                    <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
+                      {t("assetDetail.location")}
+                    </Text>
+                    <Text style={[styles.locationText, { color: colors.foreground }]}>
+                      {telemetry!.lat!.toFixed(5)}, {telemetry!.lng!.toFixed(5)}
+                    </Text>
+                  </View>
+                  <Feather name="external-link" size={13} color={colors.mutedForeground} style={styles.locationChevron} />
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -887,4 +944,9 @@ const styles = StyleSheet.create({
   statsEmpty: { paddingVertical: 14, alignItems: "center" },
   onlineStateBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
   onlineDot: { width: 8, height: 8, borderRadius: 4 },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 13 },
+  locationBody: { flex: 1, gap: 1 },
+  locationLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textTransform: "uppercase" as const, letterSpacing: 0.3 },
+  locationText: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  locationChevron: { marginLeft: 2 },
 });

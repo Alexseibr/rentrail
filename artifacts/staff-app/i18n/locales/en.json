@@ -362,7 +362,13 @@
     "refreshing": "Refreshing…",
     "onlineState": "Connection",
     "onlineState_online": "Online",
-    "onlineState_offline": "Offline"
+    "onlineState_offline": "Offline",
+    "location": "Location",
+    "openMapTitle": "Open Location",
+    "openMapMessage": "Open these coordinates in Maps?",
+    "openMapConfirm": "Open Maps",
+    "copyCoords": "Copy Coordinates",
+    "noLocation": "Location unavailable"
   },
   "rentalDetail": {
     "title": "Rental Details",
