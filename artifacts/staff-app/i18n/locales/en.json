@@ -390,7 +390,18 @@
     "d": " d",
     "confirmReturn": "Return Vehicle",
     "confirmReturnMessage": "Are you sure you want to return this vehicle?",
-    "returnFailed": "Failed to return"
+    "returnFailed": "Failed to return",
+    "refreshing": "Refreshing…",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "online": "Online",
+    "offline": "Offline",
+    "noDeviceData": "No device data",
+    "commandLock": "Lock",
+    "commandUnlock": "Unlock",
+    "confirmCommandTitle": "Send Command",
+    "confirmCommand": "Send {{command}} command to this vehicle?",
+    "commandFailed": "Failed to send command"
   },
   "clientNav": {
     "vehicles": "Vehicles",

@@ -368,7 +368,18 @@
     "d": " д",
     "confirmReturn": "Возврат транспорта",
     "confirmReturnMessage": "Вы уверены, что хотите вернуть транспорт?",
-    "returnFailed": "Не удалось вернуть"
+    "returnFailed": "Не удалось вернуть",
+    "refreshing": "Обновление…",
+    "locked": "Заблокировано",
+    "unlocked": "Разблокировано",
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "noDeviceData": "Данные недоступны",
+    "commandLock": "Заблокировать",
+    "commandUnlock": "Разблокировать",
+    "confirmCommandTitle": "Отправить команду",
+    "confirmCommand": "Отправить команду {{command}} на это транспортное средство?",
+    "commandFailed": "Не удалось отправить команду"
   },
   "clientNav": {
     "vehicles": "Транспорт",

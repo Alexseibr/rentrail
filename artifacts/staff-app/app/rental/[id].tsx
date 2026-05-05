@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -33,6 +33,33 @@ async function fetchRental(id: string) {
   return data;
 }
 
+interface TelemetrySnapshot {
+  lockState: string | null;
+  onlineState: string | null;
+  batteryPercent: number | null;
+  recordedAt: string | null;
+}
+
+async function fetchTelemetry(assetId: string): Promise<TelemetrySnapshot | null> {
+  const token = await getAccessToken();
+  const companyId = await getCompanyId();
+  if (!token || !companyId) return null;
+
+  const res = await fetch(`${BASE_URL}/api/telemetry/assets/${assetId}/latest`, {
+    headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
+  });
+  if (!res.ok) return null;
+  const { data } = await res.json();
+  return data;
+}
+
+type VehicleCommand = "lock" | "unlock";
+
+const COMMAND_ENDPOINTS: Record<VehicleCommand, string> = {
+  lock: "lock",
+  unlock: "unlock",
+};
+
 export default function RentalDetailScreen() {
   const { t } = useTranslation();
   const colors = useColors();
@@ -41,12 +68,83 @@ export default function RentalDetailScreen() {
   const queryClient = useQueryClient();
   const [returnNotes, setReturnNotes] = useState("");
   const [showReturn, setShowReturn] = useState(false);
+  const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
+  const [commanding, setCommanding] = useState<VehicleCommand | null>(null);
+  const prevTelemetryFetching = useRef(false);
 
   const { data: rental, isLoading } = useQuery({
     queryKey: ["rental", id],
     queryFn: () => fetchRental(id!),
     enabled: !!id,
   });
+
+  const assetId: string | undefined = rental?.assetId;
+
+  const {
+    isFetching: telemetryFetching,
+    data: telemetry,
+    isLoading: isTelemetryLoading,
+    isSuccess: isTelemetrySuccess,
+  } = useQuery({
+    queryKey: ["rental-telemetry", assetId],
+    queryFn: () => fetchTelemetry(assetId!),
+    enabled: !!assetId,
+    refetchInterval: 15000,
+  });
+
+  useEffect(() => {
+    if (prevTelemetryFetching.current && !telemetryFetching && refreshingTelemetry) {
+      setRefreshingTelemetry(false);
+    }
+    prevTelemetryFetching.current = telemetryFetching;
+  }, [telemetryFetching, refreshingTelemetry]);
+
+  const handleVehicleCommand = (command: VehicleCommand) => {
+    if (!assetId) return;
+    const label = command === "lock" ? t("rentalDetail.commandLock") : t("rentalDetail.commandUnlock");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      t("rentalDetail.confirmCommandTitle"),
+      t("rentalDetail.confirmCommand", { command: label }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.confirm"),
+          onPress: async () => {
+            setCommanding(command);
+            try {
+              const token = await getAccessToken();
+              const companyId = await getCompanyId();
+              const res = await fetch(
+                `${BASE_URL}/api/assets/${assetId}/${COMMAND_ENDPOINTS[command]}`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token ?? ""}`,
+                    "x-company-id": companyId ?? "",
+                  },
+                },
+              );
+              if (res.ok) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setRefreshingTelemetry(true);
+                setTimeout(() => {
+                  queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
+                }, 3000);
+              } else {
+                const json = await res.json().catch(() => ({}));
+                Alert.alert(t("common.error"), json?.error?.message ?? t("rentalDetail.commandFailed"));
+              }
+            } catch {
+              Alert.alert(t("common.error"), t("rentalDetail.commandFailed"));
+            } finally {
+              setCommanding(null);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const returnMutation = useMutation({
     mutationFn: async () => {
@@ -72,6 +170,12 @@ export default function RentalDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ["rental", id] });
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
+      if (assetId) {
+        setRefreshingTelemetry(true);
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
+        }, 3000);
+      }
       setShowReturn(false);
       Alert.alert(t("rentalDetail.success"), t("rentalDetail.returnCompleted"));
     },
@@ -105,6 +209,12 @@ export default function RentalDetailScreen() {
 
   const canReturn = ["active", "overdue", "extended"].includes(rental.status);
 
+  const lockStateKnown = telemetry != null && telemetry.lockState != null;
+  const onlineStateKnown = telemetry != null && telemetry.onlineState != null;
+  const isLocked = telemetry?.lockState === "locked";
+  const isOnline = telemetry?.onlineState === "online";
+  const hasTelemetryBadges = lockStateKnown || onlineStateKnown;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -127,6 +237,89 @@ export default function RentalDetailScreen() {
             </View>
           ))}
         </View>
+
+        {assetId && (
+          <View style={[styles.vehicleStatusCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.vehicleStatusTitle, { color: colors.mutedForeground }]}>
+              {t("rentalDetail.vehicleStatus")}
+            </Text>
+
+            {isTelemetryLoading && (
+              <ActivityIndicator size="small" color={colors.mutedForeground} style={styles.telemetrySpinner} />
+            )}
+
+            {!isTelemetryLoading && isTelemetrySuccess && !telemetry && (
+              <Text style={[styles.noDeviceText, { color: colors.mutedForeground }]}>
+                {t("rentalDetail.noDeviceData")}
+              </Text>
+            )}
+
+            {refreshingTelemetry && (
+              <View style={styles.refreshingRow}>
+                <ActivityIndicator size="small" color={colors.mutedForeground} />
+                <Text style={[styles.refreshingText, { color: colors.mutedForeground }]}>
+                  {t("rentalDetail.refreshing")}
+                </Text>
+              </View>
+            )}
+
+            {hasTelemetryBadges && (
+              <View style={[styles.badgesRow, refreshingTelemetry && styles.badgesRowFading]}>
+                {lockStateKnown && (
+                  <View style={[styles.badge, { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" }]}>
+                    <Feather
+                      name={isLocked ? "lock" : "unlock"}
+                      size={13}
+                      color={isLocked ? "#2E7D32" : "#C62828"}
+                    />
+                    <Text style={[styles.badgeText, { color: isLocked ? "#2E7D32" : "#C62828" }]}>
+                      {isLocked ? t("rentalDetail.locked") : t("rentalDetail.unlocked")}
+                    </Text>
+                  </View>
+                )}
+                {onlineStateKnown && (
+                  <View style={[styles.badge, { backgroundColor: isOnline ? "#E3F2FD" : "#F5F5F5" }]}>
+                    <Feather
+                      name={isOnline ? "wifi" : "wifi-off"}
+                      size={13}
+                      color={isOnline ? "#1565C0" : "#757575"}
+                    />
+                    <Text style={[styles.badgeText, { color: isOnline ? "#1565C0" : "#757575" }]}>
+                      {isOnline ? t("rentalDetail.online") : t("rentalDetail.offline")}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {!isTelemetryLoading && !!telemetry && lockStateKnown && (
+              <View style={styles.commandsRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.commandBtn,
+                    { backgroundColor: isLocked ? "#FFEBEE" : colors.secondary, borderColor: colors.border },
+                  ]}
+                  onPress={() => handleVehicleCommand(isLocked ? "unlock" : "lock")}
+                  disabled={!!commanding}
+                  activeOpacity={0.7}
+                >
+                  {commanding === "lock" || commanding === "unlock" ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Feather
+                      name={isLocked ? "unlock" : "lock"}
+                      size={15}
+                      color={isLocked ? "#C62828" : colors.primary}
+                    />
+                  )}
+                  <Text style={[styles.commandBtnText, { color: isLocked ? "#C62828" : colors.primary }]}>
+                    {isLocked ? t("rentalDetail.commandUnlock") : t("rentalDetail.commandLock")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
 
         {canReturn && (
           <View style={styles.returnSection}>
@@ -197,6 +390,19 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: "row", justifyContent: "space-between", padding: 14, borderBottomWidth: 1 },
   fieldLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
   fieldValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  vehicleStatusCard: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 10 },
+  vehicleStatusTitle: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "uppercase" as const, letterSpacing: 0.5 },
+  telemetrySpinner: { alignSelf: "flex-start" },
+  noDeviceText: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  refreshingRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  refreshingText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  badgesRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  badgesRowFading: { opacity: 0.4 },
+  badge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  badgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  commandsRow: { flexDirection: "row", gap: 8 },
+  commandBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
+  commandBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   returnSection: {},
   returnBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12 },
   returnBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
