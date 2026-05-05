@@ -89,7 +89,7 @@ export default function RentalDetailScreen() {
     queryKey: ["rental-telemetry", assetId],
     queryFn: () => fetchTelemetry(assetId!),
     enabled: !!assetId,
-    refetchInterval: 15000,
+    refetchInterval: ["active", "overdue", "extended"].includes(rental?.status) ? 15000 : false,
   });
 
   useEffect(() => {
