@@ -214,7 +214,7 @@ export default function AssetDetailScreen() {
     queryKey: ["asset-telemetry", id],
     queryFn: () => fetchTelemetry(id!),
     enabled: !!id,
-    refetchInterval: 15000,
+    refetchInterval: () => (Date.now() < fastPollUntilRef.current ? 5000 : 15000),
   });
 
   const fetchCommands = useCallback(() => fetchAssetCommands(id!), [id]);
