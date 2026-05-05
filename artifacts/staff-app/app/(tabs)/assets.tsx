@@ -125,6 +125,7 @@ export default function AssetsScreen() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [onlineFilter, setOnlineFilter] = useState<string | null>(null);
 
   const { data: assets = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["assets"],
@@ -143,7 +144,8 @@ export default function AssetsScreen() {
       a.id.slice(0, 8).toLowerCase().includes(q)
     );
     const matchesStatus = !statusFilter || a.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesOnline = !onlineFilter || a.onlineState === onlineFilter;
+    return matchesSearch && matchesStatus && matchesOnline;
   });
 
   const renderItem = ({ item }: { item: Asset }) => (
@@ -233,6 +235,24 @@ export default function AssetsScreen() {
             </Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity
+          style={[styles.chip, onlineFilter === "online" && { backgroundColor: "#10B981" }]}
+          onPress={() => setOnlineFilter(onlineFilter === "online" ? null : "online")}
+        >
+          <View style={[styles.chipDot, { backgroundColor: onlineFilter === "online" ? "#fff" : "#10B981" }]} />
+          <Text style={[styles.chipText, { color: onlineFilter === "online" ? "#fff" : colors.mutedForeground }]}>
+            {t("assetDetail.onlineState_online")}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.chip, onlineFilter === "offline" && { backgroundColor: "#EF4444" }]}
+          onPress={() => setOnlineFilter(onlineFilter === "offline" ? null : "offline")}
+        >
+          <View style={[styles.chipDot, { backgroundColor: onlineFilter === "offline" ? "#fff" : "#EF4444" }]} />
+          <Text style={[styles.chipText, { color: onlineFilter === "offline" ? "#fff" : colors.mutedForeground }]}>
+            {t("assetDetail.onlineState_offline")}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {isLoading ? (
