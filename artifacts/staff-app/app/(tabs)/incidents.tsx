@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator,
+  RefreshControl, ActivityIndicator, Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -13,6 +13,8 @@ import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
 import { SyncStatusBanner } from "@/components/SyncStatusBanner";
+import { readManyCoordsFromCache } from "@/services/coordsCache";
+import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -23,12 +25,31 @@ interface ServiceRequest {
   status: string;
   title: string;
   description: string | null;
+  assetId: string | null;
   assetCode: string | null;
   assetType: string | null;
   branchName: string | null;
   reportedByName: string | null;
   createdAt: string;
   resolvedAt: string | null;
+}
+
+function openMaps(lat: number, lng: number) {
+  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  Linking.canOpenURL(geoUrl)
+    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
+    .catch(() => Linking.openURL(webUrl).catch(() => {}));
+}
+
+function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("rentalDetail.timeJustNow");
+  if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours });
+  return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -63,6 +84,7 @@ export default function IncidentsScreen() {
   const { companyId } = useAuth();
 
   const [manualRefreshing, setManualRefreshing] = React.useState(false);
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
 
   const { data: items = [], isLoading, isRefetching, refetch } = useQuery({
     queryKey: ["incidents", companyId],
@@ -72,7 +94,26 @@ export default function IncidentsScreen() {
     refetchInterval: 30000,
   });
 
-  useAppStateFocus(() => { refetch(); });
+  const itemsRef = React.useRef(items);
+  itemsRef.current = items;
+
+  useAppStateFocus(() => {
+    refetch();
+    const ids = itemsRef.current
+      .map((o) => o.assetId)
+      .filter((id): id is string => !!id);
+    if (ids.length > 0) {
+      readManyCoordsFromCache(ids).then(setCoordsMap);
+    }
+  });
+
+  useEffect(() => {
+    const ids = items
+      .map((o) => o.assetId)
+      .filter((id): id is string => !!id);
+    if (ids.length === 0) return;
+    readManyCoordsFromCache(ids).then(setCoordsMap);
+  }, [items]);
 
   React.useEffect(() => {
     if (!isRefetching) setManualRefreshing(false);
@@ -87,6 +128,7 @@ export default function IncidentsScreen() {
     const priorityColor = SEVERITY_COLORS[item.priority] ?? "#94a3b8";
     const statusColor = STATUS_COLORS[item.status] ?? "#94a3b8";
     const isUrgent = item.priority === "urgent" || item.priority === "critical";
+    const coords = item.assetId ? (coordsMap[item.assetId] ?? null) : null;
 
     return (
       <TouchableOpacity
@@ -145,6 +187,25 @@ export default function IncidentsScreen() {
               </Text>
             </View>
           </View>
+
+          {coords ? (
+            <TouchableOpacity
+              style={[styles.locationChip, { borderTopColor: colors.border }]}
+              onPress={() => openMaps(coords.lat, coords.lng)}
+              activeOpacity={0.7}
+            >
+              <Feather name="map-pin" size={11} color={colors.primary} />
+              <Text style={[styles.locationText, { color: colors.primary }]}>
+                {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
+              </Text>
+              {coords.cachedAt ? (
+                <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+                  {formatRelativeTime(coords.cachedAt, t)}
+                </Text>
+              ) : null}
+              <Feather name="external-link" size={11} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </TouchableOpacity>
     );
@@ -244,6 +305,23 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  locationChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 7,
+    marginTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+  },
+  cacheAgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+  },
   loader: { marginTop: 60 },
   empty: { alignItems: "center", marginTop: 60, gap: 8 },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
