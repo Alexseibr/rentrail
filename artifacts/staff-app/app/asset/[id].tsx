@@ -182,6 +182,20 @@ export default function AssetDetailScreen() {
         text: t("common.confirm"),
         onPress: async () => {
           if (!isConnected && isQueueable("vehicle_command")) {
+            const offlineOptimisticId = `optimistic-${Date.now()}`;
+            queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
+              {
+                id: offlineOptimisticId,
+                commandType: command,
+                status: "queued",
+                queuedAt: new Date().toISOString(),
+                sentAt: null,
+                acknowledgedAt: null,
+                failedAt: null,
+                errorMessage: null,
+              },
+              ...prev,
+            ]);
             try {
               await enqueue({
                 actionType: "vehicle_command",
@@ -192,10 +206,28 @@ export default function AssetDetailScreen() {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               showSnackbar(t("assetDetail.commandQueued"), "success");
             } catch {
+              queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
+                prev.filter((c) => c.id !== offlineOptimisticId),
+              );
               showSnackbar(t("assetDetail.commandFailed"), "error");
             }
             return;
           }
+
+          const optimisticId = `optimistic-${Date.now()}`;
+          queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
+            {
+              id: optimisticId,
+              commandType: command,
+              status: "queued",
+              queuedAt: new Date().toISOString(),
+              sentAt: null,
+              acknowledgedAt: null,
+              failedAt: null,
+              errorMessage: null,
+            },
+            ...prev,
+          ]);
 
           setCommanding(command);
           try {
@@ -210,12 +242,21 @@ export default function AssetDetailScreen() {
             if (res.ok) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               showSnackbar(t("assetDetail.commandSent"), "success");
+              try {
+                await refetchCommands();
+              } catch {
+                queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
+                  prev.filter((c) => c.id !== optimisticId),
+                );
+              }
               setTimeout(() => {
                 queryClient.invalidateQueries({ queryKey: ["asset-telemetry", id] });
               }, 3000);
-              setTimeout(() => refetchCommands(), 2000);
             } else {
               const json = await res.json().catch(() => ({}));
+              queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
+                prev.filter((c) => c.id !== optimisticId),
+              );
               showSnackbar(json?.error?.message ?? t("assetDetail.commandFailed"), "error");
             }
           } catch (err: unknown) {
@@ -234,9 +275,15 @@ export default function AssetDetailScreen() {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 showSnackbar(t("assetDetail.commandQueued"), "success");
               } catch {
+                queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
+                  prev.filter((c) => c.id !== optimisticId),
+                );
                 showSnackbar(t("assetDetail.commandFailed"), "error");
               }
             } else {
+              queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
+                prev.filter((c) => c.id !== optimisticId),
+              );
               showSnackbar(t("assetDetail.commandFailed"), "error");
             }
           } finally {
