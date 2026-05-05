@@ -93,6 +93,62 @@ const COMMAND_ENDPOINTS: Record<VehicleCommand, string> = {
   disarm: "alarm/disarm",
 };
 
+function getBatteryColor(pct: number): string {
+  if (pct <= 20) return "#EF4444";
+  if (pct <= 40) return "#F97316";
+  if (pct <= 70) return "#EAB308";
+  return "#22C55E";
+}
+
+function BatteryIcon({ percent, size = 20 }: { percent: number; size?: number }) {
+  const safe = Math.min(100, Math.max(0, percent));
+  const color = getBatteryColor(safe);
+  const bodyWidth = size * 1.6;
+  const bodyHeight = size * 0.8;
+  const borderRadius = size * 0.12;
+  const borderWidth = size * 0.08;
+  const terminalWidth = size * 0.12;
+  const terminalHeight = bodyHeight * 0.4;
+  const innerWidth = bodyWidth - borderWidth * 2;
+  const innerHeight = bodyHeight - borderWidth * 2;
+  const fillWidth = (safe / 100) * innerWidth;
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <View
+        style={{
+          width: bodyWidth,
+          height: bodyHeight,
+          borderRadius,
+          borderWidth,
+          borderColor: color,
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: borderWidth,
+        }}
+      >
+        <View
+          style={{
+            width: fillWidth,
+            height: innerHeight,
+            borderRadius: borderRadius * 0.5,
+            backgroundColor: color,
+          }}
+        />
+      </View>
+      <View
+        style={{
+          width: terminalWidth,
+          height: terminalHeight,
+          backgroundColor: color,
+          borderTopRightRadius: size * 0.06,
+          borderBottomRightRadius: size * 0.06,
+        }}
+      />
+    </View>
+  );
+}
+
 const STATUS_ICON: Record<string, { name: string; color: string }> = {
   queued: { name: "clock", color: "#F59E0B" },
   sent: { name: "send", color: "#3B82F6" },
@@ -447,9 +503,16 @@ export default function AssetDetailScreen() {
             <>
               <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
                 <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.battery")}</Text>
-                <Text style={[styles.statsValue, { color: colors.foreground }]}>
-                  {telemetry.batteryPercent != null ? `${telemetry.batteryPercent}%` : "—"}
-                </Text>
+                {telemetry.batteryPercent != null ? (
+                  <View style={styles.batteryValueRow}>
+                    <BatteryIcon percent={telemetry.batteryPercent} size={18} />
+                    <Text style={[styles.statsValue, { color: getBatteryColor(telemetry.batteryPercent), marginLeft: 6 }]}>
+                      {telemetry.batteryPercent}%
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.statsValue, { color: colors.foreground }]}>—</Text>
+                )}
               </View>
               <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
                 <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.speed")}</Text>
@@ -755,6 +818,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 13 },
   statsLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
   statsValue: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  batteryValueRow: { flexDirection: "row", alignItems: "center" },
   skeletonPill: { width: 72, height: 14, borderRadius: 7 },
   statsEmpty: { paddingVertical: 14, alignItems: "center" },
 });
