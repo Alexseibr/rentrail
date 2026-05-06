@@ -180,6 +180,10 @@ function buildMapHtml(
     map.setView([lat,lng],15,{animate:true});
   };
 
+  window.closeMapPopup=function(){
+    map.closePopup();
+  };
+
   window.addEventListener('message',function(e){
     try{
       var msg=typeof e.data==='string'?JSON.parse(e.data):e.data;
@@ -187,6 +191,8 @@ function buildMapHtml(
         window.setMyLocation(msg.lat,msg.lng);
       } else if(msg.type==='jumpToAsset'&&typeof msg.lat==='number'&&typeof msg.lng==='number'){
         window.jumpToAsset(msg.lat,msg.lng);
+      } else if(msg.type==='closePopup'){
+        map.closePopup();
       }
     }catch(err){}
   });
@@ -223,6 +229,8 @@ export default function MaintenanceMapModal() {
   );
   const initialViewLoadedRef = useRef(!!cached);
 
+  const isWeb = Platform.OS === "web";
+
   useEffect(() => {
     return () => {
       if (jumpTooltipTimerRef.current) clearTimeout(jumpTooltipTimerRef.current);
@@ -234,7 +242,12 @@ export default function MaintenanceMapModal() {
     setJumpTooltipVisible(true);
     if (jumpTooltipTimerRef.current) clearTimeout(jumpTooltipTimerRef.current);
     jumpTooltipTimerRef.current = setTimeout(() => setJumpTooltipVisible(false), 3000);
-  }, []);
+    if (isWeb) {
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+    } else {
+      webViewRef.current?.injectJavaScript(`window.closeMapPopup(); true;`);
+    }
+  }, [isWeb]);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,8 +271,6 @@ export default function MaintenanceMapModal() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const webViewRef = useRef<WebView | null>(null);
-
-  const isWeb = Platform.OS === "web";
 
   const primaryPin: AssetPin | null = useMemo(() => {
     if (!hasPrimaryPin) return null;
