@@ -173,6 +173,16 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
   var map=L.map('map',{zoomControl:true,attributionControl:false}).setView([defaultLat,defaultLng],defaultZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
+  map.on('click',function(){
+    map.closePopup();
+  });
+  map.on('movestart',function(){
+    map.closePopup();
+  });
+  map.on('zoomstart',function(){
+    map.closePopup();
+  });
+
   var initialBounds=null;
   var group=[];
 
