@@ -9,6 +9,7 @@ import {
   Linking,
   Animated,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import WebView from "react-native-webview";
@@ -20,6 +21,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { canAccessTab } from "@/utils/permissions";
 import { writeCoordsToCache, readManyCoordsFromCache } from "@/services/coordsCache";
 import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
+
+const FLEET_MAP_VIEW_KEY = "@prefs/fleetMapView";
+
+interface FleetMapView {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -90,7 +99,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
+function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string, initialView?: FleetMapView): string {
   const serialized = JSON.stringify(
     pins.map((p) => ({
       ...p,
@@ -113,6 +122,10 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
 
   const avgLat = pins.length > 0 ? pins.reduce((s, p) => s + p.lat, 0) / pins.length : 48.8566;
   const avgLng = pins.length > 0 ? pins.reduce((s, p) => s + p.lng, 0) / pins.length : 2.3522;
+  const initLat = initialView?.lat ?? avgLat;
+  const initLng = initialView?.lng ?? avgLng;
+  const initZoom = initialView?.zoom ?? (pins.length > 0 ? 13 : 10);
+  const hasInitialView = initialView != null;
 
   return `<!DOCTYPE html>
 <html>
@@ -167,9 +180,11 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
 
   var pins=${serialized};
   var statusColors=${colorsJson};
-  var defaultLat=${avgLat};
-  var defaultLng=${avgLng};
-  var defaultZoom=${pins.length > 0 ? 13 : 10};
+  var defaultLat=${initLat};
+  var defaultLng=${initLng};
+  var defaultZoom=${initZoom};
+  var hasInitialView=${hasInitialView};
+  function sendMsg(obj){var s=JSON.stringify(obj);if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(s);}else{window.parent.postMessage(s,'*');}}
   var map=L.map('map',{zoomControl:true,attributionControl:false}).setView([defaultLat,defaultLng],defaultZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
@@ -241,12 +256,23 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
     group.push(marker);
   });
 
-  if(group.length>1){
-    initialBounds=L.featureGroup(group).getBounds();
-    map.fitBounds(initialBounds,{padding:[40,40]});
-  } else if(group.length===1){
-    map.setView([pins[0].lat,pins[0].lng],15);
+  if(!hasInitialView){
+    if(group.length>1){
+      initialBounds=L.featureGroup(group).getBounds();
+      map.fitBounds(initialBounds,{padding:[40,40]});
+    } else if(group.length===1){
+      map.setView([pins[0].lat,pins[0].lng],15);
+    }
   }
+
+  map.on('moveend',function(){
+    var c=map.getCenter();
+    sendMsg({type:'mapview',lat:c.lat,lng:c.lng,zoom:map.getZoom()});
+  });
+  map.on('zoomend',function(){
+    var c=map.getCenter();
+    sendMsg({type:'mapview',lat:c.lat,lng:c.lng,zoom:map.getZoom()});
+  });
 })();
 </script>
 </body>
@@ -267,6 +293,8 @@ export default function FleetMapScreen() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const webViewRef = useRef<InstanceType<typeof WebView> | null>(null);
   const recenterScaleAnim = useRef(new Animated.Value(1)).current;
+  const tooltipOpacity = useRef(new Animated.Value(0)).current;
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [pins, setPins] = useState<PinData[]>([]);
@@ -275,6 +303,26 @@ export default function FleetMapScreen() {
   const [noLocationCount, setNoLocationCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [mapKey, setMapKey] = useState(0);
+  const [savedView, setSavedView] = useState<FleetMapView | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(FLEET_MAP_VIEW_KEY).then((raw) => {
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw) as unknown;
+        if (
+          parsed !== null &&
+          typeof parsed === "object" &&
+          "lat" in parsed && "lng" in parsed && "zoom" in parsed &&
+          typeof (parsed as FleetMapView).lat === "number" &&
+          typeof (parsed as FleetMapView).lng === "number" &&
+          typeof (parsed as FleetMapView).zoom === "number"
+        ) {
+          setSavedView(parsed as FleetMapView);
+        }
+      } catch {}
+    });
+  }, []);
 
   const loadMap = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -371,7 +419,7 @@ export default function FleetMapScreen() {
   }, [loadMap]);
 
   const openInMapsLabel = t("fleetMap.openInMaps");
-  const mapHtml = useMemo(() => buildFleetMapHtml(pins, openInMapsLabel), [pins, openInMapsLabel]);
+  const mapHtml = useMemo(() => buildFleetMapHtml(pins, openInMapsLabel, savedView ?? undefined), [pins, openInMapsLabel, savedView]);
 
   const isWeb = Platform.OS === "web";
 
@@ -401,11 +449,26 @@ export default function FleetMapScreen() {
     };
   }, []);
 
+  const showTooltip = useCallback(() => {
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    Animated.timing(tooltipOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+    tooltipTimerRef.current = setTimeout(() => {
+      Animated.timing(tooltipOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+    }, 1500);
+  }, [tooltipOpacity]);
+
+  useEffect(() => {
+    return () => {
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    };
+  }, []);
+
   const handleRecenter = useCallback(() => {
     Animated.sequence([
       Animated.timing(recenterScaleAnim, { toValue: 0.88, duration: 100, useNativeDriver: true }),
       Animated.timing(recenterScaleAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
     ]).start();
+    showTooltip();
 
     if (isWeb) {
       try {
@@ -414,7 +477,7 @@ export default function FleetMapScreen() {
     } else {
       webViewRef.current?.injectJavaScript("window.recenterMap && window.recenterMap(); true;");
     }
-  }, [isWeb, recenterScaleAnim]);
+  }, [isWeb, recenterScaleAnim, showTooltip]);
 
   const handleNavigate = useCallback((lat: number, lng: number) => {
     const url = Platform.select({
@@ -433,6 +496,10 @@ export default function FleetMapScreen() {
         const msg = JSON.parse(event.nativeEvent.data);
         if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
           handleNavigate(msg.lat, msg.lng);
+        } else if (msg.type === "mapview" && typeof msg.lat === "number" && typeof msg.lng === "number" && typeof msg.zoom === "number") {
+          const view: FleetMapView = { lat: msg.lat, lng: msg.lng, zoom: msg.zoom };
+          setSavedView(view);
+          AsyncStorage.setItem(FLEET_MAP_VIEW_KEY, JSON.stringify(view)).catch(() => {});
         }
       } catch {
       }
@@ -448,6 +515,10 @@ export default function FleetMapScreen() {
         const msg = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
           handleNavigate(msg.lat, msg.lng);
+        } else if (msg.type === "mapview" && typeof msg.lat === "number" && typeof msg.lng === "number" && typeof msg.zoom === "number") {
+          const view: FleetMapView = { lat: msg.lat, lng: msg.lng, zoom: msg.zoom };
+          setSavedView(view);
+          AsyncStorage.setItem(FLEET_MAP_VIEW_KEY, JSON.stringify(view)).catch(() => {});
         }
       } catch {
       }
@@ -529,6 +600,13 @@ export default function FleetMapScreen() {
               onMessage={handleWebViewMessage}
             />
           )}
+
+          <Animated.View
+            style={[styles.recenterTooltip, { backgroundColor: colors.dark, opacity: tooltipOpacity }]}
+            pointerEvents="none"
+          >
+            <Text style={styles.recenterTooltipText}>{t("fleetMap.recenter")}</Text>
+          </Animated.View>
 
           <Animated.View
             style={[
@@ -613,6 +691,19 @@ const styles = StyleSheet.create({
   emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
   mapWrapper: { flex: 1, position: "relative" },
   webview: { flex: 1 },
+  recenterTooltip: {
+    position: "absolute",
+    bottom: 70,
+    right: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  recenterTooltipText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#fff",
+  },
   recenterBtn: {
     position: "absolute",
     bottom: 20,
