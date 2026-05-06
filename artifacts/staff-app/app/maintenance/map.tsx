@@ -152,6 +152,9 @@ function buildMapHtml(
     L.marker([p.lat,p.lng],{icon:icon}).bindPopup(popupHtml,{minWidth:160}).addTo(map);
   });
 
+  map.on('click',function(){
+    map.closePopup();
+  });
   map.on('movestart',function(){
     map.closePopup();
     send({type:'mapinteraction'});
