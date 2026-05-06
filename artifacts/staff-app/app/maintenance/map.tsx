@@ -305,6 +305,11 @@ export default function MaintenanceMapModal() {
 
   function toggleLayer() {
     userToggledRef.current = true;
+    setJumpTooltipVisible(false);
+    if (jumpTooltipTimerRef.current) {
+      clearTimeout(jumpTooltipTimerRef.current);
+      jumpTooltipTimerRef.current = null;
+    }
     const next: MapLayer = layer === "street" ? "satellite" : "street";
     setMapLayer(next);
     setLayerState(next);
@@ -435,7 +440,7 @@ export default function MaintenanceMapModal() {
         activeOpacity={1}
         onPress={() => setJumpTooltipVisible(false)}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => { setJumpTooltipVisible(false); router.back(); }}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{label}</Text>
