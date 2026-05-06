@@ -430,7 +430,11 @@ export default function MaintenanceMapModal() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.dark, paddingTop: insets.top + 8 }]}>
+      <TouchableOpacity
+        style={[styles.header, { backgroundColor: colors.dark, paddingTop: insets.top + 8 }]}
+        activeOpacity={1}
+        onPress={() => setJumpTooltipVisible(false)}
+      >
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
@@ -472,7 +476,7 @@ export default function MaintenanceMapModal() {
             {isSatellite ? t("maintenanceMap.layerStreet") : t("maintenanceMap.layerSatellite")}
           </Text>
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
 
       {loading ? (
         <View style={styles.loading}>
