@@ -341,6 +341,11 @@ export default function MaintenanceMapModal() {
       clearTimeout(jumpTooltipTimerRef.current);
       jumpTooltipTimerRef.current = null;
     }
+    if (isWeb) {
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+    } else {
+      webViewRef.current?.injectJavaScript(`window.closeMapPopup(); true;`);
+    }
     if (locating) return;
     setLocating(true);
     try {
