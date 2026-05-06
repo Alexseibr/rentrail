@@ -156,7 +156,11 @@ function buildMapHtml(
     map.closePopup();
     send({type:'mapinteraction'});
   });
-  map.on('zoomstart popupopen',function(){
+  map.on('zoomstart',function(){
+    map.closePopup();
+    send({type:'mapinteraction'});
+  });
+  map.on('popupopen',function(){
     send({type:'mapinteraction'});
   });
 
