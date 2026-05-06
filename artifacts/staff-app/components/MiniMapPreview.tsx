@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { type MapLayer, getMapLayer, setMapLayer, initMapLayer } from "@/store/mapLayerStore";
 import { getCachedMapView, initMapView, setMapView, DEFAULT_ZOOM } from "@/store/mapViewStore";
@@ -93,6 +94,19 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): 
     map.on('zoomstart', function() {
       map.closePopup();
     });
+
+    window.closeMapPopup = function() {
+      map.closePopup();
+    };
+
+    window.addEventListener('message', function(e) {
+      try {
+        var msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (msg.type === 'closePopup') {
+          map.closePopup();
+        }
+      } catch(err) {}
+    });
   </script>
 </body>
 </html>`;
@@ -103,6 +117,7 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
   const [zoom, setZoom] = useState<number>(() => getCachedMapView()?.zoom ?? DEFAULT_ZOOM);
   const userToggledRef = useRef(false);
+  const webViewRef = useRef<WebView>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +133,14 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
     });
     return () => { cancelled = true; };
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+      };
+    }, []),
+  );
 
   const html = buildMapHtml(lat, lng, layer, zoom);
 
@@ -146,6 +169,7 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
     <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
       <View style={styles.mapWrapper}>
         <WebView
+          ref={webViewRef}
           source={{ html }}
           style={styles.map}
           scrollEnabled={false}

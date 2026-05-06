@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { getAccessToken } from "@/services/api";
 import WebView from "react-native-webview";
@@ -71,6 +71,19 @@ function buildMapHtml(lat: number, lng: number, code: string): string {
   map.on('zoomstart',function(){
     map.closePopup();
   });
+
+  window.closeMapPopup=function(){
+    map.closePopup();
+  };
+
+  window.addEventListener('message',function(e){
+    try{
+      var msg=typeof e.data==='string'?JSON.parse(e.data):e.data;
+      if(msg.type==='closePopup'){
+        map.closePopup();
+      }
+    }catch(err){}
+  });
 </script>
 </body></html>`;
 }
@@ -84,6 +97,17 @@ export default function VehicleDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [commanding, setCommanding] = useState<string | null>(null);
+
+  const webViewRef = useRef<WebView>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const closeMapPopup = useCallback(() => {
+    if (Platform.OS === "web") {
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+    } else {
+      webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+    }
+  }, []);
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -109,6 +133,14 @@ export default function VehicleDetailScreen() {
     const interval = setInterval(fetchDetail, 15000);
     return () => clearInterval(interval);
   }, [id, fetchDetail]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        closeMapPopup();
+      };
+    }, [closeMapPopup]),
+  );
 
   const sendCommand = async (command: string, label: string) => {
     setCommanding(command);
@@ -172,6 +204,7 @@ export default function VehicleDetailScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.scroll}
+      onScrollBeginDrag={closeMapPopup}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -221,11 +254,13 @@ export default function VehicleDetailScreen() {
         <View style={styles.mapContainer}>
           {Platform.OS === "web" ? (
             <iframe
+              ref={iframeRef}
               srcDoc={mapHtml}
               style={{ width: "100%", height: "100%", border: "none", borderRadius: 16 } as any}
             />
           ) : (
             <WebView
+              ref={webViewRef}
               source={{ html: mapHtml }}
               style={styles.webview}
               scrollEnabled={false}
