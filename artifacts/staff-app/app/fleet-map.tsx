@@ -389,6 +389,18 @@ export default function FleetMapScreen() {
     }, [isWeb]),
   );
 
+  useEffect(() => {
+    return () => {
+      if (isWeb) {
+        try {
+          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+        } catch {}
+      } else {
+        webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+      }
+    };
+  }, []);
+
   const handleRecenter = useCallback(() => {
     Animated.sequence([
       Animated.timing(recenterScaleAnim, { toValue: 0.88, duration: 100, useNativeDriver: true }),
