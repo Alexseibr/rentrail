@@ -152,6 +152,10 @@ function buildMapHtml(
     L.marker([p.lat,p.lng],{icon:icon}).bindPopup(popupHtml,{minWidth:160}).addTo(map);
   });
 
+  map.on('movestart zoomstart',function(){
+    send({type:'mapinteraction'});
+  });
+
   var saveTimer=null;
   map.on('moveend zoomend',function(){
     clearTimeout(saveTimer);
@@ -388,7 +392,13 @@ export default function MaintenanceMapModal() {
 
   const handleMapMessage = useCallback(
     (msg: Record<string, unknown>) => {
-      if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
+      if (msg.type === "mapinteraction") {
+        if (jumpTooltipTimerRef.current) {
+          clearTimeout(jumpTooltipTimerRef.current);
+          jumpTooltipTimerRef.current = null;
+        }
+        setJumpTooltipVisible(false);
+      } else if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
         handleNavigate(msg.lat, msg.lng);
       } else if (
         msg.type === "viewchange" &&
