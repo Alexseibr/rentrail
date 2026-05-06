@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Linking, Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -16,9 +16,31 @@ import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
 import { useSync } from "@/contexts/SyncContext";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
+import { readCoordsFromCache } from "@/services/coordsCache";
+import { type CachedCoordinates } from "@/hooks/useCachedCoordinates";
+import { MiniMapPreview } from "@/components/MiniMapPreview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
+
+function openMaps(lat: number, lng: number) {
+  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  Linking.canOpenURL(geoUrl)
+    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
+    .catch(() => Linking.openURL(webUrl).catch(() => {}));
+}
+
+function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return t("rentalDetail.timeJustNow");
+  if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours });
+  return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24) });
+}
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "#94a3b8", assigned: "#3b82f6", en_route: "#8b5cf6",
@@ -74,12 +96,19 @@ export default function WorkOrderDetailScreen() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(null);
 
   const load = useCallback(async () => {
     if (!companyId || !id) return;
     try {
       const data = await fetchWorkOrder(companyId, id);
       setOrder(data);
+      if (data.assetId) {
+        const coords = await readCoordsFromCache(data.assetId);
+        setCachedCoords(coords);
+      } else {
+        setCachedCoords(null);
+      }
     } catch {
       setOrder(null);
     } finally {
@@ -87,7 +116,15 @@ export default function WorkOrderDetailScreen() {
     }
   }, [companyId, id]);
 
+  const refreshCoords = useCallback(async () => {
+    if (!order?.assetId) return;
+    const coords = await readCoordsFromCache(order.assetId);
+    setCachedCoords(coords);
+  }, [order?.assetId]);
+
   React.useEffect(() => { load(); }, [load]);
+
+  useAppStateFocus(refreshCoords);
 
   const queueStatusChange = async (newStatus: string, extra?: Record<string, unknown>) => {
     await enqueue({
@@ -301,6 +338,30 @@ export default function WorkOrderDetailScreen() {
           {order.actualCost && <Row label={t("serviceModule.actualCost")} value={`${parseFloat(order.actualCost).toLocaleString("ru-RU")} ₽`} colors={colors} />}
         </View>
 
+        {cachedCoords ? (
+          <View style={styles.miniMapWrapper}>
+            <MiniMapPreview
+              lat={cachedCoords.lat}
+              lng={cachedCoords.lng}
+              isLastKnown
+              label={
+                cachedCoords.cachedAt
+                  ? t("incidentDetail.assetLocationLastKnown", {
+                      time: formatRelativeTime(cachedCoords.cachedAt, t),
+                      defaultValue: formatRelativeTime(cachedCoords.cachedAt, t),
+                    })
+                  : t("incidentDetail.assetLocation", { defaultValue: "Asset location" })
+              }
+              onPress={() => openMaps(cachedCoords.lat, cachedCoords.lng)}
+              onCopy={() => {
+                Share.share({
+                  message: `${cachedCoords.lat.toFixed(5)}, ${cachedCoords.lng.toFixed(5)}`,
+                }).catch(() => {});
+              }}
+            />
+          </View>
+        ) : null}
+
         {order.description ? (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
             <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("serviceModule.description")}</Text>
@@ -396,6 +457,9 @@ const styles = StyleSheet.create({
   partRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 },
   partName: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium" },
   partQty: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  miniMapWrapper: {
+    marginBottom: 12,
+  },
   actionBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     padding: 16, borderRadius: 16, marginTop: 8,
