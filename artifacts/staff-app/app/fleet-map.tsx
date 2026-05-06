@@ -13,7 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import WebView from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -196,10 +196,15 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
     }
   };
 
+  window.closeMapPopup=function(){
+    map.closePopup();
+  };
+
   window.addEventListener('message',function(e){
     try{
       var msg=typeof e.data==='string'?JSON.parse(e.data):e.data;
       if(msg&&msg.type==='recenter'){window.recenterMap();}
+      else if(msg&&msg.type==='closePopup'){map.closePopup();}
     }catch(err){}
   });
 
@@ -369,6 +374,20 @@ export default function FleetMapScreen() {
   const mapHtml = useMemo(() => buildFleetMapHtml(pins, openInMapsLabel), [pins, openInMapsLabel]);
 
   const isWeb = Platform.OS === "web";
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (isWeb) {
+          try {
+            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+          } catch {}
+        } else {
+          webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+        }
+      };
+    }, [isWeb]),
+  );
 
   const handleRecenter = useCallback(() => {
     Animated.sequence([

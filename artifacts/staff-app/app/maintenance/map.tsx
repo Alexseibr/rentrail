@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import WebView from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import * as Location from "expo-location";
 import { useColors } from "@/hooks/useColors";
 import { getMapLayer, setMapLayer, initMapLayer, type MapLayer } from "@/store/mapLayerStore";
@@ -282,6 +282,20 @@ export default function MaintenanceMapModal() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const webViewRef = useRef<WebView | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (isWeb) {
+          try {
+            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+          } catch {}
+        } else {
+          webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+        }
+      };
+    }, [isWeb]),
+  );
 
   const primaryPin: AssetPin | null = useMemo(() => {
     if (!hasPrimaryPin) return null;
