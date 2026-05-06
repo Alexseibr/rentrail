@@ -182,7 +182,9 @@
     "status_on_hold": "На удержании",
     "status_completed": "Завершён",
     "status_canceled": "Отменён",
-    "pendingSyncBanner": "Изменения ожидают синхронизации"
+    "pendingSyncBanner": "Изменения ожидают синхронизации",
+    "assetLocation": "Местоположение актива",
+    "assetLocationLastKnown": "Обновлено {{time}}"
   },
   "incidents": {
     "listTitle": "Инциденты",

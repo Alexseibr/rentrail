@@ -182,7 +182,9 @@
     "status_on_hold": "On Hold",
     "status_completed": "Completed",
     "status_canceled": "Canceled",
-    "pendingSyncBanner": "Edit pending sync"
+    "pendingSyncBanner": "Edit pending sync",
+    "assetLocation": "Asset location",
+    "assetLocationLastKnown": "Last seen {{time}}"
   },
   "incidents": {
     "listTitle": "Incidents",

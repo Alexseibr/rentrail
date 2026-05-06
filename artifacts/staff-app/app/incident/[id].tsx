@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView,
-  Platform, Linking,
+  Platform, Linking, Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -21,6 +21,7 @@ import { MediaAttachments, type ExistingAttachment } from "@/components/MediaAtt
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { readCoordsFromCache } from "@/services/coordsCache";
 import { type CachedCoordinates } from "@/hooks/useCachedCoordinates";
+import { MiniMapPreview } from "@/components/MiniMapPreview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
@@ -457,22 +458,27 @@ export default function IncidentDetailScreen() {
         </View>
 
         {cachedCoords ? (
-          <TouchableOpacity
-            style={[styles.locationChip, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => openMaps(cachedCoords.lat, cachedCoords.lng)}
-            activeOpacity={0.7}
-          >
-            <Feather name="map-pin" size={13} color={colors.primary} />
-            <Text style={[styles.locationText, { color: colors.primary }]}>
-              {cachedCoords.lat.toFixed(4)}, {cachedCoords.lng.toFixed(4)}
-            </Text>
-            {cachedCoords.cachedAt ? (
-              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
-                {formatRelativeTime(cachedCoords.cachedAt, t)}
-              </Text>
-            ) : null}
-            <Feather name="external-link" size={13} color={colors.mutedForeground} />
-          </TouchableOpacity>
+          <View style={styles.miniMapWrapper}>
+            <MiniMapPreview
+              lat={cachedCoords.lat}
+              lng={cachedCoords.lng}
+              isLastKnown
+              label={
+                cachedCoords.cachedAt
+                  ? t("incidentDetail.assetLocationLastKnown", {
+                      time: formatRelativeTime(cachedCoords.cachedAt, t),
+                      defaultValue: formatRelativeTime(cachedCoords.cachedAt, t),
+                    })
+                  : t("incidentDetail.assetLocation", { defaultValue: "Asset location" })
+              }
+              onPress={() => openMaps(cachedCoords.lat, cachedCoords.lng)}
+              onCopy={() => {
+                Share.share({
+                  message: `${cachedCoords.lat.toFixed(5)}, ${cachedCoords.lng.toFixed(5)}`,
+                }).catch(() => {});
+              }}
+            />
+          </View>
         ) : null}
 
         {incident.description ? (
@@ -733,23 +739,9 @@ const styles = StyleSheet.create({
   historyContent: { flex: 1 },
   historyStatus: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   historyTime: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  locationChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  locationText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-  },
-  cacheAgeText: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
+  miniMapWrapper: {
+    marginHorizontal: 16,
+    marginBottom: 12,
   },
   actionBtn: {
     flexDirection: "row",
