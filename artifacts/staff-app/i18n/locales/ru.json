@@ -530,7 +530,8 @@
     "layerSatellite": "Спутник",
     "myLocation": "Моё место",
     "locationDenied": "Нет разрешения на геолокацию",
-    "locationError": "Не удалось получить ваше местоположение"
+    "locationError": "Не удалось получить ваше местоположение",
+    "jumpToAsset": "К транспорту"
   },
   "fleetMap": {
     "title": "Карта автопарка",

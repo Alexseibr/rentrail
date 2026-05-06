@@ -512,7 +512,8 @@
     "layerSatellite": "Satellite",
     "myLocation": "My location",
     "locationDenied": "Location permission denied",
-    "locationError": "Could not get your location"
+    "locationError": "Could not get your location",
+    "jumpToAsset": "Jump to asset"
   },
   "fleetMap": {
     "title": "Fleet Map",

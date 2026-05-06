@@ -172,11 +172,17 @@ function buildMapHtml(
     map.setView([lat,lng],15,{animate:true});
   };
 
+  window.jumpToAsset=function(lat,lng){
+    map.setView([lat,lng],15,{animate:true});
+  };
+
   window.addEventListener('message',function(e){
     try{
       var msg=typeof e.data==='string'?JSON.parse(e.data):e.data;
       if(msg.type==='setMyLocation'&&typeof msg.lat==='number'&&typeof msg.lng==='number'){
         window.setMyLocation(msg.lat,msg.lng);
+      } else if(msg.type==='jumpToAsset'&&typeof msg.lat==='number'&&typeof msg.lng==='number'){
+        window.jumpToAsset(msg.lat,msg.lng);
       }
     }catch(err){}
   });
@@ -195,14 +201,15 @@ export default function MaintenanceMapModal() {
   const { showSnackbar } = useSnackbar();
 
   const params = useLocalSearchParams<{ lat: string; lng: string; label: string }>();
-  const lat = parseFloat(params.lat ?? "0");
-  const lng = parseFloat(params.lng ?? "0");
+  const lat = parseFloat(params.lat ?? "");
+  const lng = parseFloat(params.lng ?? "");
   const label = params.label ?? t("maintenanceMap.asset");
+  const hasPrimaryPin = !isNaN(lat) && !isNaN(lng);
 
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
   const userToggledRef = useRef(false);
 
-  const primaryFallback = { zoom: DEFAULT_ZOOM, lat, lng };
+  const primaryFallback = { zoom: DEFAULT_ZOOM, lat: hasPrimaryPin ? lat : 55.751244, lng: hasPrimaryPin ? lng : 37.618423 };
   const cached = getCachedMapView();
   const [initialView, setInitialView] = useState<{ zoom: number; lat: number; lng: number }>(
     cached ?? primaryFallback,
@@ -234,18 +241,15 @@ export default function MaintenanceMapModal() {
 
   const isWeb = Platform.OS === "web";
 
-  const primaryPin: AssetPin = useMemo(() => ({
-    id: "primary",
-    lat,
-    lng,
-    label,
-    isPrimary: true,
-    status: "maintenance",
-  }), [lat, lng, label]);
+  const primaryPin: AssetPin | null = useMemo(() => {
+    if (!hasPrimaryPin) return null;
+    return { id: "primary", lat, lng, label, isPrimary: true, status: "maintenance" };
+  }, [hasPrimaryPin, lat, lng, label]);
 
   const loadFleetPins = useCallback(async () => {
+    const basePins: AssetPin[] = primaryPin ? [primaryPin] : [];
     if (!companyId) {
-      setPins([primaryPin]);
+      setPins(basePins);
       setLoading(false);
       return;
     }
@@ -267,9 +271,9 @@ export default function MaintenanceMapModal() {
             status: a.status,
           };
         });
-      setPins([primaryPin, ...fleetPins]);
+      setPins([...basePins, ...fleetPins]);
     } catch {
-      setPins([primaryPin]);
+      setPins(basePins);
     } finally {
       setLoading(false);
     }
@@ -320,6 +324,20 @@ export default function MaintenanceMapModal() {
       setLocating(false);
     }
   }, [locating, isWeb, t, showSnackbar]);
+
+  const handleJumpToAsset = useCallback(() => {
+    if (!hasPrimaryPin) return;
+    if (isWeb) {
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ type: "jumpToAsset", lat, lng }),
+        "*",
+      );
+    } else {
+      webViewRef.current?.injectJavaScript(
+        `window.jumpToAsset(${lat},${lng}); true;`,
+      );
+    }
+  }, [hasPrimaryPin, isWeb, lat, lng]);
 
   const navigateLabel = t("maintenanceMap.navigateBtn");
   const mapHtml = useMemo(
@@ -383,10 +401,10 @@ export default function MaintenanceMapModal() {
   }, [isWeb, handleMapMessage]);
 
   const distanceBadge = useMemo(() => {
-    if (!userLocation) return null;
+    if (!userLocation || !hasPrimaryPin) return null;
     const meters = haversineDistance(userLocation.lat, userLocation.lng, lat, lng);
     return formatDistance(meters);
-  }, [userLocation, lat, lng]);
+  }, [userLocation, hasPrimaryPin, lat, lng]);
 
   const isSatellite = layer === "satellite";
 
@@ -397,6 +415,16 @@ export default function MaintenanceMapModal() {
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{label}</Text>
+        {hasPrimaryPin && (
+          <TouchableOpacity
+            style={styles.jumpBtn}
+            onPress={handleJumpToAsset}
+            activeOpacity={0.8}
+            accessibilityLabel={t("maintenanceMap.jumpToAsset")}
+          >
+            <Feather name="target" size={16} color="#fff" />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.layerToggle, isSatellite ? styles.layerSatellite : styles.layerStreet]}
           onPress={toggleLayer}
@@ -448,22 +476,24 @@ export default function MaintenanceMapModal() {
             )}
           </TouchableOpacity>
 
-          <View style={styles.navArea}>
-            {distanceBadge !== null && (
-              <View style={styles.distanceBadge}>
-                <Feather name="map-pin" size={11} color="#1a1a1a" />
-                <Text style={styles.distanceBadgeText}>{distanceBadge}</Text>
-              </View>
-            )}
-            <TouchableOpacity
-              style={styles.navBtn}
-              onPress={() => handleNavigate(lat, lng)}
-              activeOpacity={0.85}
-            >
-              <Feather name="navigation" size={16} color="#1a1a1a" />
-              <Text style={styles.navBtnText}>{t("maintenanceMap.navigateBtn")}</Text>
-            </TouchableOpacity>
-          </View>
+          {hasPrimaryPin && (
+            <View style={styles.navArea}>
+              {distanceBadge !== null && (
+                <View style={styles.distanceBadge}>
+                  <Feather name="map-pin" size={11} color="#1a1a1a" />
+                  <Text style={styles.distanceBadgeText}>{distanceBadge}</Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={styles.navBtn}
+                onPress={() => handleNavigate(lat, lng)}
+                activeOpacity={0.85}
+              >
+                <Feather name="navigation" size={16} color="#1a1a1a" />
+                <Text style={styles.navBtnText}>{t("maintenanceMap.navigateBtn")}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -485,6 +515,13 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
     color: "#fff",
+  },
+  jumpBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   layerToggle: {
     flexDirection: "row",
