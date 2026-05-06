@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
-import { WebView } from "react-native-webview";
+import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { type MapLayer, getMapLayer, setMapLayer, initMapLayer } from "@/store/mapLayerStore";
-import { getCachedMapView, initMapView, DEFAULT_ZOOM } from "@/store/mapViewStore";
+import { getCachedMapView, initMapView, setMapView, DEFAULT_ZOOM } from "@/store/mapViewStore";
 
 interface MiniMapPreviewProps {
   lat: number;
@@ -29,7 +29,7 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): 
   return `<!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -57,9 +57,9 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): 
       dragging: false,
       scrollWheelZoom: false,
       doubleClickZoom: false,
-      touchZoom: false,
+      touchZoom: true,
       keyboard: false,
-      tap: false
+      tap: true
     });
     L.tileLayer('${tileUrl}', {
       maxZoom: 19,
@@ -72,6 +72,20 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): 
       iconAnchor: [7, 7]
     });
     L.marker([${lat}, ${lng}], { icon: icon }).addTo(map);
+
+    map.on('zoomend', function() {
+      var msg = JSON.stringify({ type: 'zoomend', zoom: map.getZoom() });
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(msg);
+      }
+    });
+
+    map.on('click', function() {
+      var msg = JSON.stringify({ type: 'tap' });
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(msg);
+      }
+    });
   </script>
 </body>
 </html>`;
@@ -107,6 +121,18 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
     setLayerState(next);
   }
 
+  const handleMessage = useCallback((event: WebViewMessageEvent) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data) as { type: string; zoom?: number };
+      if (data.type === "tap") {
+        onPress();
+      } else if (data.type === "zoomend" && typeof data.zoom === "number") {
+        setZoom(data.zoom);
+        setMapView({ lat, lng, zoom: data.zoom });
+      }
+    } catch {}
+  }, [lat, lng, onPress]);
+
   const isSatellite = layer === "satellite";
 
   return (
@@ -120,11 +146,7 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
           originWhitelist={["*"]}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
-        />
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          onPress={onPress}
-          activeOpacity={0.85}
+          onMessage={handleMessage}
         />
         <TouchableOpacity
           style={[
