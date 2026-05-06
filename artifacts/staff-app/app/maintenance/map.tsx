@@ -500,6 +500,14 @@ export default function MaintenanceMapModal() {
             />
           )}
 
+          {jumpTooltipVisible && (
+            <TouchableOpacity
+              style={StyleSheet.absoluteFillObject}
+              activeOpacity={1}
+              onPress={() => setJumpTooltipVisible(false)}
+            />
+          )}
+
           <TouchableOpacity
             style={styles.myLocationBtn}
             onPress={handleMyLocation}
