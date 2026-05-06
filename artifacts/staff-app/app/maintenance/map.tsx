@@ -208,6 +208,9 @@ export default function MaintenanceMapModal() {
 
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
   const userToggledRef = useRef(false);
+  const [jumpTooltipVisible, setJumpTooltipVisible] = useState(false);
+  const jumpTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jumpLongPressedRef = useRef(false);
 
   const primaryFallback = { zoom: DEFAULT_ZOOM, lat: hasPrimaryPin ? lat : 55.751244, lng: hasPrimaryPin ? lng : 37.618423 };
   const cached = getCachedMapView();
@@ -215,6 +218,19 @@ export default function MaintenanceMapModal() {
     cached ?? primaryFallback,
   );
   const initialViewLoadedRef = useRef(!!cached);
+
+  useEffect(() => {
+    return () => {
+      if (jumpTooltipTimerRef.current) clearTimeout(jumpTooltipTimerRef.current);
+    };
+  }, []);
+
+  const handleShowJumpTooltip = useCallback(() => {
+    jumpLongPressedRef.current = true;
+    setJumpTooltipVisible(true);
+    if (jumpTooltipTimerRef.current) clearTimeout(jumpTooltipTimerRef.current);
+    jumpTooltipTimerRef.current = setTimeout(() => setJumpTooltipVisible(false), 3000);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -327,6 +343,10 @@ export default function MaintenanceMapModal() {
 
   const handleJumpToAsset = useCallback(() => {
     if (!hasPrimaryPin) return;
+    if (jumpLongPressedRef.current) {
+      jumpLongPressedRef.current = false;
+      return;
+    }
     if (isWeb) {
       iframeRef.current?.contentWindow?.postMessage(
         JSON.stringify({ type: "jumpToAsset", lat, lng }),
@@ -416,14 +436,31 @@ export default function MaintenanceMapModal() {
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{label}</Text>
         {hasPrimaryPin && (
-          <TouchableOpacity
-            style={styles.jumpBtn}
-            onPress={handleJumpToAsset}
-            activeOpacity={0.8}
-            accessibilityLabel={t("maintenanceMap.jumpToAsset")}
-          >
-            <Feather name="target" size={16} color="#fff" />
-          </TouchableOpacity>
+          <View style={styles.jumpBtnWrapper}>
+            <TouchableOpacity
+              style={styles.jumpBtn}
+              onPress={handleJumpToAsset}
+              onLongPress={handleShowJumpTooltip}
+              delayLongPress={350}
+              activeOpacity={0.8}
+              accessibilityLabel={t("maintenanceMap.jumpToAsset")}
+            >
+              <Feather name="target" size={16} color="#fff" />
+            </TouchableOpacity>
+            {jumpTooltipVisible && (
+              <TouchableOpacity
+                style={styles.jumpTooltip}
+                activeOpacity={0.9}
+                onPress={() => setJumpTooltipVisible(false)}
+              >
+                <Text style={styles.jumpTooltipLabel} numberOfLines={1}>{label}</Text>
+                <Text style={styles.jumpTooltipCoordsLabel}>{t("maintenanceMap.jumpTooltipCoords")}</Text>
+                <Text style={styles.jumpTooltipCoords}>
+                  {lat.toFixed(5)}, {lng.toFixed(5)}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
         <TouchableOpacity
           style={[styles.layerToggle, isSatellite ? styles.layerSatellite : styles.layerStreet]}
@@ -516,12 +553,55 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     color: "#fff",
   },
+  jumpBtnWrapper: {
+    position: "relative",
+  },
   jumpBtn: {
     padding: 6,
     borderRadius: 8,
     backgroundColor: "rgba(255,255,255,0.15)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  jumpTooltip: {
+    position: "absolute",
+    top: 38,
+    right: 0,
+    backgroundColor: "#1a1a1a",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 160,
+    maxWidth: 220,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    zIndex: 999,
+  },
+  jumpTooltipLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#F5C518",
+    marginBottom: 3,
+  },
+  jumpTooltipCoordsLabel: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    color: "rgba(255,255,255,0.45)",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginTop: 4,
+    marginBottom: 1,
+  },
+  jumpTooltipCoords: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.7)",
+    letterSpacing: 0.2,
   },
   layerToggle: {
     flexDirection: "row",

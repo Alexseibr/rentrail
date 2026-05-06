@@ -513,7 +513,8 @@
     "myLocation": "My location",
     "locationDenied": "Location permission denied",
     "locationError": "Could not get your location",
-    "jumpToAsset": "Jump to asset"
+    "jumpToAsset": "Jump to asset",
+    "jumpTooltipCoords": "Coordinates"
   },
   "fleetMap": {
     "title": "Fleet Map",

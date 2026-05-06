@@ -531,7 +531,8 @@
     "myLocation": "Моё место",
     "locationDenied": "Нет разрешения на геолокацию",
     "locationError": "Не удалось получить ваше местоположение",
-    "jumpToAsset": "К транспорту"
+    "jumpToAsset": "К транспорту",
+    "jumpTooltipCoords": "Координаты"
   },
   "fleetMap": {
     "title": "Карта автопарка",
