@@ -16,6 +16,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
 import { useColors } from "@/hooks/useColors";
 import { getMapLayer, setMapLayer, initMapLayer, type MapLayer } from "@/store/mapLayerStore";
+import { getCachedMapView, setMapView, initMapView, DEFAULT_ZOOM, type MapViewState } from "@/store/mapViewStore";
 import { readManyCoordsFromCache } from "@/services/coordsCache";
 import { getAccessToken } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -69,7 +70,12 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-function buildMapHtml(pins: AssetPin[], layer: MapLayer, navigateLabel: string): string {
+function buildMapHtml(
+  pins: AssetPin[],
+  layer: MapLayer,
+  navigateLabel: string,
+  initialView: { zoom: number; lat: number; lng: number },
+): string {
   const tileUrl =
     layer === "satellite"
       ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -84,10 +90,6 @@ function buildMapHtml(pins: AssetPin[], layer: MapLayer, navigateLabel: string):
     pins.map((p) => ({ ...p, label: escapeHtml(p.label), status: escapeHtml(p.status) })),
   );
   const escapedNavLabel = escapeHtml(navigateLabel);
-
-  const primary = pins.find((p) => p.isPrimary);
-  const centerLat = primary?.lat ?? (pins[0]?.lat ?? 48.8566);
-  const centerLng = primary?.lng ?? (pins[0]?.lng ?? 2.3522);
 
   return `<!DOCTYPE html>
 <html>
@@ -126,14 +128,16 @@ function buildMapHtml(pins: AssetPin[], layer: MapLayer, navigateLabel: string):
 <div id="map"></div>
 <script>
 (function(){
-  function sendNavigate(lat,lng){
-    var msg=JSON.stringify({type:'navigate',lat:lat,lng:lng});
-    if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(msg);}
-    else{window.parent.postMessage(msg,'*');}
+  function send(msg){
+    var s=JSON.stringify(msg);
+    if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(s);}
+    else{window.parent.postMessage(s,'*');}
   }
 
+  function sendNavigate(lat,lng){send({type:'navigate',lat:lat,lng:lng});}
+
   var pins=${serialized};
-  var map=L.map('map',{zoomControl:true,attributionControl:true}).setView([${centerLat},${centerLng}],15);
+  var map=L.map('map',{zoomControl:true,attributionControl:true}).setView([${initialView.lat},${initialView.lng}],${initialView.zoom});
   L.tileLayer('${tileUrl}',{maxZoom:19,attribution:'${attribution}'}).addTo(map);
 
   pins.forEach(function(p){
@@ -148,8 +152,14 @@ function buildMapHtml(pins: AssetPin[], layer: MapLayer, navigateLabel: string):
     L.marker([p.lat,p.lng],{icon:icon}).bindPopup(popupHtml,{minWidth:160}).addTo(map);
   });
 
-  var primary=pins.find(function(p){return p.isPrimary;});
-  if(primary){map.setView([primary.lat,primary.lng],15);}
+  var saveTimer=null;
+  map.on('moveend zoomend',function(){
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){
+      var c=map.getCenter();
+      send({type:'viewchange',zoom:map.getZoom(),lat:c.lat,lng:c.lng});
+    },400);
+  });
 
   var myLocationMarker=null;
   window.setMyLocation=function(lat,lng){
@@ -192,11 +202,23 @@ export default function MaintenanceMapModal() {
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
   const userToggledRef = useRef(false);
 
+  const primaryFallback = { zoom: DEFAULT_ZOOM, lat, lng };
+  const cached = getCachedMapView();
+  const [initialView, setInitialView] = useState<{ zoom: number; lat: number; lng: number }>(
+    cached ?? primaryFallback,
+  );
+  const initialViewLoadedRef = useRef(!!cached);
+
   useEffect(() => {
     let cancelled = false;
-    initMapLayer().then((persisted) => {
-      if (!cancelled && !userToggledRef.current) {
-        setLayerState(persisted);
+    Promise.all([initMapLayer(), initMapView()]).then(([persistedLayer, persistedView]) => {
+      if (cancelled) return;
+      if (!userToggledRef.current) {
+        setLayerState(persistedLayer);
+      }
+      if (!initialViewLoadedRef.current && persistedView) {
+        initialViewLoadedRef.current = true;
+        setInitialView(persistedView);
       }
     });
     return () => { cancelled = true; };
@@ -301,8 +323,8 @@ export default function MaintenanceMapModal() {
 
   const navigateLabel = t("maintenanceMap.navigateBtn");
   const mapHtml = useMemo(
-    () => buildMapHtml(pins, layer, navigateLabel),
-    [pins, layer, navigateLabel],
+    () => buildMapHtml(pins, layer, navigateLabel, initialView),
+    [pins, layer, navigateLabel, initialView],
   );
 
   const handleNavigate = useCallback((navLat: number, navLng: number) => {
@@ -316,16 +338,35 @@ export default function MaintenanceMapModal() {
     });
   }, []);
 
+  const handleMapMessage = useCallback(
+    (msg: Record<string, unknown>) => {
+      if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
+        handleNavigate(msg.lat, msg.lng);
+      } else if (
+        msg.type === "viewchange" &&
+        typeof msg.zoom === "number" &&
+        typeof msg.lat === "number" &&
+        typeof msg.lng === "number"
+      ) {
+        const zoom = Math.min(Math.max(Math.round(msg.zoom), 1), 19);
+        const lat = Math.min(Math.max(msg.lat, -90), 90);
+        const lng = Math.min(Math.max(msg.lng, -180), 180);
+        const view = { zoom, lat, lng };
+        setMapView(view);
+        setInitialView(view);
+      }
+    },
+    [handleNavigate],
+  );
+
   const handleWebViewMessage = useCallback(
     (event: { nativeEvent: { data: string } }) => {
       try {
         const msg = JSON.parse(event.nativeEvent.data);
-        if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
-          handleNavigate(msg.lat, msg.lng);
-        }
+        handleMapMessage(msg);
       } catch {}
     },
-    [handleNavigate],
+    [handleMapMessage],
   );
 
   useEffect(() => {
@@ -334,14 +375,12 @@ export default function MaintenanceMapModal() {
       if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
       try {
         const msg = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-        if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
-          handleNavigate(msg.lat, msg.lng);
-        }
+        handleMapMessage(msg);
       } catch {}
     };
     window.addEventListener("message", listener);
     return () => window.removeEventListener("message", listener);
-  }, [isWeb, handleNavigate]);
+  }, [isWeb, handleMapMessage]);
 
   const distanceBadge = useMemo(() => {
     if (!userLocation) return null;
