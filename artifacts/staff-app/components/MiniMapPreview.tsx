@@ -4,6 +4,7 @@ import { WebView } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { type MapLayer, getMapLayer, setMapLayer, initMapLayer } from "@/store/mapLayerStore";
+import { getCachedMapView, initMapView, DEFAULT_ZOOM } from "@/store/mapViewStore";
 
 interface MiniMapPreviewProps {
   lat: number;
@@ -14,7 +15,7 @@ interface MiniMapPreviewProps {
   onCopy: () => void;
 }
 
-function buildMapHtml(lat: number, lng: number, layer: MapLayer): string {
+function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): string {
   const tileUrl =
     layer === "satellite"
       ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -50,7 +51,7 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer): string {
   <script>
     var map = L.map('map', {
       center: [${lat}, ${lng}],
-      zoom: 15,
+      zoom: ${zoom},
       zoomControl: false,
       attributionControl: true,
       dragging: false,
@@ -79,6 +80,7 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer): string {
 export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }: MiniMapPreviewProps) {
   const colors = useColors();
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
+  const [zoom, setZoom] = useState<number>(() => getCachedMapView()?.zoom ?? DEFAULT_ZOOM);
   const userToggledRef = useRef(false);
 
   useEffect(() => {
@@ -88,10 +90,15 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
         setLayerState(persisted);
       }
     });
+    initMapView().then((persisted) => {
+      if (!cancelled && persisted !== null) {
+        setZoom(persisted.zoom);
+      }
+    });
     return () => { cancelled = true; };
   }, []);
 
-  const html = buildMapHtml(lat, lng, layer);
+  const html = buildMapHtml(lat, lng, layer, zoom);
 
   function toggleLayer() {
     userToggledRef.current = true;
