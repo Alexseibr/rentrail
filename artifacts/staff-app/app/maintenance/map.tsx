@@ -152,7 +152,7 @@ function buildMapHtml(
     L.marker([p.lat,p.lng],{icon:icon}).bindPopup(popupHtml,{minWidth:160}).addTo(map);
   });
 
-  map.on('movestart zoomstart',function(){
+  map.on('movestart zoomstart popupopen',function(){
     send({type:'mapinteraction'});
   });
 
