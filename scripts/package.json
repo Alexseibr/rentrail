@@ -9,6 +9,7 @@
     "seed-demo": "tsx ./src/seed-demo.ts",
     "seed-demo:reset": "tsx ./src/seed-demo.ts reset",
     "check-map-cleanup": "tsx ./src/check-map-cleanup.ts",
+    "test": "tsx --test ./src/check-map-cleanup-lib.test.ts",
     "test-map-cleanup": "tsx --test ./src/check-map-cleanup.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
