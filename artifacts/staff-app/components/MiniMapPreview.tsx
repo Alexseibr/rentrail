@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
-import { type MapLayer, getMapLayer, setMapLayer } from "@/store/mapLayerStore";
+import { type MapLayer, getMapLayer, setMapLayer, initMapLayer } from "@/store/mapLayerStore";
 
 interface MiniMapPreviewProps {
   lat: number;
@@ -79,10 +79,22 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer): string {
 export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }: MiniMapPreviewProps) {
   const colors = useColors();
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
+  const userToggledRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    initMapLayer().then((persisted) => {
+      if (!cancelled && !userToggledRef.current) {
+        setLayerState(persisted);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const html = buildMapHtml(lat, lng, layer);
 
   function toggleLayer() {
+    userToggledRef.current = true;
     const next: MapLayer = layer === "street" ? "satellite" : "street";
     setMapLayer(next);
     setLayerState(next);

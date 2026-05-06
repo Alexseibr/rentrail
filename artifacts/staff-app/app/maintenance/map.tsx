@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
 import { useColors } from "@/hooks/useColors";
-import { getMapLayer, setMapLayer, type MapLayer } from "@/store/mapLayerStore";
+import { getMapLayer, setMapLayer, initMapLayer, type MapLayer } from "@/store/mapLayerStore";
 import { readManyCoordsFromCache } from "@/services/coordsCache";
 import { getAccessToken } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -190,6 +190,18 @@ export default function MaintenanceMapModal() {
   const label = params.label ?? t("maintenanceMap.asset");
 
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
+  const userToggledRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    initMapLayer().then((persisted) => {
+      if (!cancelled && !userToggledRef.current) {
+        setLayerState(persisted);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const [pins, setPins] = useState<AssetPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapKey, setMapKey] = useState(0);
@@ -250,6 +262,7 @@ export default function MaintenanceMapModal() {
   }, [layer, loading]);
 
   function toggleLayer() {
+    userToggledRef.current = true;
     const next: MapLayer = layer === "street" ? "satellite" : "street";
     setMapLayer(next);
     setLayerState(next);
