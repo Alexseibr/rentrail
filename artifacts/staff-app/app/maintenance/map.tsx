@@ -383,13 +383,14 @@ export default function MaintenanceMapModal() {
       return;
     }
     if (isWeb) {
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
       iframeRef.current?.contentWindow?.postMessage(
         JSON.stringify({ type: "jumpToAsset", lat, lng }),
         "*",
       );
     } else {
       webViewRef.current?.injectJavaScript(
-        `window.jumpToAsset(${lat},${lng}); true;`,
+        `window.closeMapPopup(); window.jumpToAsset(${lat},${lng}); true;`,
       );
     }
   }, [hasPrimaryPin, isWeb, lat, lng]);
