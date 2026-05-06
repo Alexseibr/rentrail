@@ -316,6 +316,11 @@ export default function MaintenanceMapModal() {
   }
 
   const handleMyLocation = useCallback(async () => {
+    setJumpTooltipVisible(false);
+    if (jumpTooltipTimerRef.current) {
+      clearTimeout(jumpTooltipTimerRef.current);
+      jumpTooltipTimerRef.current = null;
+    }
     if (locating) return;
     setLocating(true);
     try {
