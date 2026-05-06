@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Linking, Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -15,6 +15,10 @@ import { getAccessToken } from "@/services/api";
 import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
+import { useAppStateFocus } from "@/hooks/useAppStateFocus";
+import { readCoordsFromCache } from "@/services/coordsCache";
+import { type CachedCoordinates } from "@/hooks/useCachedCoordinates";
+import { MiniMapPreview } from "@/components/MiniMapPreview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
@@ -38,6 +42,14 @@ const STATUS_FLOW: Record<string, string | null> = {
   completed: null,
   canceled: null,
 };
+
+function openMaps(lat: number, lng: number) {
+  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
+  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  Linking.canOpenURL(geoUrl)
+    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
+    .catch(() => Linking.openURL(webUrl).catch(() => {}));
+}
 
 async function fetchWorkOrder(companyId: string, id: string) {
   const token = await getAccessToken();
@@ -76,12 +88,19 @@ export default function MaintenanceTaskDetailScreen() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(null);
 
   const load = useCallback(async () => {
     if (!companyId || !id) return;
     try {
       const data = await fetchWorkOrder(companyId, id);
       setOrder(data);
+      if (data.assetId) {
+        const coords = await readCoordsFromCache(data.assetId);
+        setCachedCoords(coords);
+      } else {
+        setCachedCoords(null);
+      }
     } catch {
       setOrder(null);
     } finally {
@@ -89,7 +108,15 @@ export default function MaintenanceTaskDetailScreen() {
     }
   }, [companyId, id]);
 
+  const refreshCoords = useCallback(async () => {
+    if (!order?.assetId) return;
+    const coords = await readCoordsFromCache(order.assetId);
+    setCachedCoords(coords);
+  }, [order?.assetId]);
+
   React.useEffect(() => { load(); }, [load]);
+
+  useAppStateFocus(refreshCoords);
 
   const queueStatusChange = async (newStatus: string, extra?: Record<string, unknown>) => {
     await enqueue({
@@ -275,6 +302,38 @@ export default function MaintenanceTaskDetailScreen() {
           )}
         </View>
 
+        {cachedCoords ? (
+          <View style={styles.miniMapWrapper}>
+            <MiniMapPreview
+              lat={cachedCoords.lat}
+              lng={cachedCoords.lng}
+              isLastKnown
+              label={
+                cachedCoords.cachedAt
+                  ? t("incidentDetail.assetLocationLastKnown", {
+                      time: (() => {
+                        const diff = Date.now() - new Date(cachedCoords.cachedAt).getTime();
+                        const minutes = Math.floor(diff / 60000);
+                        if (minutes < 1) return t("rentalDetail.timeJustNow", { defaultValue: "just now" });
+                        if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes, defaultValue: `${minutes}m ago` });
+                        const hours = Math.floor(minutes / 60);
+                        if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours, defaultValue: `${hours}h ago` });
+                        return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24), defaultValue: `${Math.floor(hours / 24)}d ago` });
+                      })(),
+                      defaultValue: "Last seen {{time}}",
+                    })
+                  : t("incidentDetail.assetLocation", { defaultValue: "Asset location" })
+              }
+              onPress={() => openMaps(cachedCoords.lat, cachedCoords.lng)}
+              onCopy={() => {
+                Share.share({
+                  message: `${cachedCoords.lat.toFixed(5)}, ${cachedCoords.lng.toFixed(5)}`,
+                }).catch(() => {});
+              }}
+            />
+          </View>
+        ) : null}
+
         {order.description ? (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
             <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
@@ -374,6 +433,9 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 14, fontFamily: "Inter_400Regular" },
   rowValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "right", flex: 1, marginLeft: 12 },
   descText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
+  miniMapWrapper: {
+    marginBottom: 12,
+  },
   actionBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
     padding: 16, borderRadius: 16, marginTop: 8,
