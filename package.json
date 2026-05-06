@@ -19,7 +19,7 @@
     "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
     "seed:demo:reset": "pnpm --filter @workspace/scripts run seed-demo:reset",
     "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
-    "ci": "pnpm run typecheck && pnpm run check-map-cleanup && pnpm run test:unit && pnpm run build"
+    "ci": "pnpm run typecheck && pnpm run check-map-cleanup && pnpm --filter @workspace/scripts run test && pnpm run test:unit && pnpm run build"
   },
   "private": true,
   "devDependencies": {
