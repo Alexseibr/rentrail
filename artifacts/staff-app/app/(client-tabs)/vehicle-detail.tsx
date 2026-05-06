@@ -142,6 +142,12 @@ export default function VehicleDetailScreen() {
     }, [closeMapPopup]),
   );
 
+  useEffect(() => {
+    return () => {
+      closeMapPopup();
+    };
+  }, [closeMapPopup]);
+
   const sendCommand = async (command: string, label: string) => {
     setCommanding(command);
     try {

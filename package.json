@@ -18,7 +18,8 @@
     "seed": "pnpm --filter @workspace/scripts run seed-rbac",
     "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
     "seed:demo:reset": "pnpm --filter @workspace/scripts run seed-demo:reset",
-    "ci": "pnpm run typecheck && pnpm run test:unit && pnpm run build"
+    "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
+    "ci": "pnpm run typecheck && pnpm run check-map-cleanup && pnpm run test:unit && pnpm run build"
   },
   "private": true,
   "devDependencies": {

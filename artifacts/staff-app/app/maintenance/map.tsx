@@ -297,6 +297,18 @@ export default function MaintenanceMapModal() {
     }, [isWeb]),
   );
 
+  useEffect(() => {
+    return () => {
+      if (isWeb) {
+        try {
+          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+        } catch {}
+      } else {
+        webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+      }
+    };
+  }, [isWeb]);
+
   const primaryPin: AssetPin | null = useMemo(() => {
     if (!hasPrimaryPin) return null;
     return { id: "primary", lat, lng, label, isPrimary: true, status: "maintenance" };
