@@ -81,10 +81,17 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): 
     });
 
     map.on('click', function() {
+      map.closePopup();
       var msg = JSON.stringify({ type: 'tap' });
       if (window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(msg);
       }
+    });
+    map.on('movestart', function() {
+      map.closePopup();
+    });
+    map.on('zoomstart', function() {
+      map.closePopup();
     });
   </script>
 </body>

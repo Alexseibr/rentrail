@@ -62,6 +62,15 @@ function buildMapHtml(lat: number, lng: number, code: string): string {
   var icon=L.divIcon({className:'',html:'<div class="vehicle-marker"></div>',iconSize:[18,18],iconAnchor:[9,9]});
   L.marker([${lat},${lng}],{icon:icon}).addTo(map)
     .bindPopup('<b>${code}</b>').openPopup();
+  map.on('click',function(){
+    map.closePopup();
+  });
+  map.on('movestart',function(){
+    map.closePopup();
+  });
+  map.on('zoomstart',function(){
+    map.closePopup();
+  });
 </script>
 </body></html>`;
 }
