@@ -13,11 +13,13 @@ import { useTranslation } from "react-i18next";
 import WebView from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import * as Location from "expo-location";
 import { useColors } from "@/hooks/useColors";
 import { getMapLayer, setMapLayer, type MapLayer } from "@/store/mapLayerStore";
 import { readManyCoordsFromCache } from "@/services/coordsCache";
 import { getAccessToken } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSnackbar } from "@/contexts/SnackbarContext";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -86,6 +88,10 @@ function buildMapHtml(pins: AssetPin[], layer: MapLayer, navigateLabel: string):
     background:#888;border:2px dashed #555;border-radius:50%;
     width:12px;height:12px;opacity:0.65;
   }
+  .my-location-dot{
+    background:#2563EB;border:3px solid #fff;border-radius:50%;
+    width:18px;height:18px;box-shadow:0 2px 10px rgba(37,99,235,0.6);
+  }
   .leaflet-popup-content{font-family:system-ui,sans-serif;font-size:13px;line-height:1.5;}
   .popup-code{font-weight:700;font-size:14px;margin-bottom:4px;}
   .popup-nav-btn{
@@ -126,6 +132,26 @@ function buildMapHtml(pins: AssetPin[], layer: MapLayer, navigateLabel: string):
 
   var primary=pins.find(function(p){return p.isPrimary;});
   if(primary){map.setView([primary.lat,primary.lng],15);}
+
+  var myLocationMarker=null;
+  window.setMyLocation=function(lat,lng){
+    var icon=L.divIcon({className:'',html:'<div class="my-location-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]});
+    if(myLocationMarker){
+      myLocationMarker.setLatLng([lat,lng]);
+    } else {
+      myLocationMarker=L.marker([lat,lng],{icon:icon,zIndexOffset:500}).addTo(map);
+    }
+    map.setView([lat,lng],15,{animate:true});
+  };
+
+  window.addEventListener('message',function(e){
+    try{
+      var msg=typeof e.data==='string'?JSON.parse(e.data):e.data;
+      if(msg.type==='setMyLocation'&&typeof msg.lat==='number'&&typeof msg.lng==='number'){
+        window.setMyLocation(msg.lat,msg.lng);
+      }
+    }catch(err){}
+  });
 })();
 </script>
 </body>
@@ -138,6 +164,7 @@ export default function MaintenanceMapModal() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { companyId } = useAuth();
+  const { showSnackbar } = useSnackbar();
 
   const params = useLocalSearchParams<{ lat: string; lng: string; label: string }>();
   const lat = parseFloat(params.lat ?? "0");
@@ -148,7 +175,9 @@ export default function MaintenanceMapModal() {
   const [pins, setPins] = useState<AssetPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapKey, setMapKey] = useState(0);
+  const [locating, setLocating] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const webViewRef = useRef<WebView | null>(null);
 
   const isWeb = Platform.OS === "web";
 
@@ -206,6 +235,36 @@ export default function MaintenanceMapModal() {
     setMapLayer(next);
     setLayerState(next);
   }
+
+  const handleMyLocation = useCallback(async () => {
+    if (locating) return;
+    setLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        showSnackbar(t("maintenanceMap.locationDenied"), "error");
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = position.coords;
+      if (isWeb) {
+        iframeRef.current?.contentWindow?.postMessage(
+          JSON.stringify({ type: "setMyLocation", lat: latitude, lng: longitude }),
+          "*",
+        );
+      } else {
+        webViewRef.current?.injectJavaScript(
+          `window.setMyLocation(${latitude},${longitude}); true;`,
+        );
+      }
+    } catch {
+      showSnackbar(t("maintenanceMap.locationError"), "error");
+    } finally {
+      setLocating(false);
+    }
+  }, [locating, isWeb, t, showSnackbar]);
 
   const navigateLabel = t("maintenanceMap.navigateBtn");
   const mapHtml = useMemo(
@@ -288,6 +347,7 @@ export default function MaintenanceMapModal() {
           ) : (
             <WebView
               key={mapKey}
+              ref={webViewRef}
               source={{ html: mapHtml }}
               style={styles.webview}
               originWhitelist={["*"]}
@@ -296,6 +356,19 @@ export default function MaintenanceMapModal() {
               onMessage={handleWebViewMessage}
             />
           )}
+
+          <TouchableOpacity
+            style={styles.myLocationBtn}
+            onPress={handleMyLocation}
+            activeOpacity={0.85}
+            accessibilityLabel={t("maintenanceMap.myLocation")}
+          >
+            {locating ? (
+              <ActivityIndicator size="small" color="#1a1a1a" />
+            ) : (
+              <Feather name="crosshair" size={20} color="#1a1a1a" />
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navBtn}
@@ -352,6 +425,22 @@ const styles = StyleSheet.create({
   },
   mapWrapper: { flex: 1, position: "relative" },
   webview: { flex: 1 },
+  myLocationBtn: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 5,
+  },
   navBtn: {
     position: "absolute",
     bottom: 20,

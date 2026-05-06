@@ -509,7 +509,10 @@
     "asset": "Asset Location",
     "navigateBtn": "Navigate",
     "layerStreet": "Street",
-    "layerSatellite": "Satellite"
+    "layerSatellite": "Satellite",
+    "myLocation": "My location",
+    "locationDenied": "Location permission denied",
+    "locationError": "Could not get your location"
   },
   "fleetMap": {
     "title": "Fleet Map",

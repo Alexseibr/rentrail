@@ -527,7 +527,10 @@
     "asset": "Местоположение актива",
     "navigateBtn": "Маршрут",
     "layerStreet": "Схема",
-    "layerSatellite": "Спутник"
+    "layerSatellite": "Спутник",
+    "myLocation": "Моё место",
+    "locationDenied": "Нет разрешения на геолокацию",
+    "locationError": "Не удалось получить ваше местоположение"
   },
   "fleetMap": {
     "title": "Карта автопарка",
