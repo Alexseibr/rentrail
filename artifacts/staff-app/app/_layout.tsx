@@ -90,6 +90,7 @@ function RootLayoutNav() {
       <Stack.Screen name="rental/[id]" options={{ title: t("screens.rental") }} />
       <Stack.Screen name="incident/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="maintenance/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="maintenance/map" options={{ headerShown: false, presentation: "fullScreenModal" }} />
       <Stack.Screen name="client-scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
       <Stack.Screen name="fleet-map" options={{ headerShown: false }} />
     </Stack>

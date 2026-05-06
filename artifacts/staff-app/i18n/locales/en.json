@@ -505,6 +505,12 @@
     "lastUpdate": "Updated",
     "noLocation": "Location unavailable"
   },
+  "maintenanceMap": {
+    "asset": "Asset Location",
+    "navigateBtn": "Navigate",
+    "layerStreet": "Street",
+    "layerSatellite": "Satellite"
+  },
   "fleetMap": {
     "title": "Fleet Map",
     "loading": "Loading fleet positions…",

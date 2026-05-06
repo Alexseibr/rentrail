@@ -523,6 +523,12 @@
     "lastUpdate": "Обновлено",
     "noLocation": "Местоположение недоступно"
   },
+  "maintenanceMap": {
+    "asset": "Местоположение актива",
+    "navigateBtn": "Маршрут",
+    "layerStreet": "Схема",
+    "layerSatellite": "Спутник"
+  },
   "fleetMap": {
     "title": "Карта автопарка",
     "loading": "Загрузка позиций парка…",
