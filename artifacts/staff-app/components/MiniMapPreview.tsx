@@ -134,6 +134,24 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
     return () => { cancelled = true; };
   }, []);
 
+  // Two-layer popup-close contract — both layers are required:
+  //
+  // Layer 1 — useFocusEffect (blur callback):
+  //   Fires when the screen loses focus (e.g. the user navigates away but the
+  //   component is still mounted in the background). This covers tab switches,
+  //   back-navigation, and modal dismissals where React does NOT unmount the
+  //   screen immediately.
+  //
+  // Layer 2 — useEffect cleanup (unmount):
+  //   Fires when the component is fully removed from the tree. This covers
+  //   hard unmounts that bypass the focus lifecycle (e.g. conditional rendering
+  //   that tears down the component without a navigation event).
+  //
+  // CONVENTION: Any screen that renders a map WebView directly (i.e. without
+  // going through this MiniMapPreview component) MUST replicate these two
+  // layers itself — otherwise open Leaflet popups will bleed through to the
+  // next screen. See `artifacts/staff-app/app/maintenance/map.tsx` for an
+  // example of the full-screen modal variant.
   useFocusEffect(
     useCallback(() => {
       return () => {
