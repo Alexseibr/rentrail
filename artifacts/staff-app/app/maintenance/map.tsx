@@ -42,6 +42,24 @@ async function fetchAllAssetIds(companyId: string): Promise<{ id: string; intern
   return Array.isArray(data) ? data : [];
 }
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(meters: number): string {
+  if (meters < 1000) {
+    return `~${Math.round(meters)} m`;
+  }
+  return `~${(meters / 1000).toFixed(1)} km`;
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -176,6 +194,7 @@ export default function MaintenanceMapModal() {
   const [loading, setLoading] = useState(true);
   const [mapKey, setMapKey] = useState(0);
   const [locating, setLocating] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const webViewRef = useRef<WebView | null>(null);
 
@@ -249,6 +268,7 @@ export default function MaintenanceMapModal() {
         accuracy: Location.Accuracy.Balanced,
       });
       const { latitude, longitude } = position.coords;
+      setUserLocation({ lat: latitude, lng: longitude });
       if (isWeb) {
         iframeRef.current?.contentWindow?.postMessage(
           JSON.stringify({ type: "setMyLocation", lat: latitude, lng: longitude }),
@@ -310,6 +330,12 @@ export default function MaintenanceMapModal() {
     return () => window.removeEventListener("message", listener);
   }, [isWeb, handleNavigate]);
 
+  const distanceBadge = useMemo(() => {
+    if (!userLocation) return null;
+    const meters = haversineDistance(userLocation.lat, userLocation.lng, lat, lng);
+    return formatDistance(meters);
+  }, [userLocation, lat, lng]);
+
   const isSatellite = layer === "satellite";
 
   return (
@@ -370,14 +396,22 @@ export default function MaintenanceMapModal() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.navBtn}
-            onPress={() => handleNavigate(lat, lng)}
-            activeOpacity={0.85}
-          >
-            <Feather name="navigation" size={16} color="#1a1a1a" />
-            <Text style={styles.navBtnText}>{t("maintenanceMap.navigateBtn")}</Text>
-          </TouchableOpacity>
+          <View style={styles.navArea}>
+            {distanceBadge !== null && (
+              <View style={styles.distanceBadge}>
+                <Feather name="map-pin" size={11} color="#1a1a1a" />
+                <Text style={styles.distanceBadgeText}>{distanceBadge}</Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={styles.navBtn}
+              onPress={() => handleNavigate(lat, lng)}
+              activeOpacity={0.85}
+            >
+              <Feather name="navigation" size={16} color="#1a1a1a" />
+              <Text style={styles.navBtnText}>{t("maintenanceMap.navigateBtn")}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -441,10 +475,33 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-  navBtn: {
+  navArea: {
     position: "absolute",
     bottom: 20,
     alignSelf: "center",
+    alignItems: "center",
+    gap: 6,
+  },
+  distanceBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(245,197,24,0.92)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  distanceBadgeText: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: "#1a1a1a",
+  },
+  navBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
