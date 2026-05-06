@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Platform,
   Linking,
+  Animated,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -166,12 +167,35 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
 
   var pins=${serialized};
   var statusColors=${colorsJson};
-  var map=L.map('map',{zoomControl:true,attributionControl:false}).setView([${avgLat},${avgLng}],${pins.length > 0 ? 13 : 10});
+  var defaultLat=${avgLat};
+  var defaultLng=${avgLng};
+  var defaultZoom=${pins.length > 0 ? 13 : 10};
+  var map=L.map('map',{zoomControl:true,attributionControl:false}).setView([defaultLat,defaultLng],defaultZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+  var initialBounds=null;
+  var group=[];
+
+  window.recenterMap=function(){
+    if(initialBounds&&group.length>1){
+      map.flyToBounds(initialBounds,{padding:[40,40],duration:0.8});
+    } else if(group.length===1){
+      map.flyTo([group[0].getLatLng().lat,group[0].getLatLng().lng],15,{duration:0.8});
+    } else {
+      map.flyTo([defaultLat,defaultLng],defaultZoom,{duration:0.8});
+    }
+  };
+
+  window.addEventListener('message',function(e){
+    try{
+      var msg=typeof e.data==='string'?JSON.parse(e.data):e.data;
+      if(msg&&msg.type==='recenter'){window.recenterMap();}
+    }catch(err){}
+  });
 
   if(pins.length===0) return;
 
-  var group=[];
+
   pins.forEach(function(p){
     var icon;
     if(p.isLive){
@@ -203,8 +227,8 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string): string {
   });
 
   if(group.length>1){
-    var bounds=L.featureGroup(group).getBounds();
-    map.fitBounds(bounds,{padding:[40,40]});
+    initialBounds=L.featureGroup(group).getBounds();
+    map.fitBounds(initialBounds,{padding:[40,40]});
   } else if(group.length===1){
     map.setView([pins[0].lat,pins[0].lng],15);
   }
@@ -226,6 +250,8 @@ export default function FleetMapScreen() {
   const hasAccess = canAccessTab(roleCode, "assets");
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const webViewRef = useRef<InstanceType<typeof WebView> | null>(null);
+  const recenterScaleAnim = useRef(new Animated.Value(1)).current;
 
   const [loading, setLoading] = useState(true);
   const [pins, setPins] = useState<PinData[]>([]);
@@ -334,6 +360,21 @@ export default function FleetMapScreen() {
 
   const isWeb = Platform.OS === "web";
 
+  const handleRecenter = useCallback(() => {
+    Animated.sequence([
+      Animated.timing(recenterScaleAnim, { toValue: 0.88, duration: 100, useNativeDriver: true }),
+      Animated.timing(recenterScaleAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+
+    if (isWeb) {
+      try {
+        iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "recenter" }), "*");
+      } catch {}
+    } else {
+      webViewRef.current?.injectJavaScript("window.recenterMap && window.recenterMap(); true;");
+    }
+  }, [isWeb, recenterScaleAnim]);
+
   const handleNavigate = useCallback((lat: number, lng: number) => {
     const url = Platform.select({
       ios: `maps://maps.apple.com/?daddr=${lat},${lng}`,
@@ -438,6 +479,7 @@ export default function FleetMapScreen() {
           ) : (
             <WebView
               key={mapKey}
+              ref={webViewRef}
               source={{ html: mapHtml }}
               style={styles.webview}
               originWhitelist={["*"]}
@@ -446,6 +488,22 @@ export default function FleetMapScreen() {
               onMessage={handleWebViewMessage}
             />
           )}
+
+          <Animated.View
+            style={[
+              styles.recenterBtn,
+              { backgroundColor: colors.card, transform: [{ scale: recenterScaleAnim }] },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={handleRecenter}
+              activeOpacity={0.85}
+              style={styles.recenterBtnInner}
+              accessibilityLabel={t("fleetMap.recenter")}
+            >
+              <Feather name="crosshair" size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </Animated.View>
 
           <View style={[styles.legend, { backgroundColor: colors.card }]}>
             {liveCount > 0 && (
@@ -514,6 +572,26 @@ const styles = StyleSheet.create({
   emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
   mapWrapper: { flex: 1, position: "relative" },
   webview: { flex: 1 },
+  recenterBtn: {
+    position: "absolute",
+    bottom: 20,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: "hidden",
+  },
+  recenterBtnInner: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   legend: {
     position: "absolute",
     bottom: 20,

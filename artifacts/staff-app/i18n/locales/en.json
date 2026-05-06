@@ -524,7 +524,8 @@
     "cached": "{{count}} last known",
     "noLocation": "{{count}} no location",
     "noAccess": "You don't have permission to view the fleet map",
-    "openInMaps": "Open in Maps"
+    "openInMaps": "Open in Maps",
+    "recenter": "Re-center fleet"
   },
   "common": {
     "error": "Error",
