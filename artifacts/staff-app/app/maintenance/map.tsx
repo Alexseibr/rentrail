@@ -325,6 +325,11 @@ export default function MaintenanceMapModal() {
       clearTimeout(jumpTooltipTimerRef.current);
       jumpTooltipTimerRef.current = null;
     }
+    if (isWeb) {
+      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+    } else {
+      webViewRef.current?.injectJavaScript(`window.closeMapPopup(); true;`);
+    }
     const next: MapLayer = layer === "street" ? "satellite" : "street";
     setMapLayer(next);
     setLayerState(next);
