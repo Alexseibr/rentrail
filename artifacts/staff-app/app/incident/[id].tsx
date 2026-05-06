@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView,
-  Platform, Linking, Share,
+  Platform, Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -54,13 +54,6 @@ const STATUS_FLOW: Record<string, string | null> = {
 const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 type Priority = (typeof PRIORITIES)[number];
 
-function openMaps(lat: number, lng: number) {
-  const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
-  const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
-  Linking.canOpenURL(geoUrl)
-    .then((ok) => Linking.openURL(ok ? geoUrl : webUrl))
-    .catch(() => Linking.openURL(webUrl).catch(() => {}));
-}
 
 function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -471,7 +464,18 @@ export default function IncidentDetailScreen() {
                     })
                   : t("incidentDetail.assetLocation", { defaultValue: "Asset location" })
               }
-              onPress={() => openMaps(cachedCoords.lat, cachedCoords.lng)}
+              onPress={() =>
+                router.push({
+                  pathname: "/maintenance/map" as never,
+                  params: {
+                    lat: String(cachedCoords.lat),
+                    lng: String(cachedCoords.lng),
+                    label: incident.assetCode
+                      ? `${incident.assetCode}${incident.assetType ? ` · ${incident.assetType}` : ""}`
+                      : t("maintenanceMap.asset"),
+                  },
+                })
+              }
               onCopy={() => {
                 Share.share({
                   message: `${cachedCoords.lat.toFixed(5)}, ${cachedCoords.lng.toFixed(5)}`,
