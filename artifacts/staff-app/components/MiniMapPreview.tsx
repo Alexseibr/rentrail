@@ -142,6 +142,12 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
     }, []),
   );
 
+  useEffect(() => {
+    return () => {
+      webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+    };
+  }, []);
+
   const html = buildMapHtml(lat, lng, layer, zoom);
 
   function toggleLayer() {
