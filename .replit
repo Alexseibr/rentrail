@@ -28,7 +28,15 @@ args = "check-map-cleanup"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "ci"
+args = "typecheck"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "unit-tests"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "lint"
 
 [[workflows.workflow]]
 name = "check-map-cleanup"
@@ -42,12 +50,34 @@ args = "pnpm run check-map-cleanup"
 isValidation = true
 
 [[workflows.workflow]]
-name = "ci"
+name = "typecheck"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm run ci"
+args = "pnpm run typecheck"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "unit-tests"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run test:unit"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "lint"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run lint"
 
 [workflows.workflow.metadata]
 isValidation = true
