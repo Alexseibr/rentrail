@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as attachmentService from "../services/attachment.service";
 
 const router: IRouter = Router();
@@ -41,7 +44,9 @@ router.post(
       tag: req.body.tag,
       notes: req.body.notes,
       uploadedBy: req.user!.userId,
-      capturedAt: req.body.capturedAt ? new Date(req.body.capturedAt) : undefined,
+      capturedAt: req.body.capturedAt
+        ? new Date(req.body.capturedAt)
+        : undefined,
     });
     res.status(201).json({ data: attachment });
   },

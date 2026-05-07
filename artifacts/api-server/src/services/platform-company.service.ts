@@ -15,7 +15,11 @@ import {
   roles,
 } from "@workspace/db";
 import { eq, and, ilike, or, desc, asc, count, sql, isNull } from "drizzle-orm";
-import { NotFoundError, AppError, InvalidStatusTransitionError } from "../lib/errors";
+import {
+  NotFoundError,
+  AppError,
+  InvalidStatusTransitionError,
+} from "../lib/errors";
 
 type CompanyStatus = typeof companies.$inferSelect.status;
 
@@ -37,7 +41,11 @@ const ACTION_ALLOWED_FROM: Record<string, string[]> = {
   cancel: ["pending", "trial", "active", "past_due", "suspended", "blocked"],
 };
 
-function validateModerationTransition(from: string, to: string, action?: string) {
+function validateModerationTransition(
+  from: string,
+  to: string,
+  action?: string,
+) {
   const allowed = MODERATION_TRANSITIONS[from];
   if (!allowed || !allowed.includes(to)) {
     throw new InvalidStatusTransitionError(from, to, "company");
@@ -77,11 +85,15 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
   }
 
   if (opts.hasModeration === "true") {
-    conditions.push(sql`${companies.moderatedAt} IS NOT NULL` as ReturnType<typeof eq>);
+    conditions.push(
+      sql`${companies.moderatedAt} IS NOT NULL` as ReturnType<typeof eq>,
+    );
   }
 
   if (opts.plan) {
-    conditions.push(sql`${companies.plan} = ${opts.plan}` as ReturnType<typeof eq>);
+    conditions.push(
+      sql`${companies.plan} = ${opts.plan}` as ReturnType<typeof eq>,
+    );
   }
 
   let ownerCompanyIds: string[] | undefined;
@@ -110,14 +122,19 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
         ilike(companies.slug, `%${opts.search}%`),
         ilike(companies.email, `%${opts.search}%`),
         ...(ownerCompanyIds && ownerCompanyIds.length > 0
-          ? [sql`${companies.id} = ANY(${ownerCompanyIds})` as ReturnType<typeof eq>]
+          ? [
+              sql`${companies.id} = ANY(${ownerCompanyIds})` as ReturnType<
+                typeof eq
+              >,
+            ]
           : []),
       )
     : undefined;
 
-  const baseWhere = conditions.length > 0
-    ? and(...conditions, searchConditions)
-    : searchConditions;
+  const baseWhere =
+    conditions.length > 0
+      ? and(...conditions, searchConditions)
+      : searchConditions;
 
   const [totalResult] = await db
     .select({ count: count() })
@@ -133,7 +150,9 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
     country: companies.country,
     createdAt: companies.createdAt,
   } as const;
-  const sortCol = opts.sortBy ? sortColumnMap[opts.sortBy] : companies.createdAt;
+  const sortCol = opts.sortBy
+    ? sortColumnMap[opts.sortBy]
+    : companies.createdAt;
   const sortDir = opts.sortOrder === "asc" ? asc : desc;
 
   const rows = await db
@@ -146,47 +165,54 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
 
   const companyIds = rows.map((r) => r.id);
 
-  const countsPromises = companyIds.length > 0
-    ? await Promise.all(
-        companyIds.map(async (cid) => {
-          const [branchCount] = await db
-            .select({ count: count() })
-            .from(branches)
-            .where(eq(branches.companyId, cid));
-          const [stationCount] = await db
-            .select({ count: count() })
-            .from(stations)
-            .where(eq(stations.companyId, cid));
-          const [assetCount] = await db
-            .select({ count: count() })
-            .from(assets)
-            .where(eq(assets.companyId, cid));
-          const [userCount] = await db
-            .select({ count: count() })
-            .from(userCompanyMemberships)
-            .where(eq(userCompanyMemberships.companyId, cid));
-          const [rentalCount] = await db
-            .select({ count: count() })
-            .from(rentals)
-            .where(eq(rentals.companyId, cid));
+  const countsPromises =
+    companyIds.length > 0
+      ? await Promise.all(
+          companyIds.map(async (cid) => {
+            const [branchCount] = await db
+              .select({ count: count() })
+              .from(branches)
+              .where(eq(branches.companyId, cid));
+            const [stationCount] = await db
+              .select({ count: count() })
+              .from(stations)
+              .where(eq(stations.companyId, cid));
+            const [assetCount] = await db
+              .select({ count: count() })
+              .from(assets)
+              .where(eq(assets.companyId, cid));
+            const [userCount] = await db
+              .select({ count: count() })
+              .from(userCompanyMemberships)
+              .where(eq(userCompanyMemberships.companyId, cid));
+            const [rentalCount] = await db
+              .select({ count: count() })
+              .from(rentals)
+              .where(eq(rentals.companyId, cid));
 
-          return {
-            companyId: cid,
-            branches: branchCount?.count ?? 0,
-            stations: stationCount?.count ?? 0,
-            assets: assetCount?.count ?? 0,
-            users: userCount?.count ?? 0,
-            rentals: rentalCount?.count ?? 0,
-          };
-        }),
-      )
-    : [];
+            return {
+              companyId: cid,
+              branches: branchCount?.count ?? 0,
+              stations: stationCount?.count ?? 0,
+              assets: assetCount?.count ?? 0,
+              users: userCount?.count ?? 0,
+              rentals: rentalCount?.count ?? 0,
+            };
+          }),
+        )
+      : [];
 
   const countsMap = new Map(countsPromises.map((c) => [c.companyId, c]));
 
   const items = rows.map((row) => ({
     ...row,
-    counts: countsMap.get(row.id) ?? { branches: 0, stations: 0, assets: 0, users: 0, rentals: 0 },
+    counts: countsMap.get(row.id) ?? {
+      branches: 0,
+      stations: 0,
+      assets: 0,
+      users: 0,
+      rentals: 0,
+    },
   }));
 
   return {
@@ -209,17 +235,38 @@ export async function getPlatformCompanyDetail(companyId: string) {
 
   if (!company) throw new NotFoundError("Company not found");
 
-  const [branchCount] = await db.select({ count: count() }).from(branches).where(eq(branches.companyId, companyId));
-  const [stationCount] = await db.select({ count: count() }).from(stations).where(eq(stations.companyId, companyId));
-  const [assetCount] = await db.select({ count: count() }).from(assets).where(eq(assets.companyId, companyId));
-  const [userCount] = await db.select({ count: count() }).from(userCompanyMemberships).where(eq(userCompanyMemberships.companyId, companyId));
-  const [clientCount] = await db.select({ count: count() }).from(clients).where(eq(clients.companyId, companyId));
-  const [rentalCount] = await db.select({ count: count() }).from(rentals).where(eq(rentals.companyId, companyId));
+  const [branchCount] = await db
+    .select({ count: count() })
+    .from(branches)
+    .where(eq(branches.companyId, companyId));
+  const [stationCount] = await db
+    .select({ count: count() })
+    .from(stations)
+    .where(eq(stations.companyId, companyId));
+  const [assetCount] = await db
+    .select({ count: count() })
+    .from(assets)
+    .where(eq(assets.companyId, companyId));
+  const [userCount] = await db
+    .select({ count: count() })
+    .from(userCompanyMemberships)
+    .where(eq(userCompanyMemberships.companyId, companyId));
+  const [clientCount] = await db
+    .select({ count: count() })
+    .from(clients)
+    .where(eq(clients.companyId, companyId));
+  const [rentalCount] = await db
+    .select({ count: count() })
+    .from(rentals)
+    .where(eq(rentals.companyId, companyId));
   const [activeRentalCount] = await db
     .select({ count: count() })
     .from(rentals)
     .where(and(eq(rentals.companyId, companyId), eq(rentals.status, "active")));
-  const [blacklistCount] = await db.select({ count: count() }).from(blacklistEntries).where(eq(blacklistEntries.companyId, companyId));
+  const [blacklistCount] = await db
+    .select({ count: count() })
+    .from(blacklistEntries)
+    .where(eq(blacklistEntries.companyId, companyId));
 
   const ownerRole = await db
     .select({ id: roles.id })
@@ -227,7 +274,12 @@ export async function getPlatformCompanyDetail(companyId: string) {
     .where(eq(roles.code, "owner"))
     .limit(1);
 
-  let ownerMembers: { userId: string; email: string | null; firstName: string; lastName: string }[] = [];
+  let ownerMembers: {
+    userId: string;
+    email: string | null;
+    firstName: string;
+    lastName: string;
+  }[] = [];
   if (ownerRole.length > 0) {
     ownerMembers = await db
       .select({
@@ -350,35 +402,69 @@ async function performModerationAction(
   return { updated: result, previousStatus: company.status };
 }
 
-export async function approveCompany(companyId: string, input: ModerationActionInput) {
+export async function approveCompany(
+  companyId: string,
+  input: ModerationActionInput,
+) {
   return performModerationAction(companyId, "active", "approve", input);
 }
 
-export async function blockCompany(companyId: string, input: ModerationActionInput) {
+export async function blockCompany(
+  companyId: string,
+  input: ModerationActionInput,
+) {
   return performModerationAction(companyId, "blocked", "block", input);
 }
 
-export async function unblockCompany(companyId: string, input: ModerationActionInput) {
+export async function unblockCompany(
+  companyId: string,
+  input: ModerationActionInput,
+) {
   return performModerationAction(companyId, "active", "unblock", input);
 }
 
-export async function suspendCompany(companyId: string, input: ModerationActionInput) {
+export async function suspendCompany(
+  companyId: string,
+  input: ModerationActionInput,
+) {
   return performModerationAction(companyId, "suspended", "suspend", input);
 }
 
-export async function cancelCompany(companyId: string, input: ModerationActionInput) {
+export async function cancelCompany(
+  companyId: string,
+  input: ModerationActionInput,
+) {
   return performModerationAction(companyId, "canceled", "cancel", input);
 }
 
 export async function getCompanyUsage(companyId: string) {
-  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
-  const [branchCount] = await db.select({ count: count() }).from(branches).where(eq(branches.companyId, companyId));
-  const [stationCount] = await db.select({ count: count() }).from(stations).where(eq(stations.companyId, companyId));
-  const [assetCount] = await db.select({ count: count() }).from(assets).where(eq(assets.companyId, companyId));
-  const [userCount] = await db.select({ count: count() }).from(userCompanyMemberships).where(eq(userCompanyMemberships.companyId, companyId));
-  const [rentalCount] = await db.select({ count: count() }).from(rentals).where(eq(rentals.companyId, companyId));
+  const [branchCount] = await db
+    .select({ count: count() })
+    .from(branches)
+    .where(eq(branches.companyId, companyId));
+  const [stationCount] = await db
+    .select({ count: count() })
+    .from(stations)
+    .where(eq(stations.companyId, companyId));
+  const [assetCount] = await db
+    .select({ count: count() })
+    .from(assets)
+    .where(eq(assets.companyId, companyId));
+  const [userCount] = await db
+    .select({ count: count() })
+    .from(userCompanyMemberships)
+    .where(eq(userCompanyMemberships.companyId, companyId));
+  const [rentalCount] = await db
+    .select({ count: count() })
+    .from(rentals)
+    .where(eq(rentals.companyId, companyId));
 
   const { getPlanLimitsForCompany } = await import("./billing.service");
   const planLimits = await getPlanLimitsForCompany(companyId);
@@ -389,17 +475,30 @@ export async function getCompanyUsage(companyId: string) {
     companyName: company.name,
     plan: company.plan ?? "none",
     resources: {
-      branches: { current: branchCount?.count ?? 0, limit: limits.branches ?? -1 },
-      stations: { current: stationCount?.count ?? 0, limit: limits.stations ?? -1 },
+      branches: {
+        current: branchCount?.count ?? 0,
+        limit: limits.branches ?? -1,
+      },
+      stations: {
+        current: stationCount?.count ?? 0,
+        limit: limits.stations ?? -1,
+      },
       assets: { current: assetCount?.count ?? 0, limit: limits.assets ?? -1 },
       users: { current: userCount?.count ?? 0, limit: limits.users ?? -1 },
-      rentals: { current: rentalCount?.count ?? 0, limit: limits.rentals ?? -1 },
+      rentals: {
+        current: rentalCount?.count ?? 0,
+        limit: limits.rentals ?? -1,
+      },
     },
   };
 }
 
 export async function getCompanyHealthSummary(companyId: string) {
-  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
   const assetsByStatus = await db
@@ -429,23 +528,38 @@ export async function getCompanyHealthSummary(companyId: string) {
       ),
     );
 
-  const overdueRentals = rentalsByStatus.find((r) => r.status === "overdue")?.count ?? 0;
-  const disputedRentals = rentalsByStatus.find((r) => r.status === "disputed")?.count ?? 0;
-  const lostAssets = assetsByStatus.find((a) => a.status === "lost")?.count ?? 0;
-  const stolenAssets = assetsByStatus.find((a) => a.status === "stolen")?.count ?? 0;
-  const maintenanceAssets = assetsByStatus.find((a) => a.status === "maintenance")?.count ?? 0;
-  const blockedAssets = assetsByStatus.find((a) => a.status === "blocked")?.count ?? 0;
+  const overdueRentals =
+    rentalsByStatus.find((r) => r.status === "overdue")?.count ?? 0;
+  const disputedRentals =
+    rentalsByStatus.find((r) => r.status === "disputed")?.count ?? 0;
+  const lostAssets =
+    assetsByStatus.find((a) => a.status === "lost")?.count ?? 0;
+  const stolenAssets =
+    assetsByStatus.find((a) => a.status === "stolen")?.count ?? 0;
+  const maintenanceAssets =
+    assetsByStatus.find((a) => a.status === "maintenance")?.count ?? 0;
+  const blockedAssets =
+    assetsByStatus.find((a) => a.status === "blocked")?.count ?? 0;
 
   return {
     companyId,
     companyName: company.name,
     status: company.status,
     assets: {
-      byStatus: Object.fromEntries(assetsByStatus.map((a) => [a.status, a.count])),
-      issues: { lost: lostAssets, stolen: stolenAssets, maintenance: maintenanceAssets, blocked: blockedAssets },
+      byStatus: Object.fromEntries(
+        assetsByStatus.map((a) => [a.status, a.count]),
+      ),
+      issues: {
+        lost: lostAssets,
+        stolen: stolenAssets,
+        maintenance: maintenanceAssets,
+        blocked: blockedAssets,
+      },
     },
     rentals: {
-      byStatus: Object.fromEntries(rentalsByStatus.map((r) => [r.status, r.count])),
+      byStatus: Object.fromEntries(
+        rentalsByStatus.map((r) => [r.status, r.count]),
+      ),
       issues: { overdue: overdueRentals, disputed: disputedRentals },
     },
     incidents: {
@@ -491,8 +605,15 @@ export async function getTenantSummary(companyId: string) {
   };
 }
 
-export async function getTenantAuditLog(companyId: string, opts: { page?: number; limit?: number }) {
-  const [company] = await db.select({ id: companies.id }).from(companies).where(eq(companies.id, companyId)).limit(1);
+export async function getTenantAuditLog(
+  companyId: string,
+  opts: { page?: number; limit?: number },
+) {
+  const [company] = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
   const page = opts.page ?? 1;

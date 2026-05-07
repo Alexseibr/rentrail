@@ -99,7 +99,9 @@ export default function MapScreen() {
         Array.isArray(event.query.queryKey) &&
         event.query.queryKey[0] === "fleet-fast-poll-until"
       ) {
-        const until = queryClient.getQueryData<number>(["fleet-fast-poll-until"]);
+        const until = queryClient.getQueryData<number>([
+          "fleet-fast-poll-until",
+        ]);
         if (until && until > Date.now()) {
           setFastPollUntil(until);
         }
@@ -110,7 +112,11 @@ export default function MapScreen() {
 
   const isFastPolling = Date.now() < fastPollUntil;
 
-  const { data: items = [], isLoading, isFetching } = useQuery({
+  const {
+    data: items = [],
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ["staff-fleet-map"],
     queryFn: fetchFleetMap,
     refetchInterval: isFastPolling ? FAST_POLL_MS : SLOW_POLL_MS,
@@ -154,14 +160,28 @@ export default function MapScreen() {
               {t("fleetMap.title")}
             </Text>
             {lastUpdated && (
-              <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-                {t("fleetMap.updated", { time: lastUpdated.toLocaleTimeString() })}
+              <Text
+                style={[styles.headerSub, { color: colors.mutedForeground }]}
+              >
+                {t("fleetMap.updated", {
+                  time: lastUpdated.toLocaleTimeString(),
+                })}
               </Text>
             )}
           </View>
           {isFastPolling && (
-            <View style={[styles.fastPollBadge, { backgroundColor: colors.primary + "20" }]}>
-              <View style={[styles.fastPollDot, { backgroundColor: colors.primary }]} />
+            <View
+              style={[
+                styles.fastPollBadge,
+                { backgroundColor: colors.primary + "20" },
+              ]}
+            >
+              <View
+                style={[
+                  styles.fastPollDot,
+                  { backgroundColor: colors.primary },
+                ]}
+              />
               <Text style={[styles.fastPollText, { color: colors.primary }]}>
                 {t("fleetMap.fastPoll")}
               </Text>
@@ -174,13 +194,17 @@ export default function MapScreen() {
 
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.statValue, { color: colors.foreground }]}>{items.length}</Text>
+            <Text style={[styles.statValue, { color: colors.foreground }]}>
+              {items.length}
+            </Text>
             <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
               {t("fleetMap.total")}
             </Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.statValue, { color: "#22C55E" }]}>{withCoords.length}</Text>
+            <Text style={[styles.statValue, { color: "#22C55E" }]}>
+              {withCoords.length}
+            </Text>
             <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
               {t("fleetMap.located")}
             </Text>
@@ -197,18 +221,32 @@ export default function MapScreen() {
 
         {Object.entries(statusCounts).length > 0 && (
           <View style={[styles.legendCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {t("fleetMap.statusBreakdown")}
             </Text>
             {Object.entries(statusCounts).map(([status, count]) => (
               <View key={status} style={styles.legendRow}>
                 <View
-                  style={[styles.legendDot, { backgroundColor: STATUS_COLORS[status] ?? "#8c8c8c" }]}
+                  style={[
+                    styles.legendDot,
+                    { backgroundColor: STATUS_COLORS[status] ?? "#8c8c8c" },
+                  ]}
                 />
-                <Text style={[styles.legendLabel, { color: colors.foreground }]}>
+                <Text
+                  style={[styles.legendLabel, { color: colors.foreground }]}
+                >
                   {t(`assets.status_${status}`, { defaultValue: status })}
                 </Text>
-                <Text style={[styles.legendCount, { color: colors.mutedForeground }]}>{count}</Text>
+                <Text
+                  style={[
+                    styles.legendCount,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  {count}
+                </Text>
               </View>
             ))}
           </View>
@@ -216,7 +254,9 @@ export default function MapScreen() {
 
         {withCoords.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {t("fleetMap.locatedVehicles")}
             </Text>
             {withCoords.map((item) => (
@@ -228,15 +268,28 @@ export default function MapScreen() {
                   <View
                     style={[
                       styles.statusDot,
-                      { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" },
+                      {
+                        backgroundColor:
+                          STATUS_COLORS[item.status] ?? "#8c8c8c",
+                      },
                     ]}
                   />
                   <View style={styles.vehicleInfo}>
-                    <Text style={[styles.vehicleCode, { color: colors.foreground }]}>
+                    <Text
+                      style={[styles.vehicleCode, { color: colors.foreground }]}
+                    >
                       {item.internalCode}
                     </Text>
-                    <Text style={[styles.vehicleSub, { color: colors.mutedForeground }]}>
-                      {item.brand} {item.model} · {t(`assets.status_${item.status}`, { defaultValue: item.status })}
+                    <Text
+                      style={[
+                        styles.vehicleSub,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {item.brand} {item.model} ·{" "}
+                      {t(`assets.status_${item.status}`, {
+                        defaultValue: item.status,
+                      })}
                     </Text>
                   </View>
                   <View style={styles.vehicleMeta}>
@@ -254,12 +307,16 @@ export default function MapScreen() {
                       <Feather
                         name={item.lockState === "locked" ? "lock" : "unlock"}
                         size={14}
-                        color={item.lockState === "locked" ? "#EF4444" : "#22C55E"}
+                        color={
+                          item.lockState === "locked" ? "#EF4444" : "#22C55E"
+                        }
                       />
                     )}
                   </View>
                 </View>
-                <Text style={[styles.coordsText, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[styles.coordsText, { color: colors.mutedForeground }]}
+                >
                   {item.lat!.toFixed(5)}, {item.lng!.toFixed(5)}
                   {item.lastSeen ? ` · ${formatLastSeen(item.lastSeen)}` : ""}
                 </Text>
@@ -270,27 +327,45 @@ export default function MapScreen() {
 
         {withoutCoords.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {t("fleetMap.noGpsVehicles")}
             </Text>
             {withoutCoords.map((item) => (
               <View
                 key={item.id}
-                style={[styles.vehicleCard, { backgroundColor: colors.card, opacity: 0.6 }]}
+                style={[
+                  styles.vehicleCard,
+                  { backgroundColor: colors.card, opacity: 0.6 },
+                ]}
               >
                 <View style={styles.vehicleRow}>
                   <View
                     style={[
                       styles.statusDot,
-                      { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" },
+                      {
+                        backgroundColor:
+                          STATUS_COLORS[item.status] ?? "#8c8c8c",
+                      },
                     ]}
                   />
                   <View style={styles.vehicleInfo}>
-                    <Text style={[styles.vehicleCode, { color: colors.foreground }]}>
+                    <Text
+                      style={[styles.vehicleCode, { color: colors.foreground }]}
+                    >
                       {item.internalCode}
                     </Text>
-                    <Text style={[styles.vehicleSub, { color: colors.mutedForeground }]}>
-                      {item.brand} {item.model} · {t(`assets.status_${item.status}`, { defaultValue: item.status })}
+                    <Text
+                      style={[
+                        styles.vehicleSub,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {item.brand} {item.model} ·{" "}
+                      {t(`assets.status_${item.status}`, {
+                        defaultValue: item.status,
+                      })}
                     </Text>
                   </View>
                   {item.batteryPercent != null && (
@@ -360,7 +435,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statValue: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 11, fontFamily: "Inter_500Medium", marginTop: 2, textAlign: "center" },
+  statLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    marginTop: 2,
+    textAlign: "center",
+  },
   legendCard: {
     padding: 14,
     borderRadius: 14,
@@ -398,7 +478,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  vehicleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
+  vehicleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 4,
+  },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   vehicleInfo: { flex: 1 },
   vehicleCode: { fontSize: 14, fontFamily: "Inter_600SemiBold" },

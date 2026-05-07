@@ -34,9 +34,13 @@ app.listen(port, (err) => {
   logger.info({ port }, "Server listening");
 });
 
-const teltonikaPort = process.env["TELTONIKA_TCP_PORT"] ? Number(process.env["TELTONIKA_TCP_PORT"]) : null;
+const teltonikaPort = process.env["TELTONIKA_TCP_PORT"]
+  ? Number(process.env["TELTONIKA_TCP_PORT"])
+  : null;
 if (teltonikaPort && teltonikaPort > 0) {
   startTeltonikaServer(teltonikaPort);
 } else {
-  logger.info("Teltonika TCP server disabled (set TELTONIKA_TCP_PORT to enable)");
+  logger.info(
+    "Teltonika TCP server disabled (set TELTONIKA_TCP_PORT to enable)",
+  );
 }

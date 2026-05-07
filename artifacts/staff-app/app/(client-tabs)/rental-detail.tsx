@@ -120,7 +120,8 @@ export default function RentalDetailScreen() {
     if (minutes < 60) return `${minutes} ${t("rentalDetail.min")}`;
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
-    if (h < 24) return `${h}${t("rentalDetail.h")} ${m}${t("rentalDetail.min")}`;
+    if (h < 24)
+      return `${h}${t("rentalDetail.h")} ${m}${t("rentalDetail.min")}`;
     const d = Math.floor(h / 24);
     const rh = h % 24;
     return `${d}${t("rentalDetail.d")} ${rh}${t("rentalDetail.h")}`;
@@ -129,7 +130,10 @@ export default function RentalDetailScreen() {
   const formatDate = (s: string | null) => {
     if (!s) return "—";
     return new Date(s).toLocaleString(undefined, {
-      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -154,18 +158,24 @@ export default function RentalDetailScreen() {
   const isActive = rental.status === "active" || rental.status === "overdue";
   const asset = rental.asset;
   const tel = rental.telemetry;
-  const typeIcon = asset ? (ASSET_TYPE_ICONS[asset.assetType] || "circle") : "circle";
+  const typeIcon = asset
+    ? ASSET_TYPE_ICONS[asset.assetType] || "circle"
+    : "circle";
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+          <View
+            style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}
+          >
             <Text style={[styles.statusText, { color: statusStyle.text }]}>
               {t(`clientRentals.status_${rental.status}`, rental.status)}
             </Text>
           </View>
-          <Text style={styles.durationText}>{formatDuration(rental.durationMinutes)}</Text>
+          <Text style={styles.durationText}>
+            {formatDuration(rental.durationMinutes)}
+          </Text>
         </View>
 
         {asset && (
@@ -174,13 +184,22 @@ export default function RentalDetailScreen() {
               <Feather name={typeIcon as any} size={24} color="#F5C518" />
             </View>
             <View style={styles.assetTextWrap}>
-              <Text style={styles.assetName}>{asset.brand} {asset.model}</Text>
-              <Text style={styles.assetCode}>{asset.internalCode} · {asset.assetType.toUpperCase()}</Text>
+              <Text style={styles.assetName}>
+                {asset.brand} {asset.model}
+              </Text>
+              <Text style={styles.assetCode}>
+                {asset.internalCode} · {asset.assetType.toUpperCase()}
+              </Text>
             </View>
             {isActive && (
               <TouchableOpacity
                 style={styles.viewVehicleBtn}
-                onPress={() => router.push({ pathname: "/(client-tabs)/vehicle-detail", params: { id: asset.id } })}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(client-tabs)/vehicle-detail",
+                    params: { id: asset.id },
+                  })
+                }
                 activeOpacity={0.7}
               >
                 <Feather name="map" size={16} color="#F5C518" />
@@ -200,47 +219,73 @@ export default function RentalDetailScreen() {
         {rental.plannedEndAt && (
           <View style={styles.timelineRow}>
             <Feather name="clock" size={16} color="#FF9800" />
-            <Text style={styles.timelineLabel}>{t("rentalDetail.plannedEnd")}</Text>
-            <Text style={styles.timelineValue}>{formatDate(rental.plannedEndAt)}</Text>
+            <Text style={styles.timelineLabel}>
+              {t("rentalDetail.plannedEnd")}
+            </Text>
+            <Text style={styles.timelineValue}>
+              {formatDate(rental.plannedEndAt)}
+            </Text>
           </View>
         )}
         {rental.actualEndAt && (
           <View style={styles.timelineRow}>
             <Feather name="check-circle" size={16} color="#2196F3" />
             <Text style={styles.timelineLabel}>{t("clientRentals.ended")}</Text>
-            <Text style={styles.timelineValue}>{formatDate(rental.actualEndAt)}</Text>
+            <Text style={styles.timelineValue}>
+              {formatDate(rental.actualEndAt)}
+            </Text>
           </View>
         )}
       </View>
 
       {tel && (
         <View style={styles.telemetryCard}>
-          <Text style={styles.sectionTitle}>{t("rentalDetail.vehicleStatus")}</Text>
+          <Text style={styles.sectionTitle}>
+            {t("rentalDetail.vehicleStatus")}
+          </Text>
           <View style={styles.telGrid}>
             <View style={styles.telItem}>
-              <Feather name="battery" size={16} color={
-                tel.batteryPercent != null
-                  ? tel.batteryPercent > 50 ? "#4CAF50" : tel.batteryPercent > 20 ? "#FF9800" : "#E53935"
-                  : "#999"
-              } />
+              <Feather
+                name="battery"
+                size={16}
+                color={
+                  tel.batteryPercent != null
+                    ? tel.batteryPercent > 50
+                      ? "#4CAF50"
+                      : tel.batteryPercent > 20
+                        ? "#FF9800"
+                        : "#E53935"
+                    : "#999"
+                }
+              />
               <Text style={styles.telValue}>{tel.batteryPercent ?? "—"}%</Text>
               <Text style={styles.telLabel}>{t("vehicleDetail.battery")}</Text>
             </View>
             <View style={styles.telItem}>
               <Feather name="navigation" size={16} color="#2196F3" />
-              <Text style={styles.telValue}>{tel.speed != null ? Math.round(tel.speed) : "—"}</Text>
+              <Text style={styles.telValue}>
+                {tel.speed != null ? Math.round(tel.speed) : "—"}
+              </Text>
               <Text style={styles.telLabel}>{t("vehicleDetail.speedKmh")}</Text>
             </View>
             <View style={styles.telItem}>
-              <Feather name={tel.lockState === "locked" ? "lock" : "unlock"} size={16} color={tel.lockState === "locked" ? "#4CAF50" : "#E53935"} />
-              <Text style={styles.telValue}>{tel.lockState === "locked" ? "🔒" : "🔓"}</Text>
+              <Feather
+                name={tel.lockState === "locked" ? "lock" : "unlock"}
+                size={16}
+                color={tel.lockState === "locked" ? "#4CAF50" : "#E53935"}
+              />
+              <Text style={styles.telValue}>
+                {tel.lockState === "locked" ? "🔒" : "🔓"}
+              </Text>
               <Text style={styles.telLabel}>{t("rentalDetail.lockState")}</Text>
             </View>
             {tel.odometer != null && (
               <View style={styles.telItem}>
                 <Feather name="trending-up" size={16} color="#9C27B0" />
                 <Text style={styles.telValue}>{Math.round(tel.odometer)}</Text>
-                <Text style={styles.telLabel}>{t("vehicleDetail.odometerKm")}</Text>
+                <Text style={styles.telLabel}>
+                  {t("vehicleDetail.odometerKm")}
+                </Text>
               </View>
             )}
           </View>
@@ -286,7 +331,9 @@ export default function RentalDetailScreen() {
           ) : (
             <>
               <Feather name="corner-down-left" size={18} color="#fff" />
-              <Text style={styles.returnBtnText}>{t("clientRentals.returnVehicle")}</Text>
+              <Text style={styles.returnBtnText}>
+                {t("clientRentals.returnVehicle")}
+              </Text>
             </>
           )}
         </TouchableOpacity>
@@ -298,7 +345,12 @@ export default function RentalDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   scroll: { padding: 16, paddingBottom: 120, gap: 12 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f5f5f5" },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
   emptyText: { fontSize: 15, color: "#8c8c8c", marginTop: 12 },
   headerCard: {
     backgroundColor: "#fff",
@@ -311,7 +363,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
   statusText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   durationText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
@@ -325,8 +381,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   assetTextWrap: { flex: 1 },
-  assetName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
-  assetCode: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8c8c8c", marginTop: 1 },
+  assetName: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#1a1a1a",
+  },
+  assetCode: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#8c8c8c",
+    marginTop: 1,
+  },
   viewVehicleBtn: {
     width: 40,
     height: 40,
@@ -355,8 +420,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timelineRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  timelineLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: "#555" },
-  timelineValue: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#1a1a1a" },
+  timelineLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: "#555",
+  },
+  timelineValue: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: "#1a1a1a",
+  },
   telemetryCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -390,7 +464,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   infoLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#555" },
   infoValue: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
   notesText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#555" },

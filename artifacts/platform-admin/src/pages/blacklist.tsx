@@ -84,24 +84,33 @@ export default function BlacklistPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editEntry, setEditEntry] = useState<BlacklistEntry | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [toggleConfirm, setToggleConfirm] = useState<ToggleConfirm | null>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<ToggleConfirm | null>(
+    null,
+  );
   const limit = 20;
 
   const { data, isLoading } = useQuery({
     queryKey: ["blacklist", search, activeFilter, page],
     queryFn: () => {
-      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
       if (search) params.set("search", search);
       if (activeFilter !== "all") params.set("active", activeFilter);
-      return api<{ items: BlacklistEntry[]; pagination: { total: number; totalPages: number } }>(
-        `/platform/blacklist?${params}`,
-      );
+      return api<{
+        items: BlacklistEntry[];
+        pagination: { total: number; totalPages: number };
+      }>(`/platform/blacklist?${params}`);
     },
   });
 
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api("/platform/blacklist", { method: "POST", body: JSON.stringify(body) }),
+      api("/platform/blacklist", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blacklist"] });
       setShowCreate(false);
@@ -110,13 +119,20 @@ export default function BlacklistPage() {
       toast({ title: t("toast.blacklistCreated") });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.saveFailed"),
+        variant: "destructive",
+      });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api(`/platform/blacklist/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+      api(`/platform/blacklist/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blacklist"] });
       setEditEntry(null);
@@ -124,20 +140,34 @@ export default function BlacklistPage() {
       toast({ title: t("toast.blacklistUpdated") });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.saveFailed"),
+        variant: "destructive",
+      });
     },
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, enable }: { id: string; enable: boolean }) =>
-      api(`/platform/blacklist/${id}/${enable ? "enable" : "disable"}`, { method: "POST" }),
+      api(`/platform/blacklist/${id}/${enable ? "enable" : "disable"}`, {
+        method: "POST",
+      }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["blacklist"] });
       setToggleConfirm(null);
-      toast({ title: variables.enable ? t("toast.blacklistEnabled") : t("toast.blacklistDisabled") });
+      toast({
+        title: variables.enable
+          ? t("toast.blacklistEnabled")
+          : t("toast.blacklistDisabled"),
+      });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.actionFailed"),
+        variant: "destructive",
+      });
     },
   });
 
@@ -187,10 +217,18 @@ export default function BlacklistPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("blacklist.title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("blacklist.title")}
+          </h1>
           <p className="text-muted-foreground">{t("blacklist.subtitle")}</p>
         </div>
-        <Button onClick={() => { setShowCreate(true); setEditEntry(null); setForm({ ...emptyForm }); }}>
+        <Button
+          onClick={() => {
+            setShowCreate(true);
+            setEditEntry(null);
+            setForm({ ...emptyForm });
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" />
           {t("blacklist.addEntry")}
         </Button>
@@ -255,13 +293,19 @@ export default function BlacklistPage() {
                       <TableCell>
                         <div className="space-y-0.5">
                           {entry.fullNameSnapshot && (
-                            <div className="font-medium">{entry.fullNameSnapshot}</div>
+                            <div className="font-medium">
+                              {entry.fullNameSnapshot}
+                            </div>
                           )}
                           {entry.emailSnapshot && (
-                            <div className="text-xs text-muted-foreground">{entry.emailSnapshot}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {entry.emailSnapshot}
+                            </div>
                           )}
                           {entry.phoneSnapshot && (
-                            <div className="text-xs text-muted-foreground">{entry.phoneSnapshot}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {entry.phoneSnapshot}
+                            </div>
                           )}
                           {entry.documentSnapshot && (
                             <div className="text-xs text-muted-foreground">
@@ -277,7 +321,9 @@ export default function BlacklistPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <span className="text-sm font-medium">{entry.reasonCode}</span>
+                          <span className="text-sm font-medium">
+                            {entry.reasonCode}
+                          </span>
                           {entry.reasonText && (
                             <p className="text-xs text-muted-foreground truncate max-w-48">
                               {entry.reasonText}
@@ -294,7 +340,9 @@ export default function BlacklistPage() {
                               : "bg-gray-100 text-gray-800"
                           }
                         >
-                          {entry.isActive ? t("common.active") : t("common.inactive")}
+                          {entry.isActive
+                            ? t("common.active")
+                            : t("common.inactive")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
@@ -317,12 +365,17 @@ export default function BlacklistPage() {
                             onClick={() =>
                               setToggleConfirm({
                                 id: entry.id,
-                                name: entry.fullNameSnapshot || entry.emailSnapshot || entry.id,
+                                name:
+                                  entry.fullNameSnapshot ||
+                                  entry.emailSnapshot ||
+                                  entry.id,
                                 enable: !entry.isActive,
                               })
                             }
                           >
-                            {entry.isActive ? t("whiteLabel.disable") : t("whiteLabel.enable")}
+                            {entry.isActive
+                              ? t("whiteLabel.disable")
+                              : t("whiteLabel.enable")}
                           </Button>
                         </div>
                       </TableCell>
@@ -330,7 +383,10 @@ export default function BlacklistPage() {
                   ))}
                   {entries.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-muted-foreground"
+                      >
                         {t("common.noData")}
                       </TableCell>
                     </TableRow>
@@ -339,13 +395,27 @@ export default function BlacklistPage() {
               </Table>
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
-                  <p className="text-sm text-muted-foreground">{total} {t("common.total")}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {total} {t("common.total")}
+                  </p>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage(page - 1)}
+                    >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm">{t("common.page", { page, totalPages })}</span>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                    <span className="text-sm">
+                      {t("common.page", { page, totalPages })}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage(page + 1)}
+                    >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -356,10 +426,18 @@ export default function BlacklistPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={showCreate || !!editEntry} onOpenChange={() => { setShowCreate(false); setEditEntry(null); }}>
+      <Dialog
+        open={showCreate || !!editEntry}
+        onOpenChange={() => {
+          setShowCreate(false);
+          setEditEntry(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editEntry ? t("blacklist.editEntry") : t("blacklist.addEntry")}</DialogTitle>
+            <DialogTitle>
+              {editEntry ? t("blacklist.editEntry") : t("blacklist.addEntry")}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -385,7 +463,9 @@ export default function BlacklistPage() {
                 <Label>{t("blacklist.reasonCode")}</Label>
                 <Input
                   value={form.reasonCode}
-                  onChange={(e) => setForm({ ...form, reasonCode: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, reasonCode: e.target.value })
+                  }
                   placeholder="e.g. fraud"
                   required
                 />
@@ -395,7 +475,9 @@ export default function BlacklistPage() {
               <Label>{t("blacklist.reason")}</Label>
               <Input
                 value={form.reasonText}
-                onChange={(e) => setForm({ ...form, reasonText: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, reasonText: e.target.value })
+                }
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -403,52 +485,77 @@ export default function BlacklistPage() {
                 <Label>{t("blacklist.fullName")}</Label>
                 <Input
                   value={form.fullNameSnapshot}
-                  onChange={(e) => setForm({ ...form, fullNameSnapshot: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, fullNameSnapshot: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label>{t("common.email")}</Label>
                 <Input
                   value={form.emailSnapshot}
-                  onChange={(e) => setForm({ ...form, emailSnapshot: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, emailSnapshot: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label>{t("common.phone")}</Label>
                 <Input
                   value={form.phoneSnapshot}
-                  onChange={(e) => setForm({ ...form, phoneSnapshot: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, phoneSnapshot: e.target.value })
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label>{t("blacklist.documentId")}</Label>
                 <Input
                   value={form.documentSnapshot}
-                  onChange={(e) => setForm({ ...form, documentSnapshot: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, documentSnapshot: e.target.value })
+                  }
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setEditEntry(null); }}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowCreate(false);
+                  setEditEntry(null);
+                }}
+              >
                 {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={isSaving}>
-                {isSaving ? t("common.saving") : editEntry ? t("billing.saveChanges") : t("blacklist.addEntry")}
+                {isSaving
+                  ? t("common.saving")
+                  : editEntry
+                    ? t("billing.saveChanges")
+                    : t("blacklist.addEntry")}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!toggleConfirm} onOpenChange={() => setToggleConfirm(null)}>
+      <Dialog
+        open={!!toggleConfirm}
+        onOpenChange={() => setToggleConfirm(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {toggleConfirm?.enable ? t("blacklist.enableBlock") : t("blacklist.disableAllow")}
+              {toggleConfirm?.enable
+                ? t("blacklist.enableBlock")
+                : t("blacklist.disableAllow")}
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to {toggleConfirm?.enable ? "enable" : "disable"} the blacklist
-              entry for <strong>{toggleConfirm?.name}</strong>?
+              Are you sure you want to{" "}
+              {toggleConfirm?.enable ? "enable" : "disable"} the blacklist entry
+              for <strong>{toggleConfirm?.name}</strong>?
               {toggleConfirm?.enable
                 ? " This will block matching identities across all tenants."
                 : " This will allow matching identities to use the platform again."}
@@ -463,7 +570,10 @@ export default function BlacklistPage() {
               disabled={toggleMutation.isPending}
               onClick={() => {
                 if (toggleConfirm) {
-                  toggleMutation.mutate({ id: toggleConfirm.id, enable: toggleConfirm.enable });
+                  toggleMutation.mutate({
+                    id: toggleConfirm.id,
+                    enable: toggleConfirm.enable,
+                  });
                 }
               }}
             >

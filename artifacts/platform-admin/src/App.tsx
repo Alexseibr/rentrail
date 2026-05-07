@@ -32,7 +32,13 @@ import NotFound from "@/pages/not-found";
 import { Spinner } from "@/components/ui/spinner";
 import { useMemo, type ReactNode } from "react";
 
-const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
+const PLATFORM_ROLES = [
+  "superAdmin",
+  "platformAdmin",
+  "platformSupport",
+  "platformFinance",
+  "platformRisk",
+];
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,7 +56,10 @@ function PlatformRoutes() {
       <Route path="/companies" component={CompaniesPage} />
       <Route path="/companies/:id" component={CompanyDetailPage} />
       <Route path="/billing" component={BillingPage} />
-      <Route path="/billing/subscriptions/:id" component={SubscriptionDetailPage} />
+      <Route
+        path="/billing/subscriptions/:id"
+        component={SubscriptionDetailPage}
+      />
       <Route path="/billing/invoices/:id" component={InvoiceDetailPage} />
       <Route path="/blacklist" component={BlacklistPage} />
       <Route path="/diagnostics" component={DiagnosticsPage} />
@@ -61,7 +70,13 @@ function PlatformRoutes() {
   );
 }
 
-function RoleGuard({ children, guardPath }: { children: ReactNode; guardPath: string }) {
+function RoleGuard({
+  children,
+  guardPath,
+}: {
+  children: ReactNode;
+  guardPath: string;
+}) {
   const { user } = useAuth();
   const roleCode = user?.memberships?.[0]?.roleCode;
   if (!canAccessRoute(roleCode, guardPath)) {
@@ -73,16 +88,76 @@ function RoleGuard({ children, guardPath }: { children: ReactNode; guardPath: st
 function CompanyRoutes() {
   return (
     <Switch>
-      <Route path="/">{() => <RoleGuard guardPath="/"><CompanyDashboardPage /></RoleGuard>}</Route>
-      <Route path="/fleet">{() => <RoleGuard guardPath="/fleet"><FleetPage /></RoleGuard>}</Route>
-      <Route path="/fleet/:id">{() => <RoleGuard guardPath="/fleet"><AssetDetailPage /></RoleGuard>}</Route>
-      <Route path="/map">{() => <RoleGuard guardPath="/map"><FleetMapPage /></RoleGuard>}</Route>
-      <Route path="/service">{() => <RoleGuard guardPath="/service"><ServicePage /></RoleGuard>}</Route>
-      <Route path="/rentals">{() => <RoleGuard guardPath="/rentals"><RentalsCompanyPage /></RoleGuard>}</Route>
-      <Route path="/rentals/:id">{() => <RoleGuard guardPath="/rentals"><RentalDetailPage /></RoleGuard>}</Route>
-      <Route path="/clients">{() => <RoleGuard guardPath="/clients"><ClientsCompanyPage /></RoleGuard>}</Route>
-      <Route path="/branches">{() => <RoleGuard guardPath="/branches"><BranchesPage /></RoleGuard>}</Route>
-      <Route path="/settings">{() => <RoleGuard guardPath="/settings"><SettingsCompanyPage /></RoleGuard>}</Route>
+      <Route path="/">
+        {() => (
+          <RoleGuard guardPath="/">
+            <CompanyDashboardPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/fleet">
+        {() => (
+          <RoleGuard guardPath="/fleet">
+            <FleetPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/fleet/:id">
+        {() => (
+          <RoleGuard guardPath="/fleet">
+            <AssetDetailPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/map">
+        {() => (
+          <RoleGuard guardPath="/map">
+            <FleetMapPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/service">
+        {() => (
+          <RoleGuard guardPath="/service">
+            <ServicePage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/rentals">
+        {() => (
+          <RoleGuard guardPath="/rentals">
+            <RentalsCompanyPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/rentals/:id">
+        {() => (
+          <RoleGuard guardPath="/rentals">
+            <RentalDetailPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/clients">
+        {() => (
+          <RoleGuard guardPath="/clients">
+            <ClientsCompanyPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/branches">
+        {() => (
+          <RoleGuard guardPath="/branches">
+            <BranchesPage />
+          </RoleGuard>
+        )}
+      </Route>
+      <Route path="/settings">
+        {() => (
+          <RoleGuard guardPath="/settings">
+            <SettingsCompanyPage />
+          </RoleGuard>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

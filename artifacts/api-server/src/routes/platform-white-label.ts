@@ -29,7 +29,9 @@ router.get(
   adminRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const settings = await wlService.getWhiteLabelSettings(req.params.id as string);
+    const settings = await wlService.getWhiteLabelSettings(
+      req.params.id as string,
+    );
     await createPlatformAuditLog(req, {
       action: "platform.white_label.view",
       entityType: "white_label_settings",
@@ -45,7 +47,10 @@ router.patch(
   adminRoles,
   validate({ params: idParams, body: updateSchema }),
   async (req, res) => {
-    const { settings, previous } = await wlService.upsertWhiteLabelSettings(req.params.id as string, req.body);
+    const { settings, previous } = await wlService.upsertWhiteLabelSettings(
+      req.params.id as string,
+      req.body,
+    );
     await createPlatformAuditLog(req, {
       action: "platform.white_label.update",
       entityType: "white_label_settings",
@@ -63,7 +68,9 @@ router.post(
   adminRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { settings, previous } = await wlService.enableWhiteLabel(req.params.id as string);
+    const { settings, previous } = await wlService.enableWhiteLabel(
+      req.params.id as string,
+    );
     await createPlatformAuditLog(req, {
       action: "platform.white_label.enable",
       entityType: "white_label_settings",
@@ -81,7 +88,9 @@ router.post(
   adminRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { settings, previous } = await wlService.disableWhiteLabel(req.params.id as string);
+    const { settings, previous } = await wlService.disableWhiteLabel(
+      req.params.id as string,
+    );
     await createPlatformAuditLog(req, {
       action: "platform.white_label.disable",
       entityType: "white_label_settings",

@@ -18,13 +18,21 @@ export async function listPlans(includeInactive = false) {
 }
 
 export async function getPlan(planId: string) {
-  const [plan] = await db.select().from(saasPlans).where(eq(saasPlans.id, planId)).limit(1);
+  const [plan] = await db
+    .select()
+    .from(saasPlans)
+    .where(eq(saasPlans.id, planId))
+    .limit(1);
   if (!plan) throw new NotFoundError("Plan not found");
   return plan;
 }
 
 export async function getPlanByCode(code: string) {
-  const [plan] = await db.select().from(saasPlans).where(eq(saasPlans.code, code)).limit(1);
+  const [plan] = await db
+    .select()
+    .from(saasPlans)
+    .where(eq(saasPlans.code, code))
+    .limit(1);
   if (!plan) throw new NotFoundError("Plan not found");
   return plan;
 }
@@ -45,9 +53,17 @@ export async function createPlan(input: {
   maxAssets?: number;
   maxUsers?: number;
 }) {
-  const existing = await db.select({ id: saasPlans.id }).from(saasPlans).where(eq(saasPlans.code, input.code)).limit(1);
+  const existing = await db
+    .select({ id: saasPlans.id })
+    .from(saasPlans)
+    .where(eq(saasPlans.code, input.code))
+    .limit(1);
   if (existing.length > 0) {
-    throw new AppError(409, `Plan with code '${input.code}' already exists`, "PLAN_CODE_CONFLICT");
+    throw new AppError(
+      409,
+      `Plan with code '${input.code}' already exists`,
+      "PLAN_CODE_CONFLICT",
+    );
   }
 
   const [plan] = await db
@@ -73,22 +89,25 @@ export async function createPlan(input: {
   return plan;
 }
 
-export async function updatePlan(planId: string, input: Partial<{
-  name: string;
-  description: string | null;
-  price: number;
-  currency: string;
-  billingInterval: "monthly" | "quarterly" | "yearly";
-  limits: Record<string, number>;
-  enabledModules: string[];
-  whiteLabelAvailable: boolean;
-  supportTier: string;
-  maxBranches: number;
-  maxStations: number;
-  maxAssets: number;
-  maxUsers: number;
-  isActive: boolean;
-}>) {
+export async function updatePlan(
+  planId: string,
+  input: Partial<{
+    name: string;
+    description: string | null;
+    price: number;
+    currency: string;
+    billingInterval: "monthly" | "quarterly" | "yearly";
+    limits: Record<string, number>;
+    enabledModules: string[];
+    whiteLabelAvailable: boolean;
+    supportTier: string;
+    maxBranches: number;
+    maxStations: number;
+    maxAssets: number;
+    maxUsers: number;
+    isActive: boolean;
+  }>,
+) {
   const existing = await getPlan(planId);
 
   const [updated] = await db
@@ -113,12 +132,19 @@ export async function listSubscriptions(opts: SubscriptionListOptions) {
   const offset = (page - 1) * limit;
 
   const conditions: ReturnType<typeof eq>[] = [];
-  if (opts.companyId) conditions.push(eq(saasSubscriptions.companyId, opts.companyId));
-  if (opts.status) conditions.push(eq(saasSubscriptions.status, opts.status as SubscriptionStatus));
+  if (opts.companyId)
+    conditions.push(eq(saasSubscriptions.companyId, opts.companyId));
+  if (opts.status)
+    conditions.push(
+      eq(saasSubscriptions.status, opts.status as SubscriptionStatus),
+    );
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalResult] = await db.select({ count: count() }).from(saasSubscriptions).where(where);
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(saasSubscriptions)
+    .where(where);
   const total = totalResult?.count ?? 0;
 
   const rows = await db
@@ -170,12 +196,15 @@ export async function getSubscriptionDetail(subscriptionId: string) {
   };
 }
 
-export async function updateSubscription(subscriptionId: string, input: Partial<{
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  trialEndsAt: Date | null;
-  notes: string | null;
-}>) {
+export async function updateSubscription(
+  subscriptionId: string,
+  input: Partial<{
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+    trialEndsAt: Date | null;
+    notes: string | null;
+  }>,
+) {
   await getSubscriptionDetail(subscriptionId);
 
   const [updated] = await db
@@ -201,9 +230,11 @@ export async function changeSubscriptionStatus(
 ) {
   const detail = await getSubscriptionDetail(subscriptionId);
   const targetStatus: SubscriptionStatus =
-    action === "activate" ? "active" :
-    action === "mark_past_due" ? "past_due" :
-    "canceled";
+    action === "activate"
+      ? "active"
+      : action === "mark_past_due"
+        ? "past_due"
+        : "canceled";
 
   const allowed = SUBSCRIPTION_TRANSITIONS[detail.status];
   if (!allowed || !allowed.includes(targetStatus)) {
@@ -236,9 +267,18 @@ export async function changeSubscriptionStatus(
 export async function createSubscriptionForCompany(
   companyId: string,
   planId: string,
-  opts?: { trialEndsAt?: Date; currentPeriodStart?: Date; currentPeriodEnd?: Date; status?: SubscriptionStatus },
+  opts?: {
+    trialEndsAt?: Date;
+    currentPeriodStart?: Date;
+    currentPeriodEnd?: Date;
+    status?: SubscriptionStatus;
+  },
 ) {
-  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
   const plan = await getPlan(planId);
@@ -249,7 +289,12 @@ export async function createSubscriptionForCompany(
   return db.transaction(async (tx) => {
     await tx
       .update(saasSubscriptions)
-      .set({ status: "canceled", canceledAt: new Date(), cancelReason: "Superseded by new plan", updatedAt: new Date() })
+      .set({
+        status: "canceled",
+        canceledAt: new Date(),
+        cancelReason: "Superseded by new plan",
+        updatedAt: new Date(),
+      })
       .where(
         and(
           eq(saasSubscriptions.companyId, companyId),
@@ -294,15 +339,21 @@ export async function listInvoices(opts: InvoiceListOptions) {
   const offset = (page - 1) * limit;
 
   const conditions: ReturnType<typeof eq>[] = [];
-  if (opts.companyId) conditions.push(eq(saasInvoices.companyId, opts.companyId));
-  if (opts.status) conditions.push(eq(saasInvoices.status, opts.status as InvoiceStatus));
-  if (opts.subscriptionId) conditions.push(eq(saasInvoices.subscriptionId, opts.subscriptionId));
+  if (opts.companyId)
+    conditions.push(eq(saasInvoices.companyId, opts.companyId));
+  if (opts.status)
+    conditions.push(eq(saasInvoices.status, opts.status as InvoiceStatus));
+  if (opts.subscriptionId)
+    conditions.push(eq(saasInvoices.subscriptionId, opts.subscriptionId));
   if (opts.from) conditions.push(gte(saasInvoices.createdAt, opts.from));
   if (opts.to) conditions.push(lte(saasInvoices.createdAt, opts.to));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalResult] = await db.select({ count: count() }).from(saasInvoices).where(where);
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(saasInvoices)
+    .where(where);
   const total = totalResult?.count ?? 0;
 
   const rows = await db
@@ -353,7 +404,11 @@ export async function createInvoice(input: {
   dueDate?: Date;
   notes?: string;
 }) {
-  const [company] = await db.select().from(companies).where(eq(companies.id, input.companyId)).limit(1);
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, input.companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
   if (input.subscriptionId) {
@@ -367,7 +422,12 @@ export async function createInvoice(input: {
         ),
       )
       .limit(1);
-    if (!sub) throw new AppError(422, "Subscription not found or does not belong to this company", "SUBSCRIPTION_COMPANY_MISMATCH");
+    if (!sub)
+      throw new AppError(
+        422,
+        "Subscription not found or does not belong to this company",
+        "SUBSCRIPTION_COMPANY_MISMATCH",
+      );
   }
 
   const [invoice] = await db
@@ -389,7 +449,11 @@ export async function createInvoice(input: {
 export async function markInvoiceIssued(invoiceId: string) {
   const detail = await getInvoiceDetail(invoiceId);
   if (detail.status !== "draft") {
-    throw new AppError(422, `Cannot issue invoice in status '${detail.status}'`, "INVALID_STATUS_TRANSITION");
+    throw new AppError(
+      422,
+      `Cannot issue invoice in status '${detail.status}'`,
+      "INVALID_STATUS_TRANSITION",
+    );
   }
 
   const [updated] = await db
@@ -401,14 +465,25 @@ export async function markInvoiceIssued(invoiceId: string) {
   return { updated, previousStatus: detail.status };
 }
 
-export async function markInvoicePaid(invoiceId: string, payment?: { amount: number; method: string; reference?: string }) {
+export async function markInvoicePaid(
+  invoiceId: string,
+  payment?: { amount: number; method: string; reference?: string },
+) {
   const detail = await getInvoiceDetail(invoiceId);
   if (detail.status !== "issued" && detail.status !== "overdue") {
-    throw new AppError(422, `Cannot mark invoice as paid from status '${detail.status}'`, "INVALID_STATUS_TRANSITION");
+    throw new AppError(
+      422,
+      `Cannot mark invoice as paid from status '${detail.status}'`,
+      "INVALID_STATUS_TRANSITION",
+    );
   }
 
   if (payment && payment.amount !== detail.amount) {
-    throw new AppError(422, `Payment amount (${payment.amount}) must match invoice amount (${detail.amount})`, "PAYMENT_AMOUNT_MISMATCH");
+    throw new AppError(
+      422,
+      `Payment amount (${payment.amount}) must match invoice amount (${detail.amount})`,
+      "PAYMENT_AMOUNT_MISMATCH",
+    );
   }
 
   const updated = await db.transaction(async (tx) => {
@@ -438,7 +513,11 @@ export async function markInvoicePaid(invoiceId: string, payment?: { amount: num
 export async function voidInvoice(invoiceId: string) {
   const detail = await getInvoiceDetail(invoiceId);
   if (detail.status === "paid" || detail.status === "void") {
-    throw new AppError(422, `Cannot void invoice in status '${detail.status}'`, "INVALID_STATUS_TRANSITION");
+    throw new AppError(
+      422,
+      `Cannot void invoice in status '${detail.status}'`,
+      "INVALID_STATUS_TRANSITION",
+    );
   }
 
   const [updated] = await db
@@ -463,12 +542,17 @@ export async function listPayments(opts: PaymentListOptions) {
   const offset = (page - 1) * limit;
 
   const conditions: ReturnType<typeof eq>[] = [];
-  if (opts.companyId) conditions.push(eq(saasPayments.companyId, opts.companyId));
-  if (opts.invoiceId) conditions.push(eq(saasPayments.invoiceId, opts.invoiceId));
+  if (opts.companyId)
+    conditions.push(eq(saasPayments.companyId, opts.companyId));
+  if (opts.invoiceId)
+    conditions.push(eq(saasPayments.invoiceId, opts.invoiceId));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalResult] = await db.select({ count: count() }).from(saasPayments).where(where);
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(saasPayments)
+    .where(where);
   const total = totalResult?.count ?? 0;
 
   const rows = await db
@@ -505,7 +589,13 @@ export async function getPlanLimitsForCompany(companyId: string) {
   if (sub.length === 0) {
     return {
       plan: null,
-      limits: { branches: -1, stations: -1, assets: -1, users: -1, rentals: -1 },
+      limits: {
+        branches: -1,
+        stations: -1,
+        assets: -1,
+        users: -1,
+        rentals: -1,
+      },
     };
   }
 

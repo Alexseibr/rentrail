@@ -110,7 +110,7 @@ async function buildAll() {
             const req = createRequire(
               args.resolveDir
                 ? path.join(args.resolveDir, "__placeholder.js")
-                : import.meta.url
+                : import.meta.url,
             );
             const zodMain = req.resolve("zod");
             const zodDir = path.dirname(zodMain);
@@ -119,7 +119,7 @@ async function buildAll() {
         },
       },
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
-      esbuildPluginPino({ transports: ["pino-pretty"] })
+      esbuildPluginPino({ transports: ["pino-pretty"] }),
     ],
     // Make sure packages that are cjs only (e.g. express) but are bundled continue to work in our esm output file
     banner: {

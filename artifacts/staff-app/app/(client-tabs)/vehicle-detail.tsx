@@ -103,9 +103,14 @@ export default function VehicleDetailScreen() {
 
   const closeMapPopup = useCallback(() => {
     if (Platform.OS === "web") {
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ type: "closePopup" }),
+        "*",
+      );
     } else {
-      webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+      webViewRef.current?.injectJavaScript(
+        "window.closeMapPopup && window.closeMapPopup(); true;",
+      );
     }
   }, []);
 
@@ -152,13 +157,19 @@ export default function VehicleDetailScreen() {
     setCommanding(command);
     try {
       const token = await getAccessToken();
-      const res = await fetch(`${BASE_URL}/api/client/vehicles/${id}/${command}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${BASE_URL}/api/client/vehicles/${id}/${command}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const json = await res.json();
       if (res.ok) {
-        Alert.alert(t("vehicleDetail.commandSent"), `${label} — ${t("vehicleDetail.queued")}`);
+        Alert.alert(
+          t("vehicleDetail.commandSent"),
+          `${label} — ${t("vehicleDetail.queued")}`,
+        );
         setTimeout(fetchDetail, 3000);
       } else {
         Alert.alert(t("common.error"), json.error?.message || "Failed");
@@ -250,7 +261,9 @@ export default function VehicleDetailScreen() {
                 { color: isOnline ? "#2E7D32" : "#E65100" },
               ]}
             >
-              {isOnline ? t("vehicleDetail.online") : t("vehicleDetail.offline")}
+              {isOnline
+                ? t("vehicleDetail.online")
+                : t("vehicleDetail.offline")}
             </Text>
           </View>
         </View>
@@ -262,7 +275,14 @@ export default function VehicleDetailScreen() {
             <iframe
               ref={iframeRef}
               srcDoc={mapHtml}
-              style={{ width: "100%", height: "100%", border: "none", borderRadius: 16 } as any}
+              style={
+                {
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                  borderRadius: 16,
+                } as any
+              }
             />
           ) : (
             <WebView
@@ -278,7 +298,9 @@ export default function VehicleDetailScreen() {
       ) : (
         <View style={styles.mapPlaceholderFull}>
           <Feather name="map-pin" size={28} color="#ccc" />
-          <Text style={styles.mapPlaceholderText}>{t("vehicleDetail.noLocation")}</Text>
+          <Text style={styles.mapPlaceholderText}>
+            {t("vehicleDetail.noLocation")}
+          </Text>
         </View>
       )}
 
@@ -305,23 +327,43 @@ export default function VehicleDetailScreen() {
       </View>
 
       <View style={styles.statusRow}>
-        <View style={[styles.statusItem, { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" }]}>
+        <View
+          style={[
+            styles.statusItem,
+            { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" },
+          ]}
+        >
           <Feather
             name={isLocked ? "lock" : "unlock"}
             size={17}
             color={isLocked ? "#2E7D32" : "#C62828"}
           />
-          <Text style={[styles.statusText, { color: isLocked ? "#2E7D32" : "#C62828" }]}>
+          <Text
+            style={[
+              styles.statusText,
+              { color: isLocked ? "#2E7D32" : "#C62828" },
+            ]}
+          >
             {isLocked ? t("vehicleDetail.locked") : t("vehicleDetail.unlocked")}
           </Text>
         </View>
-        <View style={[styles.statusItem, { backgroundColor: isArmed ? "#E8F5E9" : "#FFF3E0" }]}>
+        <View
+          style={[
+            styles.statusItem,
+            { backgroundColor: isArmed ? "#E8F5E9" : "#FFF3E0" },
+          ]}
+        >
           <Feather
             name={isArmed ? "shield" : "shield-off"}
             size={17}
             color={isArmed ? "#2E7D32" : "#E65100"}
           />
-          <Text style={[styles.statusText, { color: isArmed ? "#2E7D32" : "#E65100" }]}>
+          <Text
+            style={[
+              styles.statusText,
+              { color: isArmed ? "#2E7D32" : "#E65100" },
+            ]}
+          >
             {isArmed ? t("vehicleDetail.armed") : t("vehicleDetail.disarmed")}
           </Text>
         </View>
@@ -344,7 +386,10 @@ export default function VehicleDetailScreen() {
           activeOpacity={0.7}
         >
           {commanding === "lock" || commanding === "unlock" ? (
-            <ActivityIndicator color={isLocked ? "#C62828" : "#1a1a1a"} size="small" />
+            <ActivityIndicator
+              color={isLocked ? "#C62828" : "#1a1a1a"}
+              size="small"
+            />
           ) : (
             <>
               <Feather
@@ -355,7 +400,9 @@ export default function VehicleDetailScreen() {
               <Text
                 style={[
                   styles.controlBtnText,
-                  isLocked ? styles.controlTextDanger : styles.controlTextPrimary,
+                  isLocked
+                    ? styles.controlTextDanger
+                    : styles.controlTextPrimary,
                 ]}
               >
                 {isLocked ? t("vehicleDetail.unlock") : t("vehicleDetail.lock")}
@@ -372,7 +419,9 @@ export default function VehicleDetailScreen() {
           onPress={() =>
             sendCommand(
               isArmed ? "disarm" : "arm",
-              isArmed ? t("vehicleDetail.disarmAlarm") : t("vehicleDetail.armAlarm"),
+              isArmed
+                ? t("vehicleDetail.disarmAlarm")
+                : t("vehicleDetail.armAlarm"),
             )
           }
           disabled={!!commanding}
@@ -382,9 +431,15 @@ export default function VehicleDetailScreen() {
             <ActivityIndicator color="#1a1a1a" size="small" />
           ) : (
             <>
-              <Feather name={isArmed ? "shield-off" : "shield"} size={19} color="#1a1a1a" />
+              <Feather
+                name={isArmed ? "shield-off" : "shield"}
+                size={19}
+                color="#1a1a1a"
+              />
               <Text style={[styles.controlBtnText, styles.controlTextPrimary]}>
-                {isArmed ? t("vehicleDetail.disarmAlarm") : t("vehicleDetail.armAlarm")}
+                {isArmed
+                  ? t("vehicleDetail.disarmAlarm")
+                  : t("vehicleDetail.armAlarm")}
               </Text>
             </>
           )}
@@ -393,7 +448,8 @@ export default function VehicleDetailScreen() {
 
       {tel?.recordedAt && (
         <Text style={styles.lastUpdate}>
-          {t("vehicleDetail.lastUpdate")}: {new Date(tel.recordedAt).toLocaleString()}
+          {t("vehicleDetail.lastUpdate")}:{" "}
+          {new Date(tel.recordedAt).toLocaleString()}
         </Text>
       )}
     </ScrollView>
@@ -421,10 +477,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
   headerLeft: { flex: 1 },
   vehicleName: { fontSize: 20, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
-  vehicleCode: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#8c8c8c", marginTop: 2 },
+  vehicleCode: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#8c8c8c",
+    marginTop: 2,
+  },
   onlineBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -452,7 +517,11 @@ const styles = StyleSheet.create({
     gap: 6,
     flexDirection: "row",
   },
-  mapPlaceholderText: { fontSize: 13, color: "#aaa", fontFamily: "Inter_400Regular" },
+  mapPlaceholderText: {
+    fontSize: 13,
+    color: "#aaa",
+    fontFamily: "Inter_400Regular",
+  },
   statsGrid: { flexDirection: "row", gap: 8 },
   statCard: {
     flex: 1,

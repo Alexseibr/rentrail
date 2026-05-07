@@ -1,7 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { z } from "zod/v4";
-import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+} from "../lib/objectStorage";
 import { authenticate } from "../middlewares/authenticate";
 import { logger } from "../lib/logger";
 
@@ -14,76 +17,97 @@ const uploadBodySchema = z.object({
   contentType: z.string().min(1),
 });
 
-router.post("/storage/uploads/request-url", authenticate, async (req: Request, res: Response) => {
-  const parsed = uploadBodySchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Missing or invalid required fields" });
-    return;
-  }
-
-  try {
-    const { name, size, contentType } = parsed.data;
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-
-    res.json({ uploadURL, objectPath, metadata: { name, size, contentType } });
-  } catch (error) {
-    logger.error({ err: error }, "Error generating upload URL");
-    res.status(500).json({ error: "Failed to generate upload URL" });
-  }
-});
-
-router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
-  try {
-    const raw = req.params.filePath;
-    const filePath = Array.isArray(raw) ? raw.join("/") : raw;
-    const file = await objectStorageService.searchPublicObject(filePath);
-    if (!file) {
-      res.status(404).json({ error: "File not found" });
+router.post(
+  "/storage/uploads/request-url",
+  authenticate,
+  async (req: Request, res: Response) => {
+    const parsed = uploadBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Missing or invalid required fields" });
       return;
     }
 
-    const response = await objectStorageService.downloadObject(file);
-    res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    try {
+      const { name, size, contentType } = parsed.data;
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectPath =
+        objectStorageService.normalizeObjectEntityPath(uploadURL);
 
-    if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
-      nodeStream.pipe(res);
-    } else {
-      res.end();
+      res.json({
+        uploadURL,
+        objectPath,
+        metadata: { name, size, contentType },
+      });
+    } catch (error) {
+      logger.error({ err: error }, "Error generating upload URL");
+      res.status(500).json({ error: "Failed to generate upload URL" });
     }
-  } catch (error) {
-    logger.error({ err: error }, "Error serving public object");
-    res.status(500).json({ error: "Failed to serve public object" });
-  }
-});
+  },
+);
 
-router.get("/storage/objects/*path", authenticate, async (req: Request, res: Response) => {
-  try {
-    const raw = req.params.path;
-    const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
-    const objectPath = `/objects/${wildcardPath}`;
-    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+router.get(
+  "/storage/public-objects/*filePath",
+  async (req: Request, res: Response) => {
+    try {
+      const raw = req.params.filePath;
+      const filePath = Array.isArray(raw) ? raw.join("/") : raw;
+      const file = await objectStorageService.searchPublicObject(filePath);
+      if (!file) {
+        res.status(404).json({ error: "File not found" });
+        return;
+      }
 
-    const response = await objectStorageService.downloadObject(objectFile);
-    res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+      const response = await objectStorageService.downloadObject(file);
+      res.status(response.status);
+      response.headers.forEach((value, key) => res.setHeader(key, value));
 
-    if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
-      nodeStream.pipe(res);
-    } else {
-      res.end();
+      if (response.body) {
+        const nodeStream = Readable.fromWeb(
+          response.body as ReadableStream<Uint8Array>,
+        );
+        nodeStream.pipe(res);
+      } else {
+        res.end();
+      }
+    } catch (error) {
+      logger.error({ err: error }, "Error serving public object");
+      res.status(500).json({ error: "Failed to serve public object" });
     }
-  } catch (error) {
-    if (error instanceof ObjectNotFoundError) {
-      res.status(404).json({ error: "Object not found" });
-      return;
+  },
+);
+
+router.get(
+  "/storage/objects/*path",
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const raw = req.params.path;
+      const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
+      const objectPath = `/objects/${wildcardPath}`;
+      const objectFile =
+        await objectStorageService.getObjectEntityFile(objectPath);
+
+      const response = await objectStorageService.downloadObject(objectFile);
+      res.status(response.status);
+      response.headers.forEach((value, key) => res.setHeader(key, value));
+
+      if (response.body) {
+        const nodeStream = Readable.fromWeb(
+          response.body as ReadableStream<Uint8Array>,
+        );
+        nodeStream.pipe(res);
+      } else {
+        res.end();
+      }
+    } catch (error) {
+      if (error instanceof ObjectNotFoundError) {
+        res.status(404).json({ error: "Object not found" });
+        return;
+      }
+      logger.error({ err: error }, "Error serving object");
+      res.status(500).json({ error: "Failed to serve object" });
     }
-    logger.error({ err: error }, "Error serving object");
-    res.status(500).json({ error: "Failed to serve object" });
-  }
-});
+  },
+);
 
 export default router;

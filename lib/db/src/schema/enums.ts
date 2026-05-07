@@ -363,13 +363,10 @@ export const sparePartCategoryEnum = pgEnum("spare_part_category", [
   "other",
 ]);
 
-export const sparePartTransactionTypeEnum = pgEnum("spare_part_transaction_type", [
-  "in",
-  "out",
-  "adjustment",
-  "write_off",
-  "transfer",
-]);
+export const sparePartTransactionTypeEnum = pgEnum(
+  "spare_part_transaction_type",
+  ["in", "out", "adjustment", "write_off", "transfer"],
+);
 
 export const saasBillingIntervalEnum = pgEnum("saas_billing_interval", [
   "monthly",

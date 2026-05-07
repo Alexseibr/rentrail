@@ -1,8 +1,17 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
-import { createTestUser, createTestTenant, createTestClient } from "../../test/helpers";
-import { db, saasPlans, saasSubscriptions, blacklistEntries } from "@workspace/db";
+import {
+  createTestUser,
+  createTestTenant,
+  createTestClient,
+} from "../../test/helpers";
+import {
+  db,
+  saasPlans,
+  saasSubscriptions,
+  blacklistEntries,
+} from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { checkClientBlacklist } from "../../services/blacklist.service";
 
@@ -248,14 +257,18 @@ describe("Platform White-Label", () => {
 
   it("returns 404 for non-existent company", async () => {
     const res = await request(testApp)
-      .get("/api/platform/companies/00000000-0000-0000-0000-000000000000/white-label")
+      .get(
+        "/api/platform/companies/00000000-0000-0000-0000-000000000000/white-label",
+      )
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(404);
   });
 
   it("returns 404 for enable on non-existent company", async () => {
     const res = await request(testApp)
-      .post("/api/platform/companies/00000000-0000-0000-0000-000000000000/white-label/enable")
+      .post(
+        "/api/platform/companies/00000000-0000-0000-0000-000000000000/white-label/enable",
+      )
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(404);
   });

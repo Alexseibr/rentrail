@@ -21,7 +21,9 @@ describe("GET /api/assets — status filter validation", () => {
     await seedRolesAndPermissions();
 
     tenant = await createTestTenant({ companyName: "Asset Status Filter Co" });
-    admin = await createTestUser({ email: `asset-status-admin-${Date.now()}@test.com` });
+    admin = await createTestUser({
+      email: `asset-status-admin-${Date.now()}@test.com`,
+    });
     await assignRole(admin.id, tenant.company.id, "admin");
   }, 30000);
 
@@ -74,9 +76,7 @@ describe("GET /api/assets — status filter validation", () => {
   });
 
   it("no status param — returns 200 with all records", async () => {
-    const res = await request(testApp)
-      .get("/api/assets")
-      .set(h());
+    const res = await request(testApp).get("/api/assets").set(h());
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);

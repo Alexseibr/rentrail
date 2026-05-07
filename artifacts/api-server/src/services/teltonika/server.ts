@@ -6,7 +6,12 @@
 import net from "net";
 import { db, devices, deviceCommands } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
-import { parseCodec8Packet, getTotalPacketLength, buildCodec12Command, buildTeltonikaCommand } from "./codec8";
+import {
+  parseCodec8Packet,
+  getTotalPacketLength,
+  buildCodec12Command,
+  buildTeltonikaCommand,
+} from "./codec8";
 import { ingestTelemetry } from "../telemetry.service";
 import { updateCommandStatus } from "../command.service";
 import { logger } from "../../lib/logger";
@@ -21,11 +26,15 @@ interface SessionState {
   phase: "await_imei" | "connected";
 }
 
-async function findDeviceByImei(imei: string): Promise<{ id: string; companyId: string } | null> {
+async function findDeviceByImei(
+  imei: string,
+): Promise<{ id: string; companyId: string } | null> {
   const [device] = await db
     .select({ id: devices.id, companyId: devices.companyId })
     .from(devices)
-    .where(and(eq(devices.imei, imei), eq(devices.provider, TELTONIKA_PROVIDER)))
+    .where(
+      and(eq(devices.imei, imei), eq(devices.provider, TELTONIKA_PROVIDER)),
+    )
     .limit(1);
   return device ?? null;
 }
@@ -34,20 +43,35 @@ async function getPendingCommands(deviceId: string) {
   return db
     .select()
     .from(deviceCommands)
-    .where(and(eq(deviceCommands.deviceId, deviceId), inArray(deviceCommands.status, ["queued"])))
+    .where(
+      and(
+        eq(deviceCommands.deviceId, deviceId),
+        inArray(deviceCommands.status, ["queued"]),
+      ),
+    )
     .limit(5);
 }
 
-async function handleCodec8(buf: Buffer, state: SessionState, socket: net.Socket) {
+async function handleCodec8(
+  buf: Buffer,
+  state: SessionState,
+  socket: net.Socket,
+) {
   if (!state.deviceId || !state.companyId) return;
 
   const packet = parseCodec8Packet(buf);
   if (!packet || !packet.crcValid) {
-    logger.warn({ imei: state.imei }, "Teltonika: invalid CODEC 8 packet or bad CRC");
+    logger.warn(
+      { imei: state.imei },
+      "Teltonika: invalid CODEC 8 packet or bad CRC",
+    );
     return;
   }
 
-  logger.info({ imei: state.imei, records: packet.records.length }, "Teltonika: CODEC 8 packet received");
+  logger.info(
+    { imei: state.imei, records: packet.records.length },
+    "Teltonika: CODEC 8 packet received",
+  );
 
   for (const record of packet.records) {
     if (record.lat === 0 && record.lng === 0) continue;
@@ -61,12 +85,21 @@ async function handleCodec8(buf: Buffer, state: SessionState, socket: net.Socket
           lng: record.lng,
           speed: record.speed,
           heading: record.angle,
-          rawPayload: { priority: record.priority, satellites: record.satellites, ioElements: Object.fromEntries(Object.entries(record.ioElements).map(([k, v]) => [k, String(v)])) },
+          rawPayload: {
+            priority: record.priority,
+            satellites: record.satellites,
+            ioElements: Object.fromEntries(
+              Object.entries(record.ioElements).map(([k, v]) => [k, String(v)]),
+            ),
+          },
         },
         { companyId: state.companyId, provider: TELTONIKA_PROVIDER },
       );
     } catch (err) {
-      logger.error({ err, imei: state.imei }, "Teltonika: failed to ingest telemetry");
+      logger.error(
+        { err, imei: state.imei },
+        "Teltonika: failed to ingest telemetry",
+      );
     }
   }
 
@@ -81,7 +114,9 @@ async function handleCodec8(buf: Buffer, state: SessionState, socket: net.Socket
       cmd.payload ? (cmd.payload as Record<string, unknown>) : undefined,
     );
     if (!teltonikaCmd) {
-      await updateCommandStatus(cmd.id, state.companyId, "failed", { errorMessage: "No Teltonika mapping for command type" });
+      await updateCommandStatus(cmd.id, state.companyId, "failed", {
+        errorMessage: "No Teltonika mapping for command type",
+      });
       continue;
     }
 
@@ -89,9 +124,15 @@ async function handleCodec8(buf: Buffer, state: SessionState, socket: net.Socket
       const cmdPacket = buildCodec12Command(teltonikaCmd);
       socket.write(cmdPacket);
       await updateCommandStatus(cmd.id, state.companyId, "sent");
-      logger.info({ imei: state.imei, commandType: cmd.commandType, teltonikaCmd }, "Teltonika: command sent");
+      logger.info(
+        { imei: state.imei, commandType: cmd.commandType, teltonikaCmd },
+        "Teltonika: command sent",
+      );
     } catch (err) {
-      logger.error({ err, imei: state.imei, commandId: cmd.id }, "Teltonika: failed to send command");
+      logger.error(
+        { err, imei: state.imei, commandId: cmd.id },
+        "Teltonika: failed to send command",
+      );
     }
   }
 }
@@ -121,7 +162,10 @@ function handleData(chunk: Buffer, state: SessionState, socket: net.Socket) {
         state.companyId = device.companyId;
         state.phase = "connected";
         socket.write(Buffer.from([0x01]));
-        logger.info({ imei, deviceId: device.id }, "Teltonika: device authenticated");
+        logger.info(
+          { imei, deviceId: device.id },
+          "Teltonika: device authenticated",
+        );
       })
       .catch((err) => {
         logger.error({ err, imei }, "Teltonika: DB error during IMEI lookup");
@@ -140,7 +184,10 @@ function handleData(chunk: Buffer, state: SessionState, socket: net.Socket) {
       state.buffer = state.buffer.slice(totalLen);
 
       handleCodec8(packetBuf, state, socket).catch((err) => {
-        logger.error({ err, imei: state.imei }, "Teltonika: error processing CODEC 8 packet");
+        logger.error(
+          { err, imei: state.imei },
+          "Teltonika: error processing CODEC 8 packet",
+        );
       });
     }
   }

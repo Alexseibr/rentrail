@@ -103,7 +103,9 @@ export default function ClientScannerScreen() {
           <Feather name="camera-off" size={48} color="rgba(255,255,255,0.4)" />
         </View>
         <Text style={styles.permText}>{t("scanner.cameraAccessNeeded")}</Text>
-        <Text style={styles.permSub}>{t("scanner.allowCameraDescription")}</Text>
+        <Text style={styles.permSub}>
+          {t("scanner.allowCameraDescription")}
+        </Text>
         <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>{t("scanner.allowCamera")}</Text>
         </TouchableOpacity>
@@ -119,7 +121,9 @@ export default function ClientScannerScreen() {
       {Platform.OS !== "web" ? (
         <CameraView
           style={StyleSheet.absoluteFill}
-          barcodeScannerSettings={{ barcodeTypes: ["qr", "code128", "ean13", "code39"] }}
+          barcodeScannerSettings={{
+            barcodeTypes: ["qr", "code128", "ean13", "code39"],
+          }}
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         />
       ) : (
@@ -128,7 +132,10 @@ export default function ClientScannerScreen() {
 
       <View style={[styles.overlay, { paddingTop: insets.top + 10 }]}>
         <View style={styles.topRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
             <Feather name="x" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t("clientScanner.title")}</Text>
@@ -152,7 +159,9 @@ export default function ClientScannerScreen() {
           </View>
         )}
 
-        <View style={[styles.manualWrap, { paddingBottom: insets.bottom + 20 }]}>
+        <View
+          style={[styles.manualWrap, { paddingBottom: insets.bottom + 20 }]}
+        >
           <Text style={styles.manualLabel}>{t("scanner.orEnterManually")}</Text>
           <View style={styles.manualRow}>
             <TextInput
@@ -166,7 +175,10 @@ export default function ClientScannerScreen() {
               onSubmitEditing={handleManualSubmit}
             />
             <TouchableOpacity
-              style={[styles.submitBtn, (!manualCode.trim() || resolving) && { opacity: 0.5 }]}
+              style={[
+                styles.submitBtn,
+                (!manualCode.trim() || resolving) && { opacity: 0.5 },
+              ]}
               onPress={handleManualSubmit}
               disabled={!manualCode.trim() || resolving}
             >
@@ -174,7 +186,12 @@ export default function ClientScannerScreen() {
             </TouchableOpacity>
           </View>
           {scanned && !resolving && (
-            <TouchableOpacity onPress={() => { setScanned(false); setManualCode(""); }}>
+            <TouchableOpacity
+              onPress={() => {
+                setScanned(false);
+                setManualCode("");
+              }}
+            >
               <Text style={styles.rescanText}>{t("scanner.scanAgain")}</Text>
             </TouchableOpacity>
           )}
@@ -186,7 +203,13 @@ export default function ClientScannerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16, paddingHorizontal: 40 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 40,
+  },
   permIconWrap: {
     width: 88,
     height: 88,
@@ -195,8 +218,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  permText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#fff", textAlign: "center" },
-  permSub: { fontSize: 14, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.5)", textAlign: "center" },
+  permText: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+    textAlign: "center",
+  },
+  permSub: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.5)",
+    textAlign: "center",
+  },
   permBtn: {
     paddingHorizontal: 28,
     paddingVertical: 14,
@@ -206,8 +239,15 @@ const styles = StyleSheet.create({
   },
   permBtnText: { color: "#1a1a1a", fontSize: 15, fontFamily: "Inter_700Bold" },
   closeBtn: { paddingVertical: 12 },
-  closeBtnText: { color: "rgba(255,255,255,0.5)", fontSize: 15, fontFamily: "Inter_500Medium" },
-  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "space-between" },
+  closeBtnText: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "space-between",
+  },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -244,14 +284,48 @@ const styles = StyleSheet.create({
     height: 36,
     borderColor: YELLOW,
   },
-  tl: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 },
-  tr: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
-  bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
-  br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
-  loadingWrap: { position: "absolute", top: "45%", alignSelf: "center", alignItems: "center", gap: 10 },
+  tl: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderTopLeftRadius: 8,
+  },
+  tr: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderTopRightRadius: 8,
+  },
+  bl: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderBottomLeftRadius: 8,
+  },
+  br: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomRightRadius: 8,
+  },
+  loadingWrap: {
+    position: "absolute",
+    top: "45%",
+    alignSelf: "center",
+    alignItems: "center",
+    gap: 10,
+  },
   loadingText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
   manualWrap: { paddingHorizontal: 24, gap: 10 },
-  manualLabel: { color: "rgba(255,255,255,0.6)", fontSize: 13, fontFamily: "Inter_500Medium" },
+  manualLabel: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
   manualRow: { flexDirection: "row", gap: 8 },
   manualInput: {
     flex: 1,
@@ -271,5 +345,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: YELLOW,
   },
-  rescanText: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center", marginTop: 4, color: YELLOW },
+  rescanText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+    marginTop: 4,
+    color: YELLOW,
+  },
 });

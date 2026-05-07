@@ -22,7 +22,11 @@ export async function getBranch(id: string, companyId: string) {
   return branch;
 }
 
-export async function updateBranch(id: string, companyId: string, data: Partial<InsertBranch>) {
+export async function updateBranch(
+  id: string,
+  companyId: string,
+  data: Partial<InsertBranch>,
+) {
   const [branch] = await db
     .update(branches)
     .set({ ...data, updatedAt: new Date() })
@@ -43,7 +47,8 @@ export async function deactivateBranch(id: string, companyId: string) {
     .limit(1);
 
   if (!current) throw new NotFoundError("Branch not found");
-  if (current.status === "inactive") throw new AppError(422, "Branch is already inactive", "ALREADY_INACTIVE");
+  if (current.status === "inactive")
+    throw new AppError(422, "Branch is already inactive", "ALREADY_INACTIVE");
 
   const [branch] = await db
     .update(branches)
@@ -62,7 +67,8 @@ export async function activateBranch(id: string, companyId: string) {
     .limit(1);
 
   if (!current) throw new NotFoundError("Branch not found");
-  if (current.status === "active") throw new AppError(422, "Branch is already active", "ALREADY_ACTIVE");
+  if (current.status === "active")
+    throw new AppError(422, "Branch is already active", "ALREADY_ACTIVE");
 
   const [branch] = await db
     .update(branches)
@@ -74,8 +80,5 @@ export async function activateBranch(id: string, companyId: string) {
 }
 
 export async function listBranches(companyId: string) {
-  return db
-    .select()
-    .from(branches)
-    .where(eq(branches.companyId, companyId));
+  return db.select().from(branches).where(eq(branches.companyId, companyId));
 }

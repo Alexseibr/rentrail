@@ -132,7 +132,12 @@ export function checkFile(content: string): CheckResult {
   const hasWebViewImport = WEBVIEW_IMPORT_RE.test(content);
 
   if (!hasWebViewImport) {
-    return { hasWebViewImport: false, layer1Ok: true, layer2Ok: true, missing: [] };
+    return {
+      hasWebViewImport: false,
+      layer1Ok: true,
+      layer2Ok: true,
+      missing: [],
+    };
   }
 
   const layer1Ok = hasPopupCloseFocusEffect(content);

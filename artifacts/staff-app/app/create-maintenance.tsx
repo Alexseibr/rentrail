@@ -31,7 +31,9 @@ export default function CreateMaintenanceScreen() {
   const { isConnected } = useNetwork();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [maintenanceType, setMaintenanceType] = useState<"preventive" | "corrective" | "inspection">("corrective");
+  const [maintenanceType, setMaintenanceType] = useState<
+    "preventive" | "corrective" | "inspection"
+  >("corrective");
   const [loading, setLoading] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
 
@@ -43,7 +45,11 @@ export default function CreateMaintenanceScreen() {
       return;
     }
 
-    const payload = { title: title.trim(), description: description.trim(), type: maintenanceType };
+    const payload = {
+      title: title.trim(),
+      description: description.trim(),
+      type: maintenanceType,
+    };
 
     if (!isConnected && isQueueable("create_maintenance")) {
       await enqueue({
@@ -84,7 +90,10 @@ export default function CreateMaintenanceScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showSnackbar(t("toast.maintenanceCreated"), "success");
     } catch (err: unknown) {
-      showSnackbar(err instanceof Error ? err.message : t("toast.maintenanceCreateFailed"), "error");
+      showSnackbar(
+        err instanceof Error ? err.message : t("toast.maintenanceCreateFailed"),
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -92,11 +101,23 @@ export default function CreateMaintenanceScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>{t("maintenance.title")}</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>
+            {t("maintenance.title")}
+          </Text>
           <TextInput
-            style={[styles.input, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
+            style={[
+              styles.input,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.card,
+                color: colors.foreground,
+              },
+            ]}
             placeholder={t("maintenance.maintenanceTitle")}
             placeholderTextColor={colors.mutedForeground}
             value={title}
@@ -105,9 +126,18 @@ export default function CreateMaintenanceScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>{t("maintenance.description")}</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>
+            {t("maintenance.description")}
+          </Text>
           <TextInput
-            style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
+            style={[
+              styles.textArea,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.card,
+                color: colors.foreground,
+              },
+            ]}
             placeholder={t("maintenance.describeMaintenance")}
             placeholderTextColor={colors.mutedForeground}
             value={description}
@@ -119,7 +149,9 @@ export default function CreateMaintenanceScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>{t("maintenance.type")}</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>
+            {t("maintenance.type")}
+          </Text>
           <View style={styles.typeRow}>
             {types.map((tp) => (
               <TouchableOpacity
@@ -127,13 +159,23 @@ export default function CreateMaintenanceScreen() {
                 style={[
                   styles.typeBtn,
                   {
-                    backgroundColor: maintenanceType === tp ? colors.primary : colors.muted,
-                    borderColor: maintenanceType === tp ? colors.primary : colors.border,
+                    backgroundColor:
+                      maintenanceType === tp ? colors.primary : colors.muted,
+                    borderColor:
+                      maintenanceType === tp ? colors.primary : colors.border,
                   },
                 ]}
                 onPress={() => setMaintenanceType(tp)}
               >
-                <Text style={[styles.typeText, { color: maintenanceType === tp ? "#fff" : colors.foreground }]}>
+                <Text
+                  style={[
+                    styles.typeText,
+                    {
+                      color:
+                        maintenanceType === tp ? "#fff" : colors.foreground,
+                    },
+                  ]}
+                >
                   {tp}
                 </Text>
               </TouchableOpacity>
@@ -146,7 +188,10 @@ export default function CreateMaintenanceScreen() {
         )}
 
         <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+          style={[
+            styles.submitBtn,
+            { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 },
+          ]}
           onPress={handleSubmit}
           disabled={loading || !!createdId}
           activeOpacity={0.8}
@@ -155,9 +200,17 @@ export default function CreateMaintenanceScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Feather name={!isConnected ? "clock" : "check"} size={18} color="#fff" />
+              <Feather
+                name={!isConnected ? "clock" : "check"}
+                size={18}
+                color="#fff"
+              />
               <Text style={styles.submitText}>
-                {createdId ? t("maintenance.created") : !isConnected ? t("maintenance.queueForLater") : t("maintenance.createTask")}
+                {createdId
+                  ? t("maintenance.created")
+                  : !isConnected
+                    ? t("maintenance.queueForLater")
+                    : t("maintenance.createTask")}
               </Text>
             </>
           )}
@@ -172,11 +225,36 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 40, gap: 16 },
   field: { gap: 6 },
   label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: "Inter_400Regular" },
-  textArea: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular", minHeight: 100 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 48,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    minHeight: 100,
+  },
   typeRow: { flexDirection: "row", gap: 8 },
-  typeBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: "center" },
-  typeText: { fontSize: 13, fontFamily: "Inter_500Medium", textTransform: "capitalize" as const },
+  typeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  typeText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    textTransform: "capitalize" as const,
+  },
   submitBtn: {
     flexDirection: "row",
     alignItems: "center",

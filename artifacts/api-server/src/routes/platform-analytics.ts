@@ -8,7 +8,11 @@ import * as analyticsService from "../services/platform-analytics.service";
 
 const router = Router();
 
-const analyticsRoles = requirePlatformRole("superAdmin", "platformAdmin", "platformFinance");
+const analyticsRoles = requirePlatformRole(
+  "superAdmin",
+  "platformAdmin",
+  "platformFinance",
+);
 
 const topTenantsQuery = z.object({
   metric: z.enum(["rentals", "assets"]).optional(),

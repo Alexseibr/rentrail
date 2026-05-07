@@ -1,5 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
-import { db, rolePermissions, permissions, userCompanyMemberships, userBranchMemberships, roles, companies } from "@workspace/db";
+import {
+  db,
+  rolePermissions,
+  permissions,
+  userCompanyMemberships,
+  userBranchMemberships,
+  roles,
+  companies,
+} from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import { ForbiddenError, UnauthorizedError, AppError } from "../lib/errors";
 
@@ -49,7 +57,11 @@ async function checkCompanyStatus(companyId: string): Promise<string> {
   return company.status;
 }
 
-export function requireCompanyAccess(req: Request, _res: Response, next: NextFunction): void {
+export function requireCompanyAccess(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
   if (!req.user) {
     throw new UnauthorizedError();
   }
@@ -73,7 +85,11 @@ export function requireCompanyAccess(req: Request, _res: Response, next: NextFun
     const companyStatus = await checkCompanyStatus(companyId);
 
     if (COMPANY_BLOCKED_STATUSES.includes(companyStatus)) {
-      throw new AppError(403, `Company is ${companyStatus}. Access denied.`, "COMPANY_BLOCKED");
+      throw new AppError(
+        403,
+        `Company is ${companyStatus}. Access denied.`,
+        "COMPANY_BLOCKED",
+      );
     }
 
     const [membership] = await db
@@ -103,7 +119,11 @@ export function requireCompanyAccess(req: Request, _res: Response, next: NextFun
     const perms = await loadRolePermissions(membership.roleId);
 
     if (companyStatus === COMPANY_SUSPENDED_STATUS && req.method !== "GET") {
-      throw new AppError(403, "Company is suspended. Write operations are disabled.", "COMPANY_SUSPENDED");
+      throw new AppError(
+        403,
+        "Company is suspended. Write operations are disabled.",
+        "COMPANY_SUSPENDED",
+      );
     }
 
     req.tenant = {
@@ -120,20 +140,32 @@ export function requireCompanyAccess(req: Request, _res: Response, next: NextFun
   })().catch(next);
 }
 
-export function rejectIfSuspended(req: Request, _res: Response, next: NextFunction): void {
+export function rejectIfSuspended(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
   if (req.user?.isSuperAdmin) {
     next();
     return;
   }
 
   if (req.tenant?.companyStatus === COMPANY_SUSPENDED_STATUS) {
-    throw new AppError(403, "Company is suspended. Write operations are disabled.", "COMPANY_SUSPENDED");
+    throw new AppError(
+      403,
+      "Company is suspended. Write operations are disabled.",
+      "COMPANY_SUSPENDED",
+    );
   }
 
   next();
 }
 
-export function requireSuperAdmin(req: Request, _res: Response, next: NextFunction): void {
+export function requireSuperAdmin(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
   if (!req.user) {
     throw new UnauthorizedError();
   }
@@ -160,7 +192,9 @@ export function requirePermission(...codes: string[]) {
 
     const hasAll = codes.every((code) => req.tenant!.permissions.has(code));
     if (!hasAll) {
-      throw new ForbiddenError(`Missing permission: ${codes.filter((c) => !req.tenant!.permissions.has(c)).join(", ")}`);
+      throw new ForbiddenError(
+        `Missing permission: ${codes.filter((c) => !req.tenant!.permissions.has(c)).join(", ")}`,
+      );
     }
 
     next();
@@ -184,7 +218,9 @@ export function requireAnyPermission(...codes: string[]) {
 
     const hasAny = codes.some((code) => req.tenant!.permissions.has(code));
     if (!hasAny) {
-      throw new ForbiddenError(`Missing one of permissions: ${codes.join(", ")}`);
+      throw new ForbiddenError(
+        `Missing one of permissions: ${codes.join(", ")}`,
+      );
     }
 
     next();
@@ -192,7 +228,11 @@ export function requireAnyPermission(...codes: string[]) {
 }
 
 export function requireBranchAccess() {
-  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    _res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     if (!req.user || !req.tenant) {
       throw new UnauthorizedError();
     }
@@ -208,7 +248,10 @@ export function requireBranchAccess() {
       return;
     }
 
-    const branchId = req.tenant.branchId || req.headers["x-branch-id"] as string || req.body?.branchId;
+    const branchId =
+      req.tenant.branchId ||
+      (req.headers["x-branch-id"] as string) ||
+      req.body?.branchId;
     if (!branchId) {
       next();
       return;

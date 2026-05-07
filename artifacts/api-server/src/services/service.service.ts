@@ -1,12 +1,28 @@
-import { db, serviceRequests, workOrders, users, assets, branches, userCompanyMemberships, roles } from "@workspace/db";
+import {
+  db,
+  serviceRequests,
+  workOrders,
+  users,
+  assets,
+  branches,
+  userCompanyMemberships,
+  roles,
+} from "@workspace/db";
 import { eq, and, desc, sql, type SQL } from "drizzle-orm";
 
 type ServiceRequestStatus = typeof serviceRequests.$inferSelect.status;
 type WorkOrderStatus = typeof workOrders.$inferSelect.status;
 
-const userFullName = sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`.as("assigned_to_name");
+const userFullName =
+  sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`.as(
+    "assigned_to_name",
+  );
 
-export async function listServiceRequests(companyId: string, branchId?: string, status?: string) {
+export async function listServiceRequests(
+  companyId: string,
+  branchId?: string,
+  status?: string,
+) {
   const rows = await db
     .select({
       id: serviceRequests.id,
@@ -37,8 +53,19 @@ export async function listServiceRequests(companyId: string, branchId?: string, 
     .leftJoin(users, eq(serviceRequests.assignedToUserId, users.id))
     .where(
       branchId
-        ? and(eq(serviceRequests.companyId, companyId), eq(serviceRequests.branchId, branchId), status ? eq(serviceRequests.status, status as ServiceRequestStatus) : undefined)
-        : and(eq(serviceRequests.companyId, companyId), status ? eq(serviceRequests.status, status as ServiceRequestStatus) : undefined)
+        ? and(
+            eq(serviceRequests.companyId, companyId),
+            eq(serviceRequests.branchId, branchId),
+            status
+              ? eq(serviceRequests.status, status as ServiceRequestStatus)
+              : undefined,
+          )
+        : and(
+            eq(serviceRequests.companyId, companyId),
+            status
+              ? eq(serviceRequests.status, status as ServiceRequestStatus)
+              : undefined,
+          ),
     )
     .orderBy(desc(serviceRequests.createdAt));
   return rows;
@@ -75,7 +102,9 @@ export async function getServiceRequest(id: string, companyId: string) {
     .leftJoin(assets, eq(serviceRequests.assetId, assets.id))
     .leftJoin(branches, eq(serviceRequests.branchId, branches.id))
     .leftJoin(users, eq(serviceRequests.assignedToUserId, users.id))
-    .where(and(eq(serviceRequests.id, id), eq(serviceRequests.companyId, companyId)));
+    .where(
+      and(eq(serviceRequests.id, id), eq(serviceRequests.companyId, companyId)),
+    );
   return row;
 }
 
@@ -93,24 +122,41 @@ export async function createServiceRequest(data: {
   lng?: number;
   locationAddress?: string;
 }) {
-  const [row] = await db.insert(serviceRequests).values(data as typeof serviceRequests.$inferInsert).returning();
-  return row;
-}
-
-export async function updateServiceRequest(id: string, companyId: string, data: Record<string, unknown>) {
   const [row] = await db
-    .update(serviceRequests)
-    .set({ ...data, updatedAt: new Date() } as Partial<typeof serviceRequests.$inferInsert> & { updatedAt: Date })
-    .where(and(eq(serviceRequests.id, id), eq(serviceRequests.companyId, companyId)))
+    .insert(serviceRequests)
+    .values(data as typeof serviceRequests.$inferInsert)
     .returning();
   return row;
 }
 
-export async function listWorkOrders(companyId: string, branchId?: string, status?: string, assignedToUserId?: string) {
+export async function updateServiceRequest(
+  id: string,
+  companyId: string,
+  data: Record<string, unknown>,
+) {
+  const [row] = await db
+    .update(serviceRequests)
+    .set({ ...data, updatedAt: new Date() } as Partial<
+      typeof serviceRequests.$inferInsert
+    > & { updatedAt: Date })
+    .where(
+      and(eq(serviceRequests.id, id), eq(serviceRequests.companyId, companyId)),
+    )
+    .returning();
+  return row;
+}
+
+export async function listWorkOrders(
+  companyId: string,
+  branchId?: string,
+  status?: string,
+  assignedToUserId?: string,
+) {
   const conditions = [eq(workOrders.companyId, companyId)];
   if (branchId) conditions.push(eq(workOrders.branchId, branchId));
   if (status) conditions.push(eq(workOrders.status, status as WorkOrderStatus));
-  if (assignedToUserId) conditions.push(eq(workOrders.assignedToUserId, assignedToUserId));
+  if (assignedToUserId)
+    conditions.push(eq(workOrders.assignedToUserId, assignedToUserId));
 
   const rows = await db
     .select({
@@ -161,16 +207,19 @@ export async function createWorkOrder(data: {
 }) {
   const insertData: typeof workOrders.$inferInsert = {
     companyId: data.companyId,
-    orderType: data.orderType as typeof workOrders.$inferInsert["orderType"],
-    priority: (data.priority ?? "medium") as typeof workOrders.$inferInsert["priority"],
+    orderType: data.orderType as (typeof workOrders.$inferInsert)["orderType"],
+    priority: (data.priority ??
+      "medium") as (typeof workOrders.$inferInsert)["priority"],
     title: data.title,
     status: "draft",
   };
   if (data.branchId) insertData.branchId = data.branchId;
-  if (data.serviceRequestId) insertData.serviceRequestId = data.serviceRequestId;
+  if (data.serviceRequestId)
+    insertData.serviceRequestId = data.serviceRequestId;
   if (data.assetId) insertData.assetId = data.assetId;
   if (data.description) insertData.description = data.description;
-  if (data.assignedToUserId) insertData.assignedToUserId = data.assignedToUserId;
+  if (data.assignedToUserId)
+    insertData.assignedToUserId = data.assignedToUserId;
   if (data.createdByUserId) insertData.createdByUserId = data.createdByUserId;
   if (data.estimatedCost) insertData.estimatedCost = data.estimatedCost;
 
@@ -178,17 +227,27 @@ export async function createWorkOrder(data: {
   return row;
 }
 
-export async function updateWorkOrder(id: string, companyId: string, data: Record<string, unknown>) {
+export async function updateWorkOrder(
+  id: string,
+  companyId: string,
+  data: Record<string, unknown>,
+) {
   const [row] = await db
     .update(workOrders)
-    .set({ ...data, updatedAt: new Date() } as Partial<typeof workOrders.$inferInsert> & { updatedAt: Date })
+    .set({ ...data, updatedAt: new Date() } as Partial<
+      typeof workOrders.$inferInsert
+    > & { updatedAt: Date })
     .where(and(eq(workOrders.id, id), eq(workOrders.companyId, companyId)))
     .returning();
   return row;
 }
 
 export async function getMechanics(companyId: string, branchId?: string) {
-  const mechanicRole = await db.select().from(roles).where(eq(roles.code, "mechanic")).then(r => r[0]);
+  const mechanicRole = await db
+    .select()
+    .from(roles)
+    .where(eq(roles.code, "mechanic"))
+    .then((r) => r[0]);
   if (!mechanicRole) return [];
 
   const rows = await db
@@ -203,8 +262,8 @@ export async function getMechanics(companyId: string, branchId?: string) {
       and(
         eq(userCompanyMemberships.companyId, companyId),
         eq(userCompanyMemberships.roleId, mechanicRole.id),
-        eq(userCompanyMemberships.status, "active")
-      )
+        eq(userCompanyMemberships.status, "active"),
+      ),
     );
   return rows;
 }

@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as assetService from "../services/asset.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -10,8 +13,18 @@ const router: IRouter = Router();
 
 const assetTypeValues = ["bike", "ebike", "scooter", "escooter"] as const;
 const assetStatusValues = [
-  "draft", "available", "reserved", "awaiting_pickup", "rented",
-  "overdue", "charging", "maintenance", "blocked", "lost", "stolen", "retired",
+  "draft",
+  "available",
+  "reserved",
+  "awaiting_pickup",
+  "rented",
+  "overdue",
+  "charging",
+  "maintenance",
+  "blocked",
+  "lost",
+  "stolen",
+  "retired",
 ] as const;
 
 const createAssetSchema = z.object({
@@ -82,11 +95,26 @@ router.get(
   requireCompanyAccess,
   requirePermission("asset:read"),
   async (req, res) => {
-    const { branchId, status } = req.query as { branchId?: string; status?: string };
-    if (status && !assetStatusValues.includes(status as (typeof assetStatusValues)[number])) {
-      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid status value: ${status}` } });
+    const { branchId, status } = req.query as {
+      branchId?: string;
+      status?: string;
+    };
+    if (
+      status &&
+      !assetStatusValues.includes(status as (typeof assetStatusValues)[number])
+    ) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION",
+          message: `Invalid status value: ${status}`,
+        },
+      });
     }
-    const assets = await assetService.listAssets(req.tenant!.companyId, branchId, status);
+    const assets = await assetService.listAssets(
+      req.tenant!.companyId,
+      branchId,
+      status,
+    );
     return res.json({ data: assets });
   },
 );
@@ -98,7 +126,10 @@ router.get(
   requirePermission("asset:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const asset = await assetService.getAsset(req.params.id as string, req.tenant!.companyId);
+    const asset = await assetService.getAsset(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: asset });
   },
 );
@@ -110,8 +141,15 @@ router.patch(
   requirePermission("asset:update"),
   validate({ params: idParams, body: updateAssetSchema }),
   async (req, res) => {
-    const old = await assetService.getAsset(req.params.id as string, req.tenant!.companyId);
-    const asset = await assetService.updateAsset(req.params.id as string, req.tenant!.companyId, req.body);
+    const old = await assetService.getAsset(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
+    const asset = await assetService.updateAsset(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.body,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -133,7 +171,10 @@ router.post(
   requirePermission("asset:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
-    const before = await assetService.getAsset(req.params.id as string, req.tenant!.companyId);
+    const before = await assetService.getAsset(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     const asset = await assetService.changeAssetStatus(
       req.params.id as string,
       req.tenant!.companyId,
@@ -163,7 +204,10 @@ router.post(
   requirePermission("asset:delete"),
   validate({ params: idParams }),
   async (req, res) => {
-    const asset = await assetService.archiveAsset(req.params.id as string, req.tenant!.companyId);
+    const asset = await assetService.archiveAsset(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -183,7 +227,10 @@ router.post(
   requirePermission("asset:delete"),
   validate({ params: idParams }),
   async (req, res) => {
-    const asset = await assetService.restoreAsset(req.params.id as string, req.tenant!.companyId);
+    const asset = await assetService.restoreAsset(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -203,7 +250,10 @@ router.get(
   requirePermission("asset:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const history = await assetService.getAssetStatusHistory(req.params.id as string, req.tenant!.companyId);
+    const history = await assetService.getAssetStatusHistory(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: history });
   },
 );

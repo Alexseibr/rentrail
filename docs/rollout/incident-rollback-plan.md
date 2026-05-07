@@ -3,6 +3,7 @@
 ## Severity Model
 
 ### SEV-1: Critical
+
 **Definition**: Platform is fully unavailable, data loss occurring, or security breach detected.
 
 - **Examples**: Database unreachable, authentication system down, data leak between tenants, ransomware
@@ -12,6 +13,7 @@
 - **Post-incident review**: Required within 24 hours
 
 ### SEV-2: Major
+
 **Definition**: Core feature broken for all tenants or significant degradation.
 
 - **Examples**: Rental creation fails globally, payment recording broken, mobile app cannot authenticate, search returns wrong results
@@ -21,6 +23,7 @@
 - **Post-incident review**: Required within 48 hours
 
 ### SEV-3: Minor
+
 **Definition**: Non-critical feature broken or issue affecting single tenant.
 
 - **Examples**: Report export fails, notification delivery delayed, one tenant's white-label settings not loading, UI cosmetic issue
@@ -38,6 +41,7 @@
 **Symptoms**: Errors immediately after deployment, new bugs in previously working features.
 
 **Procedure**:
+
 1. Confirm the issue is related to the new deploy (check timestamps)
 2. Roll back to previous deployment version via Replit Deployments
 3. Verify health endpoints return 200
@@ -52,18 +56,22 @@
 **Symptoms**: Application errors after schema change, data access failures.
 
 **Procedure**:
+
 1. **Do not panic** — assess the scope of the migration
 2. If migration was additive only (new tables/columns):
    - Usually safe to leave in place
    - Roll back application code if it relies on new schema
 3. If migration was destructive (dropped columns, changed types):
    - Restore from pre-migration backup immediately
+
    ```bash
    # Restore from backup
    psql $DATABASE_URL < backup-YYYYMMDD-HHMMSS.sql
    ```
+
    - Roll back application code to match previous schema
    - Verify data integrity after restore
+
 4. Notify all tenants if any data loss occurred
 
 **Prevention**: Always take backup before migration. Test migrations on staging. Prepare rollback SQL for destructive changes. Never drop columns in the same release that removes code references.
@@ -73,6 +81,7 @@
 **Symptoms**: Users cannot log in, JWT validation errors, session issues.
 
 **Procedure**:
+
 1. Check if `SESSION_SECRET` was changed → if so, all existing tokens are invalidated (expected)
 2. Check database connectivity (sessions table)
 3. Check JWT signing configuration
@@ -93,6 +102,7 @@
 **THIS IS SEV-1 — IMMEDIATE ACTION REQUIRED**
 
 **Procedure**:
+
 1. **Immediately**: Disable the affected endpoint or feature
 2. Assess scope: which tenants are affected, what data was exposed
 3. Review query — identify missing `companyId` filter
@@ -109,6 +119,7 @@
 **Symptoms**: Payments not recording, invoices incorrect, subscriptions not updating.
 
 **Procedure**:
+
 1. Determine if this is a data issue or system issue
 2. If system issue (API errors):
    - Check database connectivity
@@ -130,6 +141,7 @@
 ## Communication Templates
 
 ### Internal Status Update (for team)
+
 ```
 INCIDENT: [SEV-X] [Brief description]
 STATUS: [Investigating | Identified | Monitoring | Resolved]
@@ -141,6 +153,7 @@ OWNER: [Name of incident commander]
 ```
 
 ### Tenant-Facing Notice (for affected customers)
+
 ```
 Subject: Service Update — [Brief description]
 
@@ -158,6 +171,7 @@ If you have urgent needs, please contact us at [support email/phone].
 ```
 
 ### Recovery Notice (when resolved)
+
 ```
 Subject: Service Restored — [Brief description]
 
@@ -179,6 +193,7 @@ Thank you for your patience.
 ## Incident Response Checklist
 
 ### During Incident
+
 - [ ] Severity level determined
 - [ ] Incident commander assigned
 - [ ] First internal status update sent
@@ -190,6 +205,7 @@ Thank you for your patience.
 - [ ] Recovery notice sent
 
 ### Post-Incident (within 48 hours)
+
 - [ ] Timeline of events documented
 - [ ] Root cause analysis written
 - [ ] Preventive measures identified

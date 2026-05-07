@@ -9,11 +9,47 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Archive, RotateCcw, Search, Users, UserCheck, UserX } from "lucide-react";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Pencil,
+  Archive,
+  RotateCcw,
+  Search,
+  Users,
+  UserCheck,
+  UserX,
+} from "lucide-react";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { toast } from "@/hooks/use-toast";
 
@@ -40,7 +76,9 @@ export default function ClientsCompanyPage() {
   const queryClient = useQueryClient();
   const { canWriteClient } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId
+    ? { "x-company-id": companyId }
+    : {};
 
   const [showCreate, setShowCreate] = useState(false);
   const [editClient, setEditClient] = useState<any>(null);
@@ -55,18 +93,26 @@ export default function ClientsCompanyPage() {
     enabled: !!companyId,
   });
   const allItems = clientsQuery.data ?? [];
-  const filtered = statusFilter !== "all" ? allItems.filter((c: any) => c.status === statusFilter) : allItems;
+  const filtered =
+    statusFilter !== "all"
+      ? allItems.filter((c: any) => c.status === statusFilter)
+      : allItems;
   const items = search
-    ? filtered.filter((c: any) =>
-        (c.fullName?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (c.phone || "").includes(search) ||
-        (c.email?.toLowerCase() || "").includes(search.toLowerCase())
+    ? filtered.filter(
+        (c: any) =>
+          (c.fullName?.toLowerCase() || "").includes(search.toLowerCase()) ||
+          (c.phone || "").includes(search) ||
+          (c.email?.toLowerCase() || "").includes(search.toLowerCase()),
       )
     : filtered;
 
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api("/clients", { method: "POST", body: JSON.stringify(body), headers: companyHeaders }),
+      api("/clients", {
+        method: "POST",
+        body: JSON.stringify(body),
+        headers: companyHeaders,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowCreate(false);
@@ -74,13 +120,21 @@ export default function ClientsCompanyPage() {
       toast({ title: t("toast.clientCreated") });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.saveFailed"),
+        variant: "destructive",
+      });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api(`/clients/${id}`, { method: "PATCH", body: JSON.stringify(body), headers: companyHeaders }),
+      api(`/clients/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+        headers: companyHeaders,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setEditClient(null);
@@ -88,20 +142,35 @@ export default function ClientsCompanyPage() {
       toast({ title: t("toast.clientUpdated") });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.saveFailed"),
+        variant: "destructive",
+      });
     },
   });
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, restore }: { id: string; restore: boolean }) =>
-      api(`/clients/${id}/${restore ? "restore" : "archive"}`, { method: "POST", headers: companyHeaders }),
+      api(`/clients/${id}/${restore ? "restore" : "archive"}`, {
+        method: "POST",
+        headers: companyHeaders,
+      }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setArchiveConfirm(null);
-      toast({ title: variables.restore ? t("toast.clientRestored") : t("toast.clientArchived") });
+      toast({
+        title: variables.restore
+          ? t("toast.clientRestored")
+          : t("toast.clientArchived"),
+      });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.actionFailed"),
+        variant: "destructive",
+      });
     },
   });
 
@@ -145,15 +214,23 @@ export default function ClientsCompanyPage() {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   const activeCount = allItems.filter((c: any) => c.status === "active").length;
-  const suspendedCount = allItems.filter((c: any) => c.status === "suspended").length;
-  const blockedCount = allItems.filter((c: any) => c.status === "blocked").length;
+  const suspendedCount = allItems.filter(
+    (c: any) => c.status === "suspended",
+  ).length;
+  const blockedCount = allItems.filter(
+    (c: any) => c.status === "blocked",
+  ).length;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("nav.clients")}</h1>
-          <p className="text-muted-foreground mt-0.5">{t("clients.subtitle", "Клиенты компании")}</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("nav.clients")}
+          </h1>
+          <p className="text-muted-foreground mt-0.5">
+            {t("clients.subtitle", "Клиенты компании")}
+          </p>
         </div>
         {canWriteClient && (
           <Button onClick={openCreate} className="gap-2">
@@ -165,9 +242,27 @@ export default function ClientsCompanyPage() {
 
       <div className="grid gap-4 grid-cols-3">
         {[
-          { key: "active", label: t("common.active"), count: activeCount, accent: "bg-green-500", icon: UserCheck },
-          { key: "suspended", label: t("common.suspended"), count: suspendedCount, accent: "bg-yellow-500", icon: Users },
-          { key: "blocked", label: t("common.blocked"), count: blockedCount, accent: "bg-red-500", icon: UserX },
+          {
+            key: "active",
+            label: t("common.active"),
+            count: activeCount,
+            accent: "bg-green-500",
+            icon: UserCheck,
+          },
+          {
+            key: "suspended",
+            label: t("common.suspended"),
+            count: suspendedCount,
+            accent: "bg-yellow-500",
+            icon: Users,
+          },
+          {
+            key: "blocked",
+            label: t("common.blocked"),
+            count: blockedCount,
+            accent: "bg-red-500",
+            icon: UserX,
+          },
         ].map(({ key, label, count, accent, icon: Icon }) => (
           <Card
             key={key}
@@ -183,10 +278,16 @@ export default function ClientsCompanyPage() {
                   ) : (
                     <div className="text-2xl font-bold">{count}</div>
                   )}
-                  <p className={`text-sm mt-0.5 ${statusFilter === key ? "font-semibold text-primary" : "text-muted-foreground"}`}>{label}</p>
+                  <p
+                    className={`text-sm mt-0.5 ${statusFilter === key ? "font-semibold text-primary" : "text-muted-foreground"}`}
+                  >
+                    {label}
+                  </p>
                 </div>
                 <div className="p-2 rounded-xl bg-muted">
-                  <Icon className={`h-4 w-4 ${accent.replace("bg-", "text-")}`} />
+                  <Icon
+                    className={`h-4 w-4 ${accent.replace("bg-", "text-")}`}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -199,7 +300,9 @@ export default function ClientsCompanyPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <CardTitle className="text-base font-semibold">
               {t("nav.clients")}
-              <span className="ml-2 text-sm font-normal text-muted-foreground">({items.length})</span>
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({items.length})
+              </span>
             </CardTitle>
             <div className="flex-1" />
             <div className="relative">
@@ -217,10 +320,18 @@ export default function ClientsCompanyPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("common.all", "Все")}</SelectItem>
-                <SelectItem value="active">{t("common.active", "Активные")}</SelectItem>
-                <SelectItem value="suspended">{t("clients.suspended", "Приостановлены")}</SelectItem>
-                <SelectItem value="blocked">{t("clients.blocked", "Заблокированы")}</SelectItem>
-                <SelectItem value="archived">{t("status.archived", "В архиве")}</SelectItem>
+                <SelectItem value="active">
+                  {t("common.active", "Активные")}
+                </SelectItem>
+                <SelectItem value="suspended">
+                  {t("clients.suspended", "Приостановлены")}
+                </SelectItem>
+                <SelectItem value="blocked">
+                  {t("clients.blocked", "Заблокированы")}
+                </SelectItem>
+                <SelectItem value="archived">
+                  {t("status.archived", "В архиве")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -228,31 +339,53 @@ export default function ClientsCompanyPage() {
         <CardContent className="p-0">
           {clientsQuery.isLoading ? (
             <div className="p-6 space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs">{t("clients.name", "Имя")}</TableHead>
+                  <TableHead className="text-xs">
+                    {t("clients.name", "Имя")}
+                  </TableHead>
                   <TableHead className="text-xs">{t("common.phone")}</TableHead>
                   <TableHead className="text-xs">{t("common.email")}</TableHead>
-                  <TableHead className="text-xs">{t("clients.document", "Документ")}</TableHead>
-                  <TableHead className="text-xs">{t("common.status")}</TableHead>
-                  {canWriteClient && <TableHead className="text-xs">{t("common.actions", "Действия")}</TableHead>}
+                  <TableHead className="text-xs">
+                    {t("clients.document", "Документ")}
+                  </TableHead>
+                  <TableHead className="text-xs">
+                    {t("common.status")}
+                  </TableHead>
+                  {canWriteClient && (
+                    <TableHead className="text-xs">
+                      {t("common.actions", "Действия")}
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((client: any) => (
                   <TableRow key={client.id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium text-sm">{client.fullName}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{client.phone || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{client.email || "—"}</TableCell>
+                    <TableCell className="font-medium text-sm">
+                      {client.fullName}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {client.documentType ? `${client.documentType}: ${client.documentNumber || "—"}` : "—"}
+                      {client.phone || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {client.email || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {client.documentType
+                        ? `${client.documentType}: ${client.documentNumber || "—"}`
+                        : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`text-xs ${STATUS_COLORS[client.status] || "bg-gray-100"}`}>
+                      <Badge
+                        className={`text-xs ${STATUS_COLORS[client.status] || "bg-gray-100"}`}
+                      >
                         {String(t(`status.${client.status}`, client.status))}
                       </Badge>
                     </TableCell>
@@ -273,7 +406,9 @@ export default function ClientsCompanyPage() {
                               size="sm"
                               variant="ghost"
                               className="h-7 w-7 p-0 text-muted-foreground"
-                              onClick={() => setArchiveConfirm({ ...client, restore: true })}
+                              onClick={() =>
+                                setArchiveConfirm({ ...client, restore: true })
+                              }
                               title={t("clients.restore", "Восстановить")}
                             >
                               <RotateCcw className="h-3.5 w-3.5" />
@@ -299,13 +434,21 @@ export default function ClientsCompanyPage() {
                     <TableCell colSpan={6} className="py-6">
                       <Empty className="border-0">
                         <EmptyHeader>
-                          <EmptyMedia variant="icon"><Users className="h-5 w-5" /></EmptyMedia>
+                          <EmptyMedia variant="icon">
+                            <Users className="h-5 w-5" />
+                          </EmptyMedia>
                           <EmptyTitle>{t("clients.emptyTitle")}</EmptyTitle>
-                          <EmptyDescription>{t("clients.emptyDescription")}</EmptyDescription>
+                          <EmptyDescription>
+                            {t("clients.emptyDescription")}
+                          </EmptyDescription>
                         </EmptyHeader>
                         {canWriteClient && (
                           <EmptyContent>
-                            <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                            <Button
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => setShowCreate(true)}
+                            >
                               <Plus className="h-3.5 w-3.5" />
                               {t("clients.addFirst")}
                             </Button>
@@ -320,9 +463,13 @@ export default function ClientsCompanyPage() {
                     <TableCell colSpan={6} className="py-6">
                       <Empty className="border-0">
                         <EmptyHeader>
-                          <EmptyMedia variant="icon"><Search className="h-5 w-5" /></EmptyMedia>
+                          <EmptyMedia variant="icon">
+                            <Search className="h-5 w-5" />
+                          </EmptyMedia>
                           <EmptyTitle>{t("common.noResults")}</EmptyTitle>
-                          <EmptyDescription>{t("common.noResultsDescription")}</EmptyDescription>
+                          <EmptyDescription>
+                            {t("common.noResultsDescription")}
+                          </EmptyDescription>
                         </EmptyHeader>
                       </Empty>
                     </TableCell>
@@ -334,77 +481,144 @@ export default function ClientsCompanyPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={showCreate || !!editClient} onOpenChange={() => { setShowCreate(false); setEditClient(null); }}>
+      <Dialog
+        open={showCreate || !!editClient}
+        onOpenChange={() => {
+          setShowCreate(false);
+          setEditClient(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editClient ? t("clients.edit", "Редактировать клиента") : t("clients.add", "Добавить клиента")}
+              {editClient
+                ? t("clients.edit", "Редактировать клиента")
+                : t("clients.add", "Добавить клиента")}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>{t("clients.name", "ФИО")} *</Label>
-              <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
+              <Input
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                required
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("common.phone")}</Label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+375..." />
+                <Input
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="+375..."
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("common.email")}</Label>
-                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>{t("clients.birthday", "Дата рождения")}</Label>
-              <Input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
+              <Input
+                type="date"
+                value={form.birthday}
+                onChange={(e) => setForm({ ...form, birthday: e.target.value })}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("clients.docType", "Тип документа")}</Label>
-                <Select value={form.documentType} onValueChange={(v) => setForm({ ...form, documentType: v })}>
+                <Select
+                  value={form.documentType}
+                  onValueChange={(v) => setForm({ ...form, documentType: v })}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("clients.selectDocType", "Выберите")} />
+                    <SelectValue
+                      placeholder={t("clients.selectDocType", "Выберите")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="passport">{t("clients.passport", "Паспорт")}</SelectItem>
-                    <SelectItem value="id_card">{t("clients.idCard", "Удостоверение")}</SelectItem>
-                    <SelectItem value="driver_license">{t("clients.driverLicense", "Водительское удостоверение")}</SelectItem>
+                    <SelectItem value="passport">
+                      {t("clients.passport", "Паспорт")}
+                    </SelectItem>
+                    <SelectItem value="id_card">
+                      {t("clients.idCard", "Удостоверение")}
+                    </SelectItem>
+                    <SelectItem value="driver_license">
+                      {t("clients.driverLicense", "Водительское удостоверение")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>{t("clients.docNumber", "Номер документа")}</Label>
-                <Input value={form.documentNumber} onChange={(e) => setForm({ ...form, documentNumber: e.target.value })} />
+                <Input
+                  value={form.documentNumber}
+                  onChange={(e) =>
+                    setForm({ ...form, documentNumber: e.target.value })
+                  }
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>{t("clients.notes", "Заметки")}</Label>
-              <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              <Input
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setShowCreate(false); setEditClient(null); }}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowCreate(false);
+                  setEditClient(null);
+                }}
+              >
                 {t("common.cancel", "Отмена")}
               </Button>
               <Button type="submit" disabled={isSaving || !form.fullName}>
-                {isSaving ? t("common.saving", "Сохранение...") : editClient ? t("common.save", "Сохранить") : t("clients.add", "Добавить")}
+                {isSaving
+                  ? t("common.saving", "Сохранение...")
+                  : editClient
+                    ? t("common.save", "Сохранить")
+                    : t("clients.add", "Добавить")}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!archiveConfirm} onOpenChange={() => setArchiveConfirm(null)}>
+      <Dialog
+        open={!!archiveConfirm}
+        onOpenChange={() => setArchiveConfirm(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {archiveConfirm?.restore ? t("clients.restore", "Восстановить") : t("clients.archive", "Архивировать")}
+              {archiveConfirm?.restore
+                ? t("clients.restore", "Восстановить")
+                : t("clients.archive", "Архивировать")}
             </DialogTitle>
             <DialogDescription>
               {archiveConfirm?.restore
-                ? t("clients.restoreConfirm", "Восстановить клиента {{name}}?", { name: archiveConfirm?.fullName })
-                : t("clients.archiveConfirm", "Архивировать клиента {{name}}?", { name: archiveConfirm?.fullName })}
+                ? t(
+                    "clients.restoreConfirm",
+                    "Восстановить клиента {{name}}?",
+                    { name: archiveConfirm?.fullName },
+                  )
+                : t(
+                    "clients.archiveConfirm",
+                    "Архивировать клиента {{name}}?",
+                    { name: archiveConfirm?.fullName },
+                  )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -415,7 +629,11 @@ export default function ClientsCompanyPage() {
               variant={archiveConfirm?.restore ? "default" : "destructive"}
               disabled={archiveMutation.isPending}
               onClick={() => {
-                if (archiveConfirm) archiveMutation.mutate({ id: archiveConfirm.id, restore: !!archiveConfirm.restore });
+                if (archiveConfirm)
+                  archiveMutation.mutate({
+                    id: archiveConfirm.id,
+                    restore: !!archiveConfirm.restore,
+                  });
               }}
             >
               {archiveMutation.isPending

@@ -44,7 +44,13 @@ function getBatteryColor(pct: number): string {
   return "#22C55E";
 }
 
-function BatteryIcon({ percent, size = 16 }: { percent: number; size?: number }) {
+function BatteryIcon({
+  percent,
+  size = 16,
+}: {
+  percent: number;
+  size?: number;
+}) {
   const safe = Math.min(100, Math.max(0, percent));
   const color = getBatteryColor(safe);
   const bodyWidth = size * 1.6;
@@ -106,7 +112,10 @@ async function fetchAssets(): Promise<Asset[]> {
   return data;
 }
 
-function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatRelativeTime(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return t("assetDetail.timeJustNow");
@@ -132,7 +141,12 @@ const TYPE_ICONS: Record<string, string> = {
   escooter: "activity",
 };
 
-const STATUS_FILTER_KEYS = ["available", "rented", "maintenance", "blocked"] as const;
+const STATUS_FILTER_KEYS = [
+  "available",
+  "rented",
+  "maintenance",
+  "blocked",
+] as const;
 
 function openMaps(lat: number, lng: number) {
   const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
@@ -148,14 +162,23 @@ export default function AssetsScreen() {
   const router = useRouter();
   const { user, companyId } = useAuth();
   const memberships = user?.memberships || user?.companies;
-  const roleCode = memberships?.find((c: { companyId: string }) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const roleCode =
+    memberships?.find((c: { companyId: string }) => c.companyId === companyId)
+      ?.roleCode || memberships?.[0]?.roleCode;
   const canSeeMap = canAccessTab(roleCode, "assets");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [onlineFilter, setOnlineFilter] = useState<string | null>(null);
-  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>(
+    {},
+  );
 
-  const { data: assets = [], isLoading, refetch, isRefetching } = useQuery({
+  const {
+    data: assets = [],
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ["assets"],
     queryFn: fetchAssets,
     staleTime: 30000,
@@ -179,12 +202,12 @@ export default function AssetsScreen() {
 
   const filtered = assets.filter((a) => {
     const q = search.trim().toLowerCase();
-    const matchesSearch = !q || (
+    const matchesSearch =
+      !q ||
       (a.brand ?? "").toLowerCase().includes(q) ||
       (a.model ?? "").toLowerCase().includes(q) ||
       (a.internalCode ?? "").toLowerCase().includes(q) ||
-      a.id.slice(0, 8).toLowerCase().includes(q)
-    );
+      a.id.slice(0, 8).toLowerCase().includes(q);
     const matchesStatus = !statusFilter || a.status === statusFilter;
     const matchesOnline = !onlineFilter || a.onlineState === onlineFilter;
     return matchesSearch && matchesStatus && matchesOnline;
@@ -199,12 +222,25 @@ export default function AssetsScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.cardMainRow}>
-          <View style={[styles.typeIcon, { backgroundColor: colors.primary + "18" }]}>
-            <Feather name={(TYPE_ICONS[item.assetType] ?? "circle") as any} size={18} color={colors.primary} />
+          <View
+            style={[
+              styles.typeIcon,
+              { backgroundColor: colors.primary + "18" },
+            ]}
+          >
+            <Feather
+              name={(TYPE_ICONS[item.assetType] ?? "circle") as any}
+              size={18}
+              color={colors.primary}
+            />
           </View>
           <View style={styles.cardContent}>
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-              {item.brand ?? t(`assets.type_${item.assetType}`, { defaultValue: item.assetType })} {item.model ?? ""}
+              {item.brand ??
+                t(`assets.type_${item.assetType}`, {
+                  defaultValue: item.assetType,
+                })}{" "}
+              {item.model ?? ""}
             </Text>
             <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
               {item.internalCode ?? item.id.slice(0, 8)}
@@ -215,24 +251,53 @@ export default function AssetsScreen() {
               {item.batteryPercent != null && (
                 <View style={styles.batteryRow}>
                   <BatteryIcon percent={item.batteryPercent} size={14} />
-                  <Text style={[styles.batteryText, { color: getBatteryColor(item.batteryPercent) }]}>
+                  <Text
+                    style={[
+                      styles.batteryText,
+                      { color: getBatteryColor(item.batteryPercent) },
+                    ]}
+                  >
                     {item.batteryPercent}%
                   </Text>
                 </View>
               )}
-              {(item.onlineState === "online" || item.onlineState === "offline") && (
+              {(item.onlineState === "online" ||
+                item.onlineState === "offline") && (
                 <View
                   style={[
                     styles.connectionDot,
-                    { backgroundColor: item.onlineState === "online" ? "#10B981" : "#EF4444" },
+                    {
+                      backgroundColor:
+                        item.onlineState === "online" ? "#10B981" : "#EF4444",
+                    },
                   ]}
                 />
               )}
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18" }]}>
-              <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" }]} />
-              <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? "#8c8c8c" }]}>
-                {t(`assets.status_${item.status}`, { defaultValue: item.status })}
+            <View
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor:
+                    (STATUS_COLORS[item.status] ?? "#8c8c8c") + "18",
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: STATUS_COLORS[item.status] ?? "#8c8c8c" },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: STATUS_COLORS[item.status] ?? "#8c8c8c" },
+                ]}
+              >
+                {t(`assets.status_${item.status}`, {
+                  defaultValue: item.status,
+                })}
               </Text>
             </View>
           </View>
@@ -248,11 +313,17 @@ export default function AssetsScreen() {
               {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
             </Text>
             {coords.cachedAt ? (
-              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.cacheAgeText, { color: colors.mutedForeground }]}
+              >
                 {formatRelativeTime(coords.cachedAt, t)}
               </Text>
             ) : null}
-            <Feather name="external-link" size={11} color={colors.mutedForeground} />
+            <Feather
+              name="external-link"
+              size={11}
+              color={colors.mutedForeground}
+            />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -264,7 +335,16 @@ export default function AssetsScreen() {
       <SyncStatusBanner />
 
       <View style={styles.topRow}>
-        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}>
+        <View
+          style={[
+            styles.searchBar,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              flex: 1,
+            },
+          ]}
+        >
           <Feather name="search" size={16} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.foreground }]}
@@ -281,7 +361,10 @@ export default function AssetsScreen() {
         </View>
         {canSeeMap && (
           <TouchableOpacity
-            style={[styles.mapBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              styles.mapBtn,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
             onPress={() => router.push("/fleet-map" as never)}
             activeOpacity={0.7}
           >
@@ -292,40 +375,107 @@ export default function AssetsScreen() {
 
       <View style={styles.filterRow}>
         <TouchableOpacity
-          style={[styles.chip, !statusFilter && { backgroundColor: colors.primary }]}
+          style={[
+            styles.chip,
+            !statusFilter && { backgroundColor: colors.primary },
+          ]}
           onPress={() => setStatusFilter(null)}
         >
-          <Text style={[styles.chipText, { color: !statusFilter ? "#fff" : colors.mutedForeground }]}>
+          <Text
+            style={[
+              styles.chipText,
+              { color: !statusFilter ? "#fff" : colors.mutedForeground },
+            ]}
+          >
             {t("serviceModule.all")}
           </Text>
         </TouchableOpacity>
         {STATUS_FILTER_KEYS.map((key) => (
           <TouchableOpacity
             key={key}
-            style={[styles.chip, statusFilter === key && { backgroundColor: STATUS_COLORS[key] }]}
+            style={[
+              styles.chip,
+              statusFilter === key && { backgroundColor: STATUS_COLORS[key] },
+            ]}
             onPress={() => setStatusFilter(statusFilter === key ? null : key)}
           >
-            <View style={[styles.chipDot, { backgroundColor: statusFilter === key ? "#fff" : STATUS_COLORS[key] }]} />
-            <Text style={[styles.chipText, { color: statusFilter === key ? "#fff" : colors.mutedForeground }]}>
+            <View
+              style={[
+                styles.chipDot,
+                {
+                  backgroundColor:
+                    statusFilter === key ? "#fff" : STATUS_COLORS[key],
+                },
+              ]}
+            />
+            <Text
+              style={[
+                styles.chipText,
+                {
+                  color: statusFilter === key ? "#fff" : colors.mutedForeground,
+                },
+              ]}
+            >
               {t(`assets.status_${key}`)}
             </Text>
           </TouchableOpacity>
         ))}
         <TouchableOpacity
-          style={[styles.chip, onlineFilter === "online" && { backgroundColor: "#10B981" }]}
-          onPress={() => setOnlineFilter(onlineFilter === "online" ? null : "online")}
+          style={[
+            styles.chip,
+            onlineFilter === "online" && { backgroundColor: "#10B981" },
+          ]}
+          onPress={() =>
+            setOnlineFilter(onlineFilter === "online" ? null : "online")
+          }
         >
-          <View style={[styles.chipDot, { backgroundColor: onlineFilter === "online" ? "#fff" : "#10B981" }]} />
-          <Text style={[styles.chipText, { color: onlineFilter === "online" ? "#fff" : colors.mutedForeground }]}>
+          <View
+            style={[
+              styles.chipDot,
+              {
+                backgroundColor: onlineFilter === "online" ? "#fff" : "#10B981",
+              },
+            ]}
+          />
+          <Text
+            style={[
+              styles.chipText,
+              {
+                color:
+                  onlineFilter === "online" ? "#fff" : colors.mutedForeground,
+              },
+            ]}
+          >
             {t("assetDetail.onlineState_online")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.chip, onlineFilter === "offline" && { backgroundColor: "#EF4444" }]}
-          onPress={() => setOnlineFilter(onlineFilter === "offline" ? null : "offline")}
+          style={[
+            styles.chip,
+            onlineFilter === "offline" && { backgroundColor: "#EF4444" },
+          ]}
+          onPress={() =>
+            setOnlineFilter(onlineFilter === "offline" ? null : "offline")
+          }
         >
-          <View style={[styles.chipDot, { backgroundColor: onlineFilter === "offline" ? "#fff" : "#EF4444" }]} />
-          <Text style={[styles.chipText, { color: onlineFilter === "offline" ? "#fff" : colors.mutedForeground }]}>
+          <View
+            style={[
+              styles.chipDot,
+              {
+                backgroundColor:
+                  onlineFilter === "offline" ? "#fff" : "#EF4444",
+              },
+            ]}
+          />
+          <Text
+            style={[
+              styles.chipText,
+              {
+                color:
+                  onlineFilter === "offline" ? "#fff" : colors.mutedForeground,
+              },
+            ]}
+          >
             {t("assetDetail.onlineState_offline")}
           </Text>
         </TouchableOpacity>
@@ -340,13 +490,23 @@ export default function AssetsScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={colors.primary}
+            />
           }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="inbox" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.foreground }]}>{t("assets.noAssets")}</Text>
-              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("assets.emptyHint")}</Text>
+              <Text style={[styles.emptyText, { color: colors.foreground }]}>
+                {t("assets.noAssets")}
+              </Text>
+              <Text
+                style={[styles.emptyHint, { color: colors.mutedForeground }]}
+              >
+                {t("assets.emptyHint")}
+              </Text>
             </View>
           }
         />
@@ -358,27 +518,46 @@ export default function AssetsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topRow: {
-    flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8, gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 8,
   },
   searchBar: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    paddingHorizontal: 12, paddingVertical: 10,
-    borderRadius: 12, borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   mapBtn: {
-    width: 44, height: 44, borderRadius: 12, borderWidth: 1,
-    justifyContent: "center", alignItems: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   filterRow: {
-    flexDirection: "row", gap: 6, paddingHorizontal: 12,
-    paddingBottom: 10, flexWrap: "wrap",
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    flexWrap: "wrap",
   },
   chip: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20, backgroundColor: "rgba(128,128,128,0.1)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "rgba(128,128,128,0.1)",
   },
   chipDot: { width: 6, height: 6, borderRadius: 3 },
   chipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
@@ -399,8 +578,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   typeIcon: {
-    width: 42, height: 42, borderRadius: 12,
-    justifyContent: "center", alignItems: "center",
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   cardContent: { flex: 1, gap: 2 },
   cardTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
@@ -428,12 +610,21 @@ const styles = StyleSheet.create({
   batteryRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   batteryText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   statusBadge: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   empty: { alignItems: "center", paddingTop: 80, gap: 8 },
   emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 40 },
+  emptyHint: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    paddingHorizontal: 40,
+  },
 });

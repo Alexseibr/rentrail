@@ -4,7 +4,18 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Server, Mail, HardDrive, Radio, Activity, Bell } from "lucide-react";
+import {
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  RefreshCw,
+  Server,
+  Mail,
+  HardDrive,
+  Radio,
+  Activity,
+  Bell,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ServiceStatus {
@@ -81,12 +92,14 @@ export default function DiagnosticsPage() {
     queryFn: async () => {
       const res = await api<any[]>("/platform/health/tenants");
       const items = res ?? [];
-      return items.map((t: any): TenantHealth => ({
-        companyId: t.companyId ?? t.id,
-        companyName: t.companyName ?? t.name,
-        status: t.status ?? t.healthStatus ?? "healthy",
-        issues: t.issues ?? [],
-      }));
+      return items.map(
+        (t: any): TenantHealth => ({
+          companyId: t.companyId ?? t.id,
+          companyName: t.companyName ?? t.name,
+          status: t.status ?? t.healthStatus ?? "healthy",
+          issues: t.issues ?? [],
+        }),
+      );
     },
     refetchInterval: 60000,
   });
@@ -101,7 +114,9 @@ export default function DiagnosticsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("diagnostics.title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("diagnostics.title")}
+          </h1>
           <p className="text-muted-foreground">{t("diagnostics.subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -135,8 +150,12 @@ export default function DiagnosticsPage() {
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-8 w-8 text-green-500" />
                 <div>
-                  <p className="text-2xl font-bold">{healthQuery.data.healthy}</p>
-                  <p className="text-sm text-muted-foreground">{t("diagnostics.healthy")}</p>
+                  <p className="text-2xl font-bold">
+                    {healthQuery.data.healthy}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("diagnostics.healthy")}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -146,8 +165,12 @@ export default function DiagnosticsPage() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-8 w-8 text-yellow-500" />
                 <div>
-                  <p className="text-2xl font-bold">{healthQuery.data.degraded}</p>
-                  <p className="text-sm text-muted-foreground">{t("diagnostics.degraded")}</p>
+                  <p className="text-2xl font-bold">
+                    {healthQuery.data.degraded}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("diagnostics.degraded")}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -157,8 +180,12 @@ export default function DiagnosticsPage() {
               <div className="flex items-center gap-3">
                 <XCircle className="h-8 w-8 text-red-500" />
                 <div>
-                  <p className="text-2xl font-bold">{healthQuery.data.critical}</p>
-                  <p className="text-sm text-muted-foreground">{t("diagnostics.critical")}</p>
+                  <p className="text-2xl font-bold">
+                    {healthQuery.data.critical}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("diagnostics.critical")}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -167,63 +194,74 @@ export default function DiagnosticsPage() {
       ) : null}
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">{t("diagnostics.serviceStatus")}</h2>
+        <h2 className="text-lg font-semibold mb-3">
+          {t("diagnostics.serviceStatus")}
+        </h2>
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {servicesQuery.isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-28" />
-            ))
-          ) : (
-            (servicesQuery.data || []).map((svc) => {
-              const SvcIcon = SERVICE_ICONS[svc.name.toLowerCase()] || Server;
-              return (
-                <Card key={svc.name}>
-                  <CardContent className="pt-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <SvcIcon className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium capitalize">{svc.name}</span>
+          {servicesQuery.isLoading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-28" />
+              ))
+            : (servicesQuery.data || []).map((svc) => {
+                const SvcIcon = SERVICE_ICONS[svc.name.toLowerCase()] || Server;
+                return (
+                  <Card key={svc.name}>
+                    <CardContent className="pt-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <SvcIcon className="h-5 w-5 text-muted-foreground" />
+                          <span className="font-medium capitalize">
+                            {svc.name}
+                          </span>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            svc.status === "healthy"
+                              ? "bg-green-100 text-green-800"
+                              : svc.status === "degraded"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                          }
+                        >
+                          {svc.status}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className={
-                          svc.status === "healthy"
-                            ? "bg-green-100 text-green-800"
-                            : svc.status === "degraded"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                        }
-                      >
-                        {svc.status}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      {svc.latency !== undefined && (
-                        <p className="text-xs text-muted-foreground">{t("diagnostics.latency")}: {svc.latency}ms</p>
-                      )}
-                      {svc.version && (
-                        <p className="text-xs text-muted-foreground">{t("diagnostics.version")}: {svc.version}</p>
-                      )}
-                      {svc.message && (
-                        <p className="text-xs text-muted-foreground">{svc.message}</p>
-                      )}
-                      {svc.lastChecked && (
-                        <p className="text-xs text-muted-foreground">
-                          {t("diagnostics.checked")}: {new Date(svc.lastChecked).toLocaleTimeString()}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
+                      <div className="space-y-1">
+                        {svc.latency !== undefined && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("diagnostics.latency")}: {svc.latency}ms
+                          </p>
+                        )}
+                        {svc.version && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("diagnostics.version")}: {svc.version}
+                          </p>
+                        )}
+                        {svc.message && (
+                          <p className="text-xs text-muted-foreground">
+                            {svc.message}
+                          </p>
+                        )}
+                        {svc.lastChecked && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("diagnostics.checked")}:{" "}
+                            {new Date(svc.lastChecked).toLocaleTimeString()}
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("diagnostics.tenantHealth")}</CardTitle>
+          <CardTitle className="text-base">
+            {t("diagnostics.tenantHealth")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {tenantsQuery.isLoading ? (
@@ -246,7 +284,8 @@ export default function DiagnosticsPage() {
                   <div className="flex items-center gap-2">
                     {(tenant.issues || []).length > 0 && (
                       <span className="text-xs text-muted-foreground">
-                        {(tenant.issues || []).length} issue{(tenant.issues || []).length !== 1 ? "s" : ""}
+                        {(tenant.issues || []).length} issue
+                        {(tenant.issues || []).length !== 1 ? "s" : ""}
                       </span>
                     )}
                     <Badge
@@ -265,7 +304,9 @@ export default function DiagnosticsPage() {
                 </div>
               ))}
               {tenantsQuery.data?.length === 0 && (
-                <p className="text-center py-4 text-muted-foreground">{t("common.noData")}</p>
+                <p className="text-center py-4 text-muted-foreground">
+                  {t("common.noData")}
+                </p>
               )}
             </div>
           )}

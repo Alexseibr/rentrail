@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-type QueueItemStatus = "queued" | "syncing" | "failed" | "completed" | "canceled";
+type QueueItemStatus =
+  | "queued"
+  | "syncing"
+  | "failed"
+  | "completed"
+  | "canceled";
 
 interface QueueItem {
   id: string;
@@ -41,43 +46,57 @@ function buildItem(overrides: Partial<QueueItem>): QueueItem {
 
 describe("dismissItem filter predicate", () => {
   it("removes a snoozed completed item with matching id", () => {
-    const queue: QueueItem[] = [buildItem({ id: "abc", status: "completed", snoozed: true })];
+    const queue: QueueItem[] = [
+      buildItem({ id: "abc", status: "completed", snoozed: true }),
+    ];
     const filtered = queue.filter(makeDismissFilter("abc"));
     expect(filtered).toHaveLength(0);
   });
 
   it("removes a snoozed canceled item with matching id", () => {
-    const queue: QueueItem[] = [buildItem({ id: "abc", status: "canceled", snoozed: true })];
+    const queue: QueueItem[] = [
+      buildItem({ id: "abc", status: "canceled", snoozed: true }),
+    ];
     const filtered = queue.filter(makeDismissFilter("abc"));
     expect(filtered).toHaveLength(0);
   });
 
   it("keeps a completed snoozed item when id does not match", () => {
-    const queue: QueueItem[] = [buildItem({ id: "other", status: "completed", snoozed: true })];
+    const queue: QueueItem[] = [
+      buildItem({ id: "other", status: "completed", snoozed: true }),
+    ];
     const filtered = queue.filter(makeDismissFilter("abc"));
     expect(filtered).toHaveLength(1);
   });
 
   it("keeps a completed item that is not snoozed (auto-clearing)", () => {
-    const queue: QueueItem[] = [buildItem({ id: "abc", status: "completed", snoozed: false })];
+    const queue: QueueItem[] = [
+      buildItem({ id: "abc", status: "completed", snoozed: false }),
+    ];
     const filtered = queue.filter(makeDismissFilter("abc"));
     expect(filtered).toHaveLength(1);
   });
 
   it("keeps a queued item even when id matches", () => {
-    const queue: QueueItem[] = [buildItem({ id: "abc", status: "queued", snoozed: true })];
+    const queue: QueueItem[] = [
+      buildItem({ id: "abc", status: "queued", snoozed: true }),
+    ];
     const filtered = queue.filter(makeDismissFilter("abc"));
     expect(filtered).toHaveLength(1);
   });
 
   it("keeps a failed item even when id matches", () => {
-    const queue: QueueItem[] = [buildItem({ id: "abc", status: "failed", snoozed: true })];
+    const queue: QueueItem[] = [
+      buildItem({ id: "abc", status: "failed", snoozed: true }),
+    ];
     const filtered = queue.filter(makeDismissFilter("abc"));
     expect(filtered).toHaveLength(1);
   });
 
   it("keeps a syncing item even when id matches", () => {
-    const queue: QueueItem[] = [buildItem({ id: "abc", status: "syncing", snoozed: true })];
+    const queue: QueueItem[] = [
+      buildItem({ id: "abc", status: "syncing", snoozed: true }),
+    ];
     const filtered = queue.filter(makeDismissFilter("abc"));
     expect(filtered).toHaveLength(1);
   });

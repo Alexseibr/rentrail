@@ -76,7 +76,9 @@ export function MediaAttachments({
     setPhotos((prev) => [...prev, photo]);
 
     setPhotos((prev) =>
-      prev.map((p) => (p.media.uri === media.uri ? { ...p, status: "uploading" } : p)),
+      prev.map((p) =>
+        p.media.uri === media.uri ? { ...p, status: "uploading" } : p,
+      ),
     );
 
     const result = await uploadAndAttach({
@@ -88,7 +90,11 @@ export function MediaAttachments({
     setPhotos((prev) =>
       prev.map((p) =>
         p.media.uri === media.uri
-          ? { ...p, status: result.success ? "uploaded" : "failed", error: result.error }
+          ? {
+              ...p,
+              status: result.success ? "uploaded" : "failed",
+              error: result.error,
+            }
           : p,
       ),
     );
@@ -101,7 +107,9 @@ export function MediaAttachments({
 
   const retryUpload = async (photo: LocalPhoto) => {
     setPhotos((prev) =>
-      prev.map((p) => (p.media.uri === photo.media.uri ? { ...p, status: "uploading" } : p)),
+      prev.map((p) =>
+        p.media.uri === photo.media.uri ? { ...p, status: "uploading" } : p,
+      ),
     );
 
     const result = await uploadAndAttach({
@@ -113,7 +121,11 @@ export function MediaAttachments({
     setPhotos((prev) =>
       prev.map((p) =>
         p.media.uri === photo.media.uri
-          ? { ...p, status: result.success ? "uploaded" : "failed", error: result.error }
+          ? {
+              ...p,
+              status: result.success ? "uploaded" : "failed",
+              error: result.error,
+            }
           : p,
       ),
     );
@@ -129,7 +141,10 @@ export function MediaAttachments({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.label, { color: colors.foreground }]}>
-          Photos{existingAttachments.length > 0 ? ` (${existingAttachments.length})` : ""}
+          Photos
+          {existingAttachments.length > 0
+            ? ` (${existingAttachments.length})`
+            : ""}
         </Text>
         {!readOnly && (
           <TouchableOpacity
@@ -151,21 +166,34 @@ export function MediaAttachments({
         >
           {existingAttachments.map((att) => {
             const uri = `${BASE_URL}/api/storage${att.objectPath}`;
-            const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
+            const headers = authToken
+              ? { Authorization: `Bearer ${authToken}` }
+              : undefined;
             return (
               <TouchableOpacity
                 key={att.id}
                 style={styles.photoWrap}
                 activeOpacity={0.85}
-                onPress={() => openFullScreen({ uri, headers, label: att.fileName })}
+                onPress={() =>
+                  openFullScreen({ uri, headers, label: att.fileName })
+                }
               >
                 <Image
                   source={headers ? { uri, headers } : { uri }}
                   style={styles.photo}
                   resizeMode="cover"
                 />
-                <View style={[styles.existingBadge, { backgroundColor: colors.card }]}>
-                  <Feather name="maximize-2" size={10} color={colors.mutedForeground} />
+                <View
+                  style={[
+                    styles.existingBadge,
+                    { backgroundColor: colors.card },
+                  ]}
+                >
+                  <Feather
+                    name="maximize-2"
+                    size={10}
+                    color={colors.mutedForeground}
+                  />
                 </View>
               </TouchableOpacity>
             );
@@ -189,13 +217,18 @@ export function MediaAttachments({
                 </View>
               )}
               {photo.status === "uploaded" && (
-                <View style={[styles.badge, { backgroundColor: colors.success }]}>
+                <View
+                  style={[styles.badge, { backgroundColor: colors.success }]}
+                >
                   <Feather name="check" size={10} color="#fff" />
                 </View>
               )}
               {photo.status === "failed" && (
                 <TouchableOpacity
-                  style={[styles.badge, { backgroundColor: colors.destructive }]}
+                  style={[
+                    styles.badge,
+                    { backgroundColor: colors.destructive },
+                  ]}
                   onPress={() => retryUpload(photo)}
                 >
                   <Feather name="refresh-cw" size={10} color="#fff" />
@@ -228,7 +261,10 @@ export function MediaAttachments({
         statusBarTranslucent={Platform.OS === "android"}
       >
         <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFullScreen(null)} />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setFullScreen(null)}
+          />
           {fullScreen && (
             <View style={styles.modalContent}>
               <Image
@@ -247,7 +283,10 @@ export function MediaAttachments({
               ) : null}
             </View>
           )}
-          <TouchableOpacity style={styles.closeBtn} onPress={() => setFullScreen(null)}>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => setFullScreen(null)}
+          >
             <Feather name="x" size={22} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -258,7 +297,11 @@ export function MediaAttachments({
 
 const styles = StyleSheet.create({
   container: { gap: 8 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   addBtn: {
     flexDirection: "row",
@@ -270,7 +313,13 @@ const styles = StyleSheet.create({
   },
   addText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   scroll: { gap: 8, paddingVertical: 4 },
-  photoWrap: { position: "relative", width: 80, height: 80, borderRadius: 8, overflow: "hidden" },
+  photoWrap: {
+    position: "relative",
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
   photo: { width: 80, height: 80 },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -310,7 +359,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  emptyText: { fontSize: 13, fontFamily: "Inter_400Regular", fontStyle: "italic" },
+  emptyText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    fontStyle: "italic",
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.92)",

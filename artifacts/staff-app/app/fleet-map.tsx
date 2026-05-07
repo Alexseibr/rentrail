@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   Text,
@@ -20,7 +26,10 @@ import { getAccessToken, getCompanyId } from "@/services/api";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessTab } from "@/utils/permissions";
-import { writeCoordsToCache, readManyCoordsFromCache } from "@/services/coordsCache";
+import {
+  writeCoordsToCache,
+  readManyCoordsFromCache,
+} from "@/services/coordsCache";
 import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const FAST_POLL_MS = 5000;
@@ -91,7 +100,11 @@ async function fetchTelemetry(id: string): Promise<TelemetryResult | null> {
 }
 
 function assetLabel(asset: AssetItem): string {
-  return (asset.internalCode ?? `${asset.brand ?? ""} ${asset.model ?? ""}`.trim()) || asset.id.slice(0, 6);
+  return (
+    (asset.internalCode ??
+      `${asset.brand ?? ""} ${asset.model ?? ""}`.trim()) ||
+    asset.id.slice(0, 6)
+  );
 }
 
 function escapeHtml(str: string): string {
@@ -103,7 +116,11 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#x27;");
 }
 
-function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string, initialView?: FleetMapView): string {
+function buildFleetMapHtml(
+  pins: PinData[],
+  openInMapsLabel: string,
+  initialView?: FleetMapView,
+): string {
   const serialized = JSON.stringify(
     pins.map((p) => ({
       ...p,
@@ -124,8 +141,14 @@ function buildFleetMapHtml(pins: PinData[], openInMapsLabel: string, initialView
   const colorsJson = JSON.stringify(statusColors);
   const escapedLabel = escapeHtml(openInMapsLabel);
 
-  const avgLat = pins.length > 0 ? pins.reduce((s, p) => s + p.lat, 0) / pins.length : 48.8566;
-  const avgLng = pins.length > 0 ? pins.reduce((s, p) => s + p.lng, 0) / pins.length : 2.3522;
+  const avgLat =
+    pins.length > 0
+      ? pins.reduce((s, p) => s + p.lat, 0) / pins.length
+      : 48.8566;
+  const avgLng =
+    pins.length > 0
+      ? pins.reduce((s, p) => s + p.lng, 0) / pins.length
+      : 2.3522;
   const initLat = initialView?.lat ?? avgLat;
   const initLng = initialView?.lng ?? avgLng;
   const initZoom = initialView?.zoom ?? (pins.length > 0 ? 13 : 10);
@@ -292,7 +315,9 @@ export default function FleetMapScreen() {
   const queryClient = useQueryClient();
 
   const memberships = user?.memberships || user?.companies;
-  const roleCode = memberships?.find((c: { companyId: string }) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const roleCode =
+    memberships?.find((c: { companyId: string }) => c.companyId === companyId)
+      ?.roleCode || memberships?.[0]?.roleCode;
   const hasAccess = canAccessTab(roleCode, "map");
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -327,7 +352,9 @@ export default function FleetMapScreen() {
         Array.isArray(event.query.queryKey) &&
         event.query.queryKey[0] === "fleet-fast-poll-until"
       ) {
-        const until = queryClient.getQueryData<number>(["fleet-fast-poll-until"]);
+        const until = queryClient.getQueryData<number>([
+          "fleet-fast-poll-until",
+        ]);
         if (until && until > Date.now()) {
           setFastPollUntil(until);
         }
@@ -353,7 +380,9 @@ export default function FleetMapScreen() {
         if (
           parsed !== null &&
           typeof parsed === "object" &&
-          "lat" in parsed && "lng" in parsed && "zoom" in parsed &&
+          "lat" in parsed &&
+          "lng" in parsed &&
+          "zoom" in parsed &&
           typeof (parsed as FleetMapView).lat === "number" &&
           typeof (parsed as FleetMapView).lng === "number" &&
           typeof (parsed as FleetMapView).zoom === "number"
@@ -379,7 +408,7 @@ export default function FleetMapScreen() {
       }
 
       const telemetryResults = await Promise.all(
-        assets.map((a) => fetchTelemetry(a.id))
+        assets.map((a) => fetchTelemetry(a.id)),
       );
 
       const assetsWithoutLive: AssetItem[] = [];
@@ -390,15 +419,19 @@ export default function FleetMapScreen() {
         }
       });
 
-      const cachedEntries: Record<string, CachedCoordinates> = await readManyCoordsFromCache(
-        assetsWithoutLive.map((a) => a.id),
-      );
+      const cachedEntries: Record<string, CachedCoordinates> =
+        await readManyCoordsFromCache(assetsWithoutLive.map((a) => a.id));
 
       await Promise.all(
         assets.map(async (a, i) => {
           const tel = telemetryResults[i];
           if (tel?.lat != null && tel?.lng != null) {
-            await writeCoordsToCache(a.id, tel.lat, tel.lng, tel.recordedAt ?? undefined);
+            await writeCoordsToCache(
+              a.id,
+              tel.lat,
+              tel.lng,
+              tel.recordedAt ?? undefined,
+            );
           }
         }),
       );
@@ -476,7 +509,10 @@ export default function FleetMapScreen() {
   }, [isFastPolling, loadMap]);
 
   const openInMapsLabel = t("fleetMap.openInMaps");
-  const mapHtml = useMemo(() => buildFleetMapHtml(pins, openInMapsLabel, savedView ?? undefined), [pins, openInMapsLabel, savedView]);
+  const mapHtml = useMemo(
+    () => buildFleetMapHtml(pins, openInMapsLabel, savedView ?? undefined),
+    [pins, openInMapsLabel, savedView],
+  );
 
   const isWeb = Platform.OS === "web";
 
@@ -485,10 +521,15 @@ export default function FleetMapScreen() {
       return () => {
         if (isWeb) {
           try {
-            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+            iframeRef.current?.contentWindow?.postMessage(
+              JSON.stringify({ type: "closePopup" }),
+              "*",
+            );
           } catch {}
         } else {
-          webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+          webViewRef.current?.injectJavaScript(
+            "window.closeMapPopup && window.closeMapPopup(); true;",
+          );
         }
       };
     }, [isWeb]),
@@ -498,19 +539,32 @@ export default function FleetMapScreen() {
     return () => {
       if (isWeb) {
         try {
-          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+          iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({ type: "closePopup" }),
+            "*",
+          );
         } catch {}
       } else {
-        webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+        webViewRef.current?.injectJavaScript(
+          "window.closeMapPopup && window.closeMapPopup(); true;",
+        );
       }
     };
   }, []);
 
   const showTooltip = useCallback(() => {
     if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
-    Animated.timing(tooltipOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+    Animated.timing(tooltipOpacity, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
     tooltipTimerRef.current = setTimeout(() => {
-      Animated.timing(tooltipOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+      Animated.timing(tooltipOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }, 1500);
   }, [tooltipOpacity]);
 
@@ -522,17 +576,30 @@ export default function FleetMapScreen() {
 
   const handleRecenter = useCallback(() => {
     Animated.sequence([
-      Animated.timing(recenterScaleAnim, { toValue: 0.88, duration: 100, useNativeDriver: true }),
-      Animated.timing(recenterScaleAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.timing(recenterScaleAnim, {
+        toValue: 0.88,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(recenterScaleAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
     ]).start();
     showTooltip();
 
     if (isWeb) {
       try {
-        iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "recenter" }), "*");
+        iframeRef.current?.contentWindow?.postMessage(
+          JSON.stringify({ type: "recenter" }),
+          "*",
+        );
       } catch {}
     } else {
-      webViewRef.current?.injectJavaScript("window.recenterMap && window.recenterMap(); true;");
+      webViewRef.current?.injectJavaScript(
+        "window.recenterMap && window.recenterMap(); true;",
+      );
     }
   }, [isWeb, recenterScaleAnim, showTooltip]);
 
@@ -551,15 +618,29 @@ export default function FleetMapScreen() {
     (event: { nativeEvent: { data: string } }) => {
       try {
         const msg = JSON.parse(event.nativeEvent.data);
-        if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
+        if (
+          msg.type === "navigate" &&
+          typeof msg.lat === "number" &&
+          typeof msg.lng === "number"
+        ) {
           handleNavigate(msg.lat, msg.lng);
-        } else if (msg.type === "mapview" && typeof msg.lat === "number" && typeof msg.lng === "number" && typeof msg.zoom === "number") {
-          const view: FleetMapView = { lat: msg.lat, lng: msg.lng, zoom: msg.zoom };
+        } else if (
+          msg.type === "mapview" &&
+          typeof msg.lat === "number" &&
+          typeof msg.lng === "number" &&
+          typeof msg.zoom === "number"
+        ) {
+          const view: FleetMapView = {
+            lat: msg.lat,
+            lng: msg.lng,
+            zoom: msg.zoom,
+          };
           setSavedView(view);
-          AsyncStorage.setItem(FLEET_MAP_VIEW_KEY, JSON.stringify(view)).catch(() => {});
+          AsyncStorage.setItem(FLEET_MAP_VIEW_KEY, JSON.stringify(view)).catch(
+            () => {},
+          );
         }
-      } catch {
-      }
+      } catch {}
     },
     [handleNavigate],
   );
@@ -567,18 +648,34 @@ export default function FleetMapScreen() {
   useEffect(() => {
     if (!isWeb) return;
     const listener = (event: MessageEvent) => {
-      if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
+      if (iframeRef.current && event.source !== iframeRef.current.contentWindow)
+        return;
       try {
-        const msg = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-        if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
+        const msg =
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (
+          msg.type === "navigate" &&
+          typeof msg.lat === "number" &&
+          typeof msg.lng === "number"
+        ) {
           handleNavigate(msg.lat, msg.lng);
-        } else if (msg.type === "mapview" && typeof msg.lat === "number" && typeof msg.lng === "number" && typeof msg.zoom === "number") {
-          const view: FleetMapView = { lat: msg.lat, lng: msg.lng, zoom: msg.zoom };
+        } else if (
+          msg.type === "mapview" &&
+          typeof msg.lat === "number" &&
+          typeof msg.lng === "number" &&
+          typeof msg.zoom === "number"
+        ) {
+          const view: FleetMapView = {
+            lat: msg.lat,
+            lng: msg.lng,
+            zoom: msg.zoom,
+          };
           setSavedView(view);
-          AsyncStorage.setItem(FLEET_MAP_VIEW_KEY, JSON.stringify(view)).catch(() => {});
+          AsyncStorage.setItem(FLEET_MAP_VIEW_KEY, JSON.stringify(view)).catch(
+            () => {},
+          );
         }
-      } catch {
-      }
+      } catch {}
     };
     window.addEventListener("message", listener);
     return () => window.removeEventListener("message", listener);
@@ -587,8 +684,16 @@ export default function FleetMapScreen() {
   if (!hasAccess) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { backgroundColor: colors.dark, paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <View
+          style={[
+            styles.header,
+            { backgroundColor: colors.dark, paddingTop: insets.top + 8 },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
             <Feather name="arrow-left" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t("fleetMap.title")}</Text>
@@ -596,8 +701,12 @@ export default function FleetMapScreen() {
         </View>
         <View style={styles.emptyContainer}>
           <Feather name="lock" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("common.error")}</Text>
-          <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("fleetMap.noAccess")}</Text>
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+            {t("common.error")}
+          </Text>
+          <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>
+            {t("fleetMap.noAccess")}
+          </Text>
         </View>
       </View>
     );
@@ -605,7 +714,12 @@ export default function FleetMapScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.dark, paddingTop: insets.top + 8 }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.dark, paddingTop: insets.top + 8 },
+        ]}
+      >
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
@@ -633,8 +747,12 @@ export default function FleetMapScreen() {
       ) : pins.length === 0 && noLocationCount === 0 ? (
         <View style={styles.emptyContainer}>
           <Feather name="map" size={48} color={colors.mutedForeground} />
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("fleetMap.noData")}</Text>
-          <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("fleetMap.noDataHint")}</Text>
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+            {t("fleetMap.noData")}
+          </Text>
+          <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>
+            {t("fleetMap.noDataHint")}
+          </Text>
         </View>
       ) : (
         <View style={styles.mapWrapper}>
@@ -643,7 +761,13 @@ export default function FleetMapScreen() {
               key={mapKey}
               ref={iframeRef}
               srcDoc={mapHtml}
-              style={{ width: "100%", height: "100%", border: "none" } as React.CSSProperties}
+              style={
+                {
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                } as React.CSSProperties
+              }
             />
           ) : (
             <WebView
@@ -659,16 +783,24 @@ export default function FleetMapScreen() {
           )}
 
           <Animated.View
-            style={[styles.recenterTooltip, { backgroundColor: colors.dark, opacity: tooltipOpacity }]}
+            style={[
+              styles.recenterTooltip,
+              { backgroundColor: colors.dark, opacity: tooltipOpacity },
+            ]}
             pointerEvents="none"
           >
-            <Text style={styles.recenterTooltipText}>{t("fleetMap.recenter")}</Text>
+            <Text style={styles.recenterTooltipText}>
+              {t("fleetMap.recenter")}
+            </Text>
           </Animated.View>
 
           <Animated.View
             style={[
               styles.recenterBtn,
-              { backgroundColor: colors.card, transform: [{ scale: recenterScaleAnim }] },
+              {
+                backgroundColor: colors.card,
+                transform: [{ scale: recenterScaleAnim }],
+              },
             ]}
           >
             <TouchableOpacity
@@ -693,15 +825,23 @@ export default function FleetMapScreen() {
             {cachedCount > 0 && (
               <View style={styles.legendRow}>
                 <View style={styles.cachedDot} />
-                <Text style={[styles.legendText, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[styles.legendText, { color: colors.mutedForeground }]}
+                >
                   {t("fleetMap.cached", { count: cachedCount })}
                 </Text>
               </View>
             )}
             {noLocationCount > 0 && (
               <View style={styles.legendRow}>
-                <Feather name="help-circle" size={10} color={colors.mutedForeground} />
-                <Text style={[styles.legendText, { color: colors.mutedForeground }]}>
+                <Feather
+                  name="help-circle"
+                  size={10}
+                  color={colors.mutedForeground}
+                />
+                <Text
+                  style={[styles.legendText, { color: colors.mutedForeground }]}
+                >
                   {t("fleetMap.noLocation", { count: noLocationCount })}
                 </Text>
               </View>
@@ -745,7 +885,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold" },
-  emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  emptyHint: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+  },
   mapWrapper: { flex: 1, position: "relative" },
   webview: { flex: 1 },
   recenterTooltip: {

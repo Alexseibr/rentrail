@@ -2,7 +2,11 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import { testApp } from "../../test/app";
-import { createTestUser, createTestTenant, assignRole } from "../../test/helpers";
+import {
+  createTestUser,
+  createTestTenant,
+  assignRole,
+} from "../../test/helpers";
 import { db } from "@workspace/db";
 import { rentals } from "@workspace/db/schema";
 
@@ -109,7 +113,11 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .post("/api/clients")
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
-        .send({ fullName: "John Doe", email: "john@test.com", phone: "+34600000001" });
+        .send({
+          fullName: "John Doe",
+          email: "john@test.com",
+          phone: "+34600000001",
+        });
 
       expect(res.status).toBe(201);
       clientId = res.body.data.id;
@@ -255,7 +263,10 @@ describe("Phase 4 — Core Tenant CRUD", () => {
     let rentalId: string;
 
     async function forceRentalStatus(id: string, status: string) {
-      await db.update(rentals).set({ status: status as any }).where(eq(rentals.id, id));
+      await db
+        .update(rentals)
+        .set({ status: status as any })
+        .where(eq(rentals.id, id));
     }
 
     beforeAll(async () => {
@@ -319,7 +330,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
     });
 
     it("extends the rental (active → extended)", async () => {
-      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const nextWeek = new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString();
       const res = await request(testApp)
         .post(`/api/rentals/${rentalId}/extend`)
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)

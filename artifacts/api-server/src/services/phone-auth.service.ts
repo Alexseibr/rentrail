@@ -5,7 +5,12 @@ import { db, users, sessions, phoneOtpCodes } from "@workspace/db";
 import { eq, and, isNull, lt, gt } from "drizzle-orm";
 import { signAccessToken, signRefreshToken } from "../lib/jwt";
 import { config } from "../lib/config";
-import { UnauthorizedError, NotFoundError, BadRequestError, ConflictError } from "../lib/errors";
+import {
+  UnauthorizedError,
+  NotFoundError,
+  BadRequestError,
+  ConflictError,
+} from "../lib/errors";
 import { loadUserPlatformRoles } from "../lib/platform-roles";
 
 const OTP_TTL_MINUTES = 10;
@@ -31,10 +36,20 @@ async function createSession(userId: string, userAgent?: string, ip?: string) {
 
   const [session] = await db
     .insert(sessions)
-    .values({ userId, refreshTokenHash, userAgent: userAgent ?? null, ip: ip ?? null, expiresAt })
+    .values({
+      userId,
+      refreshTokenHash,
+      userAgent: userAgent ?? null,
+      ip: ip ?? null,
+      expiresAt,
+    })
     .returning();
 
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
   const platformRoles = await loadUserPlatformRoles(userId);
 
   const accessToken = signAccessToken({
@@ -50,7 +65,10 @@ async function createSession(userId: string, userAgent?: string, ip?: string) {
     tokenId: rawRefreshToken,
   });
 
-  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
+  await db
+    .update(users)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(users.id, userId));
 
   return {
     accessToken,
@@ -185,7 +203,9 @@ export async function loginWithPassword(
   }
 
   if (!user.passwordHash) {
-    throw new UnauthorizedError("Password not set. Please use OTP login first.");
+    throw new UnauthorizedError(
+      "Password not set. Please use OTP login first.",
+    );
   }
 
   const isValid = await bcrypt.compare(password, user.passwordHash);

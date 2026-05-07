@@ -30,7 +30,10 @@ type StatusFilter = "all" | "pending" | "failed" | "done";
 
 const FILTER_STORAGE_KEY = "sync_queue_filter";
 
-const FILTER_MATCHERS: Record<StatusFilter, (status: QueueItemStatus) => boolean> = {
+const FILTER_MATCHERS: Record<
+  StatusFilter,
+  (status: QueueItemStatus) => boolean
+> = {
   all: () => true,
   pending: (s) => s === "queued" || s === "syncing",
   failed: (s) => s === "failed",
@@ -49,7 +52,8 @@ const STATUS_SORT_PRIORITY: Record<QueueItemStatus, number> = {
 
 const sortQueueItems = (items: QueueItem[]): QueueItem[] =>
   [...items].sort((a, b) => {
-    const priorityDiff = STATUS_SORT_PRIORITY[a.status] - STATUS_SORT_PRIORITY[b.status];
+    const priorityDiff =
+      STATUS_SORT_PRIORITY[a.status] - STATUS_SORT_PRIORITY[b.status];
     if (priorityDiff !== 0) return priorityDiff;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
@@ -70,13 +74,22 @@ const STATUS_COLORS: Record<string, string> = {
   canceled: "#6b7280",
 };
 
-function formatElapsed(ms: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatElapsed(
+  ms: number,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const mins = Math.floor(ms / 60_000);
   const hours = Math.floor(ms / 3_600_000);
   const days = Math.floor(ms / 86_400_000);
   if (mins < 1) return t("myShift.justNow");
-  if (hours < 1) return t("myShift.timeAgo", { time: t("myShift.minutesShort", { m: mins }) });
-  if (days < 1) return t("myShift.timeAgo", { time: t("myShift.hoursShort", { h: hours }) });
+  if (hours < 1)
+    return t("myShift.timeAgo", {
+      time: t("myShift.minutesShort", { m: mins }),
+    });
+  if (days < 1)
+    return t("myShift.timeAgo", {
+      time: t("myShift.hoursShort", { h: hours }),
+    });
   return t("myShift.timeAgo", { time: t("myShift.daysShort", { d: days }) });
 }
 
@@ -95,7 +108,12 @@ export default function SyncQueueScreen() {
         if (cancelled || hydratedRef.current) return;
         hydratedRef.current = true;
         if (!saved) return;
-        if (saved === "all" || saved === "pending" || saved === "failed" || saved === "done") {
+        if (
+          saved === "all" ||
+          saved === "pending" ||
+          saved === "failed" ||
+          saved === "done"
+        ) {
           setFilter(saved);
         }
       })
@@ -131,7 +149,12 @@ export default function SyncQueueScreen() {
   }, [hasClearingItems, hasSnoozedItems]);
 
   const filterCounts = useMemo(() => {
-    const counts: Record<StatusFilter, number> = { all: 0, pending: 0, failed: 0, done: 0 };
+    const counts: Record<StatusFilter, number> = {
+      all: 0,
+      pending: 0,
+      failed: 0,
+      done: 0,
+    };
     for (const item of queueItems) {
       counts.all++;
       if (FILTER_MATCHERS.pending(item.status)) counts.pending++;
@@ -142,7 +165,10 @@ export default function SyncQueueScreen() {
   }, [queueItems]);
 
   const visibleItems = useMemo(
-    () => sortQueueItems(queueItems.filter((i) => FILTER_MATCHERS[filter](i.status))),
+    () =>
+      sortQueueItems(
+        queueItems.filter((i) => FILTER_MATCHERS[filter](i.status)),
+      ),
     [queueItems, filter],
   );
 
@@ -155,9 +181,17 @@ export default function SyncQueueScreen() {
   };
 
   const handleCancel = (item: QueueItem) => {
-    const confirmMsg = item.retryCount > 0
-      ? t("syncQueue.cancelConfirmWithRetries", { action: getActionDescription(item.actionType), queued: new Date(item.createdAt).toLocaleString(), retries: item.retryCount })
-      : t("syncQueue.cancelConfirm", { action: getActionDescription(item.actionType), queued: new Date(item.createdAt).toLocaleString() });
+    const confirmMsg =
+      item.retryCount > 0
+        ? t("syncQueue.cancelConfirmWithRetries", {
+            action: getActionDescription(item.actionType),
+            queued: new Date(item.createdAt).toLocaleString(),
+            retries: item.retryCount,
+          })
+        : t("syncQueue.cancelConfirm", {
+            action: getActionDescription(item.actionType),
+            queued: new Date(item.createdAt).toLocaleString(),
+          });
     Alert.alert(t("syncQueue.cancelAction"), confirmMsg, [
       { text: t("syncQueue.no"), style: "cancel" },
       {
@@ -192,22 +226,26 @@ export default function SyncQueueScreen() {
       const shown = pinnedItems.slice(0, MAX_SHOWN);
       const remaining = pinnedCount - shown.length;
 
-      const lines: string[] = [t("syncQueue.clearDoneConfirmHeader", { count: pinnedCount })];
+      const lines: string[] = [
+        t("syncQueue.clearDoneConfirmHeader", { count: pinnedCount }),
+      ];
       for (const item of shown) {
         lines.push(`• ${getActionDescription(item.actionType)}`);
       }
       if (remaining > 0) {
-        lines.push(t("syncQueue.clearDoneConfirmAndMore", { count: remaining }));
+        lines.push(
+          t("syncQueue.clearDoneConfirmAndMore", { count: remaining }),
+        );
       }
 
-      Alert.alert(
-        t("syncQueue.clearDoneConfirmTitle"),
-        lines.join("\n"),
-        [
-          { text: t("syncQueue.no"), style: "cancel" },
-          { text: t("syncQueue.clearDoneConfirmOk"), style: "destructive", onPress: doClear },
-        ],
-      );
+      Alert.alert(t("syncQueue.clearDoneConfirmTitle"), lines.join("\n"), [
+        { text: t("syncQueue.no"), style: "cancel" },
+        {
+          text: t("syncQueue.clearDoneConfirmOk"),
+          style: "destructive",
+          onPress: doClear,
+        },
+      ]);
     } else {
       doClear();
     }
@@ -240,120 +278,157 @@ export default function SyncQueueScreen() {
       const completedMs = new Date(item.completedAt).getTime();
       const remainingMs = Math.max(0, completedMs + AUTO_CLEAR_DELAY_MS - now);
       secondsLeft = Math.max(1, Math.ceil(remainingMs / 1000));
-      const progress = Math.min(1, Math.max(0, remainingMs / AUTO_CLEAR_DELAY_MS));
+      const progress = Math.min(
+        1,
+        Math.max(0, remainingMs / AUTO_CLEAR_DELAY_MS),
+      );
       fadeOpacity = 0.4 + progress * 0.6;
     }
     const statusColor = STATUS_COLORS[item.status] ?? colors.mutedForeground;
     return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: isSnoozed ? statusColor + "60" : colors.border,
-          borderWidth: isSnoozed ? 1.5 : 1,
-          opacity: fadeOpacity,
-        },
-      ]}
-    >
-      <View style={styles.cardHeader}>
-        <Feather
-          name={(STATUS_ICONS[item.status] ?? "circle") as any}
-          size={18}
-          color={statusColor}
-        />
-        <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-          {getActionDescription(item.actionType)}
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.card,
+            borderColor: isSnoozed ? statusColor + "60" : colors.border,
+            borderWidth: isSnoozed ? 1.5 : 1,
+            opacity: fadeOpacity,
+          },
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <Feather
+            name={(STATUS_ICONS[item.status] ?? "circle") as any}
+            size={18}
+            color={statusColor}
+          />
+          <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+            {getActionDescription(item.actionType)}
+          </Text>
+          {isSnoozed && (
+            <Feather name="bookmark" size={14} color={statusColor} />
+          )}
+          <Text style={[styles.cardStatus, { color: statusColor }]}>
+            {item.status}
+          </Text>
+        </View>
+        <Text style={[styles.cardTime, { color: colors.mutedForeground }]}>
+          {new Date(item.createdAt).toLocaleString()}
+          {item.retryCount > 0
+            ? ` · ${item.retryCount} ${t("syncQueue.retries")}`
+            : ""}
         </Text>
-        {isSnoozed && (
-          <Feather name="bookmark" size={14} color={statusColor} />
+        {item.lastError && (
+          <Text
+            style={[styles.cardError, { color: colors.destructive }]}
+            numberOfLines={2}
+          >
+            {item.lastError}
+          </Text>
         )}
-        <Text style={[styles.cardStatus, { color: statusColor }]}>
-          {item.status}
-        </Text>
-      </View>
-      <Text style={[styles.cardTime, { color: colors.mutedForeground }]}>
-        {new Date(item.createdAt).toLocaleString()}
-        {item.retryCount > 0 ? ` · ${item.retryCount} ${t("syncQueue.retries")}` : ""}
-      </Text>
-      {item.lastError && (
-        <Text style={[styles.cardError, { color: colors.destructive }]} numberOfLines={2}>
-          {item.lastError}
-        </Text>
-      )}
-      {isClearing && secondsLeft !== null && (
-        <TouchableOpacity
-          onPress={() => handleToggleSnooze(item)}
-          accessibilityRole="button"
-          accessibilityLabel={t("syncQueue.snooze.pinAccessibility")}
-          style={[
-            styles.clearingBadge,
-            { backgroundColor: statusColor + "15", borderColor: statusColor + "40" },
-          ]}
-        >
-          <Feather name="clock" size={11} color={statusColor} />
-          <Text style={[styles.clearingText, { color: statusColor }]}>
-            {t("syncQueue.clearingIn", { seconds: secondsLeft })}
-          </Text>
-          <Text style={[styles.clearingHint, { color: statusColor }]}>
-            · {t("syncQueue.snooze.tapToKeep")}
-          </Text>
-        </TouchableOpacity>
-      )}
-      {isSnoozed && (
-        <View style={styles.snoozedRow}>
+        {isClearing && secondsLeft !== null && (
           <TouchableOpacity
             onPress={() => handleToggleSnooze(item)}
             accessibilityRole="button"
-            accessibilityLabel={t("syncQueue.snooze.unpinAccessibility")}
+            accessibilityLabel={t("syncQueue.snooze.pinAccessibility")}
             style={[
               styles.clearingBadge,
-              { backgroundColor: statusColor + "20", borderColor: statusColor + "60", flex: 1 },
+              {
+                backgroundColor: statusColor + "15",
+                borderColor: statusColor + "40",
+              },
             ]}
           >
-            <Feather name="bookmark" size={11} color={statusColor} />
+            <Feather name="clock" size={11} color={statusColor} />
             <Text style={[styles.clearingText, { color: statusColor }]}>
-              {item.completedAt
-                ? t("syncQueue.snooze.pinnedFor", {
-                    time: formatElapsed(now - new Date(item.completedAt).getTime(), t),
-                  })
-                : t("syncQueue.snooze.pinned")}
+              {t("syncQueue.clearingIn", { seconds: secondsLeft })}
             </Text>
             <Text style={[styles.clearingHint, { color: statusColor }]}>
-              · {t("syncQueue.snooze.tapToRelease")}
+              · {t("syncQueue.snooze.tapToKeep")}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleDismiss(item)}
-            accessibilityRole="button"
-            accessibilityLabel={t("syncQueue.snooze.dismissAccessibility")}
-            style={[
-              styles.dismissBtn,
-              { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "40" },
-            ]}
-          >
-            <Feather name="x" size={13} color={colors.destructive} />
-            <Text style={[styles.dismissText, { color: colors.destructive }]}>
-              {t("syncQueue.snooze.dismiss")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      {(item.status === "queued" || item.status === "failed") && (
-        <View style={styles.cardActions}>
-          {item.status === "failed" && (
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.secondary }]} onPress={() => handleRetry(item)}>
-              <Feather name="refresh-cw" size={14} color={colors.primary} />
-              <Text style={[styles.actionText, { color: colors.primary }]}>{t("syncQueue.retry")}</Text>
+        )}
+        {isSnoozed && (
+          <View style={styles.snoozedRow}>
+            <TouchableOpacity
+              onPress={() => handleToggleSnooze(item)}
+              accessibilityRole="button"
+              accessibilityLabel={t("syncQueue.snooze.unpinAccessibility")}
+              style={[
+                styles.clearingBadge,
+                {
+                  backgroundColor: statusColor + "20",
+                  borderColor: statusColor + "60",
+                  flex: 1,
+                },
+              ]}
+            >
+              <Feather name="bookmark" size={11} color={statusColor} />
+              <Text style={[styles.clearingText, { color: statusColor }]}>
+                {item.completedAt
+                  ? t("syncQueue.snooze.pinnedFor", {
+                      time: formatElapsed(
+                        now - new Date(item.completedAt).getTime(),
+                        t,
+                      ),
+                    })
+                  : t("syncQueue.snooze.pinned")}
+              </Text>
+              <Text style={[styles.clearingHint, { color: statusColor }]}>
+                · {t("syncQueue.snooze.tapToRelease")}
+              </Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.destructive + "15" }]} onPress={() => handleCancel(item)}>
-            <Feather name="x" size={14} color={colors.destructive} />
-            <Text style={[styles.actionText, { color: colors.destructive }]}>{t("syncQueue.cancel")}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+            <TouchableOpacity
+              onPress={() => handleDismiss(item)}
+              accessibilityRole="button"
+              accessibilityLabel={t("syncQueue.snooze.dismissAccessibility")}
+              style={[
+                styles.dismissBtn,
+                {
+                  backgroundColor: colors.destructive + "15",
+                  borderColor: colors.destructive + "40",
+                },
+              ]}
+            >
+              <Feather name="x" size={13} color={colors.destructive} />
+              <Text style={[styles.dismissText, { color: colors.destructive }]}>
+                {t("syncQueue.snooze.dismiss")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {(item.status === "queued" || item.status === "failed") && (
+          <View style={styles.cardActions}>
+            {item.status === "failed" && (
+              <TouchableOpacity
+                style={[
+                  styles.actionBtn,
+                  { backgroundColor: colors.secondary },
+                ]}
+                onPress={() => handleRetry(item)}
+              >
+                <Feather name="refresh-cw" size={14} color={colors.primary} />
+                <Text style={[styles.actionText, { color: colors.primary }]}>
+                  {t("syncQueue.retry")}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                { backgroundColor: colors.destructive + "15" },
+              ]}
+              onPress={() => handleCancel(item)}
+            >
+              <Feather name="x" size={14} color={colors.destructive} />
+              <Text style={[styles.actionText, { color: colors.destructive }]}>
+                {t("syncQueue.cancel")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -365,24 +440,38 @@ export default function SyncQueueScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.headerRow}>
         <TouchableOpacity
-          style={[styles.syncBtn, { backgroundColor: colors.primary, opacity: isSyncing ? 0.7 : 1 }]}
+          style={[
+            styles.syncBtn,
+            { backgroundColor: colors.primary, opacity: isSyncing ? 0.7 : 1 },
+          ]}
           onPress={syncNow}
           disabled={isSyncing}
         >
           <Feather name="refresh-cw" size={16} color="#fff" />
-          <Text style={styles.syncText}>{isSyncing ? t("syncQueue.syncing") : t("syncQueue.syncNow")}</Text>
+          <Text style={styles.syncText}>
+            {isSyncing ? t("syncQueue.syncing") : t("syncQueue.syncNow")}
+          </Text>
         </TouchableOpacity>
         <View style={styles.headerActions}>
           {failedCount > 0 && (
-            <TouchableOpacity onPress={handleRetryAllFailed} accessibilityRole="button">
-              <Text style={[styles.headerActionText, { color: colors.destructive }]}>
+            <TouchableOpacity
+              onPress={handleRetryAllFailed}
+              accessibilityRole="button"
+            >
+              <Text
+                style={[styles.headerActionText, { color: colors.destructive }]}
+              >
                 {t("syncQueue.retryAllFailed", { count: failedCount })}
               </Text>
             </TouchableOpacity>
           )}
           {completedCount > 0 && (
             <TouchableOpacity onPress={handleClearCompleted}>
-              <Text style={[styles.headerActionText, { color: colors.primary }]}>{t("syncQueue.clearDone")}</Text>
+              <Text
+                style={[styles.headerActionText, { color: colors.primary }]}
+              >
+                {t("syncQueue.clearDone")}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -432,12 +521,20 @@ export default function SyncQueueScreen() {
         scrollEnabled={visibleItems.length > 0}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Feather name="check-circle" size={40} color={colors.mutedForeground} />
+            <Feather
+              name="check-circle"
+              size={40}
+              color={colors.mutedForeground}
+            />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              {isFiltered ? t("syncQueue.noMatches") : t("syncQueue.queueEmpty")}
+              {isFiltered
+                ? t("syncQueue.noMatches")
+                : t("syncQueue.queueEmpty")}
             </Text>
             <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-              {isFiltered ? t("syncQueue.tryDifferentFilter") : t("syncQueue.offlineActions")}
+              {isFiltered
+                ? t("syncQueue.tryDifferentFilter")
+                : t("syncQueue.offlineActions")}
             </Text>
           </View>
         }
@@ -448,19 +545,47 @@ export default function SyncQueueScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, paddingBottom: 0 },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    paddingBottom: 0,
+  },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 14 },
-  syncBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  syncBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
   syncText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
   headerActionText: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
-  filterPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
+  filterRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  filterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
   filterPillText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   list: { padding: 16, gap: 10, paddingBottom: 40 },
   card: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 6 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
   cardTitle: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  cardStatus: { fontSize: 12, fontFamily: "Inter_500Medium", textTransform: "capitalize" as const },
+  cardStatus: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    textTransform: "capitalize" as const,
+  },
   cardTime: { fontSize: 12, fontFamily: "Inter_400Regular" },
   cardError: { fontSize: 12, fontFamily: "Inter_400Regular" },
   clearingBadge: {
@@ -476,7 +601,12 @@ const styles = StyleSheet.create({
   },
   clearingText: { fontSize: 11, fontFamily: "Inter_500Medium" },
   clearingHint: { fontSize: 11, fontFamily: "Inter_400Regular", opacity: 0.85 },
-  snoozedRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
+  snoozedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 2,
+  },
   dismissBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -488,9 +618,20 @@ const styles = StyleSheet.create({
   },
   dismissText: { fontSize: 11, fontFamily: "Inter_500Medium" },
   cardActions: { flexDirection: "row", gap: 8, marginTop: 4 },
-  actionBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
   actionText: { fontSize: 12, fontFamily: "Inter_500Medium" },
   empty: { alignItems: "center", paddingTop: 80, gap: 8 },
   emptyText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  emptySub: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+  },
 });

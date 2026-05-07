@@ -2,11 +2,28 @@ import { describe, it, expect } from "vitest";
 
 const ASSET_STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ["available", "maintenance", "retired"],
-  available: ["reserved", "awaiting_pickup", "rented", "charging", "maintenance", "blocked", "lost", "stolen", "retired"],
+  available: [
+    "reserved",
+    "awaiting_pickup",
+    "rented",
+    "charging",
+    "maintenance",
+    "blocked",
+    "lost",
+    "stolen",
+    "retired",
+  ],
   reserved: ["available", "awaiting_pickup", "maintenance", "blocked"],
   awaiting_pickup: ["rented", "available", "maintenance", "blocked"],
   rented: ["available", "overdue", "charging", "maintenance", "lost", "stolen"],
-  overdue: ["available", "charging", "maintenance", "blocked", "lost", "stolen"],
+  overdue: [
+    "available",
+    "charging",
+    "maintenance",
+    "blocked",
+    "lost",
+    "stolen",
+  ],
   charging: ["available", "maintenance"],
   maintenance: ["available", "retired", "blocked"],
   blocked: ["available", "maintenance", "retired"],
@@ -16,7 +33,14 @@ const ASSET_STATUS_TRANSITIONS: Record<string, string[]> = {
 };
 
 const STATUSES_UNAVAILABLE_FOR_RENTAL = [
-  "rented", "overdue", "blocked", "lost", "stolen", "retired", "maintenance", "charging",
+  "rented",
+  "overdue",
+  "blocked",
+  "lost",
+  "stolen",
+  "retired",
+  "maintenance",
+  "charging",
 ];
 
 function validateAssetTransition(from: string, to: string): boolean {
@@ -91,7 +115,16 @@ describe("Asset Status Transitions", () => {
       expect(isAvailableForRental("draft")).toBe(true);
     });
 
-    const unavailable = ["rented", "overdue", "blocked", "lost", "stolen", "retired", "maintenance", "charging"];
+    const unavailable = [
+      "rented",
+      "overdue",
+      "blocked",
+      "lost",
+      "stolen",
+      "retired",
+      "maintenance",
+      "charging",
+    ];
     it.each(unavailable)("%s is NOT eligible for rental", (status) => {
       expect(isAvailableForRental(status)).toBe(false);
     });

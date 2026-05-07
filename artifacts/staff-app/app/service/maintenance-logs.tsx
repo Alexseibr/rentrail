@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, TextInput,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -51,7 +57,12 @@ export default function MaintenanceLogsScreen() {
   const [search, setSearch] = useState("");
   const [manualRefreshing, setManualRefreshing] = useState(false);
 
-  const { data: logs = [], isLoading, isRefetching, refetch } = useQuery({
+  const {
+    data: logs = [],
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
     queryKey: ["maintenanceLogs", companyId],
     queryFn: () => fetchLogs(companyId!),
     enabled: !!companyId,
@@ -69,33 +80,44 @@ export default function MaintenanceLogsScreen() {
   };
 
   const filtered = search.trim()
-    ? logs.filter(l =>
-        l.assetCode?.toLowerCase().includes(search.toLowerCase()) ||
-        l.notes?.toLowerCase().includes(search.toLowerCase()) ||
-        l.logType?.toLowerCase().includes(search.toLowerCase()),
+    ? logs.filter(
+        (l) =>
+          l.assetCode?.toLowerCase().includes(search.toLowerCase()) ||
+          l.notes?.toLowerCase().includes(search.toLowerCase()) ||
+          l.logType?.toLowerCase().includes(search.toLowerCase()),
       )
     : logs;
 
   const renderItem = ({ item }: { item: any }) => {
-    const iconName = (LOG_TYPE_ICONS[item.logType] ?? "tool") as React.ComponentProps<typeof Feather>["name"];
+    const iconName = (LOG_TYPE_ICONS[item.logType] ??
+      "tool") as React.ComponentProps<typeof Feather>["name"];
     return (
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.cardLeft}>
-          <View style={[styles.iconBox, { backgroundColor: colors.primary + "18" }]}>
+          <View
+            style={[styles.iconBox, { backgroundColor: colors.primary + "18" }]}
+          >
             <Feather name={iconName} size={18} color={colors.primary} />
           </View>
         </View>
         <View style={styles.cardBody}>
           <View style={styles.cardTop}>
             <Text style={[styles.logType, { color: colors.foreground }]}>
-              {t(`serviceModule.logType_${item.logType}`, { defaultValue: item.logType })}
+              {t(`serviceModule.logType_${item.logType}`, {
+                defaultValue: item.logType,
+              })}
             </Text>
             {item.assetCode && (
-              <Text style={[styles.assetCode, { color: colors.primary }]}>{item.assetCode}</Text>
+              <Text style={[styles.assetCode, { color: colors.primary }]}>
+                {item.assetCode}
+              </Text>
             )}
           </View>
           {item.notes ? (
-            <Text style={[styles.notes, { color: colors.mutedForeground }]} numberOfLines={2}>
+            <Text
+              style={[styles.notes, { color: colors.mutedForeground }]}
+              numberOfLines={2}
+            >
               {item.notes}
             </Text>
           ) : null}
@@ -104,17 +126,23 @@ export default function MaintenanceLogsScreen() {
               {new Date(item.performedAt).toLocaleDateString("ru-RU")}
             </Text>
             {item.cost && parseFloat(item.cost) > 0 && (
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
                 · {parseFloat(item.cost).toLocaleString("ru-RU")} ₽
               </Text>
             )}
             {item.odometerKm && (
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
                 · {parseFloat(item.odometerKm).toLocaleString("ru-RU")} км
               </Text>
             )}
             {item.performedByName && (
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
                 · {item.performedByName}
               </Text>
             )}
@@ -126,15 +154,27 @@ export default function MaintenanceLogsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.dark }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, backgroundColor: colors.dark },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t("serviceModule.maintenanceLogs")}</Text>
+        <Text style={styles.headerTitle}>
+          {t("serviceModule.maintenanceLogs")}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.searchBar,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
         <Feather name="search" size={16} color={colors.mutedForeground} />
         <TextInput
           style={[styles.searchInput, { color: colors.foreground }]}
@@ -152,9 +192,15 @@ export default function MaintenanceLogsScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={i => i.id}
+        keyExtractor={(i) => i.id}
         renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={manualRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
         ListEmptyComponent={
           isLoading ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
@@ -163,8 +209,14 @@ export default function MaintenanceLogsScreen() {
               <View style={styles.emptyIconWrap}>
                 <Feather name="clipboard" size={32} color={colors.primary} />
               </View>
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("serviceModule.noLogs")}</Text>
-              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("serviceModule.noLogsHint")}</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+                {t("serviceModule.noLogs")}
+              </Text>
+              <Text
+                style={[styles.emptyHint, { color: colors.mutedForeground }]}
+              >
+                {t("serviceModule.noLogsHint")}
+              </Text>
             </View>
           )
         }
@@ -177,38 +229,78 @@ export default function MaintenanceLogsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
   headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#fff" },
   searchBar: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    margin: 12, paddingHorizontal: 12, paddingVertical: 10,
-    borderRadius: 12, borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    margin: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   list: { padding: 12, paddingBottom: 60 },
   card: {
-    flexDirection: "row", gap: 12, borderRadius: 16, padding: 14, marginBottom: 8,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+    flexDirection: "row",
+    gap: 12,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardLeft: { paddingTop: 2 },
-  iconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center" },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   cardBody: { flex: 1 },
-  cardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+  cardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
   logType: { fontSize: 14, fontFamily: "Inter_600SemiBold", flex: 1 },
   assetCode: { fontSize: 12, fontFamily: "Inter_700Bold" },
-  notes: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 6 },
+  notes: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 18,
+    marginBottom: 6,
+  },
   cardMeta: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   loader: { marginTop: 60 },
   empty: { alignItems: "center", marginTop: 60, gap: 12 },
   emptyIconWrap: {
-    width: 72, height: 72, borderRadius: 24,
+    width: 72,
+    height: 72,
+    borderRadius: 24,
     backgroundColor: "#F5C51815",
-    justifyContent: "center", alignItems: "center",
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 32 },
+  emptyHint: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
 });

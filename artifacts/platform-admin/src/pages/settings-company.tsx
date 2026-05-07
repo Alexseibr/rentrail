@@ -9,7 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Pencil, Building2, User, Users } from "lucide-react";
 
 export default function SettingsCompanyPage() {
@@ -19,27 +25,41 @@ export default function SettingsCompanyPage() {
   const queryClient = useQueryClient();
   const membership = user?.memberships?.[0];
   const companyId = membership?.companyId;
-  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId
+    ? { "x-company-id": companyId }
+    : {};
 
   const [editCompany, setEditCompany] = useState(false);
-  const [companyForm, setCompanyForm] = useState({ name: "", contactEmail: "", contactPhone: "", website: "", address: "" });
+  const [companyForm, setCompanyForm] = useState({
+    name: "",
+    contactEmail: "",
+    contactPhone: "",
+    website: "",
+    address: "",
+  });
 
   const companyQuery = useQuery({
     queryKey: ["company-detail", companyId],
-    queryFn: () => api<any>(`/companies/${companyId}`, { headers: companyHeaders }),
+    queryFn: () =>
+      api<any>(`/companies/${companyId}`, { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const company = companyQuery.data;
 
   const membersQuery = useQuery({
     queryKey: ["company-members", companyId],
-    queryFn: () => api<any>(`/companies/${companyId}`, { headers: companyHeaders }),
+    queryFn: () =>
+      api<any>(`/companies/${companyId}`, { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const updateMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api(`/companies/${companyId}`, { method: "PATCH", body: JSON.stringify(body), headers: companyHeaders }),
+      api(`/companies/${companyId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+        headers: companyHeaders,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-detail"] });
       setEditCompany(false);
@@ -71,8 +91,12 @@ export default function SettingsCompanyPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("nav.settings")}</h1>
-        <p className="text-muted-foreground">{t("settings.subtitle", "Настройки компании")}</p>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("nav.settings")}
+        </h1>
+        <p className="text-muted-foreground">
+          {t("settings.subtitle", "Настройки компании")}
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -80,13 +104,17 @@ export default function SettingsCompanyPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">{t("settings.account", "Аккаунт")}</CardTitle>
+              <CardTitle className="text-base">
+                {t("settings.account", "Аккаунт")}
+              </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("common.name")}</span>
-              <span className="font-medium">{user?.firstName} {user?.lastName}</span>
+              <span className="font-medium">
+                {user?.firstName} {user?.lastName}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("common.email")}</span>
@@ -97,8 +125,12 @@ export default function SettingsCompanyPage() {
               <span>{user?.phone || "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("settings.role", "Роль")}</span>
-              <Badge variant="secondary">{membership?.roleName || membership?.roleCode || "—"}</Badge>
+              <span className="text-muted-foreground">
+                {t("settings.role", "Роль")}
+              </span>
+              <Badge variant="secondary">
+                {membership?.roleName || membership?.roleCode || "—"}
+              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -107,7 +139,9 @@ export default function SettingsCompanyPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">{t("settings.company", "Компания")}</CardTitle>
+              <CardTitle className="text-base">
+                {t("settings.company", "Компания")}
+              </CardTitle>
             </div>
             {canWriteSettings && (
               <Button size="sm" variant="outline" onClick={openEditCompany}>
@@ -118,12 +152,20 @@ export default function SettingsCompanyPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("settings.companyName", "Название")}</span>
-              <span className="font-medium">{company?.name || membership?.companyName || "—"}</span>
+              <span className="text-muted-foreground">
+                {t("settings.companyName", "Название")}
+              </span>
+              <span className="font-medium">
+                {company?.name || membership?.companyName || "—"}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("common.status")}</span>
-              <Badge className="bg-green-100 text-green-800">{company?.status || "active"}</Badge>
+              <span className="text-muted-foreground">
+                {t("common.status")}
+              </span>
+              <Badge className="bg-green-100 text-green-800">
+                {company?.status || "active"}
+              </Badge>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("common.email")}</span>
@@ -134,16 +176,28 @@ export default function SettingsCompanyPage() {
               <span>{company?.contactPhone || "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("settings.website", "Сайт")}</span>
+              <span className="text-muted-foreground">
+                {t("settings.website", "Сайт")}
+              </span>
               <span>{company?.website || "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("settings.address", "Адрес")}</span>
-              <span className="text-right max-w-48 truncate">{company?.address || "—"}</span>
+              <span className="text-muted-foreground">
+                {t("settings.address", "Адрес")}
+              </span>
+              <span className="text-right max-w-48 truncate">
+                {company?.address || "—"}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("settings.created", "Создана")}</span>
-              <span>{company?.createdAt ? new Date(company.createdAt).toLocaleDateString() : "—"}</span>
+              <span className="text-muted-foreground">
+                {t("settings.created", "Создана")}
+              </span>
+              <span>
+                {company?.createdAt
+                  ? new Date(company.createdAt).toLocaleDateString()
+                  : "—"}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -152,35 +206,78 @@ export default function SettingsCompanyPage() {
       <Dialog open={editCompany} onOpenChange={setEditCompany}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t("settings.editCompany", "Редактировать компанию")}</DialogTitle>
+            <DialogTitle>
+              {t("settings.editCompany", "Редактировать компанию")}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
               <Label>{t("settings.companyName", "Название")}</Label>
-              <Input value={companyForm.name} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} />
+              <Input
+                value={companyForm.name}
+                onChange={(e) =>
+                  setCompanyForm({ ...companyForm, name: e.target.value })
+                }
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("common.email")}</Label>
-                <Input type="email" value={companyForm.contactEmail} onChange={(e) => setCompanyForm({ ...companyForm, contactEmail: e.target.value })} />
+                <Input
+                  type="email"
+                  value={companyForm.contactEmail}
+                  onChange={(e) =>
+                    setCompanyForm({
+                      ...companyForm,
+                      contactEmail: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("common.phone")}</Label>
-                <Input value={companyForm.contactPhone} onChange={(e) => setCompanyForm({ ...companyForm, contactPhone: e.target.value })} />
+                <Input
+                  value={companyForm.contactPhone}
+                  onChange={(e) =>
+                    setCompanyForm({
+                      ...companyForm,
+                      contactPhone: e.target.value,
+                    })
+                  }
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>{t("settings.website", "Сайт")}</Label>
-              <Input value={companyForm.website} onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })} placeholder="https://..." />
+              <Input
+                value={companyForm.website}
+                onChange={(e) =>
+                  setCompanyForm({ ...companyForm, website: e.target.value })
+                }
+                placeholder="https://..."
+              />
             </div>
             <div className="space-y-2">
               <Label>{t("settings.address", "Адрес")}</Label>
-              <Input value={companyForm.address} onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} />
+              <Input
+                value={companyForm.address}
+                onChange={(e) =>
+                  setCompanyForm({ ...companyForm, address: e.target.value })
+                }
+              />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditCompany(false)}>{t("common.cancel", "Отмена")}</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditCompany(false)}
+              >
+                {t("common.cancel", "Отмена")}
+              </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? t("common.saving", "Сохранение...") : t("common.save", "Сохранить")}
+                {updateMutation.isPending
+                  ? t("common.saving", "Сохранение...")
+                  : t("common.save", "Сохранить")}
               </Button>
             </DialogFooter>
           </form>

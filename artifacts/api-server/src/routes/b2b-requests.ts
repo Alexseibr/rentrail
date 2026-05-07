@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as b2bService from "../services/b2b-request.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -22,7 +25,10 @@ router.get(
   requirePermission("b2b:read"),
   async (req, res) => {
     const status = req.query.status as string | undefined;
-    const list = await b2bService.listB2BRequests(req.tenant!.companyId, status);
+    const list = await b2bService.listB2BRequests(
+      req.tenant!.companyId,
+      status,
+    );
     res.json({ data: list });
   },
 );
@@ -34,7 +40,10 @@ router.get(
   requirePermission("b2b:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.getB2BRequest(req.params.id as string, req.tenant!.companyId);
+    const request = await b2bService.getB2BRequest(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: request });
   },
 );
@@ -46,7 +55,11 @@ router.patch(
   requirePermission("b2b:update"),
   validate({ params: idParams, body: updateB2BSchema }),
   async (req, res) => {
-    const request = await b2bService.updateB2BRequest(req.params.id as string, req.tenant!.companyId, req.body);
+    const request = await b2bService.updateB2BRequest(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.body,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -66,7 +79,11 @@ router.post(
   requirePermission("b2b:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.markContacted(req.params.id as string, req.tenant!.companyId, req.user!.userId);
+    const request = await b2bService.markContacted(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.user!.userId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -86,7 +103,11 @@ router.post(
   requirePermission("b2b:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.convertB2BRequest(req.params.id as string, req.tenant!.companyId, req.user!.userId);
+    const request = await b2bService.convertB2BRequest(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.user!.userId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -106,7 +127,11 @@ router.post(
   requirePermission("b2b:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const request = await b2bService.rejectB2BRequest(req.params.id as string, req.tenant!.companyId, req.user!.userId);
+    const request = await b2bService.rejectB2BRequest(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.user!.userId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

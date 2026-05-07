@@ -9,7 +9,9 @@ export interface CachedCoordinates {
 }
 
 export function useCachedCoordinates(assetId: string | undefined) {
-  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(null);
+  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(
+    null,
+  );
 
   useEffect(() => {
     setCachedCoords(null);

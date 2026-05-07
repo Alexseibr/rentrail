@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as brandingService from "../services/branding.service";
 import * as moduleService from "../services/module.service";
 import { createAuditLog } from "../lib/audit";
@@ -39,7 +42,9 @@ router.get(
   requireCompanyAccess,
   requirePermission("company:read"),
   async (req, res) => {
-    const branding = await brandingService.getOrCreateBranding(req.tenant!.companyId);
+    const branding = await brandingService.getOrCreateBranding(
+      req.tenant!.companyId,
+    );
     res.json({ data: branding });
   },
 );
@@ -51,8 +56,13 @@ router.patch(
   requirePermission("company:update"),
   validate({ body: updateBrandingSchema }),
   async (req, res) => {
-    const old = await brandingService.getOrCreateBranding(req.tenant!.companyId);
-    const branding = await brandingService.updateBranding(req.tenant!.companyId, req.body);
+    const old = await brandingService.getOrCreateBranding(
+      req.tenant!.companyId,
+    );
+    const branding = await brandingService.updateBranding(
+      req.tenant!.companyId,
+      req.body,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -73,7 +83,9 @@ router.get(
   requireCompanyAccess,
   requirePermission("company:read"),
   async (req, res) => {
-    const modules = await moduleService.getCompanyModules(req.tenant!.companyId);
+    const modules = await moduleService.getCompanyModules(
+      req.tenant!.companyId,
+    );
     res.json({ data: modules });
   },
 );

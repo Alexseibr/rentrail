@@ -19,7 +19,9 @@ import {
 } from "@/components/ui/dialog";
 
 function formatCurrency(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
+    amount / 100,
+  );
 }
 
 const statusColors: Record<string, string> = {
@@ -36,22 +38,32 @@ export default function InvoiceDetailPage() {
   const queryClient = useQueryClient();
   const invoiceId = params?.id;
   const [showMarkPaid, setShowMarkPaid] = useState(false);
-  const [paidForm, setPaidForm] = useState({ amount: "", method: "", reference: "" });
+  const [paidForm, setPaidForm] = useState({
+    amount: "",
+    method: "",
+    reference: "",
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["invoice", invoiceId],
-    queryFn: () => api<Record<string, unknown>>(`/platform/billing/invoices/${invoiceId}`),
+    queryFn: () =>
+      api<Record<string, unknown>>(`/platform/billing/invoices/${invoiceId}`),
     enabled: !!invoiceId,
   });
 
   const issueMutation = useMutation({
     mutationFn: () =>
       api(`/platform/billing/invoices/${invoiceId}/issue`, { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] }),
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: (body: { amount: number; method: string; reference?: string }) =>
+    mutationFn: (body: {
+      amount: number;
+      method: string;
+      reference?: string;
+    }) =>
       api(`/platform/billing/invoices/${invoiceId}/mark-paid`, {
         method: "POST",
         body: JSON.stringify(body),
@@ -65,7 +77,8 @@ export default function InvoiceDetailPage() {
   const voidMutation = useMutation({
     mutationFn: () =>
       api(`/platform/billing/invoices/${invoiceId}/void`, { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["invoice", invoiceId] }),
   });
 
   if (isLoading) {
@@ -80,7 +93,9 @@ export default function InvoiceDetailPage() {
   if (!data) {
     return (
       <div className="p-6 space-y-4">
-        <PageBreadcrumb items={[{ label: t("nav.billing"), href: "/billing" }]} />
+        <PageBreadcrumb
+          items={[{ label: t("nav.billing"), href: "/billing" }]}
+        />
         <p className="text-muted-foreground">{t("invoiceDetail.notFound")}</p>
       </div>
     );
@@ -90,15 +105,21 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageBreadcrumb items={[
-        { label: t("nav.billing"), href: "/billing" },
-        { label: `${t("invoiceDetail.title")} #${invoiceId?.slice(0, 8) ?? ""}` },
-      ]} />
+      <PageBreadcrumb
+        items={[
+          { label: t("nav.billing"), href: "/billing" },
+          {
+            label: `${t("invoiceDetail.title")} #${invoiceId?.slice(0, 8) ?? ""}`,
+          },
+        ]}
+      />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">{t("common.status")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("common.status")}
+            </p>
             <Badge variant="secondary" className={statusColors[status] || ""}>
               {status}
             </Badge>
@@ -106,7 +127,9 @@ export default function InvoiceDetailPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">{t("common.amount")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("common.amount")}
+            </p>
             <p className="text-xl font-bold">
               {formatCurrency(data.amount as number, data.currency as string)}
             </p>
@@ -114,15 +137,23 @@ export default function InvoiceDetailPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">{t("common.company")}</p>
-            <p className="font-medium">{(data.companyName as string) || (data.companyId as string)}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("common.company")}
+            </p>
+            <p className="font-medium">
+              {(data.companyName as string) || (data.companyId as string)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">{t("common.dueDate")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("common.dueDate")}
+            </p>
             <p className="font-medium">
-              {data.dueDate ? new Date(data.dueDate as string).toLocaleDateString() : "-"}
+              {data.dueDate
+                ? new Date(data.dueDate as string).toLocaleDateString()
+                : "-"}
             </p>
           </CardContent>
         </Card>
@@ -139,24 +170,36 @@ export default function InvoiceDetailPage() {
               <span className="font-mono text-xs">{data.id as string}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t("common.created")}:</span>{" "}
-              {data.createdAt ? new Date(data.createdAt as string).toLocaleString() : "-"}
+              <span className="text-muted-foreground">
+                {t("common.created")}:
+              </span>{" "}
+              {data.createdAt
+                ? new Date(data.createdAt as string).toLocaleString()
+                : "-"}
             </div>
             {data.subscriptionId ? (
               <div>
-                <span className="text-muted-foreground">{t("common.subscription")}:</span>{" "}
-                <span className="font-mono text-xs">{String(data.subscriptionId)}</span>
+                <span className="text-muted-foreground">
+                  {t("common.subscription")}:
+                </span>{" "}
+                <span className="font-mono text-xs">
+                  {String(data.subscriptionId)}
+                </span>
               </div>
             ) : null}
             {data.paidAt ? (
               <div>
-                <span className="text-muted-foreground">{t("common.paidAt")}:</span>{" "}
+                <span className="text-muted-foreground">
+                  {t("common.paidAt")}:
+                </span>{" "}
                 {new Date(data.paidAt as string).toLocaleString()}
               </div>
             ) : null}
             {data.notes ? (
               <div className="col-span-2">
-                <span className="text-muted-foreground">{t("common.notes")}:</span>{" "}
+                <span className="text-muted-foreground">
+                  {t("common.notes")}:
+                </span>{" "}
                 {String(data.notes)}
               </div>
             ) : null}
@@ -183,7 +226,11 @@ export default function InvoiceDetailPage() {
               <Button
                 size="sm"
                 onClick={() => {
-                  setPaidForm({ amount: String((data.amount as number) || 0), method: "", reference: "" });
+                  setPaidForm({
+                    amount: String((data.amount as number) || 0),
+                    method: "",
+                    reference: "",
+                  });
                   setShowMarkPaid(true);
                 }}
               >
@@ -225,7 +272,9 @@ export default function InvoiceDetailPage() {
               <Input
                 type="number"
                 value={paidForm.amount}
-                onChange={(e) => setPaidForm({ ...paidForm, amount: e.target.value })}
+                onChange={(e) =>
+                  setPaidForm({ ...paidForm, amount: e.target.value })
+                }
                 required
               />
             </div>
@@ -233,7 +282,9 @@ export default function InvoiceDetailPage() {
               <Label>{t("invoiceDetail.paymentMethod")}</Label>
               <Input
                 value={paidForm.method}
-                onChange={(e) => setPaidForm({ ...paidForm, method: e.target.value })}
+                onChange={(e) =>
+                  setPaidForm({ ...paidForm, method: e.target.value })
+                }
                 placeholder="e.g. bank_transfer, card"
                 required
               />
@@ -242,16 +293,24 @@ export default function InvoiceDetailPage() {
               <Label>{t("invoiceDetail.reference")}</Label>
               <Input
                 value={paidForm.reference}
-                onChange={(e) => setPaidForm({ ...paidForm, reference: e.target.value })}
+                onChange={(e) =>
+                  setPaidForm({ ...paidForm, reference: e.target.value })
+                }
                 placeholder={t("invoiceDetail.transactionRef")}
               />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowMarkPaid(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowMarkPaid(false)}
+              >
                 {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={markPaidMutation.isPending}>
-                {markPaidMutation.isPending ? t("common.processing", "Обработка...") : t("invoiceDetail.confirmPayment")}
+                {markPaidMutation.isPending
+                  ? t("common.processing", "Обработка...")
+                  : t("invoiceDetail.confirmPayment")}
               </Button>
             </DialogFooter>
           </form>

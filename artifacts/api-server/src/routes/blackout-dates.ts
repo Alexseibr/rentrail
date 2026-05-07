@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import { db, rentalBlackoutDates } from "@workspace/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { createAuditLog } from "../lib/audit";
@@ -34,14 +37,24 @@ router.get(
   requirePermission("rental:read"),
   validate({ query: listQuery }),
   async (req, res) => {
-    const { branchId, assetId, from, to } = req.query as { branchId?: string; assetId?: string; from?: Date; to?: Date };
-    const conditions = [eq(rentalBlackoutDates.companyId, req.tenant!.companyId)];
+    const { branchId, assetId, from, to } = req.query as {
+      branchId?: string;
+      assetId?: string;
+      from?: Date;
+      to?: Date;
+    };
+    const conditions = [
+      eq(rentalBlackoutDates.companyId, req.tenant!.companyId),
+    ];
     if (branchId) conditions.push(eq(rentalBlackoutDates.branchId, branchId));
     if (assetId) conditions.push(eq(rentalBlackoutDates.assetId, assetId));
     if (from) conditions.push(gte(rentalBlackoutDates.endDate, from));
     if (to) conditions.push(lte(rentalBlackoutDates.startDate, to));
 
-    const list = await db.select().from(rentalBlackoutDates).where(and(...conditions));
+    const list = await db
+      .select()
+      .from(rentalBlackoutDates)
+      .where(and(...conditions));
     res.json({ data: list });
   },
 );
@@ -88,7 +101,12 @@ router.delete(
   async (req, res) => {
     const [deleted] = await db
       .delete(rentalBlackoutDates)
-      .where(and(eq(rentalBlackoutDates.id, req.params.id as string), eq(rentalBlackoutDates.companyId, req.tenant!.companyId)))
+      .where(
+        and(
+          eq(rentalBlackoutDates.id, req.params.id as string),
+          eq(rentalBlackoutDates.companyId, req.tenant!.companyId),
+        ),
+      )
       .returning();
 
     if (!deleted) throw new NotFoundError("Blackout date not found");

@@ -29,7 +29,13 @@ export interface RefundParams {
   reason?: string;
 }
 
-export type PaymentGatewayStatus = "pending" | "authorized" | "paid" | "failed" | "voided" | "refunded";
+export type PaymentGatewayStatus =
+  | "pending"
+  | "authorized"
+  | "paid"
+  | "failed"
+  | "voided"
+  | "refunded";
 
 export interface GatewayPaymentResult {
   providerPaymentId: string;

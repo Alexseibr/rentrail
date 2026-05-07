@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   Text,
@@ -15,8 +21,19 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import * as Location from "expo-location";
 import { useColors } from "@/hooks/useColors";
-import { getMapLayer, setMapLayer, initMapLayer, type MapLayer } from "@/store/mapLayerStore";
-import { getCachedMapView, setMapView, initMapView, DEFAULT_ZOOM, type MapViewState } from "@/store/mapViewStore";
+import {
+  getMapLayer,
+  setMapLayer,
+  initMapLayer,
+  type MapLayer,
+} from "@/store/mapLayerStore";
+import {
+  getCachedMapView,
+  setMapView,
+  initMapView,
+  DEFAULT_ZOOM,
+  type MapViewState,
+} from "@/store/mapViewStore";
 import { readManyCoordsFromCache } from "@/services/coordsCache";
 import { getAccessToken } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,7 +50,15 @@ interface AssetPin {
   status: string;
 }
 
-async function fetchAllAssetIds(companyId: string): Promise<{ id: string; internalCode: string | null; brand: string | null; model: string | null; status: string }[]> {
+async function fetchAllAssetIds(companyId: string): Promise<
+  {
+    id: string;
+    internalCode: string | null;
+    brand: string | null;
+    model: string | null;
+    status: string;
+  }[]
+> {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/assets`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
@@ -43,7 +68,12 @@ async function fetchAllAssetIds(companyId: string): Promise<{ id: string; intern
   return Array.isArray(data) ? data : [];
 }
 
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371000;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -87,7 +117,11 @@ function buildMapHtml(
       : "© OpenStreetMap contributors";
 
   const serialized = JSON.stringify(
-    pins.map((p) => ({ ...p, label: escapeHtml(p.label), status: escapeHtml(p.status) })),
+    pins.map((p) => ({
+      ...p,
+      label: escapeHtml(p.label),
+      status: escapeHtml(p.status),
+    })),
   );
   const escapedNavLabel = escapeHtml(navigateLabel);
 
@@ -221,7 +255,11 @@ export default function MaintenanceMapModal() {
   const { companyId } = useAuth();
   const { showSnackbar } = useSnackbar();
 
-  const params = useLocalSearchParams<{ lat: string; lng: string; label: string }>();
+  const params = useLocalSearchParams<{
+    lat: string;
+    lng: string;
+    label: string;
+  }>();
   const lat = parseFloat(params.lat ?? "");
   const lng = parseFloat(params.lng ?? "");
   const label = params.label ?? t("maintenanceMap.asset");
@@ -230,21 +268,30 @@ export default function MaintenanceMapModal() {
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
   const userToggledRef = useRef(false);
   const [jumpTooltipVisible, setJumpTooltipVisible] = useState(false);
-  const jumpTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jumpTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const jumpLongPressedRef = useRef(false);
 
-  const primaryFallback = { zoom: DEFAULT_ZOOM, lat: hasPrimaryPin ? lat : 55.751244, lng: hasPrimaryPin ? lng : 37.618423 };
+  const primaryFallback = {
+    zoom: DEFAULT_ZOOM,
+    lat: hasPrimaryPin ? lat : 55.751244,
+    lng: hasPrimaryPin ? lng : 37.618423,
+  };
   const cached = getCachedMapView();
-  const [initialView, setInitialView] = useState<{ zoom: number; lat: number; lng: number }>(
-    cached ?? primaryFallback,
-  );
+  const [initialView, setInitialView] = useState<{
+    zoom: number;
+    lat: number;
+    lng: number;
+  }>(cached ?? primaryFallback);
   const initialViewLoadedRef = useRef(!!cached);
 
   const isWeb = Platform.OS === "web";
 
   useEffect(() => {
     return () => {
-      if (jumpTooltipTimerRef.current) clearTimeout(jumpTooltipTimerRef.current);
+      if (jumpTooltipTimerRef.current)
+        clearTimeout(jumpTooltipTimerRef.current);
     };
   }, []);
 
@@ -252,9 +299,15 @@ export default function MaintenanceMapModal() {
     jumpLongPressedRef.current = true;
     setJumpTooltipVisible(true);
     if (jumpTooltipTimerRef.current) clearTimeout(jumpTooltipTimerRef.current);
-    jumpTooltipTimerRef.current = setTimeout(() => setJumpTooltipVisible(false), 3000);
+    jumpTooltipTimerRef.current = setTimeout(
+      () => setJumpTooltipVisible(false),
+      3000,
+    );
     if (isWeb) {
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ type: "closePopup" }),
+        "*",
+      );
     } else {
       webViewRef.current?.injectJavaScript(`window.closeMapPopup(); true;`);
     }
@@ -262,24 +315,31 @@ export default function MaintenanceMapModal() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([initMapLayer(), initMapView()]).then(([persistedLayer, persistedView]) => {
-      if (cancelled) return;
-      if (!userToggledRef.current) {
-        setLayerState(persistedLayer);
-      }
-      if (!initialViewLoadedRef.current && persistedView) {
-        initialViewLoadedRef.current = true;
-        setInitialView(persistedView);
-      }
-    });
-    return () => { cancelled = true; };
+    Promise.all([initMapLayer(), initMapView()]).then(
+      ([persistedLayer, persistedView]) => {
+        if (cancelled) return;
+        if (!userToggledRef.current) {
+          setLayerState(persistedLayer);
+        }
+        if (!initialViewLoadedRef.current && persistedView) {
+          initialViewLoadedRef.current = true;
+          setInitialView(persistedView);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const [pins, setPins] = useState<AssetPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapKey, setMapKey] = useState(0);
   const [locating, setLocating] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const webViewRef = useRef<WebView | null>(null);
 
@@ -288,10 +348,15 @@ export default function MaintenanceMapModal() {
       return () => {
         if (isWeb) {
           try {
-            iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+            iframeRef.current?.contentWindow?.postMessage(
+              JSON.stringify({ type: "closePopup" }),
+              "*",
+            );
           } catch {}
         } else {
-          webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+          webViewRef.current?.injectJavaScript(
+            "window.closeMapPopup && window.closeMapPopup(); true;",
+          );
         }
       };
     }, [isWeb]),
@@ -301,17 +366,29 @@ export default function MaintenanceMapModal() {
     return () => {
       if (isWeb) {
         try {
-          iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+          iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({ type: "closePopup" }),
+            "*",
+          );
         } catch {}
       } else {
-        webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+        webViewRef.current?.injectJavaScript(
+          "window.closeMapPopup && window.closeMapPopup(); true;",
+        );
       }
     };
   }, [isWeb]);
 
   const primaryPin: AssetPin | null = useMemo(() => {
     if (!hasPrimaryPin) return null;
-    return { id: "primary", lat, lng, label, isPrimary: true, status: "maintenance" };
+    return {
+      id: "primary",
+      lat,
+      lng,
+      label,
+      isPrimary: true,
+      status: "maintenance",
+    };
   }, [hasPrimaryPin, lat, lng, label]);
 
   const loadFleetPins = useCallback(async () => {
@@ -324,12 +401,15 @@ export default function MaintenanceMapModal() {
     try {
       const assets = await fetchAllAssetIds(companyId);
       const otherIds = assets.map((a) => a.id);
-      const cached = otherIds.length > 0 ? await readManyCoordsFromCache(otherIds) : {};
+      const cached =
+        otherIds.length > 0 ? await readManyCoordsFromCache(otherIds) : {};
       const fleetPins: AssetPin[] = assets
         .filter((a) => cached[a.id])
         .map((a) => {
           const c = cached[a.id]!;
-          const assetLabel = (a.internalCode ?? `${a.brand ?? ""} ${a.model ?? ""}`.trim()) || a.id.slice(0, 6);
+          const assetLabel =
+            (a.internalCode ?? `${a.brand ?? ""} ${a.model ?? ""}`.trim()) ||
+            a.id.slice(0, 6);
           return {
             id: a.id,
             lat: c.lat,
@@ -363,7 +443,10 @@ export default function MaintenanceMapModal() {
       jumpTooltipTimerRef.current = null;
     }
     if (isWeb) {
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ type: "closePopup" }),
+        "*",
+      );
     } else {
       webViewRef.current?.injectJavaScript(`window.closeMapPopup(); true;`);
     }
@@ -379,7 +462,10 @@ export default function MaintenanceMapModal() {
       jumpTooltipTimerRef.current = null;
     }
     if (isWeb) {
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ type: "closePopup" }),
+        "*",
+      );
     } else {
       webViewRef.current?.injectJavaScript(`window.closeMapPopup(); true;`);
     }
@@ -398,7 +484,11 @@ export default function MaintenanceMapModal() {
       setUserLocation({ lat: latitude, lng: longitude });
       if (isWeb) {
         iframeRef.current?.contentWindow?.postMessage(
-          JSON.stringify({ type: "setMyLocation", lat: latitude, lng: longitude }),
+          JSON.stringify({
+            type: "setMyLocation",
+            lat: latitude,
+            lng: longitude,
+          }),
           "*",
         );
       } else {
@@ -420,7 +510,10 @@ export default function MaintenanceMapModal() {
       return;
     }
     if (isWeb) {
-      iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ type: "closePopup" }), "*");
+      iframeRef.current?.contentWindow?.postMessage(
+        JSON.stringify({ type: "closePopup" }),
+        "*",
+      );
       iframeRef.current?.contentWindow?.postMessage(
         JSON.stringify({ type: "jumpToAsset", lat, lng }),
         "*",
@@ -457,7 +550,11 @@ export default function MaintenanceMapModal() {
           jumpTooltipTimerRef.current = null;
         }
         setJumpTooltipVisible(false);
-      } else if (msg.type === "navigate" && typeof msg.lat === "number" && typeof msg.lng === "number") {
+      } else if (
+        msg.type === "navigate" &&
+        typeof msg.lat === "number" &&
+        typeof msg.lng === "number"
+      ) {
         handleNavigate(msg.lat, msg.lng);
       } else if (
         msg.type === "viewchange" &&
@@ -489,9 +586,11 @@ export default function MaintenanceMapModal() {
   useEffect(() => {
     if (!isWeb) return;
     const listener = (event: MessageEvent) => {
-      if (iframeRef.current && event.source !== iframeRef.current.contentWindow) return;
+      if (iframeRef.current && event.source !== iframeRef.current.contentWindow)
+        return;
       try {
-        const msg = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        const msg =
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         handleMapMessage(msg);
       } catch {}
     };
@@ -501,7 +600,12 @@ export default function MaintenanceMapModal() {
 
   const distanceBadge = useMemo(() => {
     if (!userLocation || !hasPrimaryPin) return null;
-    const meters = haversineDistance(userLocation.lat, userLocation.lng, lat, lng);
+    const meters = haversineDistance(
+      userLocation.lat,
+      userLocation.lng,
+      lat,
+      lng,
+    );
     return formatDistance(meters);
   }, [userLocation, hasPrimaryPin, lat, lng]);
 
@@ -510,14 +614,25 @@ export default function MaintenanceMapModal() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TouchableOpacity
-        style={[styles.header, { backgroundColor: colors.dark, paddingTop: insets.top + 8 }]}
+        style={[
+          styles.header,
+          { backgroundColor: colors.dark, paddingTop: insets.top + 8 },
+        ]}
         activeOpacity={1}
         onPress={() => setJumpTooltipVisible(false)}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => { setJumpTooltipVisible(false); router.back(); }}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => {
+            setJumpTooltipVisible(false);
+            router.back();
+          }}
+        >
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{label}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {label}
+        </Text>
         {hasPrimaryPin && (
           <View style={styles.jumpBtnWrapper}>
             <TouchableOpacity
@@ -536,8 +651,12 @@ export default function MaintenanceMapModal() {
                 activeOpacity={0.9}
                 onPress={() => setJumpTooltipVisible(false)}
               >
-                <Text style={styles.jumpTooltipLabel} numberOfLines={1}>{label}</Text>
-                <Text style={styles.jumpTooltipCoordsLabel}>{t("maintenanceMap.jumpTooltipCoords")}</Text>
+                <Text style={styles.jumpTooltipLabel} numberOfLines={1}>
+                  {label}
+                </Text>
+                <Text style={styles.jumpTooltipCoordsLabel}>
+                  {t("maintenanceMap.jumpTooltipCoords")}
+                </Text>
                 <Text style={styles.jumpTooltipCoords}>
                   {lat.toFixed(5)}, {lng.toFixed(5)}
                 </Text>
@@ -546,13 +665,27 @@ export default function MaintenanceMapModal() {
           </View>
         )}
         <TouchableOpacity
-          style={[styles.layerToggle, isSatellite ? styles.layerSatellite : styles.layerStreet]}
+          style={[
+            styles.layerToggle,
+            isSatellite ? styles.layerSatellite : styles.layerStreet,
+          ]}
           onPress={toggleLayer}
           activeOpacity={0.8}
         >
-          <Feather name={isSatellite ? "map" : "globe"} size={13} color={isSatellite ? "#fff" : "#1a1a1a"} />
-          <Text style={[styles.layerLabel, { color: isSatellite ? "#fff" : "#1a1a1a" }]}>
-            {isSatellite ? t("maintenanceMap.layerStreet") : t("maintenanceMap.layerSatellite")}
+          <Feather
+            name={isSatellite ? "map" : "globe"}
+            size={13}
+            color={isSatellite ? "#fff" : "#1a1a1a"}
+          />
+          <Text
+            style={[
+              styles.layerLabel,
+              { color: isSatellite ? "#fff" : "#1a1a1a" },
+            ]}
+          >
+            {isSatellite
+              ? t("maintenanceMap.layerStreet")
+              : t("maintenanceMap.layerSatellite")}
           </Text>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -568,7 +701,13 @@ export default function MaintenanceMapModal() {
               key={mapKey}
               ref={iframeRef}
               srcDoc={mapHtml}
-              style={{ width: "100%", height: "100%", border: "none" } as React.CSSProperties}
+              style={
+                {
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                } as React.CSSProperties
+              }
             />
           ) : (
             <WebView
@@ -618,7 +757,9 @@ export default function MaintenanceMapModal() {
                 activeOpacity={0.85}
               >
                 <Feather name="navigation" size={16} color="#1a1a1a" />
-                <Text style={styles.navBtnText}>{t("maintenanceMap.navigateBtn")}</Text>
+                <Text style={styles.navBtnText}>
+                  {t("maintenanceMap.navigateBtn")}
+                </Text>
               </TouchableOpacity>
             </View>
           )}

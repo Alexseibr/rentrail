@@ -11,7 +11,11 @@ declare global {
   }
 }
 
-export function correlationId(req: Request, res: Response, next: NextFunction): void {
+export function correlationId(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   const id = (req.headers[HEADER] as string) || uuidv4();
   req.correlationId = id;
   res.setHeader(HEADER, id);

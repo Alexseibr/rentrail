@@ -45,7 +45,11 @@ export function requirePlatformRole(...allowedRoles: string[]) {
   };
 }
 
-export function requireAnyPlatformRole(req: Request, _res: Response, next: NextFunction): void {
+export function requireAnyPlatformRole(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
   if (!req.user) {
     throw new UnauthorizedError();
   }

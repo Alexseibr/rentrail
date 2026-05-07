@@ -1,1456 +1,3420 @@
 <!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RideFlow — Полный тур по системе</title>
-  <style>
-    :root {
-      --brand: #f5a623; --brand-dark: #d4891a; --dark: #1a1a2e; --dark2: #16213e;
-      --text: #1f2937; --muted: #6b7280; --border: #e5e7eb; --bg: #f9fafb;
-      --card: #ffffff; --green: #22c55e; --blue: #3b82f6; --yellow: #f59e0b;
-      --red: #ef4444; --purple: #8b5cf6; --orange: #f97316;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RideFlow — Полный тур по системе</title>
+    <style>
+      :root {
+        --brand: #f5a623;
+        --brand-dark: #d4891a;
+        --dark: #1a1a2e;
+        --dark2: #16213e;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --bg: #f9fafb;
+        --card: #ffffff;
+        --green: #22c55e;
+        --blue: #3b82f6;
+        --yellow: #f59e0b;
+        --red: #ef4444;
+        --purple: #8b5cf6;
+        --orange: #f97316;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+      }
 
-    /* ── COVER ── */
-    .cover { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); color:#fff; padding:80px 60px; position:relative; overflow:hidden; }
-    .cover::before { content:""; position:absolute; top:-120px; right:-120px; width:500px; height:500px; background:radial-gradient(circle, rgba(245,166,35,0.12) 0%, transparent 70%); border-radius:50%; }
-    .cover-logo { display:flex; align-items:center; gap:16px; margin-bottom:50px; }
-    .cover-logo-icon { width:64px; height:64px; background:var(--brand); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:30px; box-shadow:0 8px 32px rgba(245,166,35,.4); }
-    .cover-logo-text { font-size:32px; font-weight:800; }
-    .cover-logo-sub { font-size:13px; color:rgba(255,255,255,.55); margin-top:2px; }
-    .cover h1 { font-size:54px; font-weight:800; line-height:1.08; margin-bottom:18px; }
-    .cover h1 span { color:var(--brand); }
-    .cover-desc { font-size:18px; color:rgba(255,255,255,.75); max-width:640px; margin-bottom:48px; line-height:1.7; }
-    .cover-chips { display:flex; gap:12px; flex-wrap:wrap; }
-    .cover-chip { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:20px; padding:6px 16px; font-size:13px; }
+      /* ── COVER ── */
+      .cover {
+        background: linear-gradient(
+          135deg,
+          #1a1a2e 0%,
+          #16213e 60%,
+          #0f3460 100%
+        );
+        color: #fff;
+        padding: 80px 60px;
+        position: relative;
+        overflow: hidden;
+      }
+      .cover::before {
+        content: "";
+        position: absolute;
+        top: -120px;
+        right: -120px;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(
+          circle,
+          rgba(245, 166, 35, 0.12) 0%,
+          transparent 70%
+        );
+        border-radius: 50%;
+      }
+      .cover-logo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 50px;
+      }
+      .cover-logo-icon {
+        width: 64px;
+        height: 64px;
+        background: var(--brand);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        box-shadow: 0 8px 32px rgba(245, 166, 35, 0.4);
+      }
+      .cover-logo-text {
+        font-size: 32px;
+        font-weight: 800;
+      }
+      .cover-logo-sub {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.55);
+        margin-top: 2px;
+      }
+      .cover h1 {
+        font-size: 54px;
+        font-weight: 800;
+        line-height: 1.08;
+        margin-bottom: 18px;
+      }
+      .cover h1 span {
+        color: var(--brand);
+      }
+      .cover-desc {
+        font-size: 18px;
+        color: rgba(255, 255, 255, 0.75);
+        max-width: 640px;
+        margin-bottom: 48px;
+        line-height: 1.7;
+      }
+      .cover-chips {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .cover-chip {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 6px 16px;
+        font-size: 13px;
+      }
 
-    /* ── NAV ── */
-    .nav { background:var(--dark); position:sticky; top:0; z-index:100; overflow-x:auto; white-space:nowrap; padding:0 32px; }
-    .nav a { display:inline-block; color:rgba(255,255,255,.6); text-decoration:none; padding:14px 16px; font-size:13px; font-weight:500; border-bottom:2px solid transparent; transition:.2s; }
-    .nav a:hover { color:#fff; border-bottom-color:var(--brand); }
+      /* ── NAV ── */
+      .nav {
+        background: var(--dark);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 0 32px;
+      }
+      .nav a {
+        display: inline-block;
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        padding: 14px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: 0.2s;
+      }
+      .nav a:hover {
+        color: #fff;
+        border-bottom-color: var(--brand);
+      }
 
-    /* ── LAYOUT ── */
-    section { padding:64px 0; }
-    section:nth-child(even) { background:#fff; }
-    .container { max-width:1080px; margin:0 auto; padding:0 40px; }
-    h2 { font-size:32px; font-weight:800; color:var(--dark); margin-bottom:8px; }
-    .section-icon { font-size:28px; margin-right:10px; }
-    .section-sub { font-size:16px; color:var(--muted); margin-bottom:36px; max-width:680px; }
-    h3 { font-size:20px; font-weight:700; color:var(--dark); margin:32px 0 12px; }
-    h3.sub { font-size:17px; font-weight:700; color:var(--dark2); margin:24px 0 8px; }
+      /* ── LAYOUT ── */
+      section {
+        padding: 64px 0;
+      }
+      section:nth-child(even) {
+        background: #fff;
+      }
+      .container {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 40px;
+      }
+      h2 {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--dark);
+        margin-bottom: 8px;
+      }
+      .section-icon {
+        font-size: 28px;
+        margin-right: 10px;
+      }
+      .section-sub {
+        font-size: 16px;
+        color: var(--muted);
+        margin-bottom: 36px;
+        max-width: 680px;
+      }
+      h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--dark);
+        margin: 32px 0 12px;
+      }
+      h3.sub {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--dark2);
+        margin: 24px 0 8px;
+      }
 
-    /* ── CARDS ── */
-    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin:24px 0; }
-    .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin:24px 0; }
-    .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:24px 0; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px; }
-    .card-icon { font-size:28px; margin-bottom:10px; }
-    .card h4 { font-size:15px; font-weight:700; margin-bottom:6px; }
-    .card p { font-size:13px; color:var(--muted); line-height:1.55; }
-    .card.accent { border-left:4px solid var(--brand); }
+      /* ── CARDS ── */
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin: 24px 0;
+      }
+      .grid3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 18px;
+        margin: 24px 0;
+      }
+      .grid4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin: 24px 0;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px;
+      }
+      .card-icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+      .card h4 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .card p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .card.accent {
+        border-left: 4px solid var(--brand);
+      }
 
-    /* ── BADGE ── */
-    .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
-    .badge-green { background:#dcfce7; color:#15803d; }
-    .badge-yellow { background:#fef9c3; color:#854d0e; }
-    .badge-red { background:#fee2e2; color:#b91c1c; }
-    .badge-blue { background:#dbeafe; color:#1d4ed8; }
-    .badge-gray { background:#f3f4f6; color:#374151; }
-    .badge-orange { background:#ffedd5; color:#c2410c; }
-    .badge-brand { background:#fef3c7; color:#92400e; }
+      /* ── BADGE ── */
+      .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .badge-green {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .badge-yellow {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+      .badge-red {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .badge-blue {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .badge-gray {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .badge-orange {
+        background: #ffedd5;
+        color: #c2410c;
+      }
+      .badge-brand {
+        background: #fef3c7;
+        color: #92400e;
+      }
 
-    /* ── HIGHLIGHT ── */
-    .highlight { background:linear-gradient(135deg,#fffbeb,#fef3c7); border-left:4px solid var(--brand); border-radius:0 12px 12px 0; padding:18px 22px; margin:20px 0; }
-    .highlight strong { color:var(--brand-dark); }
-    .tip { background:#eff6ff; border-left:4px solid var(--blue); border-radius:0 12px 12px 0; padding:16px 20px; margin:16px 0; font-size:14px; color:#1e40af; }
+      /* ── HIGHLIGHT ── */
+      .highlight {
+        background: linear-gradient(135deg, #fffbeb, #fef3c7);
+        border-left: 4px solid var(--brand);
+        border-radius: 0 12px 12px 0;
+        padding: 18px 22px;
+        margin: 20px 0;
+      }
+      .highlight strong {
+        color: var(--brand-dark);
+      }
+      .tip {
+        background: #eff6ff;
+        border-left: 4px solid var(--blue);
+        border-radius: 0 12px 12px 0;
+        padding: 16px 20px;
+        margin: 16px 0;
+        font-size: 14px;
+        color: #1e40af;
+      }
 
-    /* ═══════════ PHONE FRAME ═══════════ */
-    .phone-row { display:flex; gap:28px; justify-content:center; align-items:flex-start; flex-wrap:wrap; margin:32px 0; }
-    .phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
-    .phone-label { font-size:13px; font-weight:700; color:var(--muted); text-align:center; }
-    .phone { width:220px; background:#111; border-radius:36px; padding:12px 10px 14px; box-shadow:0 20px 60px rgba(0,0,0,.3),inset 0 0 0 1px rgba(255,255,255,.08); position:relative; flex-shrink:0; }
-    .phone-notch { width:60px; height:18px; background:#111; border-radius:10px; margin:0 auto 10px; position:relative; z-index:2; }
-    .phone-screen { background:#0a0a0a; border-radius:24px; overflow:hidden; min-height:380px; position:relative; }
+      /* ═══════════ PHONE FRAME ═══════════ */
+      .phone-row {
+        display: flex;
+        gap: 28px;
+        justify-content: center;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        margin: 32px 0;
+      }
+      .phone-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .phone-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--muted);
+        text-align: center;
+      }
+      .phone {
+        width: 220px;
+        background: #111;
+        border-radius: 36px;
+        padding: 12px 10px 14px;
+        box-shadow:
+          0 20px 60px rgba(0, 0, 0, 0.3),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        position: relative;
+        flex-shrink: 0;
+      }
+      .phone-notch {
+        width: 60px;
+        height: 18px;
+        background: #111;
+        border-radius: 10px;
+        margin: 0 auto 10px;
+        position: relative;
+        z-index: 2;
+      }
+      .phone-screen {
+        background: #0a0a0a;
+        border-radius: 24px;
+        overflow: hidden;
+        min-height: 380px;
+        position: relative;
+      }
 
-    /* status bar */
-    .sb { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 4px; background:#111; }
-    .sb-time { font-size:11px; color:#fff; font-weight:600; }
-    .sb-icons { font-size:9px; color:#fff; }
+      /* status bar */
+      .sb {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 14px 4px;
+        background: #111;
+      }
+      .sb-time {
+        font-size: 11px;
+        color: #fff;
+        font-weight: 600;
+      }
+      .sb-icons {
+        font-size: 9px;
+        color: #fff;
+      }
 
-    /* generic screen styles */
-    .scr-header { padding:10px 14px 8px; display:flex; align-items:center; gap:8px; }
-    .scr-title { font-size:15px; font-weight:800; color:#fff; flex:1; }
-    .scr-back { color:var(--brand); font-size:11px; }
-    .scr-badge { background:var(--brand); color:#000; border-radius:8px; padding:2px 7px; font-size:9px; font-weight:800; }
+      /* generic screen styles */
+      .scr-header {
+        padding: 10px 14px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .scr-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #fff;
+        flex: 1;
+      }
+      .scr-back {
+        color: var(--brand);
+        font-size: 11px;
+      }
+      .scr-badge {
+        background: var(--brand);
+        color: #000;
+        border-radius: 8px;
+        padding: 2px 7px;
+        font-size: 9px;
+        font-weight: 800;
+      }
 
-    .tab-bar { background:#1c1c1e; display:flex; border-top:1px solid rgba(255,255,255,.1); padding:6px 0 8px; }
-    .tab { flex:1; text-align:center; font-size:8px; color:rgba(255,255,255,.4); padding:3px; }
-    .tab.active { color:var(--brand); }
-    .tab-icon { font-size:16px; display:block; margin-bottom:1px; }
-    .tab-badge { display:inline-block; background:var(--red); color:#fff; border-radius:6px; padding:1px 4px; font-size:7px; font-weight:700; margin-left:2px; vertical-align:top; }
+      .tab-bar {
+        background: #1c1c1e;
+        display: flex;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 0 8px;
+      }
+      .tab {
+        flex: 1;
+        text-align: center;
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.4);
+        padding: 3px;
+      }
+      .tab.active {
+        color: var(--brand);
+      }
+      .tab-icon {
+        font-size: 16px;
+        display: block;
+        margin-bottom: 1px;
+      }
+      .tab-badge {
+        display: inline-block;
+        background: var(--red);
+        color: #fff;
+        border-radius: 6px;
+        padding: 1px 4px;
+        font-size: 7px;
+        font-weight: 700;
+        margin-left: 2px;
+        vertical-align: top;
+      }
 
-    .list-item { display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.06); }
-    .list-icon { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
-    .list-title { font-size:12px; font-weight:700; color:#fff; }
-    .list-sub { font-size:10px; color:rgba(255,255,255,.45); }
-    .list-right { margin-left:auto; text-align:right; }
-    .list-price { font-size:12px; font-weight:700; color:var(--brand); }
-    .list-time { font-size:9px; color:rgba(255,255,255,.35); }
+      .list-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .list-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+      .list-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .list-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.45);
+      }
+      .list-right {
+        margin-left: auto;
+        text-align: right;
+      }
+      .list-price {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--brand);
+      }
+      .list-time {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.35);
+      }
 
-    .pill-row { display:flex; gap:6px; padding:8px 12px; overflow-x:auto; }
-    .pill { padding:4px 10px; border-radius:12px; font-size:9px; font-weight:700; white-space:nowrap; }
-    .pill.active { background:var(--brand); color:#000; }
-    .pill.inactive { background:rgba(255,255,255,.1); color:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.15); }
+      .pill-row {
+        display: flex;
+        gap: 6px;
+        padding: 8px 12px;
+        overflow-x: auto;
+      }
+      .pill {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 9px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .pill.active {
+        background: var(--brand);
+        color: #000;
+      }
+      .pill.inactive {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
 
-    .kpi-row-phone { display:flex; gap:6px; padding:8px 12px; }
-    .kpi-card { flex:1; background:#1c1c1e; border-radius:10px; padding:8px; text-align:center; border-left:3px solid; }
-    .kpi-val { font-size:18px; font-weight:800; color:#fff; }
-    .kpi-lbl { font-size:8px; color:rgba(255,255,255,.45); margin-top:1px; }
+      .kpi-row-phone {
+        display: flex;
+        gap: 6px;
+        padding: 8px 12px;
+      }
+      .kpi-card {
+        flex: 1;
+        background: #1c1c1e;
+        border-radius: 10px;
+        padding: 8px;
+        text-align: center;
+        border-left: 3px solid;
+      }
+      .kpi-val {
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+      }
+      .kpi-lbl {
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.45);
+        margin-top: 1px;
+      }
 
-    .section-hdr { padding:8px 12px 4px; font-size:9px; font-weight:700; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:1px; }
+      .section-hdr {
+        padding: 8px 12px 4px;
+        font-size: 9px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.4);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
 
-    .status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:4px; }
+      .status-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-right: 4px;
+      }
 
-    /* ═══════════ ADMIN FRAME ═══════════ */
-    .admin-frame { background:var(--card); border-radius:16px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.1); border:1px solid var(--border); margin:24px 0; }
-    .admin-topbar { background:var(--dark); padding:10px 20px; display:flex; align-items:center; gap:12px; }
-    .admin-logo { color:var(--brand); font-weight:800; font-size:15px; }
-    .admin-nav-pills { display:flex; gap:3px; flex:1; }
-    .admin-nav-pill { padding:4px 10px; border-radius:7px; font-size:11px; color:rgba(255,255,255,.55); }
-    .admin-nav-pill.active { background:rgba(255,255,255,.12); color:#fff; }
-    .admin-user { font-size:11px; color:rgba(255,255,255,.4); }
-    .admin-body { display:flex; min-height:320px; }
-    .admin-sidebar { width:180px; background:#fafafa; border-right:1px solid var(--border); padding:12px 0; flex-shrink:0; }
-    .admin-item { padding:8px 16px; font-size:12px; color:var(--muted); display:flex; align-items:center; gap:7px; cursor:pointer; }
-    .admin-item.active { background:rgba(245,166,35,.08); color:var(--brand-dark); font-weight:700; border-right:3px solid var(--brand); }
-    .admin-main { flex:1; padding:16px 20px; overflow:hidden; }
+      /* ═══════════ ADMIN FRAME ═══════════ */
+      .admin-frame {
+        background: var(--card);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+        margin: 24px 0;
+      }
+      .admin-topbar {
+        background: var(--dark);
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .admin-logo {
+        color: var(--brand);
+        font-weight: 800;
+        font-size: 15px;
+      }
+      .admin-nav-pills {
+        display: flex;
+        gap: 3px;
+        flex: 1;
+      }
+      .admin-nav-pill {
+        padding: 4px 10px;
+        border-radius: 7px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.55);
+      }
+      .admin-nav-pill.active {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+      }
+      .admin-user {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .admin-body {
+        display: flex;
+        min-height: 320px;
+      }
+      .admin-sidebar {
+        width: 180px;
+        background: #fafafa;
+        border-right: 1px solid var(--border);
+        padding: 12px 0;
+        flex-shrink: 0;
+      }
+      .admin-item {
+        padding: 8px 16px;
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+      }
+      .admin-item.active {
+        background: rgba(245, 166, 35, 0.08);
+        color: var(--brand-dark);
+        font-weight: 700;
+        border-right: 3px solid var(--brand);
+      }
+      .admin-main {
+        flex: 1;
+        padding: 16px 20px;
+        overflow: hidden;
+      }
 
-    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
-    .kpi-box { background:var(--card); border-radius:10px; padding:12px; border:1px solid var(--border); border-left:4px solid; }
-    .kpi-num { font-size:22px; font-weight:800; }
-    .kpi-tag { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .kpi-box {
+        background: var(--card);
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-left: 4px solid;
+      }
+      .kpi-num {
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .kpi-tag {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-top: 2px;
+      }
 
-    .tbl-head { display:flex; gap:6px; padding:7px 10px; background:#f8fafc; border-radius:7px; margin-bottom:5px; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; }
-    .tbl-row { display:flex; gap:6px; padding:8px 10px; font-size:12px; border-bottom:1px solid var(--border); align-items:center; }
-    .tbl-row:last-child { border-bottom:none; }
-    .c1 { flex:2; } .c2 { flex:1; } .c3 { flex:1; } .c4 { flex:1; }
+      .tbl-head {
+        display: flex;
+        gap: 6px;
+        padding: 7px 10px;
+        background: #f8fafc;
+        border-radius: 7px;
+        margin-bottom: 5px;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .tbl-row {
+        display: flex;
+        gap: 6px;
+        padding: 8px 10px;
+        font-size: 12px;
+        border-bottom: 1px solid var(--border);
+        align-items: center;
+      }
+      .tbl-row:last-child {
+        border-bottom: none;
+      }
+      .c1 {
+        flex: 2;
+      }
+      .c2 {
+        flex: 1;
+      }
+      .c3 {
+        flex: 1;
+      }
+      .c4 {
+        flex: 1;
+      }
 
-    /* ═══════════ LIFECYCLE ═══════════ */
-    .lifecycle { display:flex; gap:0; margin:32px 0; }
-    .lifecycle-step { flex:1; position:relative; }
-    .lifecycle-step::after { content:"→"; position:absolute; right:-10px; top:28px; font-size:20px; color:var(--brand); z-index:1; }
-    .lifecycle-step:last-child::after { display:none; }
-    .lifecycle-box { background:var(--dark); color:#fff; border-radius:12px; padding:16px 12px; text-align:center; margin:0 8px; }
-    .lifecycle-num { width:28px; height:28px; background:var(--brand); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#000; margin:0 auto 8px; }
-    .lifecycle-title { font-size:12px; font-weight:700; margin-bottom:4px; }
-    .lifecycle-sub { font-size:10px; color:rgba(255,255,255,.5); line-height:1.4; }
+      /* ═══════════ LIFECYCLE ═══════════ */
+      .lifecycle {
+        display: flex;
+        gap: 0;
+        margin: 32px 0;
+      }
+      .lifecycle-step {
+        flex: 1;
+        position: relative;
+      }
+      .lifecycle-step::after {
+        content: "→";
+        position: absolute;
+        right: -10px;
+        top: 28px;
+        font-size: 20px;
+        color: var(--brand);
+        z-index: 1;
+      }
+      .lifecycle-step:last-child::after {
+        display: none;
+      }
+      .lifecycle-box {
+        background: var(--dark);
+        color: #fff;
+        border-radius: 12px;
+        padding: 16px 12px;
+        text-align: center;
+        margin: 0 8px;
+      }
+      .lifecycle-num {
+        width: 28px;
+        height: 28px;
+        background: var(--brand);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 800;
+        color: #000;
+        margin: 0 auto 8px;
+      }
+      .lifecycle-title {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .lifecycle-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.4;
+      }
 
-    /* ═══════════ ROLES TABLE ═══════════ */
-    .roles-table { width:100%; border-collapse:collapse; font-size:13px; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.06); }
-    .roles-table th { background:var(--dark); color:#fff; padding:10px 14px; text-align:left; font-size:12px; }
-    .roles-table td { padding:10px 14px; border-bottom:1px solid var(--border); }
-    .roles-table tr:last-child td { border-bottom:none; }
-    .roles-table tr:nth-child(even) td { background:#f9fafb; }
-    .check { color:var(--green); font-size:16px; }
-    .dash { color:var(--border); font-size:16px; }
+      /* ═══════════ ROLES TABLE ═══════════ */
+      .roles-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      }
+      .roles-table th {
+        background: var(--dark);
+        color: #fff;
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 12px;
+      }
+      .roles-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .roles-table tr:last-child td {
+        border-bottom: none;
+      }
+      .roles-table tr:nth-child(even) td {
+        background: #f9fafb;
+      }
+      .check {
+        color: var(--green);
+        font-size: 16px;
+      }
+      .dash {
+        color: var(--border);
+        font-size: 16px;
+      }
 
-    /* ═══════════ STEPS ═══════════ */
-    .steps { display:flex; flex-direction:column; gap:0; }
-    .step { display:flex; gap:20px; position:relative; padding-bottom:24px; }
-    .step::before { content:""; position:absolute; left:19px; top:40px; bottom:0; width:2px; background:var(--border); }
-    .step:last-child::before { display:none; }
-    .step-num { width:40px; height:40px; background:var(--brand); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:#000; flex-shrink:0; z-index:1; }
-    .step-body { flex:1; padding-top:8px; }
-    .step-body h4 { font-size:15px; font-weight:700; margin-bottom:4px; }
-    .step-body p { font-size:13px; color:var(--muted); }
+      /* ═══════════ STEPS ═══════════ */
+      .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .step {
+        display: flex;
+        gap: 20px;
+        position: relative;
+        padding-bottom: 24px;
+      }
+      .step::before {
+        content: "";
+        position: absolute;
+        left: 19px;
+        top: 40px;
+        bottom: 0;
+        width: 2px;
+        background: var(--border);
+      }
+      .step:last-child::before {
+        display: none;
+      }
+      .step-num {
+        width: 40px;
+        height: 40px;
+        background: var(--brand);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-weight: 800;
+        color: #000;
+        flex-shrink: 0;
+        z-index: 1;
+      }
+      .step-body {
+        flex: 1;
+        padding-top: 8px;
+      }
+      .step-body h4 {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .step-body p {
+        font-size: 13px;
+        color: var(--muted);
+      }
 
-    /* ═══════════ QUEUE SCREEN ═══════════ */
-    .queue-item { margin:6px 10px; background:#1c1c1e; border-radius:11px; padding:10px 12px; }
-    .qi-top { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
-    .qi-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .qi-action { font-size:11px; font-weight:700; color:#fff; flex:1; }
-    .qi-badge { font-size:8px; padding:2px 6px; border-radius:8px; font-weight:700; }
-    .qi-meta { font-size:9px; color:rgba(255,255,255,.4); padding-left:14px; }
-    .qi-btns { display:flex; gap:6px; margin-top:6px; padding-left:14px; }
-    .qi-btn { font-size:8px; padding:3px 8px; border-radius:6px; font-weight:700; }
+      /* ═══════════ QUEUE SCREEN ═══════════ */
+      .queue-item {
+        margin: 6px 10px;
+        background: #1c1c1e;
+        border-radius: 11px;
+        padding: 10px 12px;
+      }
+      .qi-top {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+      .qi-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .qi-action {
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        flex: 1;
+      }
+      .qi-badge {
+        font-size: 8px;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-weight: 700;
+      }
+      .qi-meta {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.4);
+        padding-left: 14px;
+      }
+      .qi-btns {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        padding-left: 14px;
+      }
+      .qi-btn {
+        font-size: 8px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+      }
 
-    @media(max-width:768px) {
-      .cover { padding:40px 24px; }
-      .cover h1 { font-size:34px; }
-      .container { padding:0 20px; }
-      .grid2,.grid3,.grid4 { grid-template-columns:1fr; }
-      .phone-row { gap:16px; }
-      .phone { width:180px; }
-      .kpi-grid { grid-template-columns:1fr 1fr; }
-      .lifecycle { flex-direction:column; }
-      .lifecycle-step::after { display:none; }
-    }
-  </style>
-</head>
-<body>
-
-<!-- ═══════════ ОБЛОЖКА ═══════════ -->
-<div class="cover">
-  <div class="cover-logo">
-    <div class="cover-logo-icon">🚲</div>
-    <div>
-      <div class="cover-logo-text">RideFlow</div>
-      <div class="cover-logo-sub">Платформа управления прокатом транспорта</div>
+      @media (max-width: 768px) {
+        .cover {
+          padding: 40px 24px;
+        }
+        .cover h1 {
+          font-size: 34px;
+        }
+        .container {
+          padding: 0 20px;
+        }
+        .grid2,
+        .grid3,
+        .grid4 {
+          grid-template-columns: 1fr;
+        }
+        .phone-row {
+          gap: 16px;
+        }
+        .phone {
+          width: 180px;
+        }
+        .kpi-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .lifecycle {
+          flex-direction: column;
+        }
+        .lifecycle-step::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════ ОБЛОЖКА ═══════════ -->
+    <div class="cover">
+      <div class="cover-logo">
+        <div class="cover-logo-icon">🚲</div>
+        <div>
+          <div class="cover-logo-text">RideFlow</div>
+          <div class="cover-logo-sub">
+            Платформа управления прокатом транспорта
+          </div>
+        </div>
+      </div>
+      <h1>Полный тур<br /><span>по системе</span></h1>
+      <p class="cover-desc">
+        Все экраны, функции и сценарии работы — от входа в систему до возврата
+        велосипеда и закрытия наряда на ремонт.
+      </p>
+      <div class="cover-chips">
+        <div class="cover-chip">🖥️ Веб-кабинет администратора</div>
+        <div class="cover-chip">📱 Мобильное приложение персонала</div>
+        <div class="cover-chip">👤 Клиентское приложение</div>
+        <div class="cover-chip">📡 Офлайн-режим</div>
+        <div class="cover-chip">🔧 IoT-команды технике</div>
+        <div class="cover-chip">🇷🇺 Полностью на русском</div>
+      </div>
     </div>
-  </div>
-  <h1>Полный тур<br /><span>по системе</span></h1>
-  <p class="cover-desc">Все экраны, функции и сценарии работы — от входа в систему до возврата велосипеда и закрытия наряда на ремонт.</p>
-  <div class="cover-chips">
-    <div class="cover-chip">🖥️ Веб-кабинет администратора</div>
-    <div class="cover-chip">📱 Мобильное приложение персонала</div>
-    <div class="cover-chip">👤 Клиентское приложение</div>
-    <div class="cover-chip">📡 Офлайн-режим</div>
-    <div class="cover-chip">🔧 IoT-команды технике</div>
-    <div class="cover-chip">🇷🇺 Полностью на русском</div>
-  </div>
-</div>
 
-<!-- ═══════════ НАВИГАЦИЯ ═══════════ -->
-<nav class="nav">
-  <a href="#overview">Обзор</a>
-  <a href="#admin">Веб-кабинет</a>
-  <a href="#staff-app">Приложение персонала</a>
-  <a href="#client-app">Клиентская часть</a>
-  <a href="#offline">Офлайн-режим</a>
-  <a href="#rental">Жизнецикл аренды</a>
-  <a href="#roles">Роли и доступы</a>
-  <a href="#iot">IoT и команды</a>
-  <a href="#reliability">Надёжность</a>
-</nav>
+    <!-- ═══════════ НАВИГАЦИЯ ═══════════ -->
+    <nav class="nav">
+      <a href="#overview">Обзор</a>
+      <a href="#admin">Веб-кабинет</a>
+      <a href="#staff-app">Приложение персонала</a>
+      <a href="#client-app">Клиентская часть</a>
+      <a href="#offline">Офлайн-режим</a>
+      <a href="#rental">Жизнецикл аренды</a>
+      <a href="#roles">Роли и доступы</a>
+      <a href="#iot">IoT и команды</a>
+      <a href="#reliability">Надёжность</a>
+    </nav>
 
-
-<!-- ═══════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════
      1. ОБЗОР
 ═══════════════════════════════════════════════ -->
-<section id="overview">
-  <div class="container">
-    <h2><span class="section-icon">🎯</span>Что такое RideFlow</h2>
-    <p class="section-sub">Единая платформа для прокатных компаний: администраторы управляют через браузер, сотрудники — через телефон, клиенты — через своё приложение.</p>
+    <section id="overview">
+      <div class="container">
+        <h2><span class="section-icon">🎯</span>Что такое RideFlow</h2>
+        <p class="section-sub">
+          Единая платформа для прокатных компаний: администраторы управляют
+          через браузер, сотрудники — через телефон, клиенты — через своё
+          приложение.
+        </p>
 
-    <div class="grid3">
-      <div class="card accent">
-        <div class="card-icon">🖥️</div>
-        <h4>Веб-кабинет</h4>
-        <p>Полное управление парком, арендами, клиентами, персоналом и финансами — открывается в любом браузере без установки.</p>
-      </div>
-      <div class="card accent">
-        <div class="card-icon">🔧</div>
-        <h4>Приложение персонала</h4>
-        <p>iOS и Android для механиков и администраторов: наряды, инциденты, ТО, приём техники, офлайн-режим с авто-синхронизацией.</p>
-      </div>
-      <div class="card accent">
-        <div class="card-icon">👤</div>
-        <h4>Клиентское приложение</h4>
-        <p>Каталог техники, бронирование, начало и завершение аренды, история, онлайн-оплата в рублях.</p>
-      </div>
-    </div>
+        <div class="grid3">
+          <div class="card accent">
+            <div class="card-icon">🖥️</div>
+            <h4>Веб-кабинет</h4>
+            <p>
+              Полное управление парком, арендами, клиентами, персоналом и
+              финансами — открывается в любом браузере без установки.
+            </p>
+          </div>
+          <div class="card accent">
+            <div class="card-icon">🔧</div>
+            <h4>Приложение персонала</h4>
+            <p>
+              iOS и Android для механиков и администраторов: наряды, инциденты,
+              ТО, приём техники, офлайн-режим с авто-синхронизацией.
+            </p>
+          </div>
+          <div class="card accent">
+            <div class="card-icon">👤</div>
+            <h4>Клиентское приложение</h4>
+            <p>
+              Каталог техники, бронирование, начало и завершение аренды,
+              история, онлайн-оплата в рублях.
+            </p>
+          </div>
+        </div>
 
-    <div class="highlight">
-      <strong>🇷🇺 Для российского рынка:</strong> авторизация по номеру +7, валюта — рубли (₽), интерфейс полностью на русском языке, российские форматы дат и времени.
-    </div>
+        <div class="highlight">
+          <strong>🇷🇺 Для российского рынка:</strong> авторизация по номеру +7,
+          валюта — рубли (₽), интерфейс полностью на русском языке, российские
+          форматы дат и времени.
+        </div>
 
-    <div class="grid4" style="margin-top:32px;">
-      <div class="card" style="text-align:center;">
-        <div style="font-size:36px;font-weight:900;color:var(--brand);">3</div>
-        <div style="font-size:13px;color:var(--muted);">типа техники<br/>велосипед · e-байк · самокат</div>
+        <div class="grid4" style="margin-top: 32px">
+          <div class="card" style="text-align: center">
+            <div style="font-size: 36px; font-weight: 900; color: var(--brand)">
+              3
+            </div>
+            <div style="font-size: 13px; color: var(--muted)">
+              типа техники<br />велосипед · e-байк · самокат
+            </div>
+          </div>
+          <div class="card" style="text-align: center">
+            <div style="font-size: 36px; font-weight: 900; color: var(--brand)">
+              7
+            </div>
+            <div style="font-size: 13px; color: var(--muted)">
+              ролей пользователей
+            </div>
+          </div>
+          <div class="card" style="text-align: center">
+            <div style="font-size: 36px; font-weight: 900; color: var(--brand)">
+              40+
+            </div>
+            <div style="font-size: 13px; color: var(--muted)">
+              API-эндпоинтов
+            </div>
+          </div>
+          <div class="card" style="text-align: center">
+            <div style="font-size: 36px; font-weight: 900; color: var(--brand)">
+              ∞
+            </div>
+            <div style="font-size: 13px; color: var(--muted)">
+              точек проката в одном аккаунте
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card" style="text-align:center;">
-        <div style="font-size:36px;font-weight:900;color:var(--brand);">7</div>
-        <div style="font-size:13px;color:var(--muted);">ролей пользователей</div>
-      </div>
-      <div class="card" style="text-align:center;">
-        <div style="font-size:36px;font-weight:900;color:var(--brand);">40+</div>
-        <div style="font-size:13px;color:var(--muted);">API-эндпоинтов</div>
-      </div>
-      <div class="card" style="text-align:center;">
-        <div style="font-size:36px;font-weight:900;color:var(--brand);">∞</div>
-        <div style="font-size:13px;color:var(--muted);">точек проката в одном аккаунте</div>
-      </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-
-<!-- ═══════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════
      2. ВЕБ-КАБИНЕТ
 ═══════════════════════════════════════════════ -->
-<section id="admin">
-  <div class="container">
-    <h2><span class="section-icon">🖥️</span>Веб-кабинет администратора</h2>
-    <p class="section-sub">Открывается в Chrome, Safari, Firefox. Не требует установки. Полностью адаптивный — работает и на планшете.</p>
+    <section id="admin">
+      <div class="container">
+        <h2><span class="section-icon">🖥️</span>Веб-кабинет администратора</h2>
+        <p class="section-sub">
+          Открывается в Chrome, Safari, Firefox. Не требует установки. Полностью
+          адаптивный — работает и на планшете.
+        </p>
 
-    <!-- ДАШБОРД -->
-    <h3>📊 Главный дашборд</h3>
-    <p style="color:var(--muted);font-size:14px;margin-bottom:16px;">Первое, что видит администратор при входе — ключевые показатели прямо сейчас.</p>
+        <!-- ДАШБОРД -->
+        <h3>📊 Главный дашборд</h3>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px">
+          Первое, что видит администратор при входе — ключевые показатели прямо
+          сейчас.
+        </p>
 
-    <div class="admin-frame">
-      <div class="admin-topbar">
-        <div class="admin-logo">🚲 RideFlow</div>
-        <div class="admin-nav-pills">
-          <div class="admin-nav-pill active">Дашборд</div>
-          <div class="admin-nav-pill">Парк</div>
-          <div class="admin-nav-pill">Аренды</div>
-          <div class="admin-nav-pill">Клиенты</div>
-          <div class="admin-nav-pill">Сервис</div>
-          <div class="admin-nav-pill">Аналитика</div>
-          <div class="admin-nav-pill">Сотрудники</div>
-        </div>
-        <div class="admin-user">Velocity Rides · Администратор</div>
-      </div>
-      <div class="admin-body">
-        <div class="admin-sidebar">
-          <div class="admin-item active">📊 Обзор</div>
-          <div class="admin-item">🚲 Парк техники</div>
-          <div class="admin-item">📋 Аренды</div>
-          <div class="admin-item">👤 Клиенты</div>
-          <div class="admin-item">🔧 Наряды</div>
-          <div class="admin-item">📦 Склад</div>
-          <div class="admin-item">📅 Расписание ТО</div>
-          <div class="admin-item">🚨 Инциденты</div>
-          <div class="admin-item">💰 Финансы</div>
-          <div class="admin-item">⚙️ Настройки</div>
-        </div>
-        <div class="admin-main">
-          <div class="kpi-grid">
-            <div class="kpi-box" style="border-left-color:var(--green);">
-              <div class="kpi-num" style="color:var(--green);">23</div>
-              <div class="kpi-tag">Активных аренд</div>
+        <div class="admin-frame">
+          <div class="admin-topbar">
+            <div class="admin-logo">🚲 RideFlow</div>
+            <div class="admin-nav-pills">
+              <div class="admin-nav-pill active">Дашборд</div>
+              <div class="admin-nav-pill">Парк</div>
+              <div class="admin-nav-pill">Аренды</div>
+              <div class="admin-nav-pill">Клиенты</div>
+              <div class="admin-nav-pill">Сервис</div>
+              <div class="admin-nav-pill">Аналитика</div>
+              <div class="admin-nav-pill">Сотрудники</div>
             </div>
-            <div class="kpi-box" style="border-left-color:var(--blue);">
-              <div class="kpi-num" style="color:var(--blue);">41</div>
-              <div class="kpi-tag">Свободно сейчас</div>
+            <div class="admin-user">Velocity Rides · Администратор</div>
+          </div>
+          <div class="admin-body">
+            <div class="admin-sidebar">
+              <div class="admin-item active">📊 Обзор</div>
+              <div class="admin-item">🚲 Парк техники</div>
+              <div class="admin-item">📋 Аренды</div>
+              <div class="admin-item">👤 Клиенты</div>
+              <div class="admin-item">🔧 Наряды</div>
+              <div class="admin-item">📦 Склад</div>
+              <div class="admin-item">📅 Расписание ТО</div>
+              <div class="admin-item">🚨 Инциденты</div>
+              <div class="admin-item">💰 Финансы</div>
+              <div class="admin-item">⚙️ Настройки</div>
             </div>
-            <div class="kpi-box" style="border-left-color:var(--brand);">
-              <div class="kpi-num" style="color:var(--brand);">87 400 ₽</div>
-              <div class="kpi-tag">Выручка за месяц</div>
+            <div class="admin-main">
+              <div class="kpi-grid">
+                <div class="kpi-box" style="border-left-color: var(--green)">
+                  <div class="kpi-num" style="color: var(--green)">23</div>
+                  <div class="kpi-tag">Активных аренд</div>
+                </div>
+                <div class="kpi-box" style="border-left-color: var(--blue)">
+                  <div class="kpi-num" style="color: var(--blue)">41</div>
+                  <div class="kpi-tag">Свободно сейчас</div>
+                </div>
+                <div class="kpi-box" style="border-left-color: var(--brand)">
+                  <div class="kpi-num" style="color: var(--brand)">
+                    87 400 ₽
+                  </div>
+                  <div class="kpi-tag">Выручка за месяц</div>
+                </div>
+                <div class="kpi-box" style="border-left-color: var(--red)">
+                  <div class="kpi-num" style="color: var(--red)">3</div>
+                  <div class="kpi-tag">На ТО / ремонте</div>
+                </div>
+              </div>
+              <div class="tbl-head">
+                <div class="c1">Техника</div>
+                <div class="c2">Статус</div>
+                <div class="c3">Клиент</div>
+                <div class="c4">Сумма</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">🚲 Велосипед #A-047</div>
+                <div class="c2">
+                  <span class="badge badge-green">В аренде</span>
+                </div>
+                <div class="c3">Иванов А.А.</div>
+                <div class="c4">350 ₽/час</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">⚡ E-байк #E-012</div>
+                <div class="c2">
+                  <span class="badge badge-green">В аренде</span>
+                </div>
+                <div class="c3">Петрова М.С.</div>
+                <div class="c4">600 ₽/час</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">🛴 Самокат #S-003</div>
+                <div class="c2">
+                  <span class="badge badge-yellow">На ТО</span>
+                </div>
+                <div class="c3">—</div>
+                <div class="c4">—</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">🚲 Велосипед #A-011</div>
+                <div class="c2">
+                  <span class="badge badge-gray">Свободен</span>
+                </div>
+                <div class="c3">—</div>
+                <div class="c4">—</div>
+              </div>
             </div>
-            <div class="kpi-box" style="border-left-color:var(--red);">
-              <div class="kpi-num" style="color:var(--red);">3</div>
-              <div class="kpi-tag">На ТО / ремонте</div>
+          </div>
+        </div>
+
+        <!-- ПАРК ТЕХНИКИ -->
+        <h3>🚲 Управление парком</h3>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px">
+          Каждая единица — карточка со статусом, историей и QR-кодом. Быстрый
+          поиск по номеру или QR.
+        </p>
+
+        <div class="admin-frame">
+          <div class="admin-topbar">
+            <div class="admin-logo">🚲 RideFlow</div>
+            <div class="admin-nav-pills">
+              <div class="admin-nav-pill active">Парк техники</div>
             </div>
           </div>
-          <div class="tbl-head">
-            <div class="c1">Техника</div><div class="c2">Статус</div><div class="c3">Клиент</div><div class="c4">Сумма</div>
+          <div class="admin-body">
+            <div class="admin-main" style="padding: 16px">
+              <div
+                style="
+                  display: flex;
+                  gap: 10px;
+                  margin-bottom: 14px;
+                  align-items: center;
+                "
+              >
+                <input
+                  style="
+                    flex: 1;
+                    padding: 7px 12px;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    font-size: 13px;
+                  "
+                  placeholder="🔍 Поиск по номеру, типу, статусу..."
+                />
+                <button
+                  style="
+                    background: var(--brand);
+                    color: #000;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    cursor: pointer;
+                  "
+                >
+                  + Добавить
+                </button>
+              </div>
+              <div style="display: flex; gap: 8px; margin-bottom: 12px">
+                <span class="badge badge-gray">Все (67)</span>
+                <span class="badge badge-green">Свободны (41)</span>
+                <span class="badge badge-blue">В аренде (23)</span>
+                <span class="badge badge-yellow">ТО (3)</span>
+                <span class="badge badge-red">Неисправны (0)</span>
+              </div>
+              <div class="tbl-head">
+                <div class="c1">Техника</div>
+                <div class="c2">Тип</div>
+                <div class="c3">Статус</div>
+                <div class="c4">Последнее ТО</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">
+                  <strong>A-047</strong> Велосипед Stels Navigator
+                </div>
+                <div class="c2">Велосипед</div>
+                <div class="c2">
+                  <span class="badge badge-blue">В аренде</span>
+                </div>
+                <div class="c4" style="color: var(--muted); font-size: 11px">
+                  15 апр 2026
+                </div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">
+                  <strong>E-012</strong> E-байк Giant Trance E
+                </div>
+                <div class="c2">Электробайк</div>
+                <div class="c2">
+                  <span class="badge badge-blue">В аренде</span>
+                </div>
+                <div class="c4" style="color: var(--muted); font-size: 11px">
+                  2 мая 2026
+                </div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1"><strong>S-003</strong> Самокат Ninebot Max</div>
+                <div class="c2">Самокат</div>
+                <div class="c2"><span class="badge badge-yellow">ТО</span></div>
+                <div class="c4" style="color: var(--muted); font-size: 11px">
+                  Сегодня
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="tbl-row">
-            <div class="c1">🚲 Велосипед #A-047</div>
-            <div class="c2"><span class="badge badge-green">В аренде</span></div>
-            <div class="c3">Иванов А.А.</div>
-            <div class="c4">350 ₽/час</div>
+        </div>
+
+        <!-- ИНЦИДЕНТЫ -->
+        <h3>🚨 Инциденты и заявки</h3>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px">
+          Все поломки, происшествия и заявки клиентов — в одном месте с
+          приоритетами и статусами.
+        </p>
+
+        <div class="admin-frame">
+          <div class="admin-topbar">
+            <div class="admin-logo">🚲 RideFlow</div>
+            <div class="admin-nav-pills">
+              <div class="admin-nav-pill active">Инциденты</div>
+            </div>
           </div>
-          <div class="tbl-row">
-            <div class="c1">⚡ E-байк #E-012</div>
-            <div class="c2"><span class="badge badge-green">В аренде</span></div>
-            <div class="c3">Петрова М.С.</div>
-            <div class="c4">600 ₽/час</div>
+          <div class="admin-body">
+            <div class="admin-main" style="padding: 16px">
+              <div class="tbl-head">
+                <div class="c1">Описание</div>
+                <div class="c2">Приоритет</div>
+                <div class="c3">Статус</div>
+                <div class="c4">Назначен</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">🚲 A-047: Спущена покрышка</div>
+                <div class="c2">
+                  <span class="badge badge-yellow">Средний</span>
+                </div>
+                <div class="c3">
+                  <span class="badge badge-blue">В работе</span>
+                </div>
+                <div class="c4" style="font-size: 12px">Механик Орлов</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">⚡ E-012: Не заряжается АКБ</div>
+                <div class="c2">
+                  <span class="badge badge-red">Критический</span>
+                </div>
+                <div class="c3">
+                  <span class="badge badge-yellow">Новый</span>
+                </div>
+                <div class="c4" style="font-size: 12px">—</div>
+              </div>
+              <div class="tbl-row">
+                <div class="c1">🛴 S-003: Царапины на корпусе</div>
+                <div class="c2">
+                  <span class="badge badge-gray">Низкий</span>
+                </div>
+                <div class="c3">
+                  <span class="badge badge-green">Устранён</span>
+                </div>
+                <div class="c4" style="font-size: 12px">Механик Орлов</div>
+              </div>
+            </div>
           </div>
-          <div class="tbl-row">
-            <div class="c1">🛴 Самокат #S-003</div>
-            <div class="c2"><span class="badge badge-yellow">На ТО</span></div>
-            <div class="c3">—</div>
-            <div class="c4">—</div>
+        </div>
+
+        <!-- ФИНАНСЫ -->
+        <h3>💰 Финансы и аналитика</h3>
+        <div class="grid3" style="margin-top: 16px">
+          <div class="card">
+            <div class="card-icon">📈</div>
+            <h4>Выручка по периодам</h4>
+            <p>
+              День / неделя / месяц / произвольный период. График динамики и
+              сравнение с предыдущим периодом.
+            </p>
           </div>
-          <div class="tbl-row">
-            <div class="c1">🚲 Велосипед #A-011</div>
-            <div class="c2"><span class="badge badge-gray">Свободен</span></div>
-            <div class="c3">—</div>
-            <div class="c4">—</div>
+          <div class="card">
+            <div class="card-icon">📊</div>
+            <h4>Загруженность парка</h4>
+            <p>
+              Сколько техники было в аренде по часам суток. Выявить пиковые часы
+              и оптимизировать тарифы.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">📄</div>
+            <h4>Экспорт отчётов</h4>
+            <p>
+              Выгрузка данных в Excel для бухгалтерии. Акты приёма-передачи в
+              PDF прямо из системы.
+            </p>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ПАРК ТЕХНИКИ -->
-    <h3>🚲 Управление парком</h3>
-    <p style="color:var(--muted);font-size:14px;margin-bottom:16px;">Каждая единица — карточка со статусом, историей и QR-кодом. Быстрый поиск по номеру или QR.</p>
-
-    <div class="admin-frame">
-      <div class="admin-topbar">
-        <div class="admin-logo">🚲 RideFlow</div>
-        <div class="admin-nav-pills"><div class="admin-nav-pill active">Парк техники</div></div>
-      </div>
-      <div class="admin-body">
-        <div class="admin-main" style="padding:16px;">
-          <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
-            <input style="flex:1;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;" placeholder="🔍 Поиск по номеру, типу, статусу..." />
-            <button style="background:var(--brand);color:#000;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">+ Добавить</button>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <span class="badge badge-gray">Все (67)</span>
-            <span class="badge badge-green">Свободны (41)</span>
-            <span class="badge badge-blue">В аренде (23)</span>
-            <span class="badge badge-yellow">ТО (3)</span>
-            <span class="badge badge-red">Неисправны (0)</span>
-          </div>
-          <div class="tbl-head">
-            <div class="c1">Техника</div><div class="c2">Тип</div><div class="c3">Статус</div><div class="c4">Последнее ТО</div>
-          </div>
-          <div class="tbl-row">
-            <div class="c1"><strong>A-047</strong> Велосипед Stels Navigator</div>
-            <div class="c2">Велосипед</div>
-            <div class="c2"><span class="badge badge-blue">В аренде</span></div>
-            <div class="c4" style="color:var(--muted);font-size:11px;">15 апр 2026</div>
-          </div>
-          <div class="tbl-row">
-            <div class="c1"><strong>E-012</strong> E-байк Giant Trance E</div>
-            <div class="c2">Электробайк</div>
-            <div class="c2"><span class="badge badge-blue">В аренде</span></div>
-            <div class="c4" style="color:var(--muted);font-size:11px;">2 мая 2026</div>
-          </div>
-          <div class="tbl-row">
-            <div class="c1"><strong>S-003</strong> Самокат Ninebot Max</div>
-            <div class="c2">Самокат</div>
-            <div class="c2"><span class="badge badge-yellow">ТО</span></div>
-            <div class="c4" style="color:var(--muted);font-size:11px;">Сегодня</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ИНЦИДЕНТЫ -->
-    <h3>🚨 Инциденты и заявки</h3>
-    <p style="color:var(--muted);font-size:14px;margin-bottom:16px;">Все поломки, происшествия и заявки клиентов — в одном месте с приоритетами и статусами.</p>
-
-    <div class="admin-frame">
-      <div class="admin-topbar">
-        <div class="admin-logo">🚲 RideFlow</div>
-        <div class="admin-nav-pills"><div class="admin-nav-pill active">Инциденты</div></div>
-      </div>
-      <div class="admin-body">
-        <div class="admin-main" style="padding:16px;">
-          <div class="tbl-head">
-            <div class="c1">Описание</div><div class="c2">Приоритет</div><div class="c3">Статус</div><div class="c4">Назначен</div>
-          </div>
-          <div class="tbl-row">
-            <div class="c1">🚲 A-047: Спущена покрышка</div>
-            <div class="c2"><span class="badge badge-yellow">Средний</span></div>
-            <div class="c3"><span class="badge badge-blue">В работе</span></div>
-            <div class="c4" style="font-size:12px;">Механик Орлов</div>
-          </div>
-          <div class="tbl-row">
-            <div class="c1">⚡ E-012: Не заряжается АКБ</div>
-            <div class="c2"><span class="badge badge-red">Критический</span></div>
-            <div class="c3"><span class="badge badge-yellow">Новый</span></div>
-            <div class="c4" style="font-size:12px;">—</div>
-          </div>
-          <div class="tbl-row">
-            <div class="c1">🛴 S-003: Царапины на корпусе</div>
-            <div class="c2"><span class="badge badge-gray">Низкий</span></div>
-            <div class="c3"><span class="badge badge-green">Устранён</span></div>
-            <div class="c4" style="font-size:12px;">Механик Орлов</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ФИНАНСЫ -->
-    <h3>💰 Финансы и аналитика</h3>
-    <div class="grid3" style="margin-top:16px;">
-      <div class="card">
-        <div class="card-icon">📈</div>
-        <h4>Выручка по периодам</h4>
-        <p>День / неделя / месяц / произвольный период. График динамики и сравнение с предыдущим периодом.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">📊</div>
-        <h4>Загруженность парка</h4>
-        <p>Сколько техники было в аренде по часам суток. Выявить пиковые часы и оптимизировать тарифы.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">📄</div>
-        <h4>Экспорт отчётов</h4>
-        <p>Выгрузка данных в Excel для бухгалтерии. Акты приёма-передачи в PDF прямо из системы.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════
      3. ПРИЛОЖЕНИЕ ПЕРСОНАЛА
 ═══════════════════════════════════════════════ -->
-<section id="staff-app">
-  <div class="container">
-    <h2><span class="section-icon">📱</span>Мобильное приложение персонала</h2>
-    <p class="section-sub">iOS и Android. Механики, операторы и администраторы — каждый видит своё. Работает без интернета.</p>
+    <section id="staff-app">
+      <div class="container">
+        <h2>
+          <span class="section-icon">📱</span>Мобильное приложение персонала
+        </h2>
+        <p class="section-sub">
+          iOS и Android. Механики, операторы и администраторы — каждый видит
+          своё. Работает без интернета.
+        </p>
 
-    <!-- ВХОД -->
-    <h3>🔐 Вход и выбор режима</h3>
-    <div class="phone-row">
-      <div class="phone-wrap">
-        <div class="phone-label">Экран входа</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div style="padding:30px 20px;text-align:center;">
-              <div style="font-size:40px;margin-bottom:8px;">🚲</div>
-              <div style="font-size:20px;font-weight:800;color:var(--brand);margin-bottom:4px;">RideFlow</div>
-              <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:32px;">Система управления прокатом</div>
-              <div style="background:#1c1c1e;border-radius:10px;padding:10px 14px;text-align:left;margin-bottom:10px;">
-                <div style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:3px;">Телефон</div>
-                <div style="font-size:13px;color:#fff;font-weight:600;">+7 999 000 0001</div>
-              </div>
-              <div style="background:#1c1c1e;border-radius:10px;padding:10px 14px;text-align:left;margin-bottom:20px;">
-                <div style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:3px;">Пароль</div>
-                <div style="font-size:13px;color:#fff;">••••••••</div>
-              </div>
-              <div style="background:var(--brand);border-radius:10px;padding:12px;font-size:13px;font-weight:800;color:#000;">Войти</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- МОЯ СМЕНА -->
-      <div class="phone-wrap">
-        <div class="phone-label">Моя смена (механик)</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-title">Моя смена</div>
-              <div class="scr-badge">3 задачи</div>
-            </div>
-            <div style="padding:8px 12px 4px;">
-              <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:6px;">БЫСТРЫЕ ДЕЙСТВИЯ</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-                <div style="background:#1c1c1e;border-radius:10px;padding:10px;text-align:center;">
-                  <div style="font-size:20px;">🔍</div>
-                  <div style="font-size:9px;color:#fff;margin-top:3px;font-weight:700;">Сканировать</div>
+        <!-- ВХОД -->
+        <h3>🔐 Вход и выбор режима</h3>
+        <div class="phone-row">
+          <div class="phone-wrap">
+            <div class="phone-label">Экран входа</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div style="padding: 30px 20px; text-align: center">
+                  <div style="font-size: 40px; margin-bottom: 8px">🚲</div>
+                  <div
+                    style="
+                      font-size: 20px;
+                      font-weight: 800;
+                      color: var(--brand);
+                      margin-bottom: 4px;
+                    "
+                  >
+                    RideFlow
+                  </div>
+                  <div
+                    style="
+                      font-size: 10px;
+                      color: rgba(255, 255, 255, 0.4);
+                      margin-bottom: 32px;
+                    "
+                  >
+                    Система управления прокатом
+                  </div>
+                  <div
+                    style="
+                      background: #1c1c1e;
+                      border-radius: 10px;
+                      padding: 10px 14px;
+                      text-align: left;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-size: 8px;
+                        color: rgba(255, 255, 255, 0.4);
+                        margin-bottom: 3px;
+                      "
+                    >
+                      Телефон
+                    </div>
+                    <div style="font-size: 13px; color: #fff; font-weight: 600">
+                      +7 999 000 0001
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: #1c1c1e;
+                      border-radius: 10px;
+                      padding: 10px 14px;
+                      text-align: left;
+                      margin-bottom: 20px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-size: 8px;
+                        color: rgba(255, 255, 255, 0.4);
+                        margin-bottom: 3px;
+                      "
+                    >
+                      Пароль
+                    </div>
+                    <div style="font-size: 13px; color: #fff">••••••••</div>
+                  </div>
+                  <div
+                    style="
+                      background: var(--brand);
+                      border-radius: 10px;
+                      padding: 12px;
+                      font-size: 13px;
+                      font-weight: 800;
+                      color: #000;
+                    "
+                  >
+                    Войти
+                  </div>
                 </div>
-                <div style="background:#1c1c1e;border-radius:10px;padding:10px;text-align:center;">
-                  <div style="font-size:20px;">🚨</div>
-                  <div style="font-size:9px;color:#fff;margin-top:3px;font-weight:700;">Инцидент</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- МОЯ СМЕНА -->
+          <div class="phone-wrap">
+            <div class="phone-label">Моя смена (механик)</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-title">Моя смена</div>
+                  <div class="scr-badge">3 задачи</div>
+                </div>
+                <div style="padding: 8px 12px 4px">
+                  <div
+                    style="
+                      font-size: 9px;
+                      color: rgba(255, 255, 255, 0.4);
+                      margin-bottom: 6px;
+                    "
+                  >
+                    БЫСТРЫЕ ДЕЙСТВИЯ
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 6px;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    <div
+                      style="
+                        background: #1c1c1e;
+                        border-radius: 10px;
+                        padding: 10px;
+                        text-align: center;
+                      "
+                    >
+                      <div style="font-size: 20px">🔍</div>
+                      <div
+                        style="
+                          font-size: 9px;
+                          color: #fff;
+                          margin-top: 3px;
+                          font-weight: 700;
+                        "
+                      >
+                        Сканировать
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #1c1c1e;
+                        border-radius: 10px;
+                        padding: 10px;
+                        text-align: center;
+                      "
+                    >
+                      <div style="font-size: 20px">🚨</div>
+                      <div
+                        style="
+                          font-size: 9px;
+                          color: #fff;
+                          margin-top: 3px;
+                          font-weight: 700;
+                        "
+                      >
+                        Инцидент
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="section-hdr">АКТИВНЫЕ ЗАДАЧИ</div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(239, 68, 68, 0.2)"
+                  >
+                    🔧
+                  </div>
+                  <div>
+                    <div class="list-title">E-012: Не заряжается</div>
+                    <div class="list-sub">Критический · Сервисный наряд</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-red" style="font-size: 8px"
+                      >Срочно</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(245, 158, 11, 0.2)"
+                  >
+                    🛠️
+                  </div>
+                  <div>
+                    <div class="list-title">A-047: Плановое ТО</div>
+                    <div class="list-sub">ТО по расписанию</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-brand" style="font-size: 8px"
+                      >Сегодня</span
+                    >
+                  </div>
+                </div>
+                <div class="tab-bar">
+                  <div class="tab active">
+                    <span class="tab-icon">🏠</span>Смена
+                  </div>
+                  <div class="tab"><span class="tab-icon">🚲</span>Парк</div>
+                  <div class="tab">
+                    <span class="tab-icon">🚨</span>Инциденты
+                  </div>
+                  <div class="tab">
+                    <span class="tab-icon">⚙️</span>Операции
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="section-hdr">АКТИВНЫЕ ЗАДАЧИ</div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(239,68,68,.2);">🔧</div>
-              <div>
-                <div class="list-title">E-012: Не заряжается</div>
-                <div class="list-sub">Критический · Сервисный наряд</div>
-              </div>
-              <div class="list-right"><span class="badge badge-red" style="font-size:8px;">Срочно</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(245,158,11,.2);">🛠️</div>
-              <div>
-                <div class="list-title">A-047: Плановое ТО</div>
-                <div class="list-sub">ТО по расписанию</div>
-              </div>
-              <div class="list-right"><span class="badge badge-brand" style="font-size:8px;">Сегодня</span></div>
-            </div>
-            <div class="tab-bar">
-              <div class="tab active"><span class="tab-icon">🏠</span>Смена</div>
-              <div class="tab"><span class="tab-icon">🚲</span>Парк</div>
-              <div class="tab"><span class="tab-icon">🚨</span>Инциденты</div>
-              <div class="tab"><span class="tab-icon">⚙️</span>Операции</div>
-            </div>
           </div>
-        </div>
-      </div>
 
-      <!-- ПАРК ТЕХНИКИ -->
-      <div class="phone-wrap">
-        <div class="phone-label">Парк техники</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-title">Парк техники</div>
-            </div>
-            <div class="pill-row">
-              <div class="pill active">Все (67)</div>
-              <div class="pill inactive">Свободны (41)</div>
-              <div class="pill inactive">В аренде (23)</div>
-              <div class="pill inactive">ТО (3)</div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(34,197,94,.2);">🚲</div>
-              <div>
-                <div class="list-title">A-047 · Stels Navigator</div>
-                <div class="list-sub">Велосипед · В аренде</div>
-              </div>
-              <div class="list-right"><span class="badge badge-blue" style="font-size:8px;">В аренде</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(59,130,246,.2);">⚡</div>
-              <div>
-                <div class="list-title">E-012 · Giant Trance E</div>
-                <div class="list-sub">Электробайк · В аренде</div>
-              </div>
-              <div class="list-right"><span class="badge badge-blue" style="font-size:8px;">В аренде</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(245,158,11,.2);">🛴</div>
-              <div>
-                <div class="list-title">S-003 · Ninebot Max</div>
-                <div class="list-sub">Самокат · На ТО</div>
-              </div>
-              <div class="list-right"><span class="badge badge-yellow" style="font-size:8px;">ТО</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(107,114,128,.2);">🚲</div>
-              <div>
-                <div class="list-title">A-011 · Merida Crossway</div>
-                <div class="list-sub">Велосипед · Свободен</div>
-              </div>
-              <div class="list-right"><span class="badge badge-green" style="font-size:8px;">Свободен</span></div>
-            </div>
-            <div class="tab-bar">
-              <div class="tab"><span class="tab-icon">🏠</span>Смена</div>
-              <div class="tab active"><span class="tab-icon">🚲</span>Парк</div>
-              <div class="tab"><span class="tab-icon">🚨</span>Инциденты</div>
-              <div class="tab"><span class="tab-icon">⚙️</span>Операции</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ИНЦИДЕНТЫ МОБАЙЛ -->
-    <h3>🚨 Экраны инцидентов и ТО</h3>
-    <div class="phone-row">
-      <!-- Список инцидентов -->
-      <div class="phone-wrap">
-        <div class="phone-label">Список инцидентов</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-title">Инциденты</div>
-              <div style="color:rgba(255,255,255,.4);font-size:9px;">Обновлено 09:41</div>
-            </div>
-            <div class="pill-row">
-              <div class="pill active">Все</div>
-              <div class="pill inactive">Новые (2)</div>
-              <div class="pill inactive">В работе</div>
-              <div class="pill inactive">Устранены</div>
-            </div>
-            <div class="list-item" style="border-left:3px solid var(--red);">
-              <div class="list-icon" style="background:rgba(239,68,68,.15);">🔴</div>
-              <div style="flex:1;">
-                <div class="list-title">E-012: Не заряжается АКБ</div>
-                <div class="list-sub">Критический · Только что</div>
-              </div>
-              <div class="list-right"><span class="badge badge-yellow" style="font-size:8px;">Новый</span></div>
-            </div>
-            <div class="list-item" style="border-left:3px solid var(--yellow);">
-              <div class="list-icon" style="background:rgba(245,158,11,.15);">🟡</div>
-              <div style="flex:1;">
-                <div class="list-title">A-047: Спущена покрышка</div>
-                <div class="list-sub">Средний · 2 часа назад</div>
-              </div>
-              <div class="list-right"><span class="badge badge-blue" style="font-size:8px;">В работе</span></div>
-            </div>
-            <div class="list-item" style="border-left:3px solid var(--green);">
-              <div class="list-icon" style="background:rgba(34,197,94,.15);">🟢</div>
-              <div style="flex:1;">
-                <div class="list-title">S-003: Царапины</div>
-                <div class="list-sub">Низкий · Вчера</div>
-              </div>
-              <div class="list-right"><span class="badge badge-green" style="font-size:8px;">Устранён</span></div>
-            </div>
-            <div class="tab-bar">
-              <div class="tab"><span class="tab-icon">🏠</span>Смена</div>
-              <div class="tab"><span class="tab-icon">🚲</span>Парк</div>
-              <div class="tab active"><span class="tab-icon">🚨</span>Инциденты</div>
-              <div class="tab"><span class="tab-icon">⚙️</span>Операции</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Детали инцидента -->
-      <div class="phone-wrap">
-        <div class="phone-label">Детали инцидента</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-back">← Назад</div>
-              <div class="scr-title" style="font-size:13px;">E-012: Не заряжается АКБ</div>
-            </div>
-            <div style="padding:8px 12px;">
-              <div style="display:flex;gap:6px;margin-bottom:8px;">
-                <span class="badge badge-red">Критический</span>
-                <span class="badge badge-yellow">Новый</span>
-              </div>
-              <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:3px;">ОПИСАНИЕ</div>
-              <div style="font-size:11px;color:#fff;margin-bottom:10px;">Электробайк не набирает заряд при подключении. Индикатор мигает красным.</div>
-              <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:6px;">ФОТОГРАФИИ</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:10px;">
-                <div style="background:#2a2a2e;border-radius:6px;height:50px;display:flex;align-items:center;justify-content:center;font-size:16px;">📷</div>
-                <div style="background:#2a2a2e;border-radius:6px;height:50px;display:flex;align-items:center;justify-content:center;font-size:16px;">📷</div>
-                <div style="background:#1c1c1e;border-radius:6px;height:50px;display:flex;align-items:center;justify-content:center;font-size:12px;color:rgba(255,255,255,.3);">+ Фото</div>
-              </div>
-              <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:6px 10px;font-size:9px;color:var(--brand);margin-bottom:8px;">
-                📡 1 изменение ожидает синхронизации
-              </div>
-              <div style="background:var(--brand);border-radius:8px;padding:8px;text-align:center;font-size:11px;font-weight:800;color:#000;">Взять в работу →</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ТО -->
-      <div class="phone-wrap">
-        <div class="phone-label">Техническое обслуживание</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-title">Техобслуживание</div>
-            </div>
-            <div class="pill-row">
-              <div class="pill active">Все</div>
-              <div class="pill inactive">Плановое</div>
-              <div class="pill inactive">Ремонт</div>
-              <div class="pill inactive">Завершено</div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(59,130,246,.2);">📋</div>
-              <div style="flex:1;">
-                <div class="list-title">A-047: Плановое ТО</div>
-                <div class="list-sub">scheduled_maintenance · Назначено вам</div>
-              </div>
-              <div class="list-right"><span class="badge badge-yellow" style="font-size:8px;">В очереди</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(139,92,246,.2);">🔍</div>
-              <div style="flex:1;">
-                <div class="list-title">E-012: Инспекция после ремонта</div>
-                <div class="list-sub">inspection · Сегодня</div>
-              </div>
-              <div class="list-right"><span class="badge badge-blue" style="font-size:8px;">В работе</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(34,197,94,.2);">✅</div>
-              <div style="flex:1;">
-                <div class="list-title">S-003: Чистка и смазка</div>
-                <div class="list-sub">cleaning · Вчера</div>
-              </div>
-              <div class="list-right"><span class="badge badge-green" style="font-size:8px;">Завершено</span></div>
-            </div>
-            <div class="tab-bar">
-              <div class="tab"><span class="tab-icon">🏠</span>Смена</div>
-              <div class="tab"><span class="tab-icon">🚲</span>Парк</div>
-              <div class="tab"><span class="tab-icon">🚨</span>Инциденты</div>
-              <div class="tab active"><span class="tab-icon">⚙️</span>Операции</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- НАРЯДЫ И ДЕТАЛИ АКТИВА -->
-    <h3>🔧 Наряды и управление техникой</h3>
-    <div class="phone-row">
-      <!-- Наряды -->
-      <div class="phone-wrap">
-        <div class="phone-label">Сервисные наряды</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-back">← Операции</div>
-              <div class="scr-title" style="font-size:13px;">Наряды</div>
-            </div>
-            <div class="pill-row">
-              <div class="pill active">Все</div>
-              <div class="pill inactive">Новые</div>
-              <div class="pill inactive">В работе</div>
-              <div class="pill inactive">Готово</div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(239,68,68,.2);">🛠️</div>
-              <div style="flex:1;">
-                <div class="list-title">WO-0041: Замена камеры</div>
-                <div class="list-sub">A-047 · Иванов (мех.)</div>
-              </div>
-              <div class="list-right"><span class="badge badge-blue" style="font-size:8px;">В работе</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(245,158,11,.2);">⚡</div>
-              <div style="flex:1;">
-                <div class="list-title">WO-0040: Диагностика АКБ</div>
-                <div class="list-sub">E-012 · Не назначен</div>
-              </div>
-              <div class="list-right"><span class="badge badge-yellow" style="font-size:8px;">Черновик</span></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(34,197,94,.2);">✅</div>
-              <div style="flex:1;">
-                <div class="list-title">WO-0039: Регулировка тормозов</div>
-                <div class="list-sub">S-003 · Завершено вчера</div>
-              </div>
-              <div class="list-right"><span class="badge badge-green" style="font-size:8px;">Готово</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Карточка актива -->
-      <div class="phone-wrap">
-        <div class="phone-label">Карточка техники</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-back">← Парк</div>
-              <div class="scr-title" style="font-size:12px;">E-012 · Giant Trance E</div>
-            </div>
-            <div style="padding:8px 12px;">
-              <div style="display:flex;gap:6px;margin-bottom:8px;">
-                <span class="badge badge-blue">В аренде</span>
-                <span class="badge badge-brand">Электробайк</span>
-              </div>
-              <div style="background:#1c1c1e;border-radius:10px;padding:8px 10px;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <div><div style="font-size:8px;color:rgba(255,255,255,.4);">Заряд АКБ</div><div style="font-size:14px;font-weight:800;color:var(--green);">78%</div></div>
-                <div><div style="font-size:8px;color:rgba(255,255,255,.4);">Пробег</div><div style="font-size:14px;font-weight:800;color:#fff;">1 240 км</div></div>
-                <div><div style="font-size:8px;color:rgba(255,255,255,.4);">Аренд всего</div><div style="font-size:14px;font-weight:800;color:#fff;">342</div></div>
-                <div><div style="font-size:8px;color:rgba(255,255,255,.4);">Последнее ТО</div><div style="font-size:11px;font-weight:700;color:#fff;">2 мая 2026</div></div>
-              </div>
-              <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:6px;">УПРАВЛЕНИЕ ТРАНСПОРТОМ</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <div style="background:#1c1c1e;border-radius:8px;padding:8px;text-align:center;">
-                  <div style="font-size:16px;">🔒</div>
-                  <div style="font-size:9px;color:#fff;margin-top:2px;font-weight:600;">Заблокировать</div>
+          <!-- ПАРК ТЕХНИКИ -->
+          <div class="phone-wrap">
+            <div class="phone-label">Парк техники</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
                 </div>
-                <div style="background:#1c1c1e;border-radius:8px;padding:8px;text-align:center;">
-                  <div style="font-size:16px;">🔓</div>
-                  <div style="font-size:9px;color:#fff;margin-top:2px;font-weight:600;">Разблокировать</div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-title">Парк техники</div>
                 </div>
-                <div style="background:#1c1c1e;border-radius:8px;padding:8px;text-align:center;">
-                  <div style="font-size:16px;">🚨</div>
-                  <div style="font-size:9px;color:#fff;margin-top:2px;font-weight:600;">Включить сигн.</div>
+                <div class="pill-row">
+                  <div class="pill active">Все (67)</div>
+                  <div class="pill inactive">Свободны (41)</div>
+                  <div class="pill inactive">В аренде (23)</div>
+                  <div class="pill inactive">ТО (3)</div>
                 </div>
-                <div style="background:#1c1c1e;border-radius:8px;padding:8px;text-align:center;">
-                  <div style="font-size:16px;">🔕</div>
-                  <div style="font-size:9px;color:#fff;margin-top:2px;font-weight:600;">Выключить сигн.</div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(34, 197, 94, 0.2)"
+                  >
+                    🚲
+                  </div>
+                  <div>
+                    <div class="list-title">A-047 · Stels Navigator</div>
+                    <div class="list-sub">Велосипед · В аренде</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-blue" style="font-size: 8px"
+                      >В аренде</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(59, 130, 246, 0.2)"
+                  >
+                    ⚡
+                  </div>
+                  <div>
+                    <div class="list-title">E-012 · Giant Trance E</div>
+                    <div class="list-sub">Электробайк · В аренде</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-blue" style="font-size: 8px"
+                      >В аренде</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(245, 158, 11, 0.2)"
+                  >
+                    🛴
+                  </div>
+                  <div>
+                    <div class="list-title">S-003 · Ninebot Max</div>
+                    <div class="list-sub">Самокат · На ТО</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-yellow" style="font-size: 8px"
+                      >ТО</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(107, 114, 128, 0.2)"
+                  >
+                    🚲
+                  </div>
+                  <div>
+                    <div class="list-title">A-011 · Merida Crossway</div>
+                    <div class="list-sub">Велосипед · Свободен</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-green" style="font-size: 8px"
+                      >Свободен</span
+                    >
+                  </div>
+                </div>
+                <div class="tab-bar">
+                  <div class="tab"><span class="tab-icon">🏠</span>Смена</div>
+                  <div class="tab active">
+                    <span class="tab-icon">🚲</span>Парк
+                  </div>
+                  <div class="tab">
+                    <span class="tab-icon">🚨</span>Инциденты
+                  </div>
+                  <div class="tab">
+                    <span class="tab-icon">⚙️</span>Операции
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Склад запчастей -->
-      <div class="phone-wrap">
-        <div class="phone-label">Склад запчастей</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-back">← Операции</div>
-              <div class="scr-title" style="font-size:13px;">Запчасти</div>
+        <!-- ИНЦИДЕНТЫ МОБАЙЛ -->
+        <h3>🚨 Экраны инцидентов и ТО</h3>
+        <div class="phone-row">
+          <!-- Список инцидентов -->
+          <div class="phone-wrap">
+            <div class="phone-label">Список инцидентов</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-title">Инциденты</div>
+                  <div style="color: rgba(255, 255, 255, 0.4); font-size: 9px">
+                    Обновлено 09:41
+                  </div>
+                </div>
+                <div class="pill-row">
+                  <div class="pill active">Все</div>
+                  <div class="pill inactive">Новые (2)</div>
+                  <div class="pill inactive">В работе</div>
+                  <div class="pill inactive">Устранены</div>
+                </div>
+                <div
+                  class="list-item"
+                  style="border-left: 3px solid var(--red)"
+                >
+                  <div
+                    class="list-icon"
+                    style="background: rgba(239, 68, 68, 0.15)"
+                  >
+                    🔴
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">E-012: Не заряжается АКБ</div>
+                    <div class="list-sub">Критический · Только что</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-yellow" style="font-size: 8px"
+                      >Новый</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="list-item"
+                  style="border-left: 3px solid var(--yellow)"
+                >
+                  <div
+                    class="list-icon"
+                    style="background: rgba(245, 158, 11, 0.15)"
+                  >
+                    🟡
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">A-047: Спущена покрышка</div>
+                    <div class="list-sub">Средний · 2 часа назад</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-blue" style="font-size: 8px"
+                      >В работе</span
+                    >
+                  </div>
+                </div>
+                <div
+                  class="list-item"
+                  style="border-left: 3px solid var(--green)"
+                >
+                  <div
+                    class="list-icon"
+                    style="background: rgba(34, 197, 94, 0.15)"
+                  >
+                    🟢
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">S-003: Царапины</div>
+                    <div class="list-sub">Низкий · Вчера</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-green" style="font-size: 8px"
+                      >Устранён</span
+                    >
+                  </div>
+                </div>
+                <div class="tab-bar">
+                  <div class="tab"><span class="tab-icon">🏠</span>Смена</div>
+                  <div class="tab"><span class="tab-icon">🚲</span>Парк</div>
+                  <div class="tab active">
+                    <span class="tab-icon">🚨</span>Инциденты
+                  </div>
+                  <div class="tab">
+                    <span class="tab-icon">⚙️</span>Операции
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(59,130,246,.2);">🔵</div>
-              <div style="flex:1;">
-                <div class="list-title">Камера 26" Michelin</div>
-                <div class="list-sub">Шины и камеры</div>
-              </div>
-              <div class="list-right">
-                <div class="list-price">12 шт</div>
-                <div class="list-time">290 ₽/шт</div>
+          </div>
+
+          <!-- Детали инцидента -->
+          <div class="phone-wrap">
+            <div class="phone-label">Детали инцидента</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-back">← Назад</div>
+                  <div class="scr-title" style="font-size: 13px">
+                    E-012: Не заряжается АКБ
+                  </div>
+                </div>
+                <div style="padding: 8px 12px">
+                  <div style="display: flex; gap: 6px; margin-bottom: 8px">
+                    <span class="badge badge-red">Критический</span>
+                    <span class="badge badge-yellow">Новый</span>
+                  </div>
+                  <div
+                    style="
+                      font-size: 9px;
+                      color: rgba(255, 255, 255, 0.4);
+                      margin-bottom: 3px;
+                    "
+                  >
+                    ОПИСАНИЕ
+                  </div>
+                  <div
+                    style="font-size: 11px; color: #fff; margin-bottom: 10px"
+                  >
+                    Электробайк не набирает заряд при подключении. Индикатор
+                    мигает красным.
+                  </div>
+                  <div
+                    style="
+                      font-size: 9px;
+                      color: rgba(255, 255, 255, 0.4);
+                      margin-bottom: 6px;
+                    "
+                  >
+                    ФОТОГРАФИИ
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr 1fr;
+                      gap: 4px;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    <div
+                      style="
+                        background: #2a2a2e;
+                        border-radius: 6px;
+                        height: 50px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                      "
+                    >
+                      📷
+                    </div>
+                    <div
+                      style="
+                        background: #2a2a2e;
+                        border-radius: 6px;
+                        height: 50px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 16px;
+                      "
+                    >
+                      📷
+                    </div>
+                    <div
+                      style="
+                        background: #1c1c1e;
+                        border-radius: 6px;
+                        height: 50px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        color: rgba(255, 255, 255, 0.3);
+                      "
+                    >
+                      + Фото
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: rgba(245, 158, 11, 0.1);
+                      border: 1px solid rgba(245, 158, 11, 0.3);
+                      border-radius: 8px;
+                      padding: 6px 10px;
+                      font-size: 9px;
+                      color: var(--brand);
+                      margin-bottom: 8px;
+                    "
+                  >
+                    📡 1 изменение ожидает синхронизации
+                  </div>
+                  <div
+                    style="
+                      background: var(--brand);
+                      border-radius: 8px;
+                      padding: 8px;
+                      text-align: center;
+                      font-size: 11px;
+                      font-weight: 800;
+                      color: #000;
+                    "
+                  >
+                    Взять в работу →
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(245,158,11,.2);">🟡</div>
-              <div style="flex:1;">
-                <div class="list-title">Тормозные колодки V-brake</div>
-                <div class="list-sub">Тормозная система</div>
-              </div>
-              <div class="list-right">
-                <div class="list-price">5 шт</div>
-                <div class="list-time">180 ₽/шт</div>
+          </div>
+
+          <!-- ТО -->
+          <div class="phone-wrap">
+            <div class="phone-label">Техническое обслуживание</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-title">Техобслуживание</div>
+                </div>
+                <div class="pill-row">
+                  <div class="pill active">Все</div>
+                  <div class="pill inactive">Плановое</div>
+                  <div class="pill inactive">Ремонт</div>
+                  <div class="pill inactive">Завершено</div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(59, 130, 246, 0.2)"
+                  >
+                    📋
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">A-047: Плановое ТО</div>
+                    <div class="list-sub">
+                      scheduled_maintenance · Назначено вам
+                    </div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-yellow" style="font-size: 8px"
+                      >В очереди</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(139, 92, 246, 0.2)"
+                  >
+                    🔍
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">E-012: Инспекция после ремонта</div>
+                    <div class="list-sub">inspection · Сегодня</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-blue" style="font-size: 8px"
+                      >В работе</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(34, 197, 94, 0.2)"
+                  >
+                    ✅
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">S-003: Чистка и смазка</div>
+                    <div class="list-sub">cleaning · Вчера</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-green" style="font-size: 8px"
+                      >Завершено</span
+                    >
+                  </div>
+                </div>
+                <div class="tab-bar">
+                  <div class="tab"><span class="tab-icon">🏠</span>Смена</div>
+                  <div class="tab"><span class="tab-icon">🚲</span>Парк</div>
+                  <div class="tab">
+                    <span class="tab-icon">🚨</span>Инциденты
+                  </div>
+                  <div class="tab active">
+                    <span class="tab-icon">⚙️</span>Операции
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(239,68,68,.2);">🔴</div>
-              <div style="flex:1;">
-                <div class="list-title">АКБ 36В Samsung SDI</div>
-                <div class="list-sub">Электросистема</div>
+          </div>
+        </div>
+
+        <!-- НАРЯДЫ И ДЕТАЛИ АКТИВА -->
+        <h3>🔧 Наряды и управление техникой</h3>
+        <div class="phone-row">
+          <!-- Наряды -->
+          <div class="phone-wrap">
+            <div class="phone-label">Сервисные наряды</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-back">← Операции</div>
+                  <div class="scr-title" style="font-size: 13px">Наряды</div>
+                </div>
+                <div class="pill-row">
+                  <div class="pill active">Все</div>
+                  <div class="pill inactive">Новые</div>
+                  <div class="pill inactive">В работе</div>
+                  <div class="pill inactive">Готово</div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(239, 68, 68, 0.2)"
+                  >
+                    🛠️
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">WO-0041: Замена камеры</div>
+                    <div class="list-sub">A-047 · Иванов (мех.)</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-blue" style="font-size: 8px"
+                      >В работе</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(245, 158, 11, 0.2)"
+                  >
+                    ⚡
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">WO-0040: Диагностика АКБ</div>
+                    <div class="list-sub">E-012 · Не назначен</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-yellow" style="font-size: 8px"
+                      >Черновик</span
+                    >
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(34, 197, 94, 0.2)"
+                  >
+                    ✅
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">WO-0039: Регулировка тормозов</div>
+                    <div class="list-sub">S-003 · Завершено вчера</div>
+                  </div>
+                  <div class="list-right">
+                    <span class="badge badge-green" style="font-size: 8px"
+                      >Готово</span
+                    >
+                  </div>
+                </div>
               </div>
-              <div class="list-right">
-                <div class="list-price" style="color:var(--red);">1 шт</div>
-                <div class="list-time">8 500 ₽/шт</div>
+            </div>
+          </div>
+
+          <!-- Карточка актива -->
+          <div class="phone-wrap">
+            <div class="phone-label">Карточка техники</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-back">← Парк</div>
+                  <div class="scr-title" style="font-size: 12px">
+                    E-012 · Giant Trance E
+                  </div>
+                </div>
+                <div style="padding: 8px 12px">
+                  <div style="display: flex; gap: 6px; margin-bottom: 8px">
+                    <span class="badge badge-blue">В аренде</span>
+                    <span class="badge badge-brand">Электробайк</span>
+                  </div>
+                  <div
+                    style="
+                      background: #1c1c1e;
+                      border-radius: 10px;
+                      padding: 8px 10px;
+                      margin-bottom: 8px;
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 6px;
+                    "
+                  >
+                    <div>
+                      <div
+                        style="font-size: 8px; color: rgba(255, 255, 255, 0.4)"
+                      >
+                        Заряд АКБ
+                      </div>
+                      <div
+                        style="
+                          font-size: 14px;
+                          font-weight: 800;
+                          color: var(--green);
+                        "
+                      >
+                        78%
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style="font-size: 8px; color: rgba(255, 255, 255, 0.4)"
+                      >
+                        Пробег
+                      </div>
+                      <div
+                        style="font-size: 14px; font-weight: 800; color: #fff"
+                      >
+                        1 240 км
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style="font-size: 8px; color: rgba(255, 255, 255, 0.4)"
+                      >
+                        Аренд всего
+                      </div>
+                      <div
+                        style="font-size: 14px; font-weight: 800; color: #fff"
+                      >
+                        342
+                      </div>
+                    </div>
+                    <div>
+                      <div
+                        style="font-size: 8px; color: rgba(255, 255, 255, 0.4)"
+                      >
+                        Последнее ТО
+                      </div>
+                      <div
+                        style="font-size: 11px; font-weight: 700; color: #fff"
+                      >
+                        2 мая 2026
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      font-size: 9px;
+                      color: rgba(255, 255, 255, 0.4);
+                      margin-bottom: 6px;
+                    "
+                  >
+                    УПРАВЛЕНИЕ ТРАНСПОРТОМ
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 6px;
+                    "
+                  >
+                    <div
+                      style="
+                        background: #1c1c1e;
+                        border-radius: 8px;
+                        padding: 8px;
+                        text-align: center;
+                      "
+                    >
+                      <div style="font-size: 16px">🔒</div>
+                      <div
+                        style="
+                          font-size: 9px;
+                          color: #fff;
+                          margin-top: 2px;
+                          font-weight: 600;
+                        "
+                      >
+                        Заблокировать
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #1c1c1e;
+                        border-radius: 8px;
+                        padding: 8px;
+                        text-align: center;
+                      "
+                    >
+                      <div style="font-size: 16px">🔓</div>
+                      <div
+                        style="
+                          font-size: 9px;
+                          color: #fff;
+                          margin-top: 2px;
+                          font-weight: 600;
+                        "
+                      >
+                        Разблокировать
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #1c1c1e;
+                        border-radius: 8px;
+                        padding: 8px;
+                        text-align: center;
+                      "
+                    >
+                      <div style="font-size: 16px">🚨</div>
+                      <div
+                        style="
+                          font-size: 9px;
+                          color: #fff;
+                          margin-top: 2px;
+                          font-weight: 600;
+                        "
+                      >
+                        Включить сигн.
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        background: #1c1c1e;
+                        border-radius: 8px;
+                        padding: 8px;
+                        text-align: center;
+                      "
+                    >
+                      <div style="font-size: 16px">🔕</div>
+                      <div
+                        style="
+                          font-size: 9px;
+                          color: #fff;
+                          margin-top: 2px;
+                          font-weight: 600;
+                        "
+                      >
+                        Выключить сигн.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Склад запчастей -->
+          <div class="phone-wrap">
+            <div class="phone-label">Склад запчастей</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-back">← Операции</div>
+                  <div class="scr-title" style="font-size: 13px">Запчасти</div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(59, 130, 246, 0.2)"
+                  >
+                    🔵
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Камера 26" Michelin</div>
+                    <div class="list-sub">Шины и камеры</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">12 шт</div>
+                    <div class="list-time">290 ₽/шт</div>
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(245, 158, 11, 0.2)"
+                  >
+                    🟡
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Тормозные колодки V-brake</div>
+                    <div class="list-sub">Тормозная система</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">5 шт</div>
+                    <div class="list-time">180 ₽/шт</div>
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(239, 68, 68, 0.2)"
+                  >
+                    🔴
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">АКБ 36В Samsung SDI</div>
+                    <div class="list-sub">Электросистема</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price" style="color: var(--red)">1 шт</div>
+                    <div class="list-time">8 500 ₽/шт</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-
-<!-- ═══════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════
      4. КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ
 ═══════════════════════════════════════════════ -->
-<section id="client-app">
-  <div class="container">
-    <h2><span class="section-icon">👤</span>Клиентское приложение</h2>
-    <p class="section-sub">Что видит клиент на своём телефоне: каталог, бронирование, активная аренда, история и оплата в рублях.</p>
+    <section id="client-app">
+      <div class="container">
+        <h2><span class="section-icon">👤</span>Клиентское приложение</h2>
+        <p class="section-sub">
+          Что видит клиент на своём телефоне: каталог, бронирование, активная
+          аренда, история и оплата в рублях.
+        </p>
 
-    <div class="phone-row">
-      <!-- Каталог -->
-      <div class="phone-wrap">
-        <div class="phone-label">Каталог техники</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-title">Выбрать транспорт</div>
-            </div>
-            <div class="pill-row">
-              <div class="pill active">Все (41)</div>
-              <div class="pill inactive">Велосипеды</div>
-              <div class="pill inactive">E-байки</div>
-              <div class="pill inactive">Самокаты</div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(34,197,94,.2);font-size:20px;">🚲</div>
-              <div style="flex:1;">
-                <div class="list-title">Велосипед городской</div>
-                <div class="list-sub">Скоростной · Корзина</div>
-              </div>
-              <div class="list-right">
-                <div class="list-price">200 ₽/час</div>
-                <div class="list-time">Свободен</div>
-              </div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(59,130,246,.2);font-size:20px;">⚡</div>
-              <div style="flex:1;">
-                <div class="list-title">Электровелосипед</div>
-                <div class="list-sub">Дальность 80 км · 36В</div>
-              </div>
-              <div class="list-right">
-                <div class="list-price">450 ₽/час</div>
-                <div class="list-time">Свободен</div>
-              </div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(139,92,246,.2);font-size:20px;">🛴</div>
-              <div style="flex:1;">
-                <div class="list-title">Электросамокат</div>
-                <div class="list-sub">Max 25 км/ч · Складной</div>
-              </div>
-              <div class="list-right">
-                <div class="list-price">300 ₽/час</div>
-                <div class="list-time">Свободен</div>
-              </div>
-            </div>
-            <div class="tab-bar">
-              <div class="tab active"><span class="tab-icon">🚲</span>Каталог</div>
-              <div class="tab"><span class="tab-icon">📋</span>Мои аренды</div>
-              <div class="tab"><span class="tab-icon">👤</span>Профиль</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Активная аренда -->
-      <div class="phone-wrap">
-        <div class="phone-label">Активная аренда</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-back">← Назад</div>
-              <div class="scr-title" style="font-size:13px;">Аренда #RA-2847</div>
-            </div>
-            <div style="padding:10px 12px;">
-              <div style="background:linear-gradient(135deg,#1a3a1a,#0d2d0d);border-radius:12px;padding:16px;text-align:center;margin-bottom:10px;">
-                <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:6px;">ВРЕМЯ АРЕНДЫ</div>
-                <div style="font-size:32px;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums;">01:23:47</div>
-                <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:4px;">Начало: 08:17</div>
-              </div>
-              <div style="background:#1c1c1e;border-radius:10px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-                <div style="text-align:center;">
-                  <div style="font-size:8px;color:rgba(255,255,255,.4);">ТЕКУЩАЯ СУММА</div>
-                  <div style="font-size:20px;font-weight:800;color:var(--brand);">277 ₽</div>
+        <div class="phone-row">
+          <!-- Каталог -->
+          <div class="phone-wrap">
+            <div class="phone-label">Каталог техники</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
                 </div>
-                <div style="text-align:center;">
-                  <div style="font-size:8px;color:rgba(255,255,255,.4);">ТАРИФ</div>
-                  <div style="font-size:14px;font-weight:700;color:#fff;">200 ₽/час</div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-title">Выбрать транспорт</div>
+                </div>
+                <div class="pill-row">
+                  <div class="pill active">Все (41)</div>
+                  <div class="pill inactive">Велосипеды</div>
+                  <div class="pill inactive">E-байки</div>
+                  <div class="pill inactive">Самокаты</div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(34, 197, 94, 0.2); font-size: 20px"
+                  >
+                    🚲
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Велосипед городской</div>
+                    <div class="list-sub">Скоростной · Корзина</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">200 ₽/час</div>
+                    <div class="list-time">Свободен</div>
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(59, 130, 246, 0.2); font-size: 20px"
+                  >
+                    ⚡
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Электровелосипед</div>
+                    <div class="list-sub">Дальность 80 км · 36В</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">450 ₽/час</div>
+                    <div class="list-time">Свободен</div>
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(139, 92, 246, 0.2); font-size: 20px"
+                  >
+                    🛴
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Электросамокат</div>
+                    <div class="list-sub">Max 25 км/ч · Складной</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">300 ₽/час</div>
+                    <div class="list-time">Свободен</div>
+                  </div>
+                </div>
+                <div class="tab-bar">
+                  <div class="tab active">
+                    <span class="tab-icon">🚲</span>Каталог
+                  </div>
+                  <div class="tab">
+                    <span class="tab-icon">📋</span>Мои аренды
+                  </div>
+                  <div class="tab"><span class="tab-icon">👤</span>Профиль</div>
                 </div>
               </div>
-              <div style="background:var(--red);border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:800;color:#fff;">Завершить аренду</div>
+            </div>
+          </div>
+
+          <!-- Активная аренда -->
+          <div class="phone-wrap">
+            <div class="phone-label">Активная аренда</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-back">← Назад</div>
+                  <div class="scr-title" style="font-size: 13px">
+                    Аренда #RA-2847
+                  </div>
+                </div>
+                <div style="padding: 10px 12px">
+                  <div
+                    style="
+                      background: linear-gradient(135deg, #1a3a1a, #0d2d0d);
+                      border-radius: 12px;
+                      padding: 16px;
+                      text-align: center;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-size: 12px;
+                        color: rgba(255, 255, 255, 0.5);
+                        margin-bottom: 6px;
+                      "
+                    >
+                      ВРЕМЯ АРЕНДЫ
+                    </div>
+                    <div
+                      style="
+                        font-size: 32px;
+                        font-weight: 900;
+                        color: var(--green);
+                        font-variant-numeric: tabular-nums;
+                      "
+                    >
+                      01:23:47
+                    </div>
+                    <div
+                      style="
+                        font-size: 12px;
+                        color: rgba(255, 255, 255, 0.6);
+                        margin-top: 4px;
+                      "
+                    >
+                      Начало: 08:17
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: #1c1c1e;
+                      border-radius: 10px;
+                      padding: 10px;
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 8px;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    <div style="text-align: center">
+                      <div
+                        style="font-size: 8px; color: rgba(255, 255, 255, 0.4)"
+                      >
+                        ТЕКУЩАЯ СУММА
+                      </div>
+                      <div
+                        style="
+                          font-size: 20px;
+                          font-weight: 800;
+                          color: var(--brand);
+                        "
+                      >
+                        277 ₽
+                      </div>
+                    </div>
+                    <div style="text-align: center">
+                      <div
+                        style="font-size: 8px; color: rgba(255, 255, 255, 0.4)"
+                      >
+                        ТАРИФ
+                      </div>
+                      <div
+                        style="font-size: 14px; font-weight: 700; color: #fff"
+                      >
+                        200 ₽/час
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      background: var(--red);
+                      border-radius: 10px;
+                      padding: 12px;
+                      text-align: center;
+                      font-size: 13px;
+                      font-weight: 800;
+                      color: #fff;
+                    "
+                  >
+                    Завершить аренду
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- История аренд -->
+          <div class="phone-wrap">
+            <div class="phone-label">История аренд</div>
+            <div class="phone">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="sb">
+                  <span class="sb-time">09:41</span
+                  ><span class="sb-icons">●●● ▲ 🔋</span>
+                </div>
+                <div class="scr-header" style="background: #1c1c1e">
+                  <div class="scr-title">Мои аренды</div>
+                </div>
+                <div class="section-hdr">АКТИВНА СЕЙЧАС</div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="background: rgba(34, 197, 94, 0.2); font-size: 18px"
+                  >
+                    🚲
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Велосипед городской</div>
+                    <div class="list-sub">#RA-2847 · 01:23:47</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">277 ₽</div>
+                    <div class="list-time">В аренде</div>
+                  </div>
+                </div>
+                <div class="section-hdr">ИСТОРИЯ</div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="
+                      background: rgba(107, 114, 128, 0.2);
+                      font-size: 18px;
+                    "
+                  >
+                    ⚡
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Электровелосипед</div>
+                    <div class="list-sub">#RA-2841 · 3 часа</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">1 350 ₽</div>
+                    <div class="list-time">Вчера</div>
+                  </div>
+                </div>
+                <div class="list-item">
+                  <div
+                    class="list-icon"
+                    style="
+                      background: rgba(107, 114, 128, 0.2);
+                      font-size: 18px;
+                    "
+                  >
+                    🛴
+                  </div>
+                  <div style="flex: 1">
+                    <div class="list-title">Самокат</div>
+                    <div class="list-sub">#RA-2839 · 45 мин</div>
+                  </div>
+                  <div class="list-right">
+                    <div class="list-price">225 ₽</div>
+                    <div class="list-time">28 апр</div>
+                  </div>
+                </div>
+                <div class="tab-bar">
+                  <div class="tab"><span class="tab-icon">🚲</span>Каталог</div>
+                  <div class="tab active">
+                    <span class="tab-icon">📋</span>Мои аренды
+                  </div>
+                  <div class="tab"><span class="tab-icon">👤</span>Профиль</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- История аренд -->
-      <div class="phone-wrap">
-        <div class="phone-label">История аренд</div>
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-            <div class="scr-header" style="background:#1c1c1e;">
-              <div class="scr-title">Мои аренды</div>
-            </div>
-            <div class="section-hdr">АКТИВНА СЕЙЧАС</div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(34,197,94,.2);font-size:18px;">🚲</div>
-              <div style="flex:1;">
-                <div class="list-title">Велосипед городской</div>
-                <div class="list-sub">#RA-2847 · 01:23:47</div>
-              </div>
-              <div class="list-right"><div class="list-price">277 ₽</div><div class="list-time">В аренде</div></div>
-            </div>
-            <div class="section-hdr">ИСТОРИЯ</div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(107,114,128,.2);font-size:18px;">⚡</div>
-              <div style="flex:1;">
-                <div class="list-title">Электровелосипед</div>
-                <div class="list-sub">#RA-2841 · 3 часа</div>
-              </div>
-              <div class="list-right"><div class="list-price">1 350 ₽</div><div class="list-time">Вчера</div></div>
-            </div>
-            <div class="list-item">
-              <div class="list-icon" style="background:rgba(107,114,128,.2);font-size:18px;">🛴</div>
-              <div style="flex:1;">
-                <div class="list-title">Самокат</div>
-                <div class="list-sub">#RA-2839 · 45 мин</div>
-              </div>
-              <div class="list-right"><div class="list-price">225 ₽</div><div class="list-time">28 апр</div></div>
-            </div>
-            <div class="tab-bar">
-              <div class="tab"><span class="tab-icon">🚲</span>Каталог</div>
-              <div class="tab active"><span class="tab-icon">📋</span>Мои аренды</div>
-              <div class="tab"><span class="tab-icon">👤</span>Профиль</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════
      5. ОФЛАЙН-РЕЖИМ
 ═══════════════════════════════════════════════ -->
-<section id="offline">
-  <div class="container">
-    <h2><span class="section-icon">📡</span>Офлайн-режим и синхронизация</h2>
-    <p class="section-sub">Механик работает в зоне без сети — приложение продолжает работать. Все действия сохраняются и отправляются автоматически при восстановлении связи.</p>
+    <section id="offline">
+      <div class="container">
+        <h2>
+          <span class="section-icon">📡</span>Офлайн-режим и синхронизация
+        </h2>
+        <p class="section-sub">
+          Механик работает в зоне без сети — приложение продолжает работать. Все
+          действия сохраняются и отправляются автоматически при восстановлении
+          связи.
+        </p>
 
-    <div class="grid2" style="margin-bottom:32px;">
-      <div>
-        <h3 class="sub">Как это работает</h3>
-        <div class="steps">
-          <div class="step">
-            <div class="step-num">1</div>
-            <div class="step-body">
-              <h4>Действие без сети</h4>
-              <p>Механик меняет статус инцидента или создаёт наряд — без интернета. Приложение сохраняет действие локально.</p>
+        <div class="grid2" style="margin-bottom: 32px">
+          <div>
+            <h3 class="sub">Как это работает</h3>
+            <div class="steps">
+              <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-body">
+                  <h4>Действие без сети</h4>
+                  <p>
+                    Механик меняет статус инцидента или создаёт наряд — без
+                    интернета. Приложение сохраняет действие локально.
+                  </p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-body">
+                  <h4>Баннер ожидания</h4>
+                  <p>
+                    На экране появляется баннер: «1 изменение ожидает
+                    синхронизации». Механик видит, что данные ещё не отправлены.
+                  </p>
+                </div>
+              </div>
+              <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-body">
+                  <h4>Авто-синхронизация</h4>
+                  <p>
+                    При появлении интернета — данные автоматически уходят на
+                    сервер. Никаких ручных действий не нужно.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="step">
-            <div class="step-num">2</div>
-            <div class="step-body">
-              <h4>Баннер ожидания</h4>
-              <p>На экране появляется баннер: «1 изменение ожидает синхронизации». Механик видит, что данные ещё не отправлены.</p>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num">3</div>
-            <div class="step-body">
-              <h4>Авто-синхронизация</h4>
-              <p>При появлении интернета — данные автоматически уходят на сервер. Никаких ручных действий не нужно.</p>
+          <div>
+            <h3 class="sub">Экран очереди синхронизации</h3>
+            <div style="display: flex; justify-content: center">
+              <div class="phone" style="width: 200px">
+                <div class="phone-notch"></div>
+                <div class="phone-screen">
+                  <div class="sb">
+                    <span class="sb-time">09:41</span
+                    ><span class="sb-icons">●●● ▲ 🔋</span>
+                  </div>
+                  <div class="scr-header" style="background: #1c1c1e">
+                    <div class="scr-title" style="font-size: 13px">
+                      Очередь синхронизации
+                    </div>
+                  </div>
+                  <div class="pill-row">
+                    <div class="pill active">Все (4)</div>
+                    <div class="pill inactive">Ожидает (2)</div>
+                    <div class="pill inactive">Ошибка (1)</div>
+                    <div class="pill inactive">Готово (1)</div>
+                  </div>
+                  <!-- Failed item -->
+                  <div
+                    class="queue-item"
+                    style="border-left: 3px solid var(--red)"
+                  >
+                    <div class="qi-top">
+                      <div class="qi-dot" style="background: var(--red)"></div>
+                      <div class="qi-action">Смена статуса инцидента</div>
+                      <div
+                        class="qi-badge"
+                        style="
+                          background: rgba(239, 68, 68, 0.2);
+                          color: var(--red);
+                        "
+                      >
+                        Ошибка
+                      </div>
+                    </div>
+                    <div class="qi-meta">E-012 · Попыток: 3 · 2 мин назад</div>
+                    <div class="qi-btns">
+                      <div
+                        class="qi-btn"
+                        style="
+                          background: rgba(59, 130, 246, 0.2);
+                          color: var(--blue);
+                        "
+                      >
+                        ↺ Повторить
+                      </div>
+                      <div
+                        class="qi-btn"
+                        style="
+                          background: rgba(239, 68, 68, 0.1);
+                          color: var(--red);
+                        "
+                      >
+                        ✕ Отменить
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Pending item -->
+                  <div
+                    class="queue-item"
+                    style="border-left: 3px solid var(--yellow)"
+                  >
+                    <div class="qi-top">
+                      <div
+                        class="qi-dot"
+                        style="background: var(--yellow)"
+                      ></div>
+                      <div class="qi-action">Обновление наряда WO-0041</div>
+                      <div
+                        class="qi-badge"
+                        style="
+                          background: rgba(245, 158, 11, 0.2);
+                          color: var(--yellow);
+                        "
+                      >
+                        Ожидает
+                      </div>
+                    </div>
+                    <div class="qi-meta">A-047 · Только что</div>
+                  </div>
+                  <!-- Completed with countdown -->
+                  <div
+                    class="queue-item"
+                    style="border-left: 3px solid var(--green); opacity: 0.7"
+                  >
+                    <div class="qi-top">
+                      <div
+                        class="qi-dot"
+                        style="background: var(--green)"
+                      ></div>
+                      <div class="qi-action">Создан инцидент S-003</div>
+                      <div
+                        class="qi-badge"
+                        style="
+                          background: rgba(34, 197, 94, 0.2);
+                          color: var(--green);
+                        "
+                      >
+                        Отправлено
+                      </div>
+                    </div>
+                    <div class="qi-meta">
+                      Очистка через 22 с · нажмите чтобы закрепить
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div>
-        <h3 class="sub">Экран очереди синхронизации</h3>
-        <div style="display:flex;justify-content:center;">
-          <div class="phone" style="width:200px;">
-            <div class="phone-notch"></div>
-            <div class="phone-screen">
-              <div class="sb"><span class="sb-time">09:41</span><span class="sb-icons">●●● ▲ 🔋</span></div>
-              <div class="scr-header" style="background:#1c1c1e;">
-                <div class="scr-title" style="font-size:13px;">Очередь синхронизации</div>
-              </div>
-              <div class="pill-row">
-                <div class="pill active">Все (4)</div>
-                <div class="pill inactive">Ожидает (2)</div>
-                <div class="pill inactive">Ошибка (1)</div>
-                <div class="pill inactive">Готово (1)</div>
-              </div>
-              <!-- Failed item -->
-              <div class="queue-item" style="border-left:3px solid var(--red);">
-                <div class="qi-top">
-                  <div class="qi-dot" style="background:var(--red);"></div>
-                  <div class="qi-action">Смена статуса инцидента</div>
-                  <div class="qi-badge" style="background:rgba(239,68,68,.2);color:var(--red);">Ошибка</div>
-                </div>
-                <div class="qi-meta">E-012 · Попыток: 3 · 2 мин назад</div>
-                <div class="qi-btns">
-                  <div class="qi-btn" style="background:rgba(59,130,246,.2);color:var(--blue);">↺ Повторить</div>
-                  <div class="qi-btn" style="background:rgba(239,68,68,.1);color:var(--red);">✕ Отменить</div>
-                </div>
-              </div>
-              <!-- Pending item -->
-              <div class="queue-item" style="border-left:3px solid var(--yellow);">
-                <div class="qi-top">
-                  <div class="qi-dot" style="background:var(--yellow);"></div>
-                  <div class="qi-action">Обновление наряда WO-0041</div>
-                  <div class="qi-badge" style="background:rgba(245,158,11,.2);color:var(--yellow);">Ожидает</div>
-                </div>
-                <div class="qi-meta">A-047 · Только что</div>
-              </div>
-              <!-- Completed with countdown -->
-              <div class="queue-item" style="border-left:3px solid var(--green);opacity:.7;">
-                <div class="qi-top">
-                  <div class="qi-dot" style="background:var(--green);"></div>
-                  <div class="qi-action">Создан инцидент S-003</div>
-                  <div class="qi-badge" style="background:rgba(34,197,94,.2);color:var(--green);">Отправлено</div>
-                </div>
-                <div class="qi-meta">Очистка через 22 с · нажмите чтобы закрепить</div>
-              </div>
-            </div>
+
+        <div class="grid3">
+          <div class="card">
+            <div class="card-icon">🔄</div>
+            <h4>Авто-повтор при ошибке</h4>
+            <p>
+              Если сервер временно недоступен — приложение само повторит
+              попытку. Механик видит счётчик попыток.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">📌</div>
+            <h4>Закрепление записей</h4>
+            <p>
+              Нажатие на отправленный элемент фиксирует его в списке — он не
+              исчезнет автоматически, пока не решите.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">↺</div>
+            <h4>Повторить все сразу</h4>
+            <p>
+              Кнопка «Повторить N с ошибкой» отправляет все проблемные действия
+              разом при восстановлении сети.
+            </p>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="grid3">
-      <div class="card">
-        <div class="card-icon">🔄</div>
-        <h4>Авто-повтор при ошибке</h4>
-        <p>Если сервер временно недоступен — приложение само повторит попытку. Механик видит счётчик попыток.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">📌</div>
-        <h4>Закрепление записей</h4>
-        <p>Нажатие на отправленный элемент фиксирует его в списке — он не исчезнет автоматически, пока не решите.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">↺</div>
-        <h4>Повторить все сразу</h4>
-        <p>Кнопка «Повторить N с ошибкой» отправляет все проблемные действия разом при восстановлении сети.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════
      6. ЖИЗНЕЦИКЛ АРЕНДЫ
 ═══════════════════════════════════════════════ -->
-<section id="rental">
-  <div class="container">
-    <h2><span class="section-icon">🔄</span>Жизненный цикл аренды</h2>
-    <p class="section-sub">Путь от выбора велосипеда клиентом до возврата и закрытия сделки — каждый шаг фиксируется в системе с временной меткой и именем сотрудника.</p>
+    <section id="rental">
+      <div class="container">
+        <h2><span class="section-icon">🔄</span>Жизненный цикл аренды</h2>
+        <p class="section-sub">
+          Путь от выбора велосипеда клиентом до возврата и закрытия сделки —
+          каждый шаг фиксируется в системе с временной меткой и именем
+          сотрудника.
+        </p>
 
-    <div class="lifecycle">
-      <div class="lifecycle-step">
-        <div class="lifecycle-box">
-          <div class="lifecycle-num">1</div>
-          <div class="lifecycle-title">Бронирование</div>
-          <div class="lifecycle-sub">Клиент выбирает в приложении или у стойки. Система проверяет наличие.</div>
-        </div>
-      </div>
-      <div class="lifecycle-step">
-        <div class="lifecycle-box">
-          <div class="lifecycle-num">2</div>
-          <div class="lifecycle-title">Выдача</div>
-          <div class="lifecycle-sub">Сотрудник сканирует QR. Фото состояния. Электронный акт.</div>
-        </div>
-      </div>
-      <div class="lifecycle-step">
-        <div class="lifecycle-box">
-          <div class="lifecycle-num">3</div>
-          <div class="lifecycle-title">Аренда</div>
-          <div class="lifecycle-sub">Таймер идёт. Сумма копится. Статус — «В аренде».</div>
-        </div>
-      </div>
-      <div class="lifecycle-step">
-        <div class="lifecycle-box">
-          <div class="lifecycle-num">4</div>
-          <div class="lifecycle-title">Возврат</div>
-          <div class="lifecycle-sub">Сотрудник проверяет состояние, фотографирует повреждения.</div>
-        </div>
-      </div>
-      <div class="lifecycle-step">
-        <div class="lifecycle-box" style="border:2px solid var(--brand);">
-          <div class="lifecycle-num">5</div>
-          <div class="lifecycle-title">Оплата</div>
-          <div class="lifecycle-sub">Карта или кошелёк. Чек на email. Техника — «Свободна».</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid2" style="margin-top:32px;">
-      <div>
-        <h3 class="sub">Что фиксируется автоматически</h3>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
-            <span style="font-size:18px;">⏱️</span><span style="font-size:13px;">Точное время начала и конца аренды</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
-            <span style="font-size:18px;">📍</span><span style="font-size:13px;">GPS точки выдачи и возврата</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
-            <span style="font-size:18px;">📸</span><span style="font-size:13px;">Фото состояния до и после</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
-            <span style="font-size:18px;">✍️</span><span style="font-size:13px;">Электронная подпись клиента</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
-            <span style="font-size:18px;">💳</span><span style="font-size:13px;">Платёжные операции с чеком</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;">
-            <span style="font-size:18px;">👤</span><span style="font-size:13px;">Имя сотрудника при каждом изменении</span>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h3 class="sub">Варианты оплаты</h3>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-          <div style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
-            <div style="font-size:20px;margin-bottom:6px;">💳</div>
-            <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Банковская карта</div>
-            <div style="font-size:12px;color:var(--muted);">Онлайн через мобильное приложение или на стойке через терминал.</div>
-          </div>
-          <div style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
-            <div style="font-size:20px;margin-bottom:6px;">💰</div>
-            <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Рублёвый кошелёк</div>
-            <div style="font-size:12px;color:var(--muted);">Клиент пополняет баланс заранее, оплата мгновенно при завершении.</div>
-          </div>
-          <div style="padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
-            <div style="font-size:20px;margin-bottom:6px;">🧾</div>
-            <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Наличными у стойки</div>
-            <div style="font-size:12px;color:var(--muted);">Кассир принимает и фиксирует в системе с выдачей электронного чека.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══════════════════════════════════════════════
-     7. РОЛИ И ДОСТУПЫ
-═══════════════════════════════════════════════ -->
-<section id="roles">
-  <div class="container">
-    <h2><span class="section-icon">🔐</span>Роли и права доступа</h2>
-    <p class="section-sub">Каждый сотрудник видит только то, что ему нужно для работы. Права настраиваются владельцем аккаунта.</p>
-
-    <table class="roles-table">
-      <thead>
-        <tr>
-          <th>Роль</th>
-          <th>Парк</th>
-          <th>Аренды</th>
-          <th>Финансы</th>
-          <th>Сотрудники</th>
-          <th>Наряды ТО</th>
-          <th>Инциденты</th>
-          <th>Настройки</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>👑 Владелец</strong></td>
-          <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
-          <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
-        </tr>
-        <tr>
-          <td><strong>🏢 Администратор</strong></td>
-          <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td>
-          <td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="dash">—</td>
-        </tr>
-        <tr>
-          <td><strong>💼 Менеджер</strong></td>
-          <td class="check">✓</td><td class="check">✓</td><td class="dash">—</td>
-          <td class="dash">—</td><td class="dash">—</td><td class="check">✓</td><td class="dash">—</td>
-        </tr>
-        <tr>
-          <td><strong>💵 Кассир</strong></td>
-          <td class="dash">—</td><td class="check">✓</td><td class="check">✓</td>
-          <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
-        </tr>
-        <tr>
-          <td><strong>🔧 Механик</strong></td>
-          <td class="check">✓</td><td class="dash">—</td><td class="dash">—</td>
-          <td class="dash">—</td><td class="check">✓</td><td class="check">✓</td><td class="dash">—</td>
-        </tr>
-        <tr>
-          <td><strong>📞 Оператор</strong></td>
-          <td class="dash">—</td><td class="check">✓</td><td class="dash">—</td>
-          <td class="dash">—</td><td class="dash">—</td><td class="check">✓</td><td class="dash">—</td>
-        </tr>
-        <tr>
-          <td><strong>👤 Клиент</strong></td>
-          <td class="dash">—</td><td class="check">✓<span style="font-size:10px;color:var(--muted);"> (свои)</span></td><td class="dash">—</td>
-          <td class="dash">—</td><td class="dash">—</td><td class="dash">—</td><td class="dash">—</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="tip" style="margin-top:24px;">
-      💡 <strong>Мультикомпания:</strong> один аккаунт — несколько точек проката. У каждого филиала свои сотрудники, парк и статистика. Консолидированный отчёт — в одном экране.
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══════════════════════════════════════════════
-     8. IoT И КОМАНДЫ
-═══════════════════════════════════════════════ -->
-<section id="iot">
-  <div class="container">
-    <h2><span class="section-icon">🔌</span>IoT-команды технике</h2>
-    <p class="section-sub">Если транспорт оснащён GPS-трекером или умным замком — сотрудник может управлять им прямо из приложения.</p>
-
-    <div class="grid2">
-      <div>
-        <h3 class="sub">Доступные команды</h3>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-          <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
-            <span style="font-size:28px;">🔒</span>
-            <div>
-              <div style="font-size:14px;font-weight:700;">Заблокировать замок</div>
-              <div style="font-size:12px;color:var(--muted);">Удалённо блокирует колесо или замок велосипеда.</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
-            <span style="font-size:28px;">🔓</span>
-            <div>
-              <div style="font-size:14px;font-weight:700;">Разблокировать замок</div>
-              <div style="font-size:12px;color:var(--muted);">Открывает замок для начала аренды без физического ключа.</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
-            <span style="font-size:28px;">🚨</span>
-            <div>
-              <div style="font-size:14px;font-weight:700;">Включить сигнализацию</div>
-              <div style="font-size:12px;color:var(--muted);">Подаёт звуковой сигнал — помогает найти технику на парковке.</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;">
-            <span style="font-size:28px;">🔕</span>
-            <div>
-              <div style="font-size:14px;font-weight:700;">Выключить сигнализацию</div>
-              <div style="font-size:12px;color:var(--muted);">Отключает тревогу после обнаружения техники.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h3 class="sub">Защита от ошибок</h3>
-        <div style="margin-top:12px;">
-          <div class="highlight">
-            <strong>Подтверждение перед командой:</strong> каждая IoT-команда требует нажатия «Подтвердить» в диалоговом окне — случайное нажатие не отправит команду.
-          </div>
-          <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:10px;">
-            <div style="font-size:13px;font-weight:700;margin-bottom:6px;">Пример диалога подтверждения:</div>
-            <div style="background:#1a1a2e;border-radius:10px;padding:12px;">
-              <div style="font-size:12px;color:#fff;font-weight:700;margin-bottom:6px;">🔒 Заблокировать E-012?</div>
-              <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px;">Команда будет отправлена на велосипед E-012.</div>
-              <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:10px;">Попыток: 2 · Добавлено в очередь: 09:39</div>
-              <div style="display:flex;gap:8px;">
-                <div style="flex:1;background:rgba(255,255,255,.1);border-radius:7px;padding:7px;text-align:center;font-size:11px;color:#fff;">Отмена</div>
-                <div style="flex:1;background:var(--brand);border-radius:7px;padding:7px;text-align:center;font-size:11px;font-weight:800;color:#000;">Подтвердить</div>
+        <div class="lifecycle">
+          <div class="lifecycle-step">
+            <div class="lifecycle-box">
+              <div class="lifecycle-num">1</div>
+              <div class="lifecycle-title">Бронирование</div>
+              <div class="lifecycle-sub">
+                Клиент выбирает в приложении или у стойки. Система проверяет
+                наличие.
               </div>
             </div>
           </div>
-          <div class="tip" style="margin-top:10px;">
-            📡 Команды тоже работают в <strong>офлайн-режиме</strong> — ставятся в очередь и отправляются при восстановлении связи.
+          <div class="lifecycle-step">
+            <div class="lifecycle-box">
+              <div class="lifecycle-num">2</div>
+              <div class="lifecycle-title">Выдача</div>
+              <div class="lifecycle-sub">
+                Сотрудник сканирует QR. Фото состояния. Электронный акт.
+              </div>
+            </div>
+          </div>
+          <div class="lifecycle-step">
+            <div class="lifecycle-box">
+              <div class="lifecycle-num">3</div>
+              <div class="lifecycle-title">Аренда</div>
+              <div class="lifecycle-sub">
+                Таймер идёт. Сумма копится. Статус — «В аренде».
+              </div>
+            </div>
+          </div>
+          <div class="lifecycle-step">
+            <div class="lifecycle-box">
+              <div class="lifecycle-num">4</div>
+              <div class="lifecycle-title">Возврат</div>
+              <div class="lifecycle-sub">
+                Сотрудник проверяет состояние, фотографирует повреждения.
+              </div>
+            </div>
+          </div>
+          <div class="lifecycle-step">
+            <div class="lifecycle-box" style="border: 2px solid var(--brand)">
+              <div class="lifecycle-num">5</div>
+              <div class="lifecycle-title">Оплата</div>
+              <div class="lifecycle-sub">
+                Карта или кошелёк. Чек на email. Техника — «Свободна».
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top: 32px">
+          <div>
+            <h3 class="sub">Что фиксируется автоматически</h3>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 12px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 10px 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 10px;
+                "
+              >
+                <span style="font-size: 18px">⏱️</span
+                ><span style="font-size: 13px"
+                  >Точное время начала и конца аренды</span
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 10px 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 10px;
+                "
+              >
+                <span style="font-size: 18px">📍</span
+                ><span style="font-size: 13px"
+                  >GPS точки выдачи и возврата</span
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 10px 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 10px;
+                "
+              >
+                <span style="font-size: 18px">📸</span
+                ><span style="font-size: 13px">Фото состояния до и после</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 10px 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 10px;
+                "
+              >
+                <span style="font-size: 18px">✍️</span
+                ><span style="font-size: 13px"
+                  >Электронная подпись клиента</span
+                >
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 10px 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 10px;
+                "
+              >
+                <span style="font-size: 18px">💳</span
+                ><span style="font-size: 13px">Платёжные операции с чеком</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 10px 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 10px;
+                "
+              >
+                <span style="font-size: 18px">👤</span
+                ><span style="font-size: 13px"
+                  >Имя сотрудника при каждом изменении</span
+                >
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 class="sub">Варианты оплаты</h3>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 12px;
+              "
+            >
+              <div
+                style="
+                  padding: 16px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                "
+              >
+                <div style="font-size: 20px; margin-bottom: 6px">💳</div>
+                <div
+                  style="font-size: 14px; font-weight: 700; margin-bottom: 4px"
+                >
+                  Банковская карта
+                </div>
+                <div style="font-size: 12px; color: var(--muted)">
+                  Онлайн через мобильное приложение или на стойке через
+                  терминал.
+                </div>
+              </div>
+              <div
+                style="
+                  padding: 16px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                "
+              >
+                <div style="font-size: 20px; margin-bottom: 6px">💰</div>
+                <div
+                  style="font-size: 14px; font-weight: 700; margin-bottom: 4px"
+                >
+                  Рублёвый кошелёк
+                </div>
+                <div style="font-size: 12px; color: var(--muted)">
+                  Клиент пополняет баланс заранее, оплата мгновенно при
+                  завершении.
+                </div>
+              </div>
+              <div
+                style="
+                  padding: 16px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                "
+              >
+                <div style="font-size: 20px; margin-bottom: 6px">🧾</div>
+                <div
+                  style="font-size: 14px; font-weight: 700; margin-bottom: 4px"
+                >
+                  Наличными у стойки
+                </div>
+                <div style="font-size: 12px; color: var(--muted)">
+                  Кассир принимает и фиксирует в системе с выдачей электронного
+                  чека.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
+    <!-- ═══════════════════════════════════════════════
+     7. РОЛИ И ДОСТУПЫ
+═══════════════════════════════════════════════ -->
+    <section id="roles">
+      <div class="container">
+        <h2><span class="section-icon">🔐</span>Роли и права доступа</h2>
+        <p class="section-sub">
+          Каждый сотрудник видит только то, что ему нужно для работы. Права
+          настраиваются владельцем аккаунта.
+        </p>
 
-<!-- ═══════════════════════════════════════════════
+        <table class="roles-table">
+          <thead>
+            <tr>
+              <th>Роль</th>
+              <th>Парк</th>
+              <th>Аренды</th>
+              <th>Финансы</th>
+              <th>Сотрудники</th>
+              <th>Наряды ТО</th>
+              <th>Инциденты</th>
+              <th>Настройки</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>👑 Владелец</strong></td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+            </tr>
+            <tr>
+              <td><strong>🏢 Администратор</strong></td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+            </tr>
+            <tr>
+              <td><strong>💼 Менеджер</strong></td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+            </tr>
+            <tr>
+              <td><strong>💵 Кассир</strong></td>
+              <td class="dash">—</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+            </tr>
+            <tr>
+              <td><strong>🔧 Механик</strong></td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="check">✓</td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+            </tr>
+            <tr>
+              <td><strong>📞 Оператор</strong></td>
+              <td class="dash">—</td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="check">✓</td>
+              <td class="dash">—</td>
+            </tr>
+            <tr>
+              <td><strong>👤 Клиент</strong></td>
+              <td class="dash">—</td>
+              <td class="check">
+                ✓<span style="font-size: 10px; color: var(--muted)">
+                  (свои)</span
+                >
+              </td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+              <td class="dash">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="tip" style="margin-top: 24px">
+          💡 <strong>Мультикомпания:</strong> один аккаунт — несколько точек
+          проката. У каждого филиала свои сотрудники, парк и статистика.
+          Консолидированный отчёт — в одном экране.
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+     8. IoT И КОМАНДЫ
+═══════════════════════════════════════════════ -->
+    <section id="iot">
+      <div class="container">
+        <h2><span class="section-icon">🔌</span>IoT-команды технике</h2>
+        <p class="section-sub">
+          Если транспорт оснащён GPS-трекером или умным замком — сотрудник может
+          управлять им прямо из приложения.
+        </p>
+
+        <div class="grid2">
+          <div>
+            <h3 class="sub">Доступные команды</h3>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-top: 12px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 14px;
+                  padding: 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                "
+              >
+                <span style="font-size: 28px">🔒</span>
+                <div>
+                  <div style="font-size: 14px; font-weight: 700">
+                    Заблокировать замок
+                  </div>
+                  <div style="font-size: 12px; color: var(--muted)">
+                    Удалённо блокирует колесо или замок велосипеда.
+                  </div>
+                </div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 14px;
+                  padding: 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                "
+              >
+                <span style="font-size: 28px">🔓</span>
+                <div>
+                  <div style="font-size: 14px; font-weight: 700">
+                    Разблокировать замок
+                  </div>
+                  <div style="font-size: 12px; color: var(--muted)">
+                    Открывает замок для начала аренды без физического ключа.
+                  </div>
+                </div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 14px;
+                  padding: 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                "
+              >
+                <span style="font-size: 28px">🚨</span>
+                <div>
+                  <div style="font-size: 14px; font-weight: 700">
+                    Включить сигнализацию
+                  </div>
+                  <div style="font-size: 12px; color: var(--muted)">
+                    Подаёт звуковой сигнал — помогает найти технику на парковке.
+                  </div>
+                </div>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 14px;
+                  padding: 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                "
+              >
+                <span style="font-size: 28px">🔕</span>
+                <div>
+                  <div style="font-size: 14px; font-weight: 700">
+                    Выключить сигнализацию
+                  </div>
+                  <div style="font-size: 12px; color: var(--muted)">
+                    Отключает тревогу после обнаружения техники.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 class="sub">Защита от ошибок</h3>
+            <div style="margin-top: 12px">
+              <div class="highlight">
+                <strong>Подтверждение перед командой:</strong> каждая
+                IoT-команда требует нажатия «Подтвердить» в диалоговом окне —
+                случайное нажатие не отправит команду.
+              </div>
+              <div
+                style="
+                  padding: 14px;
+                  background: var(--card);
+                  border: 1px solid var(--border);
+                  border-radius: 12px;
+                  margin-top: 10px;
+                "
+              >
+                <div
+                  style="font-size: 13px; font-weight: 700; margin-bottom: 6px"
+                >
+                  Пример диалога подтверждения:
+                </div>
+                <div
+                  style="
+                    background: #1a1a2e;
+                    border-radius: 10px;
+                    padding: 12px;
+                  "
+                >
+                  <div
+                    style="
+                      font-size: 12px;
+                      color: #fff;
+                      font-weight: 700;
+                      margin-bottom: 6px;
+                    "
+                  >
+                    🔒 Заблокировать E-012?
+                  </div>
+                  <div
+                    style="
+                      font-size: 11px;
+                      color: rgba(255, 255, 255, 0.6);
+                      margin-bottom: 4px;
+                    "
+                  >
+                    Команда будет отправлена на велосипед E-012.
+                  </div>
+                  <div
+                    style="
+                      font-size: 11px;
+                      color: rgba(255, 255, 255, 0.4);
+                      margin-bottom: 10px;
+                    "
+                  >
+                    Попыток: 2 · Добавлено в очередь: 09:39
+                  </div>
+                  <div style="display: flex; gap: 8px">
+                    <div
+                      style="
+                        flex: 1;
+                        background: rgba(255, 255, 255, 0.1);
+                        border-radius: 7px;
+                        padding: 7px;
+                        text-align: center;
+                        font-size: 11px;
+                        color: #fff;
+                      "
+                    >
+                      Отмена
+                    </div>
+                    <div
+                      style="
+                        flex: 1;
+                        background: var(--brand);
+                        border-radius: 7px;
+                        padding: 7px;
+                        text-align: center;
+                        font-size: 11px;
+                        font-weight: 800;
+                        color: #000;
+                      "
+                    >
+                      Подтвердить
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tip" style="margin-top: 10px">
+                📡 Команды тоже работают в <strong>офлайн-режиме</strong> —
+                ставятся в очередь и отправляются при восстановлении связи.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
      9. НАДЁЖНОСТЬ
 ═══════════════════════════════════════════════ -->
-<section id="reliability">
-  <div class="container">
-    <h2><span class="section-icon">🛡️</span>Надёжность и безопасность</h2>
-    <p class="section-sub">Данные защищены, система доступна 24/7, ничего не теряется.</p>
+    <section id="reliability">
+      <div class="container">
+        <h2><span class="section-icon">🛡️</span>Надёжность и безопасность</h2>
+        <p class="section-sub">
+          Данные защищены, система доступна 24/7, ничего не теряется.
+        </p>
 
-    <div class="grid3">
-      <div class="card">
-        <div class="card-icon">🔐</div>
-        <h4>Шифрование</h4>
-        <p>SSL/TLS для всего трафика. Пароли хранятся в виде хеша. JWT-токены с ограниченным сроком жизни.</p>
+        <div class="grid3">
+          <div class="card">
+            <div class="card-icon">🔐</div>
+            <h4>Шифрование</h4>
+            <p>
+              SSL/TLS для всего трафика. Пароли хранятся в виде хеша. JWT-токены
+              с ограниченным сроком жизни.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">💾</div>
+            <h4>Резервные копии</h4>
+            <p>
+              Ежедневный бэкап базы данных. Хранение 30 дней. Восстановление за
+              15 минут.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">📈</div>
+            <h4>SLA 99.9%</h4>
+            <p>
+              Мониторинг 24/7 с алертами. Менее 9 часов простоя в год. CDN для
+              быстрой загрузки интерфейса.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">🏢</div>
+            <h4>Мультиарендность</h4>
+            <p>
+              Данные разных компаний полностью изолированы. Каждая организация
+              видит только свои данные.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">📝</div>
+            <h4>Журнал действий</h4>
+            <p>
+              Каждое изменение в системе фиксируется: кто сделал, когда, что
+              именно изменил. Полная история.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-icon">⚡</div>
+            <h4>Быстрый старт</h4>
+            <p>
+              Настройка аккаунта и импорт парка техники — 1 рабочий день.
+              Обучение персонала — 2–3 часа.
+            </p>
+          </div>
+        </div>
+
+        <div
+          style="
+            margin-top: 48px;
+            background: linear-gradient(135deg, var(--dark), var(--dark2));
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            color: #fff;
+          "
+        >
+          <div style="font-size: 36px; margin-bottom: 12px">🚲</div>
+          <div style="font-size: 26px; font-weight: 800; margin-bottom: 8px">
+            Готовы увидеть RideFlow в работе?
+          </div>
+          <div
+            style="
+              font-size: 15px;
+              color: rgba(255, 255, 255, 0.65);
+              max-width: 500px;
+              margin: 0 auto 28px;
+            "
+          >
+            Запросите демонстрацию — покажем на реальных данных вашего бизнеса
+            за 45 минут по видеосвязи.
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              gap: 32px;
+              flex-wrap: wrap;
+            "
+          >
+            <div style="font-size: 14px; color: rgba(255, 255, 255, 0.7)">
+              📞 +7 (495) 000-00-00
+            </div>
+            <div style="font-size: 14px; color: rgba(255, 255, 255, 0.7)">
+              ✉️ demo@rideflow.ru
+            </div>
+            <div style="font-size: 14px; color: rgba(255, 255, 255, 0.7)">
+              💬 @rideflow_sales
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <div class="card-icon">💾</div>
-        <h4>Резервные копии</h4>
-        <p>Ежедневный бэкап базы данных. Хранение 30 дней. Восстановление за 15 минут.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">📈</div>
-        <h4>SLA 99.9%</h4>
-        <p>Мониторинг 24/7 с алертами. Менее 9 часов простоя в год. CDN для быстрой загрузки интерфейса.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">🏢</div>
-        <h4>Мультиарендность</h4>
-        <p>Данные разных компаний полностью изолированы. Каждая организация видит только свои данные.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">📝</div>
-        <h4>Журнал действий</h4>
-        <p>Каждое изменение в системе фиксируется: кто сделал, когда, что именно изменил. Полная история.</p>
-      </div>
-      <div class="card">
-        <div class="card-icon">⚡</div>
-        <h4>Быстрый старт</h4>
-        <p>Настройка аккаунта и импорт парка техники — 1 рабочий день. Обучение персонала — 2–3 часа.</p>
-      </div>
+    </section>
+
+    <div
+      style="
+        background: var(--dark);
+        color: rgba(255, 255, 255, 0.3);
+        text-align: center;
+        padding: 20px;
+        font-size: 12px;
+      "
+    >
+      RideFlow · Платформа управления прокатом транспорта · rideflow.ru · Все
+      права защищены
     </div>
-
-    <div style="margin-top:48px;background:linear-gradient(135deg,var(--dark),var(--dark2));border-radius:20px;padding:40px;text-align:center;color:#fff;">
-      <div style="font-size:36px;margin-bottom:12px;">🚲</div>
-      <div style="font-size:26px;font-weight:800;margin-bottom:8px;">Готовы увидеть RideFlow в работе?</div>
-      <div style="font-size:15px;color:rgba(255,255,255,.65);max-width:500px;margin:0 auto 28px;">Запросите демонстрацию — покажем на реальных данных вашего бизнеса за 45 минут по видеосвязи.</div>
-      <div style="display:flex;justify-content:center;gap:32px;flex-wrap:wrap;">
-        <div style="font-size:14px;color:rgba(255,255,255,.7);">📞 +7 (495) 000-00-00</div>
-        <div style="font-size:14px;color:rgba(255,255,255,.7);">✉️ demo@rideflow.ru</div>
-        <div style="font-size:14px;color:rgba(255,255,255,.7);">💬 @rideflow_sales</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div style="background:var(--dark);color:rgba(255,255,255,.3);text-align:center;padding:20px;font-size:12px;">
-  RideFlow · Платформа управления прокатом транспорта · rideflow.ru · Все права защищены
-</div>
-
-</body>
+  </body>
 </html>

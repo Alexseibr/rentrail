@@ -1,5 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL
-  || (import.meta.env.BASE_URL.replace(/\/$/, "") + "/api");
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
@@ -57,7 +58,9 @@ export class ApiError extends Error {
 
 export async function api<T = unknown>(
   path: string,
-  options: Omit<RequestInit, "headers"> & { headers?: Record<string, string> } = {},
+  options: Omit<RequestInit, "headers"> & {
+    headers?: Record<string, string>;
+  } = {},
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
   const headers: Record<string, string> = {

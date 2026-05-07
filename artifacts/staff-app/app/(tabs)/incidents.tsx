@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, Linking,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -42,7 +48,10 @@ function openMaps(lat: number, lng: number) {
     .catch(() => Linking.openURL(webUrl).catch(() => {}));
 }
 
-function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatRelativeTime(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return t("rentalDetail.timeJustNow");
@@ -67,7 +76,9 @@ const STATUS_COLORS: Record<string, string> = {
   closed: "#94a3b8",
 };
 
-async function fetchServiceRequests(companyId: string): Promise<ServiceRequest[]> {
+async function fetchServiceRequests(
+  companyId: string,
+): Promise<ServiceRequest[]> {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/service-requests`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
@@ -84,9 +95,16 @@ export default function IncidentsScreen() {
   const { companyId } = useAuth();
 
   const [manualRefreshing, setManualRefreshing] = React.useState(false);
-  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>(
+    {},
+  );
 
-  const { data: items = [], isLoading, isRefetching, refetch } = useQuery({
+  const {
+    data: items = [],
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
     queryKey: ["incidents", companyId],
     queryFn: () => fetchServiceRequests(companyId!),
     enabled: !!companyId,
@@ -108,9 +126,7 @@ export default function IncidentsScreen() {
   });
 
   useEffect(() => {
-    const ids = items
-      .map((o) => o.assetId)
-      .filter((id): id is string => !!id);
+    const ids = items.map((o) => o.assetId).filter((id): id is string => !!id);
     if (ids.length === 0) return;
     readManyCoordsFromCache(ids).then(setCoordsMap);
   }, [items]);
@@ -144,23 +160,45 @@ export default function IncidentsScreen() {
           <View style={styles.cardHeader}>
             <View style={styles.titleRow}>
               {isUrgent ? (
-                <Feather name="alert-triangle" size={14} color={priorityColor} />
+                <Feather
+                  name="alert-triangle"
+                  size={14}
+                  color={priorityColor}
+                />
               ) : (
-                <View style={[styles.priorityDot, { backgroundColor: priorityColor }]} />
+                <View
+                  style={[
+                    styles.priorityDot,
+                    { backgroundColor: priorityColor },
+                  ]}
+                />
               )}
-              <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
+              <Text
+                style={[styles.cardTitle, { color: colors.foreground }]}
+                numberOfLines={1}
+              >
                 {item.title}
               </Text>
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: statusColor + "20" },
+              ]}
+            >
               <Text style={[styles.statusText, { color: statusColor }]}>
-                {t(`incidents.status_${item.status}`, { defaultValue: item.status })}
+                {t(`incidents.status_${item.status}`, {
+                  defaultValue: item.status,
+                })}
               </Text>
             </View>
           </View>
 
           {item.description ? (
-            <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
+            <Text
+              style={[styles.description, { color: colors.mutedForeground }]}
+              numberOfLines={2}
+            >
               {item.description}
             </Text>
           ) : null}
@@ -169,20 +207,30 @@ export default function IncidentsScreen() {
             {item.assetCode ? (
               <View style={styles.metaItem}>
                 <Feather name="cpu" size={12} color={colors.mutedForeground} />
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assetCode}</Text>
+                <Text
+                  style={[styles.metaText, { color: colors.mutedForeground }]}
+                >
+                  {item.assetCode}
+                </Text>
               </View>
             ) : null}
             {item.requestType ? (
               <View style={styles.metaItem}>
                 <Feather name="tag" size={12} color={colors.mutedForeground} />
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                  {t(`incidents.type_${item.requestType}`, { defaultValue: item.requestType })}
+                <Text
+                  style={[styles.metaText, { color: colors.mutedForeground }]}
+                >
+                  {t(`incidents.type_${item.requestType}`, {
+                    defaultValue: item.requestType,
+                  })}
                 </Text>
               </View>
             ) : null}
             <View style={styles.metaItem}>
               <Feather name="clock" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
                 {new Date(item.createdAt).toLocaleDateString()}
               </Text>
             </View>
@@ -199,11 +247,20 @@ export default function IncidentsScreen() {
                 {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
               </Text>
               {coords.cachedAt ? (
-                <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[
+                    styles.cacheAgeText,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
                   {formatRelativeTime(coords.cachedAt, t)}
                 </Text>
               ) : null}
-              <Feather name="external-link" size={11} color={colors.mutedForeground} />
+              <Feather
+                name="external-link"
+                size={11}
+                color={colors.mutedForeground}
+              />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -224,7 +281,9 @@ export default function IncidentsScreen() {
         >
           <Feather name="arrow-left" size={22} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.screenTitle, { color: colors.foreground }]}>{t("incidents.listTitle")}</Text>
+        <Text style={[styles.screenTitle, { color: colors.foreground }]}>
+          {t("incidents.listTitle")}
+        </Text>
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => {
@@ -237,22 +296,36 @@ export default function IncidentsScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loader} color={colors.primary} size="large" />
+        <ActivityIndicator
+          style={styles.loader}
+          color={colors.primary}
+          size="large"
+        />
       ) : (
         <FlatList
           data={items}
           keyExtractor={(i) => i.id}
           renderItem={renderItem}
           refreshControl={
-            <RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            <RefreshControl
+              refreshing={manualRefreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Feather name="check-circle" size={36} color={colors.mutedForeground} />
+              <Feather
+                name="check-circle"
+                size={36}
+                color={colors.mutedForeground}
+              />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
                 {t("incidents.noIncidents")}
               </Text>
-              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.emptyHint, { color: colors.mutedForeground }]}
+              >
                 {t("incidents.noIncidentsHint")}
               </Text>
             </View>
@@ -274,8 +347,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   backBtn: { width: 36, height: 36, justifyContent: "center" },
-  addBtn: { width: 36, height: 36, justifyContent: "center", alignItems: "flex-end" },
-  screenTitle: { flex: 1, fontSize: 17, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  addBtn: {
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  screenTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+  },
   list: { padding: 16, paddingBottom: 100 },
   card: {
     borderRadius: 16,
@@ -301,7 +384,12 @@ const styles = StyleSheet.create({
   cardTitle: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold" },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  description: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18, marginBottom: 8 },
+  description: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 18,
+    marginBottom: 8,
+  },
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },

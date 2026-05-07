@@ -6,7 +6,14 @@ import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { User, Bike, Calendar, Clock, FileText } from "lucide-react";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
@@ -25,17 +32,23 @@ export default function RentalDetailPage() {
   const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId
+    ? { "x-company-id": companyId }
+    : {};
 
   const rentalQuery = useQuery({
     queryKey: ["rental", params.id],
-    queryFn: () => api<any>(`/rentals/${params.id}`, { headers: companyHeaders }),
+    queryFn: () =>
+      api<any>(`/rentals/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
   const historyQuery = useQuery({
     queryKey: ["rental-history", params.id],
-    queryFn: () => api<any>(`/rentals/${params.id}/status-history`, { headers: companyHeaders }),
+    queryFn: () =>
+      api<any>(`/rentals/${params.id}/status-history`, {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && !!params.id,
   });
 
@@ -57,39 +70,76 @@ export default function RentalDetailPage() {
   if (!rental) {
     return (
       <div className="p-6 space-y-4">
-        <PageBreadcrumb items={[{ label: t("nav.rentals"), href: "/rentals" }]} />
+        <PageBreadcrumb
+          items={[{ label: t("nav.rentals"), href: "/rentals" }]}
+        />
         <p className="text-muted-foreground">{t("common.noData")}</p>
       </div>
     );
   }
 
-  const formatDate = (d: string | null | undefined) => d ? new Date(d).toLocaleString() : "—";
+  const formatDate = (d: string | null | undefined) =>
+    d ? new Date(d).toLocaleString() : "—";
 
   const details = [
-    { icon: User, label: t("rentals.client"), value: rental.clientName || rental.clientId?.slice(0, 8) || "—" },
-    { icon: Bike, label: t("rentals.asset"), value: rental.assetCode || rental.assetId?.slice(0, 8) || "—" },
-    { icon: FileText, label: t("rentals.type"), value: rental.rentalType || "—" },
-    { icon: Calendar, label: t("rentals.start"), value: formatDate(rental.startDate || rental.startAt) },
-    { icon: Calendar, label: t("rentals.end"), value: formatDate(rental.endDate || rental.plannedEndAt) },
-    { icon: Clock, label: t("common.date", "Возврат"), value: formatDate(rental.actualEndAt || rental.returnedAt) },
+    {
+      icon: User,
+      label: t("rentals.client"),
+      value: rental.clientName || rental.clientId?.slice(0, 8) || "—",
+    },
+    {
+      icon: Bike,
+      label: t("rentals.asset"),
+      value: rental.assetCode || rental.assetId?.slice(0, 8) || "—",
+    },
+    {
+      icon: FileText,
+      label: t("rentals.type"),
+      value: rental.rentalType || "—",
+    },
+    {
+      icon: Calendar,
+      label: t("rentals.start"),
+      value: formatDate(rental.startDate || rental.startAt),
+    },
+    {
+      icon: Calendar,
+      label: t("rentals.end"),
+      value: formatDate(rental.endDate || rental.plannedEndAt),
+    },
+    {
+      icon: Clock,
+      label: t("common.date", "Возврат"),
+      value: formatDate(rental.actualEndAt || rental.returnedAt),
+    },
   ];
 
   return (
     <div className="p-6 space-y-6">
-      <PageBreadcrumb items={[
-        { label: t("nav.rentals"), href: "/rentals" },
-        { label: rental.clientName || rental.assetCode || `#${params.id?.slice(0, 8)}` },
-      ]} />
+      <PageBreadcrumb
+        items={[
+          { label: t("nav.rentals"), href: "/rentals" },
+          {
+            label:
+              rental.clientName ||
+              rental.assetCode ||
+              `#${params.id?.slice(0, 8)}`,
+          },
+        ]}
+      />
       <div className="flex items-center gap-4">
         <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight">
-            {t("nav.rentals")} — {rental.clientName || rental.clientId?.slice(0, 8)}
+            {t("nav.rentals")} —{" "}
+            {rental.clientName || rental.clientId?.slice(0, 8)}
           </h1>
           <p className="text-muted-foreground">
             {rental.assetCode || rental.assetId?.slice(0, 8)}
           </p>
         </div>
-        <Badge className={`text-sm px-3 py-1 ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}>
+        <Badge
+          className={`text-sm px-3 py-1 ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}
+        >
           {String(t(`status.${rental.status}`, rental.status))}
         </Badge>
       </div>
@@ -97,7 +147,9 @@ export default function RentalDetailPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t("common.details", "Подробности")}</CardTitle>
+            <CardTitle className="text-base">
+              {t("common.details", "Подробности")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-3">
@@ -113,14 +165,20 @@ export default function RentalDetailPage() {
             </dl>
             {rental.notes && (
               <div className="mt-4 pt-4 border-t">
-                <p className="text-xs text-muted-foreground mb-1">{t("rentals.notes")}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {t("rentals.notes")}
+                </p>
                 <p className="text-sm">{rental.notes}</p>
               </div>
             )}
             {(rental.totalPrice || rental.totalAmount) && (
               <div className="mt-4 pt-4 border-t">
-                <p className="text-xs text-muted-foreground mb-1">{t("common.total", "Сумма")}</p>
-                <p className="text-lg font-bold">{rental.totalPrice || rental.totalAmount}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {t("common.total", "Сумма")}
+                </p>
+                <p className="text-lg font-bold">
+                  {rental.totalPrice || rental.totalAmount}
+                </p>
               </div>
             )}
           </CardContent>
@@ -128,15 +186,21 @@ export default function RentalDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t("fleet.statusHistory")}</CardTitle>
+            <CardTitle className="text-base">
+              {t("fleet.statusHistory")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {historyQuery.isLoading ? (
               <div className="p-6 space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full" />
+                ))}
               </div>
             ) : history.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground">{t("common.noData")}</p>
+              <p className="p-6 text-sm text-muted-foreground">
+                {t("common.noData")}
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -150,14 +214,32 @@ export default function RentalDetailPage() {
                   {history.map((entry: any, i: number) => (
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
-                        {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "—"}
+                        {entry.createdAt
+                          ? new Date(entry.createdAt).toLocaleString()
+                          : "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge className={STATUS_COLORS[entry.newStatus || entry.toStatus || entry.status] || "bg-gray-100"}>
-                          {String(t(`status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`, entry.newStatus || entry.toStatus || entry.status || "—"))}
+                        <Badge
+                          className={
+                            STATUS_COLORS[
+                              entry.newStatus || entry.toStatus || entry.status
+                            ] || "bg-gray-100"
+                          }
+                        >
+                          {String(
+                            t(
+                              `status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`,
+                              entry.newStatus ||
+                                entry.toStatus ||
+                                entry.status ||
+                                "—",
+                            ),
+                          )}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{entry.reason || entry.notes || "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {entry.reason || entry.notes || "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

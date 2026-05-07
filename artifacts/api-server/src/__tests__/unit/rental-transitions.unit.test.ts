@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 
 const RENTAL_STATUS_TRANSITIONS: Record<string, string[]> = {
-  draft: ["pending_approval", "awaiting_payment", "awaiting_pickup", "canceled"],
+  draft: [
+    "pending_approval",
+    "awaiting_payment",
+    "awaiting_pickup",
+    "canceled",
+  ],
   pending_approval: ["awaiting_payment", "awaiting_pickup", "canceled"],
   awaiting_payment: ["awaiting_pickup", "canceled"],
   awaiting_pickup: ["active", "canceled"],
@@ -81,15 +86,27 @@ describe("Rental Status Transitions", () => {
 
   describe("all statuses have transition rules", () => {
     const allStatuses = [
-      "draft", "pending_approval", "awaiting_payment", "awaiting_pickup",
-      "active", "extended", "overdue", "return_requested",
-      "completed", "canceled", "disputed", "defaulted",
+      "draft",
+      "pending_approval",
+      "awaiting_payment",
+      "awaiting_pickup",
+      "active",
+      "extended",
+      "overdue",
+      "return_requested",
+      "completed",
+      "canceled",
+      "disputed",
+      "defaulted",
     ];
 
-    it.each(allStatuses)("status '%s' has transition rules defined", (status) => {
-      expect(RENTAL_STATUS_TRANSITIONS).toHaveProperty(status);
-      expect(Array.isArray(RENTAL_STATUS_TRANSITIONS[status])).toBe(true);
-    });
+    it.each(allStatuses)(
+      "status '%s' has transition rules defined",
+      (status) => {
+        expect(RENTAL_STATUS_TRANSITIONS).toHaveProperty(status);
+        expect(Array.isArray(RENTAL_STATUS_TRANSITIONS[status])).toBe(true);
+      },
+    );
   });
 
   describe("unknown status", () => {

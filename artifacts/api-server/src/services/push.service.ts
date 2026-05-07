@@ -18,12 +18,19 @@ interface ExpoPushTicket {
 
 const EXPO_PUSH_API = "https://exp.host/--/api/v2/push/send";
 
-export async function sendPushToUser(userId: string, message: PushMessage): Promise<void> {
+export async function sendPushToUser(
+  userId: string,
+  message: PushMessage,
+): Promise<void> {
   const tokens = await getUserTokens(userId);
   if (tokens.length === 0) return;
 
   const notifications = tokens
-    .filter((t) => t.token.startsWith("ExponentPushToken[") || t.token.startsWith("ExpoPushToken["))
+    .filter(
+      (t) =>
+        t.token.startsWith("ExponentPushToken[") ||
+        t.token.startsWith("ExpoPushToken["),
+    )
     .map((t) => ({
       to: t.token,
       title: message.title,
@@ -35,7 +42,7 @@ export async function sendPushToUser(userId: string, message: PushMessage): Prom
 
   if (notifications.length === 0) return;
 
-  const chunks: typeof notifications[] = [];
+  const chunks: (typeof notifications)[] = [];
   for (let i = 0; i < notifications.length; i += 100) {
     chunks.push(notifications.slice(i, i + 100));
   }
@@ -53,7 +60,10 @@ export async function sendPushToUser(userId: string, message: PushMessage): Prom
       });
 
       if (!response.ok) {
-        logger.error({ status: response.status }, "Expo Push API returned error status");
+        logger.error(
+          { status: response.status },
+          "Expo Push API returned error status",
+        );
         return;
       }
 
@@ -62,7 +72,10 @@ export async function sendPushToUser(userId: string, message: PushMessage): Prom
         if (ticket.status === "error") {
           const errCode = ticket.details?.error;
           if (errCode === "DeviceNotRegistered") {
-            logger.info({ ticket }, "Expo push: device not registered, should remove token");
+            logger.info(
+              { ticket },
+              "Expo push: device not registered, should remove token",
+            );
           } else {
             logger.warn({ ticket }, "Expo push ticket error");
           }
@@ -74,6 +87,9 @@ export async function sendPushToUser(userId: string, message: PushMessage): Prom
   }
 }
 
-export async function sendPushToUsers(userIds: string[], message: PushMessage): Promise<void> {
+export async function sendPushToUsers(
+  userIds: string[],
+  message: PushMessage,
+): Promise<void> {
   await Promise.all(userIds.map((id) => sendPushToUser(id, message)));
 }

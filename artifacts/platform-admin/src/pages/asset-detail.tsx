@@ -6,7 +6,14 @@ import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Bike, Hash, Tag, MapPin, Calendar, DollarSign } from "lucide-react";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
@@ -29,17 +36,23 @@ export default function AssetDetailPage() {
   const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId
+    ? { "x-company-id": companyId }
+    : {};
 
   const assetQuery = useQuery({
     queryKey: ["asset", params.id],
-    queryFn: () => api<any>(`/assets/${params.id}`, { headers: companyHeaders }),
+    queryFn: () =>
+      api<any>(`/assets/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
   const historyQuery = useQuery({
     queryKey: ["asset-history", params.id],
-    queryFn: () => api<any>(`/assets/${params.id}/status-history`, { headers: companyHeaders }),
+    queryFn: () =>
+      api<any>(`/assets/${params.id}/status-history`, {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && !!params.id,
   });
 
@@ -69,30 +82,63 @@ export default function AssetDetailPage() {
 
   const details = [
     { icon: Hash, label: t("fleet.code"), value: asset.internalCode },
-    { icon: Bike, label: t("fleet.type"), value: t(`assetType.${asset.assetType}`, asset.assetType) },
-    { icon: Tag, label: t("fleet.brand"), value: `${asset.brand || "—"} ${asset.model || ""}`.trim() },
+    {
+      icon: Bike,
+      label: t("fleet.type"),
+      value: t(`assetType.${asset.assetType}`, asset.assetType),
+    },
+    {
+      icon: Tag,
+      label: t("fleet.brand"),
+      value: `${asset.brand || "—"} ${asset.model || ""}`.trim(),
+    },
     { icon: Hash, label: t("fleet.serial"), value: asset.serialNumber || "—" },
     { icon: Hash, label: t("fleet.qr"), value: asset.qrCode || "—" },
-    { icon: MapPin, label: t("fleet.branch"), value: asset.branchName || asset.branchId?.slice(0, 8) || "—" },
-    { icon: DollarSign, label: t("fleet.purchasePrice"), value: asset.purchasePrice ? `${asset.purchasePrice}` : "—" },
-    { icon: DollarSign, label: t("fleet.currentValue"), value: asset.currentValue ? `${asset.currentValue}` : "—" },
-    { icon: Calendar, label: t("fleet.createdAt"), value: asset.createdAt ? new Date(asset.createdAt).toLocaleDateString() : "—" },
+    {
+      icon: MapPin,
+      label: t("fleet.branch"),
+      value: asset.branchName || asset.branchId?.slice(0, 8) || "—",
+    },
+    {
+      icon: DollarSign,
+      label: t("fleet.purchasePrice"),
+      value: asset.purchasePrice ? `${asset.purchasePrice}` : "—",
+    },
+    {
+      icon: DollarSign,
+      label: t("fleet.currentValue"),
+      value: asset.currentValue ? `${asset.currentValue}` : "—",
+    },
+    {
+      icon: Calendar,
+      label: t("fleet.createdAt"),
+      value: asset.createdAt
+        ? new Date(asset.createdAt).toLocaleDateString()
+        : "—",
+    },
   ];
 
   return (
     <div className="p-6 space-y-6">
-      <PageBreadcrumb items={[
-        { label: t("nav.fleet"), href: "/fleet" },
-        { label: asset.internalCode },
-      ]} />
+      <PageBreadcrumb
+        items={[
+          { label: t("nav.fleet"), href: "/fleet" },
+          { label: asset.internalCode },
+        ]}
+      />
       <div className="flex items-center gap-4">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{asset.internalCode}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {asset.internalCode}
+          </h1>
           <p className="text-muted-foreground">
-            {String(t(`assetType.${asset.assetType}`, asset.assetType))} — {asset.brand} {asset.model}
+            {String(t(`assetType.${asset.assetType}`, asset.assetType))} —{" "}
+            {asset.brand} {asset.model}
           </p>
         </div>
-        <Badge className={`text-sm px-3 py-1 ${STATUS_COLORS[asset.status] || "bg-gray-100"}`}>
+        <Badge
+          className={`text-sm px-3 py-1 ${STATUS_COLORS[asset.status] || "bg-gray-100"}`}
+        >
           {String(t(`status.${asset.status}`, asset.status))}
         </Badge>
       </div>
@@ -100,7 +146,9 @@ export default function AssetDetailPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t("common.details", "Подробности")}</CardTitle>
+            <CardTitle className="text-base">
+              {t("common.details", "Подробности")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-3">
@@ -116,7 +164,9 @@ export default function AssetDetailPage() {
             </dl>
             {asset.notes && (
               <div className="mt-4 pt-4 border-t">
-                <p className="text-xs text-muted-foreground mb-1">{t("fleet.notes")}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {t("fleet.notes")}
+                </p>
                 <p className="text-sm">{asset.notes}</p>
               </div>
             )}
@@ -125,15 +175,21 @@ export default function AssetDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{t("fleet.statusHistory")}</CardTitle>
+            <CardTitle className="text-base">
+              {t("fleet.statusHistory")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {historyQuery.isLoading ? (
               <div className="p-6 space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full" />
+                ))}
               </div>
             ) : history.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground">{t("common.noData")}</p>
+              <p className="p-6 text-sm text-muted-foreground">
+                {t("common.noData")}
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -147,14 +203,32 @@ export default function AssetDetailPage() {
                   {history.map((entry: any, i: number) => (
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
-                        {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "—"}
+                        {entry.createdAt
+                          ? new Date(entry.createdAt).toLocaleString()
+                          : "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge className={STATUS_COLORS[entry.newStatus || entry.toStatus || entry.status] || "bg-gray-100"}>
-                          {String(t(`status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`, entry.newStatus || entry.toStatus || entry.status || "—"))}
+                        <Badge
+                          className={
+                            STATUS_COLORS[
+                              entry.newStatus || entry.toStatus || entry.status
+                            ] || "bg-gray-100"
+                          }
+                        >
+                          {String(
+                            t(
+                              `status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`,
+                              entry.newStatus ||
+                                entry.toStatus ||
+                                entry.status ||
+                                "—",
+                            ),
+                          )}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{entry.reason || entry.notes || "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {entry.reason || entry.notes || "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

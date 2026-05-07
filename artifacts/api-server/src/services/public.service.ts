@@ -1,4 +1,11 @@
-import { db, companies, companyBranding, assets, stations, branches } from "@workspace/db";
+import {
+  db,
+  companies,
+  companyBranding,
+  assets,
+  stations,
+  branches,
+} from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 
@@ -62,7 +69,10 @@ export async function getPublicCompanyPage(slug: string) {
   return result;
 }
 
-export async function getPublicAssets(slug: string, filters?: { assetType?: string; branchId?: string; stationId?: string }) {
+export async function getPublicAssets(
+  slug: string,
+  filters?: { assetType?: string; branchId?: string; stationId?: string },
+) {
   const { company, branding } = await resolvePublicCompany(slug);
 
   if (!branding.publicShowAssets) {
@@ -88,13 +98,18 @@ export async function getPublicAssets(slug: string, filters?: { assetType?: stri
       ),
     );
 
-  let filtered = allAssets.filter(a => PUBLIC_VISIBLE_ASSET_STATUSES.includes(a.status));
+  let filtered = allAssets.filter((a) =>
+    PUBLIC_VISIBLE_ASSET_STATUSES.includes(a.status),
+  );
 
-  if (filters?.assetType) filtered = filtered.filter(a => a.assetType === filters.assetType);
-  if (filters?.branchId) filtered = filtered.filter(a => a.branchId === filters.branchId);
-  if (filters?.stationId) filtered = filtered.filter(a => a.stationId === filters.stationId);
+  if (filters?.assetType)
+    filtered = filtered.filter((a) => a.assetType === filters.assetType);
+  if (filters?.branchId)
+    filtered = filtered.filter((a) => a.branchId === filters.branchId);
+  if (filters?.stationId)
+    filtered = filtered.filter((a) => a.stationId === filters.stationId);
 
-  return filtered.map(a => ({
+  return filtered.map((a) => ({
     id: a.id,
     assetType: a.assetType,
     brand: a.brand,
@@ -121,7 +136,9 @@ export async function getPublicStations(slug: string) {
       branchId: stations.branchId,
     })
     .from(stations)
-    .where(and(eq(stations.companyId, company.id), eq(stations.status, "active")));
+    .where(
+      and(eq(stations.companyId, company.id), eq(stations.status, "active")),
+    );
 
   return rows;
 }

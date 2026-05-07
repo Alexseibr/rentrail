@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as blacklistService from "../services/blacklist.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -10,8 +13,13 @@ const router: IRouter = Router();
 
 const blacklistScopes = ["branch", "company", "global"] as const;
 const blacklistActionTypes = [
-  "warning", "manual_approval_only", "increased_deposit",
-  "restricted_access", "blocked_branch", "blocked_company", "blocked_global",
+  "warning",
+  "manual_approval_only",
+  "increased_deposit",
+  "restricted_access",
+  "blocked_branch",
+  "blocked_company",
+  "blocked_global",
 ] as const;
 
 const createBlacklistSchema = z.object({
@@ -70,7 +78,9 @@ router.get(
   requireCompanyAccess,
   requirePermission("blacklist:read"),
   async (req, res) => {
-    const entries = await blacklistService.listBlacklistEntries(req.tenant!.companyId);
+    const entries = await blacklistService.listBlacklistEntries(
+      req.tenant!.companyId,
+    );
     res.json({ data: entries });
   },
 );
@@ -82,7 +92,10 @@ router.get(
   requirePermission("blacklist:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const entry = await blacklistService.getBlacklistEntry(req.params.id as string, req.tenant!.companyId);
+    const entry = await blacklistService.getBlacklistEntry(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: entry });
   },
 );
@@ -94,8 +107,14 @@ router.post(
   requirePermission("blacklist:create"),
   validate({ params: idParams }),
   async (req, res) => {
-    const before = await blacklistService.getBlacklistEntry(req.params.id as string, req.tenant!.companyId);
-    const entry = await blacklistService.revokeBlacklistEntry(req.params.id as string, req.tenant!.companyId);
+    const before = await blacklistService.getBlacklistEntry(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
+    const entry = await blacklistService.revokeBlacklistEntry(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -128,7 +147,7 @@ router.post(
         isBlocked: result.isBlocked,
         strongestAction: result.strongestAction,
         strongestSeverity: result.strongestSeverity,
-        entries: result.entries.map(e => ({
+        entries: result.entries.map((e) => ({
           id: e.id,
           scopeType: e.scopeType,
           actionType: e.actionType,

@@ -60,7 +60,10 @@ export async function uploadFile(media: CapturedMedia): Promise<UploadResult> {
     });
 
     if (!uploadRes.ok) {
-      return { success: false, error: `Upload failed: HTTP ${uploadRes.status}` };
+      return {
+        success: false,
+        error: `Upload failed: HTTP ${uploadRes.status}`,
+      };
     }
 
     return { success: true, objectPath };

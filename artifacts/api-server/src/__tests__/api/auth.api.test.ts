@@ -4,25 +4,21 @@ import { testApp } from "../../test/app";
 import { cleanDatabase } from "../../test/setup";
 
 describe("Auth API", () => {
-  beforeAll(async () => {
-  });
+  beforeAll(async () => {});
 
-  afterAll(async () => {
-  });
+  afterAll(async () => {});
 
   const testEmail = `auth-test-${Date.now()}@test.com`;
   const testPassword = "SecurePass123!";
 
   describe("POST /api/auth/register", () => {
     it("creates a new user", async () => {
-      const res = await request(testApp)
-        .post("/api/auth/register")
-        .send({
-          email: testEmail,
-          password: testPassword,
-          firstName: "Auth",
-          lastName: "Test",
-        });
+      const res = await request(testApp).post("/api/auth/register").send({
+        email: testEmail,
+        password: testPassword,
+        firstName: "Auth",
+        lastName: "Test",
+      });
 
       expect(res.status).toBe(201);
       expect(res.body.data).toHaveProperty("id");
@@ -30,27 +26,23 @@ describe("Auth API", () => {
     });
 
     it("rejects duplicate email", async () => {
-      const res = await request(testApp)
-        .post("/api/auth/register")
-        .send({
-          email: testEmail,
-          password: testPassword,
-          firstName: "Dup",
-          lastName: "User",
-        });
+      const res = await request(testApp).post("/api/auth/register").send({
+        email: testEmail,
+        password: testPassword,
+        firstName: "Dup",
+        lastName: "User",
+      });
 
       expect(res.status).toBeGreaterThanOrEqual(400);
     });
 
     it("rejects short password", async () => {
-      const res = await request(testApp)
-        .post("/api/auth/register")
-        .send({
-          email: "short@test.com",
-          password: "123",
-          firstName: "Short",
-          lastName: "Pass",
-        });
+      const res = await request(testApp).post("/api/auth/register").send({
+        email: "short@test.com",
+        password: "123",
+        firstName: "Short",
+        lastName: "Pass",
+      });
 
       expect(res.status).toBeGreaterThanOrEqual(400);
     });
@@ -94,9 +86,7 @@ describe("Auth API", () => {
     });
 
     it("rejects empty body", async () => {
-      const res = await request(testApp)
-        .post("/api/auth/login")
-        .send({});
+      const res = await request(testApp).post("/api/auth/login").send({});
 
       expect(res.status).toBeGreaterThanOrEqual(400);
     });
@@ -183,9 +173,7 @@ describe("Auth API", () => {
     });
 
     it("rejects empty body", async () => {
-      const res = await request(testApp)
-        .post("/api/auth/refresh")
-        .send({});
+      const res = await request(testApp).post("/api/auth/refresh").send({});
 
       expect(res.status).toBeGreaterThanOrEqual(400);
     });
@@ -224,8 +212,7 @@ describe("Auth API", () => {
     });
 
     it("rejects logout without token", async () => {
-      const res = await request(testApp)
-        .post("/api/auth/logout");
+      const res = await request(testApp).post("/api/auth/logout");
 
       expect(res.status).toBe(401);
     });

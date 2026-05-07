@@ -145,11 +145,13 @@ This is the repeatable 10-step checklist for onboarding each new tenant onto the
 ## Step 10: Soft Launch & First-Week Support
 
 ### Day 1: Soft Launch
+
 - [ ] First real rental created in production
 - [ ] Payment recorded successfully
 - [ ] End-of-day check completed (all assets accounted for)
 
 ### Days 2–5: Active Monitoring
+
 - [ ] Daily check-in with tenant (15-min call or chat)
 - [ ] Monitor for:
   - Login issues
@@ -160,6 +162,7 @@ This is the repeatable 10-step checklist for onboarding each new tenant onto the
 - [ ] Resolve any blocking issues within 4 hours
 
 ### Day 7: First-Week Review
+
 - [ ] Review key metrics:
   - Total rentals completed
   - Average rental creation time
@@ -173,11 +176,11 @@ This is the repeatable 10-step checklist for onboarding each new tenant onto the
 
 ## Onboarding Completion Criteria
 
-| Metric | Target |
-|--------|--------|
-| Time to first rental | < 2 hours from start of onboarding |
-| All staff logged in | 100% |
-| Assets imported and verified | 100% match |
-| At least 5 rentals completed | Yes |
-| Tenant self-sufficient for daily ops | Confirmed |
-| No unresolved blockers | Confirmed |
+| Metric                               | Target                             |
+| ------------------------------------ | ---------------------------------- |
+| Time to first rental                 | < 2 hours from start of onboarding |
+| All staff logged in                  | 100%                               |
+| Assets imported and verified         | 100% match                         |
+| At least 5 rentals completed         | Yes                                |
+| Tenant self-sufficient for daily ops | Confirmed                          |
+| No unresolved blockers               | Confirmed                          |

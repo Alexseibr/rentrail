@@ -1,7 +1,13 @@
 import React, { useMemo, useState, useEffect } from "react";
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, Linking,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -71,7 +77,10 @@ const PRIORITY_ORDER: Record<string, number> = {
   low: 3,
 };
 
-function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatRelativeTime(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return t("rentalDetail.timeJustNow");
@@ -89,7 +98,10 @@ function openMaps(lat: number, lng: number) {
     .catch(() => Linking.openURL(webUrl).catch(() => {}));
 }
 
-async function fetchMyWorkOrders(companyId: string, userId: string): Promise<WorkOrder[]> {
+async function fetchMyWorkOrders(
+  companyId: string,
+  userId: string,
+): Promise<WorkOrder[]> {
   const token = await getAccessToken();
   const url = `${BASE_URL}/api/work-orders?assignedToUserId=${userId}`;
   const res = await fetch(url, {
@@ -104,9 +116,15 @@ function getTimeAgo(dateStr: string, t: TFunction): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return t("myShift.justNow");
-  if (mins < 60) return t("myShift.timeAgo", { time: t("myShift.minutesShort", { m: mins }) });
+  if (mins < 60)
+    return t("myShift.timeAgo", {
+      time: t("myShift.minutesShort", { m: mins }),
+    });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return t("myShift.timeAgo", { time: t("myShift.hoursShort", { h: hours }) });
+  if (hours < 24)
+    return t("myShift.timeAgo", {
+      time: t("myShift.hoursShort", { h: hours }),
+    });
   const days = Math.floor(hours / 24);
   return t("myShift.timeAgo", { time: t("myShift.daysShort", { d: days }) });
 }
@@ -114,9 +132,11 @@ function getTimeAgo(dateStr: string, t: TFunction): string {
 function isToday(dateStr: string): boolean {
   const d = new Date(dateStr);
   const now = new Date();
-  return d.getFullYear() === now.getFullYear()
-    && d.getMonth() === now.getMonth()
-    && d.getDate() === now.getDate();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
 }
 
 interface KpiCardProps {
@@ -133,8 +153,15 @@ function KpiCard({ label, value, color, icon, colors }: KpiCardProps) {
       <View style={[kpiStyles.iconWrap, { backgroundColor: color + "18" }]}>
         <Feather name={icon} size={18} color={color} />
       </View>
-      <Text style={[kpiStyles.value, { color: colors.foreground }]}>{value}</Text>
-      <Text style={[kpiStyles.label, { color: colors.mutedForeground }]} numberOfLines={1}>{label}</Text>
+      <Text style={[kpiStyles.value, { color: colors.foreground }]}>
+        {value}
+      </Text>
+      <Text
+        style={[kpiStyles.label, { color: colors.mutedForeground }]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
@@ -170,9 +197,17 @@ export default function MyShiftScreen() {
 
   const [completedExpanded, setCompletedExpanded] = React.useState(false);
   const [manualRefreshing, setManualRefreshing] = React.useState(false);
-  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>(
+    {},
+  );
 
-  const { data: items = [], isLoading: loading, isRefetching, refetch, dataUpdatedAt } = useQuery({
+  const {
+    data: items = [],
+    isLoading: loading,
+    isRefetching,
+    refetch,
+    dataUpdatedAt,
+  } = useQuery({
     queryKey: ["myShiftWorkOrders", companyId, user?.id],
     queryFn: () => fetchMyWorkOrders(companyId!, user!.id),
     enabled: !!companyId && !!user?.id,
@@ -194,9 +229,7 @@ export default function MyShiftScreen() {
   });
 
   useEffect(() => {
-    const ids = items
-      .map((o) => o.assetId)
-      .filter((id): id is string => !!id);
+    const ids = items.map((o) => o.assetId).filter((id): id is string => !!id);
     if (ids.length === 0) return;
     readManyCoordsFromCache(ids).then(setCoordsMap);
   }, [items]);
@@ -215,9 +248,14 @@ export default function MyShiftScreen() {
     if (!dataUpdatedAt) return null;
     const diffSec = Math.floor((now - dataUpdatedAt) / 1000);
     if (diffSec < 15) return t("myShift.justUpdated");
-    if (diffSec < 60) return t("myShift.updatedAgo", { time: t("myShift.secondsShort", { s: diffSec }) });
+    if (diffSec < 60)
+      return t("myShift.updatedAgo", {
+        time: t("myShift.secondsShort", { s: diffSec }),
+      });
     const diffMin = Math.floor(diffSec / 60);
-    return t("myShift.updatedAgo", { time: t("myShift.minutesShort", { m: diffMin }) });
+    return t("myShift.updatedAgo", {
+      time: t("myShift.minutesShort", { m: diffMin }),
+    });
   }, [dataUpdatedAt, now, t]);
 
   const onRefresh = () => {
@@ -225,16 +263,32 @@ export default function MyShiftScreen() {
     refetch();
   };
 
-  const { inProgressCount, assignedCount, waitingPartsCount, activeOrders, completedToday } = useMemo(() => {
-    let ip = 0, assigned = 0, wp = 0;
+  const {
+    inProgressCount,
+    assignedCount,
+    waitingPartsCount,
+    activeOrders,
+    completedToday,
+  } = useMemo(() => {
+    let ip = 0,
+      assigned = 0,
+      wp = 0;
     const active: WorkOrder[] = [];
     const completed: WorkOrder[] = [];
 
     for (const item of items) {
       switch (item.status) {
-        case "in_progress": ip++; active.push(item); break;
-        case "assigned": assigned++; active.push(item); break;
-        case "waiting_parts": wp++; break;
+        case "in_progress":
+          ip++;
+          active.push(item);
+          break;
+        case "assigned":
+          assigned++;
+          active.push(item);
+          break;
+        case "waiting_parts":
+          wp++;
+          break;
         case "completed":
           if (item.completedAt && isToday(item.completedAt)) {
             completed.push(item);
@@ -243,8 +297,14 @@ export default function MyShiftScreen() {
       }
     }
 
-    active.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 3) - (PRIORITY_ORDER[b.priority] ?? 3));
-    completed.sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+    active.sort(
+      (a, b) =>
+        (PRIORITY_ORDER[a.priority] ?? 3) - (PRIORITY_ORDER[b.priority] ?? 3),
+    );
+    completed.sort(
+      (a, b) =>
+        new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime(),
+    );
 
     return {
       inProgressCount: ip,
@@ -257,7 +317,9 @@ export default function MyShiftScreen() {
 
   const navigateToOrder = (orderId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/service/work-order/${orderId}` as `/service/work-order/${string}`);
+    router.push(
+      `/service/work-order/${orderId}` as `/service/work-order/${string}`,
+    );
   };
 
   const renderOrderCard = ({ item }: { item: WorkOrder }) => {
@@ -275,17 +337,39 @@ export default function MyShiftScreen() {
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
             {isUrgent ? (
-              <Feather name="alert-triangle" size={14} color={PRIORITY_COLORS.urgent} />
+              <Feather
+                name="alert-triangle"
+                size={14}
+                color={PRIORITY_COLORS.urgent}
+              />
             ) : (
-              <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[item.priority] ?? "#94a3b8" }]} />
+              <View
+                style={[
+                  styles.priorityDot,
+                  {
+                    backgroundColor:
+                      PRIORITY_COLORS[item.priority] ?? "#94a3b8",
+                  },
+                ]}
+              />
             )}
-            <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
+            <Text
+              style={[styles.cardTitle, { color: colors.foreground }]}
+              numberOfLines={1}
+            >
               {item.title}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: accentColor + "20" }]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: accentColor + "20" },
+            ]}
+          >
             <Text style={[styles.statusText, { color: accentColor }]}>
-              {t(`serviceModule.status_${item.status}`, { defaultValue: item.status })}
+              {t(`serviceModule.status_${item.status}`, {
+                defaultValue: item.status,
+              })}
             </Text>
           </View>
         </View>
@@ -294,21 +378,31 @@ export default function MyShiftScreen() {
           {item.assetCode && (
             <View style={styles.metaItem}>
               <Feather name="cpu" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assetCode}</Text>
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
+                {item.assetCode}
+              </Text>
             </View>
           )}
           {item.orderType && (
             <View style={styles.metaItem}>
               <Feather name="tool" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                {t(`serviceModule.type_${item.orderType}`, { defaultValue: item.orderType })}
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
+                {t(`serviceModule.type_${item.orderType}`, {
+                  defaultValue: item.orderType,
+                })}
               </Text>
             </View>
           )}
           {item.createdAt && (
             <View style={styles.metaItem}>
               <Feather name="clock" size={12} color={colors.mutedForeground} />
-              <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
                 {getTimeAgo(item.createdAt, t)}
               </Text>
             </View>
@@ -326,11 +420,17 @@ export default function MyShiftScreen() {
               {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
             </Text>
             {coords.cachedAt ? (
-              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.cacheAgeText, { color: colors.mutedForeground }]}
+              >
                 {formatRelativeTime(coords.cachedAt, t)}
               </Text>
             ) : null}
-            <Feather name="external-link" size={11} color={colors.mutedForeground} />
+            <Feather
+              name="external-link"
+              size={11}
+              color={colors.mutedForeground}
+            />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -348,23 +448,44 @@ export default function MyShiftScreen() {
         activeOpacity={0.7}
       >
         <View style={styles.completedRow}>
-          <View style={[styles.completedDot, { backgroundColor: STATUS_COLORS.completed }]} />
+          <View
+            style={[
+              styles.completedDot,
+              { backgroundColor: STATUS_COLORS.completed },
+            ]}
+          />
           <View style={styles.completedInfo}>
-            <Text style={[styles.completedTitle, { color: colors.foreground }]} numberOfLines={1}>
+            <Text
+              style={[styles.completedTitle, { color: colors.foreground }]}
+              numberOfLines={1}
+            >
               {item.title}
             </Text>
             <View style={styles.completedMeta}>
               {item.assetCode && (
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assetCode}</Text>
+                <Text
+                  style={[styles.metaText, { color: colors.mutedForeground }]}
+                >
+                  {item.assetCode}
+                </Text>
               )}
               {item.completedAt && (
-                <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                  {new Date(item.completedAt).toLocaleTimeString(i18n.language === "ru" ? "ru-RU" : "en-US", { hour: "2-digit", minute: "2-digit" })}
+                <Text
+                  style={[styles.metaText, { color: colors.mutedForeground }]}
+                >
+                  {new Date(item.completedAt).toLocaleTimeString(
+                    i18n.language === "ru" ? "ru-RU" : "en-US",
+                    { hour: "2-digit", minute: "2-digit" },
+                  )}
                 </Text>
               )}
             </View>
           </View>
-          <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          <Feather
+            name="chevron-right"
+            size={16}
+            color={colors.mutedForeground}
+          />
         </View>
 
         {coords && (
@@ -378,11 +499,17 @@ export default function MyShiftScreen() {
               {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
             </Text>
             {coords.cachedAt ? (
-              <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.cacheAgeText, { color: colors.mutedForeground }]}
+              >
                 {formatRelativeTime(coords.cachedAt, t)}
               </Text>
             ) : null}
-            <Feather name="external-link" size={11} color={colors.mutedForeground} />
+            <Feather
+              name="external-link"
+              size={11}
+              color={colors.mutedForeground}
+            />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -441,12 +568,31 @@ export default function MyShiftScreen() {
           activeOpacity={0.7}
         >
           <View style={styles.completedHeaderLeft}>
-            <Feather name="check-circle" size={16} color={STATUS_COLORS.completed} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
+            <Feather
+              name="check-circle"
+              size={16}
+              color={STATUS_COLORS.completed}
+            />
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.foreground, marginBottom: 0 },
+              ]}
+            >
               {t("myShift.completedToday")}
             </Text>
-            <View style={[styles.countBadge, { backgroundColor: STATUS_COLORS.completed + "20" }]}>
-              <Text style={[styles.countBadgeText, { color: STATUS_COLORS.completed }]}>
+            <View
+              style={[
+                styles.countBadge,
+                { backgroundColor: STATUS_COLORS.completed + "20" },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.countBadgeText,
+                  { color: STATUS_COLORS.completed },
+                ]}
+              >
                 {completedToday.length}
               </Text>
             </View>
@@ -470,7 +616,11 @@ export default function MyShiftScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SyncStatusBanner />
       {loading ? (
-        <ActivityIndicator style={styles.loader} color={colors.primary} size="large" />
+        <ActivityIndicator
+          style={styles.loader}
+          color={colors.primary}
+          size="large"
+        />
       ) : (
         <FlatList
           data={activeOrders}
@@ -484,13 +634,19 @@ export default function MyShiftScreen() {
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
                 {t("myShift.noActiveOrders")}
               </Text>
-              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.emptyHint, { color: colors.mutedForeground }]}
+              >
                 {t("myShift.noActiveOrdersHint")}
               </Text>
             </View>
           }
           refreshControl={
-            <RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            <RefreshControl
+              refreshing={manualRefreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
           }
           contentContainerStyle={styles.list}
         />

@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as rentalPaymentService from "../services/rental-payment.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -32,7 +35,10 @@ router.get(
   requirePermission("rental:read"),
   validate({ params: rentalIdParams }),
   async (req, res) => {
-    const payments = await rentalPaymentService.getRentalPayments(req.params.id as string, req.tenant!.companyId);
+    const payments = await rentalPaymentService.getRentalPayments(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: payments });
   },
 );

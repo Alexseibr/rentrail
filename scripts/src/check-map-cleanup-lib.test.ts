@@ -83,23 +83,35 @@ export default function FleetMap() {
 
 describe("WEBVIEW_IMPORT_RE", () => {
   it("matches default import: import WebView from 'react-native-webview'", () => {
-    assert.ok(WEBVIEW_IMPORT_RE.test(`import WebView from 'react-native-webview';`));
+    assert.ok(
+      WEBVIEW_IMPORT_RE.test(`import WebView from 'react-native-webview';`),
+    );
   });
 
   it("matches default import with double quotes", () => {
-    assert.ok(WEBVIEW_IMPORT_RE.test(`import WebView from "react-native-webview";`));
+    assert.ok(
+      WEBVIEW_IMPORT_RE.test(`import WebView from "react-native-webview";`),
+    );
   });
 
   it("matches named import: import { WebView } from 'react-native-webview'", () => {
-    assert.ok(WEBVIEW_IMPORT_RE.test(`import { WebView } from "react-native-webview";`));
+    assert.ok(
+      WEBVIEW_IMPORT_RE.test(`import { WebView } from "react-native-webview";`),
+    );
   });
 
   it("does not match MiniMapPreview import (no direct WebView)", () => {
-    assert.ok(!WEBVIEW_IMPORT_RE.test(`import MiniMapPreview from "../components/MiniMapPreview";`));
+    assert.ok(
+      !WEBVIEW_IMPORT_RE.test(
+        `import MiniMapPreview from "../components/MiniMapPreview";`,
+      ),
+    );
   });
 
   it("does not match partial substring 'WebViewFoo'", () => {
-    assert.ok(!WEBVIEW_IMPORT_RE.test(`import WebViewFoo from "react-native-webview";`));
+    assert.ok(
+      !WEBVIEW_IMPORT_RE.test(`import WebViewFoo from "react-native-webview";`),
+    );
   });
 
   it("does not match unrelated react-native import", () => {
@@ -121,11 +133,15 @@ describe("LEAFLET_IMPORT_RE", () => {
   });
 
   it("does not match react-leaflet import", () => {
-    assert.ok(!LEAFLET_IMPORT_RE.test(`import { MapContainer } from "react-leaflet";`));
+    assert.ok(
+      !LEAFLET_IMPORT_RE.test(`import { MapContainer } from "react-leaflet";`),
+    );
   });
 
   it("does not match leaflet-geosearch import", () => {
-    assert.ok(!LEAFLET_IMPORT_RE.test(`import GeoSearch from "leaflet-geosearch";`));
+    assert.ok(
+      !LEAFLET_IMPORT_RE.test(`import GeoSearch from "leaflet-geosearch";`),
+    );
   });
 });
 
@@ -167,7 +183,11 @@ useFocusEffect(useCallback(() => {
   });
 
   it("returns false when there is no useFocusEffect at all", () => {
-    assert.ok(!hasPopupCloseFocusEffect(`useEffect(() => { return () => { closeMapPopup(); }; }, []);`));
+    assert.ok(
+      !hasPopupCloseFocusEffect(
+        `useEffect(() => { return () => { closeMapPopup(); }; }, []);`,
+      ),
+    );
   });
 
   it("does not confuse useEffect popup-close with useFocusEffect", () => {
@@ -275,7 +295,9 @@ useEffect(() => {
 
 describe("checkFile", () => {
   it("non-WebView file passes with no flags set", () => {
-    const result = checkFile(`import React from "react"; export default function Foo() { return null; }`);
+    const result = checkFile(
+      `import React from "react"; export default function Foo() { return null; }`,
+    );
     assert.equal(result.hasWebViewImport, false);
     assert.equal(result.layer1Ok, true);
     assert.equal(result.layer2Ok, true);
@@ -465,14 +487,18 @@ useEffect(() => {
 
 describe("checkWebFile", () => {
   it("non-Leaflet file passes with no flags set", () => {
-    const result = checkWebFile(`import React from "react"; export default function Foo() { return null; }`);
+    const result = checkWebFile(
+      `import React from "react"; export default function Foo() { return null; }`,
+    );
     assert.equal(result.hasLeafletImport, false);
     assert.equal(result.layer1Ok, true);
     assert.deepEqual(result.missing, []);
   });
 
   it("compliant component with import L from 'leaflet' passes", () => {
-    const result = checkWebFile(compliantLeafletComponent("mapRef.current.remove()"));
+    const result = checkWebFile(
+      compliantLeafletComponent("mapRef.current.remove()"),
+    );
     assert.equal(result.hasLeafletImport, true);
     assert.equal(result.layer1Ok, true);
     assert.deepEqual(result.missing, []);

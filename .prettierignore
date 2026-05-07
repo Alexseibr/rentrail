@@ -1,0 +1,6 @@
+.pythonlibs/
+node_modules/
+dist/
+build/
+.expo/
+pnpm-lock.yaml

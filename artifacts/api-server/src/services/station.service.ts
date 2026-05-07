@@ -10,7 +10,11 @@ async function validateBranchOwnership(branchId: string, companyId: string) {
     .limit(1);
 
   if (!branch) {
-    throw new AppError(400, "Branch does not belong to this company", "INVALID_BRANCH");
+    throw new AppError(
+      400,
+      "Branch does not belong to this company",
+      "INVALID_BRANCH",
+    );
   }
 }
 
@@ -34,7 +38,11 @@ export async function getStation(id: string, companyId: string) {
   return station;
 }
 
-export async function updateStation(id: string, companyId: string, data: Partial<InsertStation>) {
+export async function updateStation(
+  id: string,
+  companyId: string,
+  data: Partial<InsertStation>,
+) {
   if (data.branchId) {
     await validateBranchOwnership(data.branchId, companyId);
   }
@@ -56,10 +64,9 @@ export async function listStations(companyId: string, branchId?: string) {
     return db
       .select()
       .from(stations)
-      .where(and(eq(stations.companyId, companyId), eq(stations.branchId, branchId)));
+      .where(
+        and(eq(stations.companyId, companyId), eq(stations.branchId, branchId)),
+      );
   }
-  return db
-    .select()
-    .from(stations)
-    .where(eq(stations.companyId, companyId));
+  return db.select().from(stations).where(eq(stations.companyId, companyId));
 }

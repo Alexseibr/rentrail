@@ -17,7 +17,7 @@ const ALL_MODULES = [
 
 const PLATFORM_MANAGED_MODULES = ["telemetry", "batteries"];
 
-export type ModuleCode = typeof ALL_MODULES[number];
+export type ModuleCode = (typeof ALL_MODULES)[number];
 
 export function getAllModuleCodes() {
   return [...ALL_MODULES];
@@ -37,17 +37,29 @@ export async function getCompanyModules(companyId: string) {
   return result;
 }
 
-export async function isModuleEnabled(companyId: string, moduleCode: string): Promise<boolean> {
+export async function isModuleEnabled(
+  companyId: string,
+  moduleCode: string,
+): Promise<boolean> {
   const [row] = await db
     .select({ enabled: companyModules.enabled })
     .from(companyModules)
-    .where(and(eq(companyModules.companyId, companyId), eq(companyModules.moduleCode, moduleCode)))
+    .where(
+      and(
+        eq(companyModules.companyId, companyId),
+        eq(companyModules.moduleCode, moduleCode),
+      ),
+    )
     .limit(1);
 
   return row?.enabled ?? false;
 }
 
-export async function updateCompanyModules(companyId: string, modules: Record<string, boolean>, isSuperAdmin = false) {
+export async function updateCompanyModules(
+  companyId: string,
+  modules: Record<string, boolean>,
+  isSuperAdmin = false,
+) {
   for (const [code, enabled] of Object.entries(modules)) {
     if (!ALL_MODULES.includes(code as ModuleCode)) continue;
     if (!isSuperAdmin && PLATFORM_MANAGED_MODULES.includes(code)) continue;
@@ -55,7 +67,12 @@ export async function updateCompanyModules(companyId: string, modules: Record<st
     const [existing] = await db
       .select()
       .from(companyModules)
-      .where(and(eq(companyModules.companyId, companyId), eq(companyModules.moduleCode, code)))
+      .where(
+        and(
+          eq(companyModules.companyId, companyId),
+          eq(companyModules.moduleCode, code),
+        ),
+      )
       .limit(1);
 
     if (existing) {

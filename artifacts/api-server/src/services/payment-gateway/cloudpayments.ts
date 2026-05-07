@@ -1,5 +1,12 @@
 import { AppError } from "../../lib/errors";
-import type { PaymentGateway, CreateHoldParams, CaptureParams, VoidParams, RefundParams, GatewayPaymentResult } from "./types";
+import type {
+  PaymentGateway,
+  CreateHoldParams,
+  CaptureParams,
+  VoidParams,
+  RefundParams,
+  GatewayPaymentResult,
+} from "./types";
 
 const BASE_URL = "https://api.cloudpayments.ru";
 
@@ -7,7 +14,11 @@ function getCredentials() {
   const publicId = process.env["CLOUDPAYMENTS_PUBLIC_ID"];
   const apiSecret = process.env["CLOUDPAYMENTS_API_SECRET"];
   if (!publicId || !apiSecret) {
-    throw new AppError(500, "CloudPayments credentials not configured (CLOUDPAYMENTS_PUBLIC_ID / CLOUDPAYMENTS_API_SECRET)", "GATEWAY_NOT_CONFIGURED");
+    throw new AppError(
+      500,
+      "CloudPayments credentials not configured (CLOUDPAYMENTS_PUBLIC_ID / CLOUDPAYMENTS_API_SECRET)",
+      "GATEWAY_NOT_CONFIGURED",
+    );
   }
   return { publicId, apiSecret };
 }
@@ -16,7 +27,10 @@ function basicAuth(publicId: string, apiSecret: string): string {
   return "Basic " + Buffer.from(`${publicId}:${apiSecret}`).toString("base64");
 }
 
-async function cpRequest(path: string, body: Record<string, unknown>): Promise<unknown> {
+async function cpRequest(
+  path: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
   const { publicId, apiSecret } = getCredentials();
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
@@ -29,7 +43,10 @@ async function cpRequest(path: string, body: Record<string, unknown>): Promise<u
 
   const data = (await res.json()) as Record<string, unknown>;
   if (!data.Success) {
-    const msg = data.Message ?? (data.Model as Record<string, unknown>)?.ReasonCode ?? "unknown";
+    const msg =
+      data.Message ??
+      (data.Model as Record<string, unknown>)?.ReasonCode ??
+      "unknown";
     throw new AppError(502, `CloudPayments error: ${msg}`, "GATEWAY_ERROR");
   }
   return (data.Model as unknown) ?? data;
@@ -37,12 +54,18 @@ async function cpRequest(path: string, body: Record<string, unknown>): Promise<u
 
 function mapStatus(code: number): GatewayPaymentResult["status"] {
   switch (code) {
-    case 1: return "authorized";
-    case 3: return "paid";
-    case 4: return "voided";
-    case 5: return "refunded";
-    case 6: return "failed";
-    default: return "pending";
+    case 1:
+      return "authorized";
+    case 3:
+      return "paid";
+    case 4:
+      return "voided";
+    case 5:
+      return "refunded";
+    case 6:
+      return "failed";
+    default:
+      return "pending";
   }
 }
 
@@ -61,7 +84,10 @@ export const cloudpaymentsGateway: PaymentGateway = {
     if (params.savedMethodToken) {
       body.Token = params.savedMethodToken;
       if (params.customerEmail) body.Email = params.customerEmail;
-      const model = (await cpRequest("/payments/auth", body)) as Record<string, unknown>;
+      const model = (await cpRequest("/payments/auth", body)) as Record<
+        string,
+        unknown
+      >;
       return {
         providerPaymentId: String(model.TransactionId),
         status: mapStatus(Number(model.Status)),
@@ -70,7 +96,11 @@ export const cloudpaymentsGateway: PaymentGateway = {
       };
     }
 
-    throw new AppError(400, "CloudPayments requires saved card token for server-side hold. Use widget to collect card first.", "TOKEN_REQUIRED");
+    throw new AppError(
+      400,
+      "CloudPayments requires saved card token for server-side hold. Use widget to collect card first.",
+      "TOKEN_REQUIRED",
+    );
   },
 
   async capturePayment(params: CaptureParams): Promise<GatewayPaymentResult> {
@@ -108,7 +138,9 @@ export const cloudpaymentsGateway: PaymentGateway = {
     };
   },
 
-  async getPaymentStatus(providerPaymentId: string): Promise<GatewayPaymentResult> {
+  async getPaymentStatus(
+    providerPaymentId: string,
+  ): Promise<GatewayPaymentResult> {
     const model = (await cpRequest("/payments/get", {
       TransactionId: Number(providerPaymentId),
     })) as Record<string, unknown>;

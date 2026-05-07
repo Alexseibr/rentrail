@@ -21,7 +21,6 @@ export async function initMapLayer(): Promise<MapLayer> {
     if (stored === "street" || stored === "satellite") {
       _layer = stored;
     }
-  } catch {
-  }
+  } catch {}
   return _layer;
 }

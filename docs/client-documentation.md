@@ -69,6 +69,7 @@ Content-Type: application/json
 ```
 
 **Ответ:**
+
 ```json
 {
   "data": {
@@ -113,10 +114,10 @@ Authorization: Bearer <accessToken>
 
 Все защищённые эндпоинты требуют:
 
-| Заголовок | Значение |
-|-----------|----------|
+| Заголовок       | Значение               |
+| --------------- | ---------------------- |
 | `Authorization` | `Bearer <accessToken>` |
-| `x-company-id` | UUID компании |
+| `x-company-id`  | UUID компании          |
 
 ---
 
@@ -124,27 +125,27 @@ Authorization: Bearer <accessToken>
 
 ### 3.1 Типы активов
 
-| Код | Название |
-|-----|----------|
-| `bike` | Велосипед |
-| `ebike` | Электровелосипед |
-| `scooter` | Самокат |
-| `escooter` | Электросамокат |
+| Код        | Название         |
+| ---------- | ---------------- |
+| `bike`     | Велосипед        |
+| `ebike`    | Электровелосипед |
+| `scooter`  | Самокат          |
+| `escooter` | Электросамокат   |
 
 ### 3.2 Статусы активов
 
-| Статус | Описание |
-|--------|----------|
-| `available` | Доступен для аренды |
-| `rented` | В аренде |
-| `maintenance` | На техобслуживании |
-| `blocked` | Заблокирован |
-| `draft` | Черновик (не введён в эксплуатацию) |
-| `retired` | Списан |
-| `charging` | Заряжается |
-| `reserved` | Зарезервирован |
-| `lost` | Утерян |
-| `overdue` | Просрочена аренда |
+| Статус        | Описание                            |
+| ------------- | ----------------------------------- |
+| `available`   | Доступен для аренды                 |
+| `rented`      | В аренде                            |
+| `maintenance` | На техобслуживании                  |
+| `blocked`     | Заблокирован                        |
+| `draft`       | Черновик (не введён в эксплуатацию) |
+| `retired`     | Списан                              |
+| `charging`    | Заряжается                          |
+| `reserved`    | Зарезервирован                      |
+| `lost`        | Утерян                              |
+| `overdue`     | Просрочена аренда                   |
 
 ### 3.3 API активов
 
@@ -158,6 +159,7 @@ GET  /api/assets/:id/status-history  — история статусов
 ```
 
 **Создание актива:**
+
 ```json
 {
   "internalCode": "EBK-001",
@@ -171,6 +173,7 @@ GET  /api/assets/:id/status-history  — история статусов
 ```
 
 **Изменение статуса:**
+
 ```json
 {
   "status": "maintenance",
@@ -192,23 +195,23 @@ GET /api/fleet-map
 
 ### 4.1 Статусы аренды
 
-| Статус | Описание |
-|--------|----------|
-| `draft` | Черновик |
+| Статус             | Описание              |
+| ------------------ | --------------------- |
+| `draft`            | Черновик              |
 | `pending_approval` | Ожидает подтверждения |
-| `awaiting_payment` | Ожидает оплаты |
-| `awaiting_pickup` | Ожидает получения |
-| `active` | Активная аренда |
-| `overdue` | Просрочена |
-| `completed` | Завершена |
-| `canceled` | Отменена |
+| `awaiting_payment` | Ожидает оплаты        |
+| `awaiting_pickup`  | Ожидает получения     |
+| `active`           | Активная аренда       |
+| `overdue`          | Просрочена            |
+| `completed`        | Завершена             |
+| `canceled`         | Отменена              |
 
 ### 4.2 Типы аренды
 
-| Тип | Описание |
-|-----|----------|
-| `hourly` | Почасовая |
-| `daily` | Посуточная |
+| Тип       | Описание    |
+| --------- | ----------- |
+| `hourly`  | Почасовая   |
+| `daily`   | Посуточная  |
 | `monthly` | Ежемесячная |
 | `deposit` | С депозитом |
 
@@ -234,23 +237,23 @@ POST /api/rentals/:id/cancel   — отменить аренду  [rental:cancel
 
 #### Типы нарядов
 
-| Тип | Описание |
-|-----|----------|
-| `field_repair` | Полевой ремонт (выезд к транспорту) |
-| `workshop_repair` | Мастерская |
-| `scheduled_maintenance` | Плановое ТО |
-| `inspection` | Осмотр |
-| `recovery` | Эвакуация |
-| `cleaning` | Мойка/чистка |
+| Тип                     | Описание                            |
+| ----------------------- | ----------------------------------- |
+| `field_repair`          | Полевой ремонт (выезд к транспорту) |
+| `workshop_repair`       | Мастерская                          |
+| `scheduled_maintenance` | Плановое ТО                         |
+| `inspection`            | Осмотр                              |
+| `recovery`              | Эвакуация                           |
+| `cleaning`              | Мойка/чистка                        |
 
 #### Приоритеты нарядов
 
-| Приоритет | Описание |
-|-----------|----------|
-| `low` | Низкий |
-| `medium` | Средний (по умолчанию) |
-| `high` | Высокий |
-| `urgent` | Срочный |
+| Приоритет | Описание               |
+| --------- | ---------------------- |
+| `low`     | Низкий                 |
+| `medium`  | Средний (по умолчанию) |
+| `high`    | Высокий                |
+| `urgent`  | Срочный                |
 
 #### Жизненный цикл наряда
 
@@ -272,6 +275,7 @@ DELETE /api/work-orders/:id/parts/:partId — убрать запчасть из
 ```
 
 **Создание наряда:**
+
 ```json
 {
   "title": "Замена цепи KMC X11",
@@ -283,6 +287,7 @@ DELETE /api/work-orders/:id/parts/:partId — убрать запчасть из
 ```
 
 **Переход по статусам:**
+
 ```json
 { "status": "in_progress" }
 
@@ -290,6 +295,7 @@ DELETE /api/work-orders/:id/parts/:partId — убрать запчасть из
 ```
 
 **Получение списка механиков:**
+
 ```http
 GET /api/mechanics
 ```
@@ -302,19 +308,19 @@ GET /api/mechanics
 
 #### Типы записей
 
-| Тип | Описание |
-|-----|----------|
-| `oil_change` | Замена масла |
-| `tire_replacement` | Замена шин |
-| `brake_service` | Обслуживание тормозов |
-| `battery_replacement` | Замена аккумулятора |
-| `chain_service` | Обслуживание цепи |
-| `electrical_repair` | Электрический ремонт |
-| `frame_repair` | Ремонт рамы |
-| `general_service` | Общее обслуживание |
-| `inspection` | Осмотр |
-| `cleaning` | Чистка |
-| `other` | Прочее |
+| Тип                   | Описание              |
+| --------------------- | --------------------- |
+| `oil_change`          | Замена масла          |
+| `tire_replacement`    | Замена шин            |
+| `brake_service`       | Обслуживание тормозов |
+| `battery_replacement` | Замена аккумулятора   |
+| `chain_service`       | Обслуживание цепи     |
+| `electrical_repair`   | Электрический ремонт  |
+| `frame_repair`        | Ремонт рамы           |
+| `general_service`     | Общее обслуживание    |
+| `inspection`          | Осмотр                |
+| `cleaning`            | Чистка                |
+| `other`               | Прочее                |
 
 #### API журнала
 
@@ -324,6 +330,7 @@ POST /api/maintenance-logs             — создать запись  [asset:u
 ```
 
 **Создание записи:**
+
 ```json
 {
   "assetId": "uuid-актива",
@@ -345,16 +352,16 @@ POST /api/maintenance-logs             — создать запись  [asset:u
 
 #### Типы расписаний
 
-| Тип | Описание |
-|-----|----------|
-| `inspection` | Регулярный осмотр |
-| `oil_change` | Замена масла |
-| `tire_replacement` | Замена шин |
-| `brake_service` | Тормоза |
-| `battery_check` | Проверка батареи |
-| `chain_service` | Цепь |
-| `general_service` | Общее ТО |
-| `custom` | Пользовательское |
+| Тип                | Описание          |
+| ------------------ | ----------------- |
+| `inspection`       | Регулярный осмотр |
+| `oil_change`       | Замена масла      |
+| `tire_replacement` | Замена шин        |
+| `brake_service`    | Тормоза           |
+| `battery_check`    | Проверка батареи  |
+| `chain_service`    | Цепь              |
+| `general_service`  | Общее ТО          |
+| `custom`           | Пользовательское  |
 
 #### API расписаний
 
@@ -367,6 +374,7 @@ DELETE /api/maintenance-schedules/:id      — удалить расписани
 ```
 
 **Создание расписания:**
+
 ```json
 {
   "assetId": "uuid-актива",
@@ -387,21 +395,21 @@ DELETE /api/maintenance-schedules/:id      — удалить расписани
 
 #### Категории запчастей
 
-| Категория | Описание |
-|-----------|----------|
-| `tires` | Шины |
-| `brakes` | Тормоза |
-| `electrical` | Электрика |
-| `battery` | Аккумуляторы |
-| `frame` | Рама |
-| `chain` | Цепь и трансмиссия |
-| `transmission` | Трансмиссия |
-| `lights` | Освещение |
-| `display` | Дисплеи |
-| `charger` | Зарядные устройства |
-| `lock` | Замки |
-| `motor` | Моторы |
-| `other` | Прочее |
+| Категория      | Описание            |
+| -------------- | ------------------- |
+| `tires`        | Шины                |
+| `brakes`       | Тормоза             |
+| `electrical`   | Электрика           |
+| `battery`      | Аккумуляторы        |
+| `frame`        | Рама                |
+| `chain`        | Цепь и трансмиссия  |
+| `transmission` | Трансмиссия         |
+| `lights`       | Освещение           |
+| `display`      | Дисплеи             |
+| `charger`      | Зарядные устройства |
+| `lock`         | Замки               |
+| `motor`        | Моторы              |
+| `other`        | Прочее              |
 
 #### API склада
 
@@ -416,6 +424,7 @@ POST   /api/spare-parts/transactions — создать транзакцию   [
 ```
 
 **Создание позиции:**
+
 ```json
 {
   "name": "Тормозные колодки Shimano BR-M420",
@@ -430,6 +439,7 @@ POST   /api/spare-parts/transactions — создать транзакцию   [
 ```
 
 **Поступление на склад (+):**
+
 ```json
 {
   "partId": "uuid-запчасти",
@@ -440,6 +450,7 @@ POST   /api/spare-parts/transactions — создать транзакцию   [
 ```
 
 **Выдача со склада (−):**
+
 ```json
 {
   "partId": "uuid-запчасти",
@@ -472,12 +483,14 @@ Expo-приложение для iOS, Android и Web. Поддерживает �
 ### 7.1 Режимы работы
 
 **Staff Mode** — для сотрудников компании (авторизуются по телефону/паролю):
+
 - Просмотр и управление флотом
 - Работа с арендами
 - Сервисный модуль (наряды, журнал ТО, склад)
 - Push-уведомления
 
 **Client Mode** — для клиентов-арендаторов:
+
 - Просмотр доступных транспортных средств
 - Управление своими арендами
 - История поездок
@@ -507,21 +520,25 @@ Expo-приложение для iOS, Android и Web. Поддерживает �
 ### 7.3 Экраны сервисного модуля
 
 #### Наряды на работу (`/service/work-orders`)
+
 - Список нарядов с фильтрами по статусу
 - Карточка: тип, приоритет, статус, дата создания
 - Статусы с цветовыми индикаторами (draft/in_progress/completed/canceled)
 
 #### Журнал ТО (`/service/maintenance-logs`)
+
 - История обслуживания по активам
 - Создание новых записей
 - Фильтр по типу работ
 
 #### Расписание ТО (`/service/maintenance-schedules`)
+
 - Список плановых ТО с индикатором «Просрочено»
 - Создание по интервалу дней / км
 - Автообновление после выполнения работ
 
 #### Склад запчастей (`/service/spare-parts`)
+
 - Список позиций с текущим остатком
 - Кнопки «+ Поступление» / «− Выдача»
 - История движения каждой позиции
@@ -531,6 +548,7 @@ Expo-приложение для iOS, Android и Web. Поддерживает �
 Поддерживаются: **Русский (ru)** и **English (en)**.
 
 Переведены:
+
 - Статусы активов (available → «Доступен», rented → «В аренде» и т.д.)
 - Типы активов (bike → «Велосипед», ebike → «Э-велосипед» и т.д.)
 - Статусы аренды (все 8 статусов)
@@ -547,14 +565,14 @@ React/Vite приложение для управления платформой
 
 ### 8.1 Разделы
 
-| Раздел | Функционал |
-|--------|-----------|
-| Dashboard | Сводная статистика |
+| Раздел    | Функционал                           |
+| --------- | ------------------------------------ |
+| Dashboard | Сводная статистика                   |
 | Companies | Управление компаниями-арендодателями |
-| Assets | Список и редактирование транспорта |
-| Rentals | Просмотр всех аренд |
-| Users | Управление пользователями |
-| Roles | Управление ролями и разрешениями |
+| Assets    | Список и редактирование транспорта   |
+| Rentals   | Просмотр всех аренд                  |
+| Users     | Управление пользователями            |
+| Roles     | Управление ролями и разрешениями     |
 
 ---
 
@@ -562,28 +580,28 @@ React/Vite приложение для управления платформой
 
 ### 9.1 Системные роли
 
-| Роль | Код | Описание |
-|------|-----|----------|
-| Владелец | `owner` | Полный доступ ко всему |
-| Администратор | `admin` | Всё кроме управления компанией |
-| Менеджер | `manager` | Операции без удаления |
-| Оператор | `operator` | Работа с клиентами и арендами |
-| Механик | `mechanic` | Только сервис и статусы активов |
-| Бухгалтер | `accountant` | Финансовые операции |
-| Наблюдатель | `viewer` | Только чтение |
-| Супер-администратор | `superAdmin` | Системный уровень |
+| Роль                | Код          | Описание                        |
+| ------------------- | ------------ | ------------------------------- |
+| Владелец            | `owner`      | Полный доступ ко всему          |
+| Администратор       | `admin`      | Всё кроме управления компанией  |
+| Менеджер            | `manager`    | Операции без удаления           |
+| Оператор            | `operator`   | Работа с клиентами и арендами   |
+| Механик             | `mechanic`   | Только сервис и статусы активов |
+| Бухгалтер           | `accountant` | Финансовые операции             |
+| Наблюдатель         | `viewer`     | Только чтение                   |
+| Супер-администратор | `superAdmin` | Системный уровень               |
 
 ### 9.2 Матрица разрешений сервисного модуля
 
-| Действие | owner | admin | manager | mechanic | operator | viewer |
-|----------|-------|-------|---------|----------|----------|--------|
-| Читать наряды | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Создавать наряды | ✅ | ✅ | ✅ | — | — | — |
-| Обновлять наряды | ✅ | ✅ | ✅ | ✅ | — | — |
-| Читать журнал ТО | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Создавать записи ТО | ✅ | ✅ | ✅ | ✅ | — | — |
-| Склад — чтение | ✅ | ✅ | ✅ | ✅ | — | ✅ |
-| Склад — транзакции | ✅ | ✅ | ✅ | — | — | — |
+| Действие            | owner | admin | manager | mechanic | operator | viewer |
+| ------------------- | ----- | ----- | ------- | -------- | -------- | ------ |
+| Читать наряды       | ✅    | ✅    | ✅      | ✅       | —        | ✅     |
+| Создавать наряды    | ✅    | ✅    | ✅      | —        | —        | —      |
+| Обновлять наряды    | ✅    | ✅    | ✅      | ✅       | —        | —      |
+| Читать журнал ТО    | ✅    | ✅    | ✅      | ✅       | —        | ✅     |
+| Создавать записи ТО | ✅    | ✅    | ✅      | ✅       | —        | —      |
+| Склад — чтение      | ✅    | ✅    | ✅      | ✅       | —        | ✅     |
+| Склад — транзакции  | ✅    | ✅    | ✅      | —        | —        | —      |
 
 > Разрешение `asset:update` даёт доступ к созданию/обновлению нарядов, журнала, расписаний, транзакций склада.  
 > Разрешение `asset:read` даёт доступ к просмотру всех сервисных данных.
@@ -591,6 +609,7 @@ React/Vite приложение для управления платформой
 ### 9.3 Проверка разрешений
 
 Каждый защищённый эндпоинт проверяет:
+
 1. Наличие валидного JWT (`authenticate`)
 2. Членство пользователя в компании (`requireCompanyAccess`)
 3. Наличие нужного разрешения (`requirePermission`)
@@ -607,25 +626,25 @@ React/Vite приложение для управления платформой
 
 ### 10.2 Демо-пользователи (Staff)
 
-| Имя | Телефон | Роль | Пароль |
-|-----|---------|------|--------|
-| Maria Johnson | `+79991000001` | Owner | `demo1234` |
-| Carlos Rivera | `+79991000002` | Admin | `demo1234` |
-| Sarah Chen | `+79991000003` | Manager | `demo1234` |
-| James Wilson | `+79991000004` | Operator | `demo1234` |
-| Andrei Volkov | `+79991000005` | Mechanic | `demo1234` |
-| Emma Park | `+79991000006` | Viewer | `demo1234` |
+| Имя             | Телефон        | Роль       | Пароль     |
+| --------------- | -------------- | ---------- | ---------- |
+| Maria Johnson   | `+79991000001` | Owner      | `demo1234` |
+| Carlos Rivera   | `+79991000002` | Admin      | `demo1234` |
+| Sarah Chen      | `+79991000003` | Manager    | `demo1234` |
+| James Wilson    | `+79991000004` | Operator   | `demo1234` |
+| Andrei Volkov   | `+79991000005` | Mechanic   | `demo1234` |
+| Emma Park       | `+79991000006` | Viewer     | `demo1234` |
 | Lucia Fernandez | `+79991000007` | Accountant | `demo1234` |
 
 ### 10.3 Сидированные данные
 
-| Сущность | Количество | Детали |
-|----------|-----------|--------|
-| Активы | 40 | bike, ebike, scooter, escooter |
-| Аренды | 15 | 6 разных статусов |
-| Наряды | 3 | assigned, in_progress, completed |
-| Уведомления | 2 | оба непрочитаны |
-| Механики | 1 | Andrei Volkov |
+| Сущность    | Количество | Детали                           |
+| ----------- | ---------- | -------------------------------- |
+| Активы      | 40         | bike, ebike, scooter, escooter   |
+| Аренды      | 15         | 6 разных статусов                |
+| Наряды      | 3          | assigned, in_progress, completed |
+| Уведомления | 2          | оба непрочитаны                  |
+| Механики    | 1          | Andrei Volkov                    |
 
 ---
 
@@ -639,16 +658,19 @@ React/Vite приложение для управления платформой
 ### 11.2 Формат ответов
 
 **Успех:**
+
 ```json
 { "data": { ... } }
 ```
 
 **Успех (список):**
+
 ```json
 { "data": [ ... ] }
 ```
 
 **Ошибка:**
+
 ```json
 {
   "error": {
@@ -660,85 +682,91 @@ React/Vite приложение для управления платформой
 
 ### 11.3 Коды ошибок
 
-| Код HTTP | Код ошибки | Причина |
-|----------|------------|---------|
-| 400 | `VALIDATION` | Неверные параметры запроса |
-| 401 | `UNAUTHORIZED` | Токен отсутствует или истёк |
-| 403 | `FORBIDDEN` | Недостаточно прав |
-| 404 | `NOT_FOUND` | Ресурс не найден |
-| 500 | `INTERNAL_ERROR` | Внутренняя ошибка сервера |
+| Код HTTP | Код ошибки       | Причина                     |
+| -------- | ---------------- | --------------------------- |
+| 400      | `VALIDATION`     | Неверные параметры запроса  |
+| 401      | `UNAUTHORIZED`   | Токен отсутствует или истёк |
+| 403      | `FORBIDDEN`      | Недостаточно прав           |
+| 404      | `NOT_FOUND`      | Ресурс не найден            |
+| 500      | `INTERNAL_ERROR` | Внутренняя ошибка сервера   |
 
 ### 11.4 Полный список эндпоинтов
 
 #### Аутентификация
-| Метод | Путь | Описание |
-|-------|------|----------|
-| POST | `/auth/phone/login` | Вход по телефону |
-| POST | `/auth/refresh` | Обновить токен |
-| POST | `/auth/logout` | Выйти |
-| GET | `/auth/me` | Текущий пользователь |
+
+| Метод | Путь                | Описание             |
+| ----- | ------------------- | -------------------- |
+| POST  | `/auth/phone/login` | Вход по телефону     |
+| POST  | `/auth/refresh`     | Обновить токен       |
+| POST  | `/auth/logout`      | Выйти                |
+| GET   | `/auth/me`          | Текущий пользователь |
 
 #### Активы
-| Метод | Путь | Разрешение |
-|-------|------|-----------|
-| GET | `/assets` | `asset:read` |
-| GET | `/assets/:id` | `asset:read` |
-| POST | `/assets` | `asset:create` |
-| PATCH | `/assets/:id` | `asset:update` |
-| PATCH | `/assets/:id/status` | `asset:changeStatus` |
-| GET | `/assets/:id/status-history` | `asset:read` |
-| GET | `/fleet-map` | `asset:read` |
+
+| Метод | Путь                         | Разрешение           |
+| ----- | ---------------------------- | -------------------- |
+| GET   | `/assets`                    | `asset:read`         |
+| GET   | `/assets/:id`                | `asset:read`         |
+| POST  | `/assets`                    | `asset:create`       |
+| PATCH | `/assets/:id`                | `asset:update`       |
+| PATCH | `/assets/:id/status`         | `asset:changeStatus` |
+| GET   | `/assets/:id/status-history` | `asset:read`         |
+| GET   | `/fleet-map`                 | `asset:read`         |
 
 #### Аренда
-| Метод | Путь | Разрешение |
-|-------|------|-----------|
-| GET | `/rentals` | `rental:read` |
-| GET | `/rentals/:id` | `rental:read` |
-| POST | `/rentals` | `rental:create` |
-| PATCH | `/rentals/:id` | `rental:update` |
-| POST | `/rentals/:id/start` | `rental:start` |
-| POST | `/rentals/:id/complete` | `rental:complete` |
-| POST | `/rentals/:id/cancel` | `rental:cancel` |
+
+| Метод | Путь                    | Разрешение        |
+| ----- | ----------------------- | ----------------- |
+| GET   | `/rentals`              | `rental:read`     |
+| GET   | `/rentals/:id`          | `rental:read`     |
+| POST  | `/rentals`              | `rental:create`   |
+| PATCH | `/rentals/:id`          | `rental:update`   |
+| POST  | `/rentals/:id/start`    | `rental:start`    |
+| POST  | `/rentals/:id/complete` | `rental:complete` |
+| POST  | `/rentals/:id/cancel`   | `rental:cancel`   |
 
 #### Сервисный модуль
-| Метод | Путь | Разрешение |
-|-------|------|-----------|
-| GET | `/work-orders` | `asset:read` |
-| POST | `/work-orders` | `asset:update` |
-| PATCH | `/work-orders/:id` | `asset:update` |
-| POST | `/work-orders/:id/status` | `asset:update` |
-| GET | `/work-orders/:id/parts` | `asset:read` |
-| POST | `/work-orders/:id/parts` | `asset:update` |
+
+| Метод  | Путь                             | Разрешение     |
+| ------ | -------------------------------- | -------------- |
+| GET    | `/work-orders`                   | `asset:read`   |
+| POST   | `/work-orders`                   | `asset:update` |
+| PATCH  | `/work-orders/:id`               | `asset:update` |
+| POST   | `/work-orders/:id/status`        | `asset:update` |
+| GET    | `/work-orders/:id/parts`         | `asset:read`   |
+| POST   | `/work-orders/:id/parts`         | `asset:update` |
 | DELETE | `/work-orders/:id/parts/:partId` | `asset:update` |
-| GET | `/mechanics` | `asset:read` |
-| GET | `/maintenance-logs` | `asset:read` |
-| POST | `/maintenance-logs` | `asset:update` |
-| GET | `/maintenance-schedules` | `asset:read` |
-| GET | `/maintenance-schedules/overdue` | `asset:read` |
-| POST | `/maintenance-schedules` | `asset:update` |
-| PATCH | `/maintenance-schedules/:id` | `asset:update` |
-| DELETE | `/maintenance-schedules/:id` | `asset:update` |
-| GET | `/spare-parts` | `asset:read` |
-| GET | `/spare-parts/:id` | `asset:read` |
-| POST | `/spare-parts` | `asset:update` |
-| PATCH | `/spare-parts/:id` | `asset:update` |
-| DELETE | `/spare-parts/:id` | `asset:update` |
-| GET | `/spare-parts/:id/transactions` | `asset:read` |
-| POST | `/spare-parts/transactions` | `asset:update` |
+| GET    | `/mechanics`                     | `asset:read`   |
+| GET    | `/maintenance-logs`              | `asset:read`   |
+| POST   | `/maintenance-logs`              | `asset:update` |
+| GET    | `/maintenance-schedules`         | `asset:read`   |
+| GET    | `/maintenance-schedules/overdue` | `asset:read`   |
+| POST   | `/maintenance-schedules`         | `asset:update` |
+| PATCH  | `/maintenance-schedules/:id`     | `asset:update` |
+| DELETE | `/maintenance-schedules/:id`     | `asset:update` |
+| GET    | `/spare-parts`                   | `asset:read`   |
+| GET    | `/spare-parts/:id`               | `asset:read`   |
+| POST   | `/spare-parts`                   | `asset:update` |
+| PATCH  | `/spare-parts/:id`               | `asset:update` |
+| DELETE | `/spare-parts/:id`               | `asset:update` |
+| GET    | `/spare-parts/:id/transactions`  | `asset:read`   |
+| POST   | `/spare-parts/transactions`      | `asset:update` |
 
 #### Уведомления
-| Метод | Путь | Разрешение |
-|-------|------|-----------|
-| GET | `/notifications` | `notification:read` |
-| POST | `/notifications/:id/read` | `notification:read` |
-| POST | `/notifications/read-all` | `notification:read` |
+
+| Метод | Путь                      | Разрешение          |
+| ----- | ------------------------- | ------------------- |
+| GET   | `/notifications`          | `notification:read` |
+| POST  | `/notifications/:id/read` | `notification:read` |
+| POST  | `/notifications/read-all` | `notification:read` |
 
 #### Прочее
-| Метод | Путь | Описание |
-|-------|------|----------|
-| GET | `/service-requests` | Заявки на сервис |
-| GET | `/service-requests/:id` | Одна заявка |
-| POST | `/webhooks/yukassa` | Webhook ЮКасса |
+
+| Метод | Путь                    | Описание         |
+| ----- | ----------------------- | ---------------- |
+| GET   | `/service-requests`     | Заявки на сервис |
+| GET   | `/service-requests/:id` | Одна заявка      |
+| POST  | `/webhooks/yukassa`     | Webhook ЮКасса   |
 
 ---
 

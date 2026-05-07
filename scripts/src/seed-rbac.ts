@@ -1,15 +1,62 @@
-import { db, roles, permissions, rolePermissions, platformRoles, saasPlans } from "@workspace/db";
+import {
+  db,
+  roles,
+  permissions,
+  rolePermissions,
+  platformRoles,
+  saasPlans,
+} from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const SYSTEM_ROLES = [
-  { code: "superAdmin", name: "Super Admin", description: "Platform-level admin with full access", isSystem: true },
-  { code: "owner", name: "Owner", description: "Company owner with full company access", isSystem: true },
-  { code: "admin", name: "Admin", description: "Company administrator", isSystem: true },
-  { code: "manager", name: "Manager", description: "Branch/station manager", isSystem: true },
-  { code: "accountant", name: "Accountant", description: "Financial operations", isSystem: true },
-  { code: "operator", name: "Operator", description: "Day-to-day rental operations", isSystem: true },
-  { code: "mechanic", name: "Mechanic", description: "Asset maintenance and repairs", isSystem: true },
-  { code: "viewer", name: "Viewer", description: "Read-only access", isSystem: true },
+  {
+    code: "superAdmin",
+    name: "Super Admin",
+    description: "Platform-level admin with full access",
+    isSystem: true,
+  },
+  {
+    code: "owner",
+    name: "Owner",
+    description: "Company owner with full company access",
+    isSystem: true,
+  },
+  {
+    code: "admin",
+    name: "Admin",
+    description: "Company administrator",
+    isSystem: true,
+  },
+  {
+    code: "manager",
+    name: "Manager",
+    description: "Branch/station manager",
+    isSystem: true,
+  },
+  {
+    code: "accountant",
+    name: "Accountant",
+    description: "Financial operations",
+    isSystem: true,
+  },
+  {
+    code: "operator",
+    name: "Operator",
+    description: "Day-to-day rental operations",
+    isSystem: true,
+  },
+  {
+    code: "mechanic",
+    name: "Mechanic",
+    description: "Asset maintenance and repairs",
+    isSystem: true,
+  },
+  {
+    code: "viewer",
+    name: "Viewer",
+    description: "Read-only access",
+    isSystem: true,
+  },
 ];
 
 const MODULES: Record<string, string[]> = {
@@ -40,7 +87,17 @@ const RESOURCE_ACTIONS: Record<string, string[]> = {
   station: ["create", "read", "update", "delete", "manage"],
   client: ["create", "read", "update", "delete", "manage"],
   asset: ["create", "read", "update", "delete", "changeStatus", "manage"],
-  rental: ["create", "read", "update", "approve", "start", "extend", "complete", "cancel", "manage"],
+  rental: [
+    "create",
+    "read",
+    "update",
+    "approve",
+    "start",
+    "extend",
+    "complete",
+    "cancel",
+    "manage",
+  ],
   blacklist: ["create", "read", "update", "check", "manage"],
   payment: ["create", "read", "refund", "manage"],
   deposit: ["create", "read", "update", "manage"],
@@ -59,7 +116,9 @@ const RESOURCE_ACTIONS: Record<string, string[]> = {
 };
 
 function allPermsFor(resources: string[]): string[] {
-  return resources.flatMap((r) => (RESOURCE_ACTIONS[r] || []).map((a) => `${r}:${a}`));
+  return resources.flatMap((r) =>
+    (RESOURCE_ACTIONS[r] || []).map((a) => `${r}:${a}`),
+  );
 }
 
 function permsFor(resource: string, actions: string[]): string[] {
@@ -67,7 +126,9 @@ function permsFor(resource: string, actions: string[]): string[] {
 }
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  owner: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) => actions.map((a) => `${r}:${a}`)),
+  owner: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) =>
+    actions.map((a) => `${r}:${a}`),
+  ),
 
   admin: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) =>
     actions
@@ -84,7 +145,16 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("station", ["create", "read", "update"]),
     ...permsFor("client", ["create", "read", "update"]),
     ...permsFor("asset", ["create", "read", "update", "changeStatus"]),
-    ...permsFor("rental", ["create", "read", "update", "approve", "start", "extend", "complete", "cancel"]),
+    ...permsFor("rental", [
+      "create",
+      "read",
+      "update",
+      "approve",
+      "start",
+      "extend",
+      "complete",
+      "cancel",
+    ]),
     ...permsFor("blacklist", ["create", "read", "update", "check"]),
     ...permsFor("payment", ["read"]),
     ...permsFor("deposit", ["read"]),
@@ -117,7 +187,14 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("station", ["read"]),
     ...permsFor("client", ["create", "read", "update"]),
     ...permsFor("asset", ["read", "update", "changeStatus"]),
-    ...permsFor("rental", ["create", "read", "update", "start", "extend", "complete"]),
+    ...permsFor("rental", [
+      "create",
+      "read",
+      "update",
+      "start",
+      "extend",
+      "complete",
+    ]),
     ...permsFor("blacklist", ["read", "check"]),
     ...permsFor("payment", ["read"]),
     ...permsFor("deposit", ["read"]),
@@ -149,7 +226,11 @@ async function seed() {
   console.log("Seeding roles...");
 
   for (const role of SYSTEM_ROLES) {
-    const existing = await db.select().from(roles).where(eq(roles.code, role.code)).limit(1);
+    const existing = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.code, role.code))
+      .limit(1);
     if (existing.length === 0) {
       await db.insert(roles).values(role);
       console.log(`  Created role: ${role.code}`);
@@ -205,26 +286,53 @@ async function seed() {
       if (!permId) continue;
 
       try {
-        await db.insert(rolePermissions).values({ roleId, permissionId: permId });
+        await db
+          .insert(rolePermissions)
+          .values({ roleId, permissionId: permId });
         mapped++;
-      } catch {
-      }
+      } catch {}
     }
-    console.log(`  Mapped ${mapped} new / ${permCodes.length} total permissions to role: ${roleCode}`);
+    console.log(
+      `  Mapped ${mapped} new / ${permCodes.length} total permissions to role: ${roleCode}`,
+    );
   }
 
   console.log("Seeding platform roles...");
 
   const PLATFORM_ROLES = [
-    { code: "superAdmin", name: "Super Admin", description: "Full platform access with all capabilities" },
-    { code: "platformAdmin", name: "Platform Admin", description: "Platform administration and tenant management" },
-    { code: "platformSupport", name: "Platform Support", description: "Read-only tenant inspection and support tools" },
-    { code: "platformFinance", name: "Platform Finance", description: "SaaS billing, invoices, and subscription management" },
-    { code: "platformRisk", name: "Platform Risk", description: "Global blacklist and risk management" },
+    {
+      code: "superAdmin",
+      name: "Super Admin",
+      description: "Full platform access with all capabilities",
+    },
+    {
+      code: "platformAdmin",
+      name: "Platform Admin",
+      description: "Platform administration and tenant management",
+    },
+    {
+      code: "platformSupport",
+      name: "Platform Support",
+      description: "Read-only tenant inspection and support tools",
+    },
+    {
+      code: "platformFinance",
+      name: "Platform Finance",
+      description: "SaaS billing, invoices, and subscription management",
+    },
+    {
+      code: "platformRisk",
+      name: "Platform Risk",
+      description: "Global blacklist and risk management",
+    },
   ];
 
   for (const role of PLATFORM_ROLES) {
-    const existing = await db.select().from(platformRoles).where(eq(platformRoles.code, role.code)).limit(1);
+    const existing = await db
+      .select()
+      .from(platformRoles)
+      .where(eq(platformRoles.code, role.code))
+      .limit(1);
     if (existing.length === 0) {
       await db.insert(platformRoles).values(role);
       console.log(`  Created platform role: ${role.code}`);
@@ -264,7 +372,16 @@ async function seed() {
       maxAssets: 500,
       maxUsers: 25,
       limits: { rentalsPerMonth: 5000, apiCallsPerDay: 50000 },
-      enabledModules: ["organization", "crm", "fleet", "operations", "finance", "telemetry", "geofencing", "commands"],
+      enabledModules: [
+        "organization",
+        "crm",
+        "fleet",
+        "operations",
+        "finance",
+        "telemetry",
+        "geofencing",
+        "commands",
+      ],
       supportTier: "priority",
       whiteLabelAvailable: false,
     },
@@ -280,17 +397,33 @@ async function seed() {
       maxAssets: -1,
       maxUsers: -1,
       limits: { rentalsPerMonth: -1, apiCallsPerDay: -1 },
-      enabledModules: ["organization", "crm", "fleet", "operations", "finance", "telemetry", "geofencing", "commands", "notifications"],
+      enabledModules: [
+        "organization",
+        "crm",
+        "fleet",
+        "operations",
+        "finance",
+        "telemetry",
+        "geofencing",
+        "commands",
+        "notifications",
+      ],
       supportTier: "dedicated",
       whiteLabelAvailable: true,
     },
   ];
 
   for (const plan of SAAS_PLANS) {
-    const existing = await db.select().from(saasPlans).where(eq(saasPlans.code, plan.code)).limit(1);
+    const existing = await db
+      .select()
+      .from(saasPlans)
+      .where(eq(saasPlans.code, plan.code))
+      .limit(1);
     if (existing.length === 0) {
       await db.insert(saasPlans).values(plan);
-      console.log(`  Created SaaS plan: ${plan.code} ($${(plan.price / 100).toFixed(2)}/mo)`);
+      console.log(
+        `  Created SaaS plan: ${plan.code} ($${(plan.price / 100).toFixed(2)}/mo)`,
+      );
     } else {
       console.log(`  SaaS plan exists: ${plan.code}`);
     }

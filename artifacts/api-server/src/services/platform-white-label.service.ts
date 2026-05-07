@@ -1,9 +1,19 @@
-import { db, companyWhiteLabelSettings, companies, saasPlans, saasSubscriptions } from "@workspace/db";
+import {
+  db,
+  companyWhiteLabelSettings,
+  companies,
+  saasPlans,
+  saasSubscriptions,
+} from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 
 export async function getWhiteLabelSettings(companyId: string) {
-  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
   const [settings] = await db
@@ -15,18 +25,25 @@ export async function getWhiteLabelSettings(companyId: string) {
   return settings ?? null;
 }
 
-export async function upsertWhiteLabelSettings(companyId: string, input: Partial<{
-  customDomain: string | null;
-  brandNameOverride: string | null;
-  logoUrl: string | null;
-  coverUrl: string | null;
-  primaryColor: string | null;
-  secondaryColor: string | null;
-  customSupportEmail: string | null;
-  customSupportPhone: string | null;
-  notes: string | null;
-}>) {
-  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+export async function upsertWhiteLabelSettings(
+  companyId: string,
+  input: Partial<{
+    customDomain: string | null;
+    brandNameOverride: string | null;
+    logoUrl: string | null;
+    coverUrl: string | null;
+    primaryColor: string | null;
+    secondaryColor: string | null;
+    customSupportEmail: string | null;
+    customSupportPhone: string | null;
+    notes: string | null;
+  }>,
+) {
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
   const existing = await getWhiteLabelSettings(companyId);
@@ -64,12 +81,20 @@ async function checkWhiteLabelEligibility(companyId: string): Promise<boolean> {
 }
 
 export async function enableWhiteLabel(companyId: string) {
-  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
   if (!company) throw new NotFoundError("Company not found");
 
   const eligible = await checkWhiteLabelEligibility(companyId);
   if (!eligible) {
-    throw new AppError(422, "White-label is not available on the current plan", "PLAN_NOT_ELIGIBLE");
+    throw new AppError(
+      422,
+      "White-label is not available on the current plan",
+      "PLAN_NOT_ELIGIBLE",
+    );
   }
 
   const existing = await getWhiteLabelSettings(companyId);

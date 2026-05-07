@@ -25,18 +25,38 @@ const testApp = app;
 
 describe("Platform Access Model", () => {
   let superAdminUser: { id: string; email: string | undefined; token: string };
-  let platformAdminUser: { id: string; email: string | undefined; token: string };
-  let platformSupportUser: { id: string; email: string | undefined; token: string };
-  let platformFinanceUser: { id: string; email: string | undefined; token: string };
+  let platformAdminUser: {
+    id: string;
+    email: string | undefined;
+    token: string;
+  };
+  let platformSupportUser: {
+    id: string;
+    email: string | undefined;
+    token: string;
+  };
+  let platformFinanceUser: {
+    id: string;
+    email: string | undefined;
+    token: string;
+  };
   let regularUser: { id: string; email: string | undefined; token: string };
 
   beforeAll(async () => {
     await seedRolesAndPermissions();
 
-    superAdminUser = await createTestUser({ platformRoleCodes: ["superAdmin"] });
-    platformAdminUser = await createTestUser({ platformRoleCodes: ["platformAdmin"] });
-    platformSupportUser = await createTestUser({ platformRoleCodes: ["platformSupport"] });
-    platformFinanceUser = await createTestUser({ platformRoleCodes: ["platformFinance"] });
+    superAdminUser = await createTestUser({
+      platformRoleCodes: ["superAdmin"],
+    });
+    platformAdminUser = await createTestUser({
+      platformRoleCodes: ["platformAdmin"],
+    });
+    platformSupportUser = await createTestUser({
+      platformRoleCodes: ["platformSupport"],
+    });
+    platformFinanceUser = await createTestUser({
+      platformRoleCodes: ["platformFinance"],
+    });
     regularUser = await createTestUser({});
   });
 
@@ -131,8 +151,7 @@ describe("Platform Access Model", () => {
     });
 
     it("rejects unauthenticated request", async () => {
-      const res = await request(testApp)
-        .get("/api/platform/audit-logs");
+      const res = await request(testApp).get("/api/platform/audit-logs");
 
       expect(res.status).toBe(401);
     });
@@ -186,7 +205,11 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.every((l: AuditLogItem) => l.action === "company.block")).toBe(true);
+      expect(
+        res.body.data.items.every(
+          (l: AuditLogItem) => l.action === "company.block",
+        ),
+      ).toBe(true);
     });
 
     it("filters by entityType", async () => {
@@ -195,7 +218,11 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.every((l: AuditLogItem) => l.entityType === "subscription")).toBe(true);
+      expect(
+        res.body.data.items.every(
+          (l: AuditLogItem) => l.entityType === "subscription",
+        ),
+      ).toBe(true);
     });
 
     it("filters by actorUserId", async () => {
@@ -204,7 +231,11 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.every((l: AuditLogItem) => l.actorUserId === platformAdminUser.id)).toBe(true);
+      expect(
+        res.body.data.items.every(
+          (l: AuditLogItem) => l.actorUserId === platformAdminUser.id,
+        ),
+      ).toBe(true);
     });
 
     it("includes actor details in response", async () => {
@@ -367,7 +398,9 @@ describe("Platform Access Model", () => {
 
       const token = loginRes.body.data.accessToken;
       const [, payloadB64] = token.split(".");
-      const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
+      const payload = JSON.parse(
+        Buffer.from(payloadB64, "base64url").toString(),
+      );
       expect(payload.isSuperAdmin).toBe(true);
       expect(payload.platformRoles).toContain("superAdmin");
     });

@@ -1,8 +1,18 @@
-import type { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+import type {
+  Request,
+  Response,
+  NextFunction,
+  ErrorRequestHandler,
+} from "express";
 import { AppError } from "../lib/errors";
 import { ZodError } from "zod/v4";
 
-export const errorHandler: ErrorRequestHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
+export const errorHandler: ErrorRequestHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  _next: NextFunction,
+) => {
   if (err instanceof AppError) {
     const body: Record<string, unknown> = {
       code: err.code,

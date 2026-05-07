@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useNetwork } from "@/services/network";
@@ -15,7 +21,12 @@ export function SyncStatusBanner() {
   const isOffline = !isConnected;
 
   return (
-    <View style={[styles.banner, { backgroundColor: isOffline ? colors.offline : colors.syncing }]}>
+    <View
+      style={[
+        styles.banner,
+        { backgroundColor: isOffline ? colors.offline : colors.syncing },
+      ]}
+    >
       <Feather
         name={isOffline ? "wifi-off" : "refresh-cw"}
         size={14}

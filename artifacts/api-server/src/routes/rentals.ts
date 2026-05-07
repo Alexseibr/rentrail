@@ -2,16 +2,28 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as rentalService from "../services/rental.service";
 import { createAuditLog } from "../lib/audit";
 
 const router: IRouter = Router();
 
 const VALID_RENTAL_STATUSES = [
-  "draft", "pending_approval", "awaiting_payment", "awaiting_pickup",
-  "active", "extended", "overdue", "return_requested",
-  "completed", "canceled", "disputed", "defaulted",
+  "draft",
+  "pending_approval",
+  "awaiting_payment",
+  "awaiting_pickup",
+  "active",
+  "extended",
+  "overdue",
+  "return_requested",
+  "completed",
+  "canceled",
+  "disputed",
+  "defaulted",
 ] as const;
 
 const createRentalSchema = z.object({
@@ -37,7 +49,9 @@ const cancelSchema = z.object({ reason: z.string().optional() });
 
 const returnSchema = z.object({
   returnedToStationId: z.string().uuid().optional(),
-  assetReturnStatus: z.enum(["available", "maintenance", "charging"]).optional(),
+  assetReturnStatus: z
+    .enum(["available", "maintenance", "charging"])
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -54,7 +68,9 @@ router.post(
         companyId: req.tenant!.companyId,
         issuedByUserId: req.user!.userId,
         startAt: req.body.startAt ? new Date(req.body.startAt) : null,
-        plannedEndAt: req.body.plannedEndAt ? new Date(req.body.plannedEndAt) : null,
+        plannedEndAt: req.body.plannedEndAt
+          ? new Date(req.body.plannedEndAt)
+          : null,
       },
       req.user!.userId,
     );
@@ -78,10 +94,23 @@ router.get(
   requirePermission("rental:read"),
   async (req, res) => {
     const status = req.query.status as string | undefined;
-    if (status && !VALID_RENTAL_STATUSES.includes(status as (typeof VALID_RENTAL_STATUSES)[number])) {
-      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid status value: ${status}` } });
+    if (
+      status &&
+      !VALID_RENTAL_STATUSES.includes(
+        status as (typeof VALID_RENTAL_STATUSES)[number],
+      )
+    ) {
+      return res.status(400).json({
+        error: {
+          code: "VALIDATION",
+          message: `Invalid status value: ${status}`,
+        },
+      });
     }
-    const rentals = await rentalService.listRentals(req.tenant!.companyId, status);
+    const rentals = await rentalService.listRentals(
+      req.tenant!.companyId,
+      status,
+    );
     return res.json({ data: rentals });
   },
 );
@@ -93,7 +122,10 @@ router.get(
   requirePermission("rental:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const rental = await rentalService.getRental(req.params.id as string, req.tenant!.companyId);
+    const rental = await rentalService.getRental(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: rental });
   },
 );
@@ -105,7 +137,10 @@ router.get(
   requirePermission("rental:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const history = await rentalService.getRentalStatusHistory(req.params.id as string, req.tenant!.companyId);
+    const history = await rentalService.getRentalStatusHistory(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: history });
   },
 );
@@ -117,7 +152,11 @@ router.post(
   requirePermission("rental:approve"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previousStatus } = await rentalService.approveRental(req.params.id as string, req.tenant!.companyId, req.user!.userId);
+    const { updated, previousStatus } = await rentalService.approveRental(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.user!.userId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -139,7 +178,11 @@ router.post(
   requirePermission("rental:start"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previousStatus } = await rentalService.startRental(req.params.id as string, req.tenant!.companyId, req.user!.userId);
+    const { updated, previousStatus } = await rentalService.startRental(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.user!.userId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

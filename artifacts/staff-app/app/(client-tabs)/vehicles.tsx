@@ -94,7 +94,9 @@ export default function VehiclesScreen() {
     }, [fetchVehicles]),
   );
 
-  useAppStateFocus(() => { fetchVehicles(); });
+  useAppStateFocus(() => {
+    fetchVehicles();
+  });
 
   const handleLookup = async () => {
     const code = searchCode.trim();
@@ -114,9 +116,15 @@ export default function VehiclesScreen() {
       const json = await res.json();
       if (res.ok && json.data) {
         setSearchCode("");
-        router.push({ pathname: "/(client-tabs)/vehicle-detail", params: { id: json.data.id } });
+        router.push({
+          pathname: "/(client-tabs)/vehicle-detail",
+          params: { id: json.data.id },
+        });
       } else {
-        Alert.alert(t("common.error"), json.error?.message || t("clientVehicles.vehicleNotFound"));
+        Alert.alert(
+          t("common.error"),
+          json.error?.message || t("clientVehicles.vehicleNotFound"),
+        );
       }
     } catch {
       Alert.alert(t("common.error"), t("clientVehicles.lookupFailed"));
@@ -141,7 +149,10 @@ export default function VehiclesScreen() {
       });
       const json = await res.json();
       if (res.ok) {
-        Alert.alert(t("clientVehicles.success"), t("clientVehicles.rentalStarted"));
+        Alert.alert(
+          t("clientVehicles.success"),
+          t("clientVehicles.rentalStarted"),
+        );
         fetchVehicles();
       } else {
         Alert.alert(t("common.error"), json.error?.message || "Failed");
@@ -156,18 +167,24 @@ export default function VehiclesScreen() {
   const renderVehicle = ({ item }: { item: Vehicle }) => {
     const typeColor = ASSET_TYPE_COLORS[item.assetType] || "#666";
     const typeIcon = ASSET_TYPE_ICONS[item.assetType] || "circle";
-    const statusStyle = VEHICLE_STATUS_STYLE[item.status] || VEHICLE_STATUS_STYLE.available;
+    const statusStyle =
+      VEHICLE_STATUS_STYLE[item.status] || VEHICLE_STATUS_STYLE.available;
 
     return (
       <TouchableOpacity
         style={styles.card}
         onPress={() =>
-          router.push({ pathname: "/(client-tabs)/vehicle-detail", params: { id: item.id } })
+          router.push({
+            pathname: "/(client-tabs)/vehicle-detail",
+            params: { id: item.id },
+          })
         }
         activeOpacity={0.75}
       >
         <View style={styles.cardHeader}>
-          <View style={[styles.typeBadge, { backgroundColor: typeColor + "20" }]}>
+          <View
+            style={[styles.typeBadge, { backgroundColor: typeColor + "20" }]}
+          >
             <Feather name={typeIcon as any} size={15} color={typeColor} />
             <Text style={[styles.typeText, { color: typeColor }]}>
               {item.assetType.toUpperCase()}
@@ -181,8 +198,12 @@ export default function VehiclesScreen() {
         </Text>
 
         <View style={styles.infoRow}>
-          <View style={[styles.availBadge, { backgroundColor: statusStyle.bg }]}>
-            <View style={[styles.availDot, { backgroundColor: statusStyle.color }]} />
+          <View
+            style={[styles.availBadge, { backgroundColor: statusStyle.bg }]}
+          >
+            <View
+              style={[styles.availDot, { backgroundColor: statusStyle.color }]}
+            />
             <Text style={[styles.availText, { color: statusStyle.color }]}>
               {String(t(`clientVehicles.status_${item.status}`, item.status))}
             </Text>
@@ -219,7 +240,9 @@ export default function VehiclesScreen() {
           ) : (
             <>
               <Feather name="play-circle" size={17} color="#1a1a1a" />
-              <Text style={styles.rentButtonText}>{t("clientVehicles.rent")}</Text>
+              <Text style={styles.rentButtonText}>
+                {t("clientVehicles.rent")}
+              </Text>
             </>
           )}
         </TouchableOpacity>
@@ -259,7 +282,10 @@ export default function VehiclesScreen() {
           />
         </View>
         <TouchableOpacity
-          style={[styles.searchBtn, (searching || !searchCode.trim()) && { opacity: 0.5 }]}
+          style={[
+            styles.searchBtn,
+            (searching || !searchCode.trim()) && { opacity: 0.5 },
+          ]}
           onPress={handleLookup}
           disabled={searching || !searchCode.trim()}
           activeOpacity={0.7}
@@ -276,7 +302,10 @@ export default function VehiclesScreen() {
         data={vehicles}
         keyExtractor={(v) => v.id}
         renderItem={renderVehicle}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[
+          styles.list,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -292,8 +321,12 @@ export default function VehiclesScreen() {
             <View style={styles.emptyIconWrap}>
               <Feather name="map-pin" size={36} color="#F5C518" />
             </View>
-            <Text style={styles.emptyTitle}>{t("clientVehicles.noVehicles")}</Text>
-            <Text style={styles.emptyHint}>{t("clientVehicles.tryScanning")}</Text>
+            <Text style={styles.emptyTitle}>
+              {t("clientVehicles.noVehicles")}
+            </Text>
+            <Text style={styles.emptyHint}>
+              {t("clientVehicles.tryScanning")}
+            </Text>
           </View>
         }
       />
@@ -304,18 +337,25 @@ export default function VehiclesScreen() {
         animationType="fade"
         onRequestClose={() => setConfirmVehicle(null)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setConfirmVehicle(null)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setConfirmVehicle(null)}
+        >
           <Pressable style={styles.modalSheet} onPress={() => {}}>
             <View style={styles.modalIconWrap}>
               <Feather name="play-circle" size={32} color="#F5C518" />
             </View>
-            <Text style={styles.modalTitle}>{t("clientVehicles.confirmRent")}</Text>
+            <Text style={styles.modalTitle}>
+              {t("clientVehicles.confirmRent")}
+            </Text>
             {confirmVehicle && (
               <Text style={styles.modalVehicleName}>
                 {confirmVehicle.brand} {confirmVehicle.model}
               </Text>
             )}
-            <Text style={styles.modalMessage}>{t("clientVehicles.confirmRentMessage")}</Text>
+            <Text style={styles.modalMessage}>
+              {t("clientVehicles.confirmRentMessage")}
+            </Text>
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -331,7 +371,9 @@ export default function VehiclesScreen() {
                 activeOpacity={0.8}
               >
                 <Feather name="play-circle" size={17} color="#1a1a1a" />
-                <Text style={styles.modalConfirmText}>{t("clientVehicles.rent")}</Text>
+                <Text style={styles.modalConfirmText}>
+                  {t("clientVehicles.rent")}
+                </Text>
               </TouchableOpacity>
             </View>
           </Pressable>
@@ -343,7 +385,12 @@ export default function VehiclesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f5f5f5" },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
   list: { padding: 16, gap: 12 },
   card: {
     backgroundColor: "#fff",
@@ -356,7 +403,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   typeBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -367,11 +418,24 @@ const styles = StyleSheet.create({
   },
   typeText: { fontSize: 11, fontFamily: "Inter_700Bold" },
   codeText: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8c8c8c" },
-  vehicleName: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
-  infoRow: { flexDirection: "row", gap: 12, alignItems: "center", flexWrap: "wrap" },
+  vehicleName: {
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    color: "#1a1a1a",
+  },
+  infoRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
   availBadge: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   availDot: { width: 6, height: 6, borderRadius: 3 },
   availText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
@@ -387,7 +451,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 4,
   },
-  rentButtonText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
+  rentButtonText: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: "#1a1a1a",
+  },
   searchBar: {
     flexDirection: "row",
     gap: 8,
@@ -441,7 +509,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
+  emptyTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#1a1a1a",
+  },
   emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
   modalOverlay: {
     flex: 1,

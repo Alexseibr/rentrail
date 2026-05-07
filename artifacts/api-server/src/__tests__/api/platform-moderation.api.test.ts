@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
-import { createTestUser, createTestTenant, assignRole } from "../../test/helpers";
+import {
+  createTestUser,
+  createTestTenant,
+  assignRole,
+} from "../../test/helpers";
 import { db, companies, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -63,7 +67,9 @@ describe("Platform Moderation", () => {
         .get("/api/platform/companies")
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
-      const company = res.body.data.items.find((c: { id: string }) => c.id === tenantA.company.id);
+      const company = res.body.data.items.find(
+        (c: { id: string }) => c.id === tenantA.company.id,
+      );
       expect(company).toBeDefined();
       expect(company.counts).toBeDefined();
       expect(typeof company.counts.branches).toBe("number");
@@ -87,7 +93,11 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.some((c: { id: string }) => c.id === tenantA.company.id)).toBe(true);
+      expect(
+        res.body.data.items.some(
+          (c: { id: string }) => c.id === tenantA.company.id,
+        ),
+      ).toBe(true);
     });
 
     it("supports pagination params", async () => {
@@ -176,7 +186,9 @@ describe("Platform Moderation", () => {
     let targetCompanyId: string;
 
     beforeAll(async () => {
-      const tenant = await createTestTenant({ companyName: "Pending Approve Co" });
+      const tenant = await createTestTenant({
+        companyName: "Pending Approve Co",
+      });
       targetCompanyId = tenant.company.id;
     });
 
@@ -214,7 +226,10 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${targetCompanyId}/block`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ reasonCode: "fraud", reasonText: "Suspicious activity detected" });
+        .send({
+          reasonCode: "fraud",
+          reasonText: "Suspicious activity detected",
+        });
 
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe("blocked");
@@ -253,7 +268,9 @@ describe("Platform Moderation", () => {
         .get(`/api/platform/companies/${targetCompanyId}`)
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
-      expect(detail.body.data.moderationHistory.length).toBeGreaterThanOrEqual(2);
+      expect(detail.body.data.moderationHistory.length).toBeGreaterThanOrEqual(
+        2,
+      );
     });
   });
 
@@ -270,14 +287,19 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${targetCompanyId}/suspend`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ reasonCode: "payment_overdue", reasonText: "Payment 30 days overdue" });
+        .send({
+          reasonCode: "payment_overdue",
+          reasonText: "Payment 30 days overdue",
+        });
 
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe("suspended");
     });
 
     it("cannot suspend a pending company", async () => {
-      const tenant = await createTestTenant({ companyName: "Pending Suspend Test" });
+      const tenant = await createTestTenant({
+        companyName: "Pending Suspend Test",
+      });
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/suspend`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
@@ -310,7 +332,10 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${targetCompanyId}/cancel`)
         .set("Authorization", `Bearer ${sa.token}`)
-        .send({ reasonCode: "requested", reasonText: "Customer requested cancellation" });
+        .send({
+          reasonCode: "requested",
+          reasonText: "Customer requested cancellation",
+        });
 
       expect(res.status).toBe(200);
       expect(res.body.data.status).toBe("canceled");
@@ -321,7 +346,10 @@ describe("Platform Moderation", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${targetCompanyId}/approve`)
         .set("Authorization", `Bearer ${sa.token}`)
-        .send({ reasonCode: "test", reasonText: "Attempt to reactivate canceled" });
+        .send({
+          reasonCode: "test",
+          reasonText: "Attempt to reactivate canceled",
+        });
 
       expect(res.status).toBe(422);
     });
@@ -329,47 +357,67 @@ describe("Platform Moderation", () => {
 
   describe("action-specific source-state guards", () => {
     it("unblock rejects from pending status (transition allowed, but action is wrong)", async () => {
-      const tenant = await createTestTenant({ companyName: "Guard Unblock Pending Co" });
+      const tenant = await createTestTenant({
+        companyName: "Guard Unblock Pending Co",
+      });
       await forceCompanyStatus(tenant.company.id, "pending");
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/unblock`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ reasonCode: "test", reasonText: "Should fail: unblock only from blocked" });
+        .send({
+          reasonCode: "test",
+          reasonText: "Should fail: unblock only from blocked",
+        });
 
       expect(res.status).toBe(409);
     });
 
     it("unblock rejects from suspended status (transition allowed, but action is wrong)", async () => {
-      const tenant = await createTestTenant({ companyName: "Guard Unblock Suspended Co" });
+      const tenant = await createTestTenant({
+        companyName: "Guard Unblock Suspended Co",
+      });
       await forceCompanyStatus(tenant.company.id, "suspended");
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/unblock`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ reasonCode: "test", reasonText: "Should fail: unblock only from blocked" });
+        .send({
+          reasonCode: "test",
+          reasonText: "Should fail: unblock only from blocked",
+        });
 
       expect(res.status).toBe(409);
     });
 
     it("approve rejects from suspended status (transition allowed, but action is wrong)", async () => {
-      const tenant = await createTestTenant({ companyName: "Guard Approve Suspended Co" });
+      const tenant = await createTestTenant({
+        companyName: "Guard Approve Suspended Co",
+      });
       await forceCompanyStatus(tenant.company.id, "suspended");
       const sa = await createTestUser({ platformRoleCodes: ["superAdmin"] });
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/approve`)
         .set("Authorization", `Bearer ${sa.token}`)
-        .send({ reasonCode: "test", reasonText: "Should fail: approve only from pending/trial" });
+        .send({
+          reasonCode: "test",
+          reasonText: "Should fail: approve only from pending/trial",
+        });
 
       expect(res.status).toBe(409);
     });
 
     it("approve rejects from blocked status (blocked→active allowed, but approve is wrong action)", async () => {
-      const tenant = await createTestTenant({ companyName: "Guard Approve Blocked Co" });
+      const tenant = await createTestTenant({
+        companyName: "Guard Approve Blocked Co",
+      });
       await forceCompanyStatus(tenant.company.id, "blocked");
       const sa = await createTestUser({ platformRoleCodes: ["superAdmin"] });
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/approve`)
         .set("Authorization", `Bearer ${sa.token}`)
-        .send({ reasonCode: "test", reasonText: "Should fail: approve only from pending/trial" });
+        .send({
+          reasonCode: "test",
+          reasonText: "Should fail: approve only from pending/trial",
+        });
 
       expect(res.status).toBe(409);
     });
@@ -380,7 +428,9 @@ describe("Platform Moderation", () => {
     let blockedTenantOwnerToken: string;
 
     beforeAll(async () => {
-      const tenant = await createTestTenant({ companyName: "Blocked Tenant Co" });
+      const tenant = await createTestTenant({
+        companyName: "Blocked Tenant Co",
+      });
       blockedCompanyId = tenant.company.id;
       const owner = await createTestUser({});
       await assignRole(owner.id, blockedCompanyId, "owner", tenant.branch.id);
@@ -416,7 +466,9 @@ describe("Platform Moderation", () => {
     let canceledOwnerToken: string;
 
     beforeAll(async () => {
-      const tenant = await createTestTenant({ companyName: "Canceled Tenant Co" });
+      const tenant = await createTestTenant({
+        companyName: "Canceled Tenant Co",
+      });
       canceledCompanyId = tenant.company.id;
       const owner = await createTestUser({});
       await assignRole(owner.id, canceledCompanyId, "owner", tenant.branch.id);
@@ -441,7 +493,9 @@ describe("Platform Moderation", () => {
     let suspendedOwnerToken: string;
 
     beforeAll(async () => {
-      const tenant = await createTestTenant({ companyName: "Suspended Tenant Co" });
+      const tenant = await createTestTenant({
+        companyName: "Suspended Tenant Co",
+      });
       suspendedCompanyId = tenant.company.id;
       const owner = await createTestUser({});
       await assignRole(owner.id, suspendedCompanyId, "owner", tenant.branch.id);
@@ -563,7 +617,9 @@ describe("Platform Moderation", () => {
       expect(typeof res.body.data.assets.issues.blocked).toBe("number");
       expect(res.body.data.rentals).toBeDefined();
       expect(res.body.data.incidents).toBeDefined();
-      expect(typeof res.body.data.incidents.activeBlacklistEntries).toBe("number");
+      expect(typeof res.body.data.incidents.activeBlacklistEntries).toBe(
+        "number",
+      );
       expect(typeof res.body.data.incidents.lostOrStolenAssets).toBe("number");
       expect(typeof res.body.data.incidents.overdueRentals).toBe("number");
       expect(typeof res.body.data.incidents.disputedRentals).toBe("number");

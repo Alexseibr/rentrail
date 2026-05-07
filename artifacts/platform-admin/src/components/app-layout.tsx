@@ -49,18 +49,53 @@ const platformNavGroups: NavGroup[] = [
   {
     labelKey: "nav.groupMain",
     items: [
-      { path: "/", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: null },
-      { path: "/companies", labelKey: "nav.companies", icon: Building2, roles: ["superAdmin", "platformAdmin", "platformSupport"] },
+      {
+        path: "/",
+        labelKey: "nav.dashboard",
+        icon: LayoutDashboard,
+        roles: null,
+      },
+      {
+        path: "/companies",
+        labelKey: "nav.companies",
+        icon: Building2,
+        roles: ["superAdmin", "platformAdmin", "platformSupport"],
+      },
     ],
   },
   {
     labelKey: "nav.groupTools",
     items: [
-      { path: "/billing", labelKey: "nav.billing", icon: CreditCard, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
-      { path: "/blacklist", labelKey: "nav.blacklist", icon: ShieldBan, roles: ["superAdmin", "platformAdmin", "platformRisk"] },
-      { path: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity, roles: ["superAdmin", "platformAdmin"] },
-      { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3, roles: ["superAdmin", "platformAdmin", "platformFinance"] },
-      { path: "/white-label", labelKey: "nav.whiteLabel", icon: Palette, roles: ["superAdmin", "platformAdmin"] },
+      {
+        path: "/billing",
+        labelKey: "nav.billing",
+        icon: CreditCard,
+        roles: ["superAdmin", "platformAdmin", "platformFinance"],
+      },
+      {
+        path: "/blacklist",
+        labelKey: "nav.blacklist",
+        icon: ShieldBan,
+        roles: ["superAdmin", "platformAdmin", "platformRisk"],
+      },
+      {
+        path: "/diagnostics",
+        labelKey: "nav.diagnostics",
+        icon: Activity,
+        roles: ["superAdmin", "platformAdmin"],
+      },
+      {
+        path: "/analytics",
+        labelKey: "nav.analytics",
+        icon: BarChart3,
+        roles: ["superAdmin", "platformAdmin", "platformFinance"],
+      },
+      {
+        path: "/white-label",
+        labelKey: "nav.whiteLabel",
+        icon: Palette,
+        roles: ["superAdmin", "platformAdmin"],
+      },
     ],
   },
 ];
@@ -86,7 +121,13 @@ const companyNavGroups: NavGroup[] = [
   },
 ];
 
-const PLATFORM_ROLES = ["superAdmin", "platformAdmin", "platformSupport", "platformFinance", "platformRisk"];
+const PLATFORM_ROLES = [
+  "superAdmin",
+  "platformAdmin",
+  "platformSupport",
+  "platformFinance",
+  "platformRisk",
+];
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout, hasTenantMemberships } = useAuth();
@@ -105,7 +146,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userMenuOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
         setUserMenuOpen(false);
       }
     }
@@ -121,7 +165,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const companyName = useMemo(() => {
     if (!user?.memberships?.length) return null;
-    return user.memberships[0].companyName || user.memberships[0].roleName || null;
+    return (
+      user.memberships[0].companyName || user.memberships[0].roleName || null
+    );
   }, [user]);
 
   const roleCode = useMemo(() => {
@@ -146,22 +192,31 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return companyNavGroups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => canAccessRoute(roleCode, item.path)),
+        items: group.items.filter((item) =>
+          canAccessRoute(roleCode, item.path),
+        ),
       }))
       .filter((group) => group.items.length > 0);
   }, [isPlatformUser, user, roleCode]);
 
-  const navItems = useMemo(() => navGroups.flatMap((g) => g.items), [navGroups]);
+  const navItems = useMemo(
+    () => navGroups.flatMap((g) => g.items),
+    [navGroups],
+  );
 
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
   };
 
-  const headerTitle = isPlatformUser ? t("nav.platformAdmin") : (companyName || t("nav.companyPanel"));
+  const headerTitle = isPlatformUser
+    ? t("nav.platformAdmin")
+    : companyName || t("nav.companyPanel");
 
   const currentPageTitle = useMemo(() => {
     const current = navItems.find((item) =>
-      item.path === "/" ? location === "/" || location === "" : location.startsWith(item.path)
+      item.path === "/"
+        ? location === "/" || location === ""
+        : location.startsWith(item.path),
     );
     return current ? t(current.labelKey) : "";
   }, [navItems, location, t]);
@@ -183,25 +238,39 @@ export function AppLayout({ children }: { children: ReactNode }) {
           collapsed ? "w-[72px]" : "w-64",
         )}
       >
-        <div className={cn("flex items-center h-16 px-4", collapsed ? "justify-center" : "gap-3")}>
+        <div
+          className={cn(
+            "flex items-center h-16 px-4",
+            collapsed ? "justify-center" : "gap-3",
+          )}
+        >
           <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary shrink-0">
             <Bike className="h-5 w-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <span className="font-semibold text-sm truncate block text-sidebar-foreground">{headerTitle}</span>
+              <span className="font-semibold text-sm truncate block text-sidebar-foreground">
+                {headerTitle}
+              </span>
               {isPlatformUser && hasTenantMemberships && (
-                <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">Platform</span>
+                <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">
+                  Platform
+                </span>
               )}
               {!isPlatformUser && roleCode && (
-                <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">{roleCode}</span>
+                <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">
+                  {roleCode}
+                </span>
               )}
             </div>
           )}
           <Button
             variant="ghost"
             size="icon"
-            className={cn("h-8 w-8 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent", collapsed && "hidden")}
+            className={cn(
+              "h-8 w-8 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+              collapsed && "hidden",
+            )}
             onClick={() => setCollapsed(!collapsed)}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -249,8 +318,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
                           collapsed && "justify-center px-2",
                         )}
                       >
-                        <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
-                        {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                        <item.icon
+                          className={cn(
+                            "h-[18px] w-[18px] shrink-0",
+                            active && "text-primary-foreground",
+                          )}
+                        />
+                        {!collapsed && (
+                          <span className="truncate">{t(item.labelKey)}</span>
+                        )}
                       </div>
                     </Link>
                   );
@@ -270,19 +346,29 @@ export function AppLayout({ children }: { children: ReactNode }) {
           >
             <Languages className="h-[18px] w-[18px] shrink-0" />
             {!collapsed && (
-              <span className="text-sm">{i18n.language === "ru" ? "English" : "Русский"}</span>
+              <span className="text-sm">
+                {i18n.language === "ru" ? "English" : "Русский"}
+              </span>
             )}
           </button>
-          <div className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5", collapsed && "justify-center px-2")}>
+          <div
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5",
+              collapsed && "justify-center px-2",
+            )}
+          >
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-sidebar-accent text-sidebar-foreground text-xs font-semibold shrink-0">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
+              {user?.firstName?.[0]}
+              {user?.lastName?.[0]}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate text-sidebar-foreground">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-sidebar-foreground/50 truncate">{user?.phone}</p>
+                <p className="text-xs text-sidebar-foreground/50 truncate">
+                  {user?.phone}
+                </p>
               </div>
             )}
             <Button
@@ -309,7 +395,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary shrink-0">
               <Bike className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-sm text-sidebar-foreground">{headerTitle}</span>
+            <span className="font-semibold text-sm text-sidebar-foreground">
+              {headerTitle}
+            </span>
           </div>
           <Button
             variant="ghost"
@@ -342,7 +430,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
                             : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                         )}
                       >
-                        <item.icon className={cn("h-[18px] w-[18px] shrink-0", active && "text-primary-foreground")} />
+                        <item.icon
+                          className={cn(
+                            "h-[18px] w-[18px] shrink-0",
+                            active && "text-primary-foreground",
+                          )}
+                        />
                         <span className="truncate">{t(item.labelKey)}</span>
                       </div>
                     </Link>
@@ -381,7 +474,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold text-foreground">{currentPageTitle}</h1>
+            <h1 className="text-lg font-semibold text-foreground">
+              {currentPageTitle}
+            </h1>
           </div>
           <div className="flex items-center gap-1.5">
             {searchOpen ? (
@@ -427,26 +522,41 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 className="flex items-center gap-2 ml-1 pl-2 border-l border-border/50 py-1 hover:opacity-80 transition-opacity"
               >
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  {user?.firstName?.[0]}
+                  {user?.lastName?.[0]}
                 </div>
-                <span className="text-sm font-medium hidden lg:inline">{user?.firstName}</span>
+                <span className="text-sm font-medium hidden lg:inline">
+                  {user?.firstName}
+                </span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
               {userMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-card rounded-xl shadow-lg border border-border/50 py-1.5 z-50">
                   <div className="px-4 py-2.5 border-b border-border/50">
-                    <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{user?.phone}</p>
+                    <p className="text-sm font-medium">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user?.phone}
+                    </p>
                   </div>
                   <button
-                    onClick={() => { toggleLang(); setUserMenuOpen(false); }}
+                    onClick={() => {
+                      toggleLang();
+                      setUserMenuOpen(false);
+                    }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
                   >
                     <Languages className="h-4 w-4 text-muted-foreground" />
-                    {i18n.language === "ru" ? "Switch to English" : "Переключить на Русский"}
+                    {i18n.language === "ru"
+                      ? "Switch to English"
+                      : "Переключить на Русский"}
                   </button>
                   <button
-                    onClick={() => { logout(); setUserMenuOpen(false); }}
+                    onClick={() => {
+                      logout();
+                      setUserMenuOpen(false);
+                    }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-muted/50 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
@@ -472,12 +582,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 : location.startsWith(item.path);
             return (
               <Link key={item.path} href={item.path}>
-                <div className={cn(
-                  "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors min-w-[56px]",
-                  active ? "text-primary" : "text-muted-foreground",
-                )}>
+                <div
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors min-w-[56px]",
+                    active ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
                   <item.icon className="h-5 w-5" />
-                  <span className="text-[10px] font-medium leading-tight">{t(item.labelKey)}</span>
+                  <span className="text-[10px] font-medium leading-tight">
+                    {t(item.labelKey)}
+                  </span>
                 </div>
               </Link>
             );
@@ -488,7 +602,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
               className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-muted-foreground min-w-[56px]"
             >
               <Menu className="h-5 w-5" />
-              <span className="text-[10px] font-medium leading-tight">{t("nav.more", "Ещё")}</span>
+              <span className="text-[10px] font-medium leading-tight">
+                {t("nav.more", "Ещё")}
+              </span>
             </button>
           )}
         </nav>

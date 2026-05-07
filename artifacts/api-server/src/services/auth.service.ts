@@ -1,9 +1,21 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
-import { db, users, sessions, userCompanyMemberships, userBranchMemberships, roles, companies } from "@workspace/db";
+import {
+  db,
+  users,
+  sessions,
+  userCompanyMemberships,
+  userBranchMemberships,
+  roles,
+  companies,
+} from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "../lib/jwt";
 import { config } from "../lib/config";
 import { ConflictError, UnauthorizedError, NotFoundError } from "../lib/errors";
 import { loadUserPlatformRoles } from "../lib/platform-roles";
@@ -43,7 +55,10 @@ export async function register(input: RegisterInput) {
     }
   }
 
-  const passwordHash = await bcrypt.hash(input.password, config.bcrypt.saltRounds);
+  const passwordHash = await bcrypt.hash(
+    input.password,
+    config.bcrypt.saltRounds,
+  );
 
   const [user] = await db
     .insert(users)
@@ -68,7 +83,18 @@ export async function login(
   input: LoginInput,
   userAgent?: string,
   ip?: string,
-): Promise<AuthTokens & { user: { id: string; email: string | undefined; firstName: string; lastName: string; isSuperAdmin: boolean; mustChangePassword: boolean } }> {
+): Promise<
+  AuthTokens & {
+    user: {
+      id: string;
+      email: string | undefined;
+      firstName: string;
+      lastName: string;
+      isSuperAdmin: boolean;
+      mustChangePassword: boolean;
+    };
+  }
+> {
   const [user] = await db
     .select()
     .from(users)
@@ -148,12 +174,7 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
   const [session] = await db
     .select()
     .from(sessions)
-    .where(
-      and(
-        eq(sessions.id, payload.sessionId),
-        isNull(sessions.revokedAt),
-      ),
-    )
+    .where(and(eq(sessions.id, payload.sessionId), isNull(sessions.revokedAt)))
     .limit(1);
 
   if (!session || session.expiresAt < new Date()) {
@@ -216,7 +237,10 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
   return { accessToken, refreshToken: newRefreshToken };
 }
 
-export async function logout(userId: string, sessionId?: string): Promise<void> {
+export async function logout(
+  userId: string,
+  sessionId?: string,
+): Promise<void> {
   if (sessionId) {
     await db
       .update(sessions)

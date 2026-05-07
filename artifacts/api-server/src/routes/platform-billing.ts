@@ -10,7 +10,11 @@ const router = Router();
 
 const idParams = z.object({ id: z.string().uuid() });
 
-const billingRoles = requirePlatformRole("superAdmin", "platformAdmin", "platformFinance");
+const billingRoles = requirePlatformRole(
+  "superAdmin",
+  "platformAdmin",
+  "platformFinance",
+);
 
 const createPlanSchema = z.object({
   name: z.string().min(1).max(255),
@@ -29,9 +33,12 @@ const createPlanSchema = z.object({
   maxUsers: z.number().int().optional(),
 });
 
-const updatePlanSchema = createPlanSchema.partial().omit({ code: true }).extend({
-  isActive: z.boolean().optional(),
-});
+const updatePlanSchema = createPlanSchema
+  .partial()
+  .omit({ code: true })
+  .extend({
+    isActive: z.boolean().optional(),
+  });
 
 const listQuery = z.object({
   page: z.coerce.number().int().min(1).optional(),
@@ -99,8 +106,13 @@ router.get(
   billingRoles,
   validate({ query: planListQuery }),
   async (req, res) => {
-    await createPlatformAuditLog(req, { action: "billing.plan.list", entityType: "saas_plan" });
-    const plans = await billingService.listPlans(req.query.includeInactive === "true");
+    await createPlatformAuditLog(req, {
+      action: "billing.plan.list",
+      entityType: "saas_plan",
+    });
+    const plans = await billingService.listPlans(
+      req.query.includeInactive === "true",
+    );
     res.json({ data: plans });
   },
 );
@@ -128,7 +140,10 @@ router.patch(
   billingRoles,
   validate({ params: idParams, body: updatePlanSchema }),
   async (req, res) => {
-    const { updated, previous } = await billingService.updatePlan(req.params.id as string, req.body);
+    const { updated, previous } = await billingService.updatePlan(
+      req.params.id as string,
+      req.body,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.plan.update",
       entityType: "saas_plan",
@@ -146,7 +161,10 @@ router.get(
   billingRoles,
   validate({ query: subscriptionListQuery }),
   async (req, res) => {
-    await createPlatformAuditLog(req, { action: "billing.subscription.list", entityType: "saas_subscription" });
+    await createPlatformAuditLog(req, {
+      action: "billing.subscription.list",
+      entityType: "saas_subscription",
+    });
     const result = await billingService.listSubscriptions({
       companyId: req.query.companyId as string | undefined,
       status: req.query.status as string | undefined,
@@ -163,7 +181,9 @@ router.get(
   billingRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const detail = await billingService.getSubscriptionDetail(req.params.id as string);
+    const detail = await billingService.getSubscriptionDetail(
+      req.params.id as string,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.view",
       entityType: "saas_subscription",
@@ -180,7 +200,10 @@ router.patch(
   billingRoles,
   validate({ params: idParams, body: updateSubscriptionSchema }),
   async (req, res) => {
-    const updated = await billingService.updateSubscription(req.params.id as string, req.body);
+    const updated = await billingService.updateSubscription(
+      req.params.id as string,
+      req.body,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.update",
       entityType: "saas_subscription",
@@ -198,7 +221,12 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
-    const { updated, previousStatus } = await billingService.changeSubscriptionStatus(req.params.id as string, "activate", req.body.reason);
+    const { updated, previousStatus } =
+      await billingService.changeSubscriptionStatus(
+        req.params.id as string,
+        "activate",
+        req.body.reason,
+      );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.activate",
       entityType: "saas_subscription",
@@ -218,7 +246,12 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
-    const { updated, previousStatus } = await billingService.changeSubscriptionStatus(req.params.id as string, "mark_past_due", req.body.reason);
+    const { updated, previousStatus } =
+      await billingService.changeSubscriptionStatus(
+        req.params.id as string,
+        "mark_past_due",
+        req.body.reason,
+      );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.past_due",
       entityType: "saas_subscription",
@@ -238,7 +271,12 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
-    const { updated, previousStatus } = await billingService.changeSubscriptionStatus(req.params.id as string, "cancel", req.body.reason);
+    const { updated, previousStatus } =
+      await billingService.changeSubscriptionStatus(
+        req.params.id as string,
+        "cancel",
+        req.body.reason,
+      );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.cancel",
       entityType: "saas_subscription",
@@ -258,7 +296,10 @@ router.get(
   billingRoles,
   validate({ query: invoiceListQuery }),
   async (req, res) => {
-    await createPlatformAuditLog(req, { action: "billing.invoice.list", entityType: "saas_invoice" });
+    await createPlatformAuditLog(req, {
+      action: "billing.invoice.list",
+      entityType: "saas_invoice",
+    });
     const result = await billingService.listInvoices({
       companyId: req.query.companyId as string | undefined,
       status: req.query.status as string | undefined,
@@ -278,7 +319,9 @@ router.get(
   billingRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const detail = await billingService.getInvoiceDetail(req.params.id as string);
+    const detail = await billingService.getInvoiceDetail(
+      req.params.id as string,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.view",
       entityType: "saas_invoice",
@@ -313,7 +356,9 @@ router.post(
   billingRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previousStatus } = await billingService.markInvoiceIssued(req.params.id as string);
+    const { updated, previousStatus } = await billingService.markInvoiceIssued(
+      req.params.id as string,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.issue",
       entityType: "saas_invoice",
@@ -332,7 +377,10 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: markPaidSchema }),
   async (req, res) => {
-    const { updated, previousStatus } = await billingService.markInvoicePaid(req.params.id as string, req.body);
+    const { updated, previousStatus } = await billingService.markInvoicePaid(
+      req.params.id as string,
+      req.body,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.paid",
       entityType: "saas_invoice",
@@ -351,7 +399,9 @@ router.post(
   billingRoles,
   validate({ params: idParams }),
   async (req, res) => {
-    const { updated, previousStatus } = await billingService.voidInvoice(req.params.id as string);
+    const { updated, previousStatus } = await billingService.voidInvoice(
+      req.params.id as string,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.void",
       entityType: "saas_invoice",
@@ -370,7 +420,10 @@ router.get(
   billingRoles,
   validate({ query: paymentListQuery }),
   async (req, res) => {
-    await createPlatformAuditLog(req, { action: "billing.payment.list", entityType: "saas_payment" });
+    await createPlatformAuditLog(req, {
+      action: "billing.payment.list",
+      entityType: "saas_payment",
+    });
     const result = await billingService.listPayments({
       companyId: req.query.companyId as string | undefined,
       invoiceId: req.query.invoiceId as string | undefined,

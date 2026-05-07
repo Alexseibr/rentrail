@@ -7,6 +7,7 @@ Workflows for day-to-day operations performed by tenant staff (operators, manage
 ## 1. Asset Management
 
 ### Create New Asset
+
 1. Navigate to Assets → "Add Asset"
 2. Fill required fields:
    - Asset type (bike, ebike, scooter, escooter)
@@ -19,20 +20,22 @@ Workflows for day-to-day operations performed by tenant staff (operators, manage
 5. When ready for rentals: change status to `available`
 
 ### Asset Status Transitions
-| From | To | When |
-|------|----|------|
-| `draft` → `available` | Asset inspected and ready for rental |
-| `available` → `rented` | Rental started (automatic) |
-| `rented` → `available` | Rental completed, asset returned (automatic) |
-| `available` → `maintenance` | Scheduled maintenance or issue found |
-| `maintenance` → `available` | Maintenance completed, asset cleared |
-| `available` → `blocked` | Asset unsafe or under investigation |
-| `blocked` → `available` | Issue resolved |
-| Any → `lost` | Asset cannot be located |
-| Any → `stolen` | Theft confirmed |
-| `lost`/`stolen` → `available` | Asset recovered |
+
+| From                          | To                                           | When |
+| ----------------------------- | -------------------------------------------- | ---- |
+| `draft` → `available`         | Asset inspected and ready for rental         |
+| `available` → `rented`        | Rental started (automatic)                   |
+| `rented` → `available`        | Rental completed, asset returned (automatic) |
+| `available` → `maintenance`   | Scheduled maintenance or issue found         |
+| `maintenance` → `available`   | Maintenance completed, asset cleared         |
+| `available` → `blocked`       | Asset unsafe or under investigation          |
+| `blocked` → `available`       | Issue resolved                               |
+| Any → `lost`                  | Asset cannot be located                      |
+| Any → `stolen`                | Theft confirmed                              |
+| `lost`/`stolen` → `available` | Asset recovered                              |
 
 ### End-of-Day Asset Check
+
 - [ ] Count physical assets at each station
 - [ ] Compare with system count (Assets → filter by station)
 - [ ] Flag any discrepancies:
@@ -46,6 +49,7 @@ Workflows for day-to-day operations performed by tenant staff (operators, manage
 ## 2. Client Management
 
 ### Register New Client
+
 1. Navigate to Clients → "Add Client"
 2. Collect and enter:
    - Full name
@@ -55,12 +59,15 @@ Workflows for day-to-day operations performed by tenant staff (operators, manage
 3. Save — client is now `active` and can rent
 
 ### Client Verification
+
 Before first rental, verify:
+
 - [ ] ID document matches name provided
 - [ ] Phone number is reachable (send verification SMS if available)
 - [ ] Client is not on blacklist (system checks automatically)
 
 ### Handling Problem Clients
+
 1. **Minor issue** (late return, minor damage):
    - Add blacklist entry with `warning` action type
    - Reason will show to staff on next rental attempt
@@ -77,6 +84,7 @@ Before first rental, verify:
 ## 3. Rental Lifecycle
 
 ### Start a Rental
+
 1. Navigate to Rentals → "New Rental"
 2. Select or search for client (verify identity)
 3. System checks blacklist — if flagged, follow action type guidance
@@ -88,11 +96,13 @@ Before first rental, verify:
 9. Record pickup time and condition notes
 
 ### During Active Rental
+
 - Monitor rental duration vs. plan end date
 - If approaching end time: contact client with return reminder
 - If overdue: system flags rental → follow overdue procedure
 
 ### Complete a Rental (Return)
+
 1. Navigate to active rental
 2. Inspect returned asset:
    - [ ] Physical condition matches checkout condition
@@ -108,6 +118,7 @@ Before first rental, verify:
 7. Complete rental → asset returns to `available`
 
 ### Handle Overdue Rental
+
 1. System flags rental as `overdue` when past end date
 2. **Hour 1–4**: Send SMS/call to client requesting return
 3. **Hour 4–12**: Escalate to manager, attempt all contact methods
@@ -118,6 +129,7 @@ Before first rental, verify:
 6. Record all contact attempts in rental notes
 
 ### Handle Disputed Rental
+
 1. If client disputes charges or damage assessment:
 2. Change rental status to `disputed`
 3. Document client's claim in notes
@@ -133,6 +145,7 @@ Before first rental, verify:
 ## 4. Incident Handling
 
 ### Create Incident Report
+
 1. Navigate to Incidents → "New Incident"
 2. Select incident type:
    - `damage` — asset damaged during rental
@@ -147,6 +160,7 @@ Before first rental, verify:
 6. Set initial status to `open`
 
 ### Incident Resolution Flow
+
 1. **Open**: Incident reported, needs investigation
 2. **Investigating**: Assigned to staff member, gathering information
 3. **Pending Action**: Investigation complete, awaiting decision
@@ -157,6 +171,7 @@ Before first rental, verify:
    - Record any financial adjustments
 
 ### Incident Escalation
+
 - Minor (cosmetic damage): Operator resolves
 - Moderate (functional damage, short-term loss): Manager resolves
 - Major (theft, accident, legal issue): Owner/Admin resolves
@@ -167,6 +182,7 @@ Before first rental, verify:
 ## 5. Maintenance Workflows
 
 ### Scheduled Maintenance
+
 1. Identify assets due for maintenance:
    - By mileage/usage count (if tracked)
    - By calendar schedule (e.g., monthly inspection)
@@ -179,6 +195,7 @@ Before first rental, verify:
 4. Move asset to service center station
 
 ### Maintenance Completion
+
 1. Mechanic completes work
 2. Update maintenance order with:
    - Work performed
@@ -193,6 +210,7 @@ Before first rental, verify:
 ## 6. Blacklist Management
 
 ### Add Blacklist Entry
+
 1. Navigate to Blacklist → "Add Entry"
 2. Select client (search by name or phone)
 3. Configure:
@@ -204,6 +222,7 @@ Before first rental, verify:
 4. Save — effective immediately
 
 ### Remove/Modify Blacklist Entry
+
 1. Navigate to client's blacklist entries
 2. To soften: change action type (e.g., `blocked` → `warning`)
 3. To expire: set end date to today
@@ -215,6 +234,7 @@ Before first rental, verify:
 ## 7. End-of-Day Checklist
 
 ### Operator Closing Tasks
+
 - [ ] All active rentals reviewed — follow up on any approaching end time
 - [ ] All overdue rentals escalated per overdue procedure
 - [ ] Asset count reconciliation (physical vs. system)
@@ -224,6 +244,7 @@ Before first rental, verify:
 - [ ] Station areas tidied and secured
 
 ### Manager Daily Review
+
 - [ ] Review day's rental volume and revenue
 - [ ] Check for unresolved incidents
 - [ ] Review overdue rentals and escalations

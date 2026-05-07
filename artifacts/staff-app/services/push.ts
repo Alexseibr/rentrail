@@ -13,7 +13,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
   try {
     const Notifications = await import("expo-notifications");
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
     if (existingStatus !== "granted") {
@@ -58,8 +59,7 @@ async function registerTokenWithBackend(pushToken: string) {
     if (res.ok) {
       await AsyncStorage.setItem(PUSH_REGISTERED_KEY, "true");
     }
-  } catch {
-  }
+  } catch {}
 }
 
 export async function unregisterPushToken() {
@@ -80,8 +80,7 @@ export async function unregisterPushToken() {
     }
 
     await AsyncStorage.multiRemove([PUSH_TOKEN_KEY, PUSH_REGISTERED_KEY]);
-  } catch {
-  }
+  } catch {}
 }
 
 export async function getPushRegistrationStatus(): Promise<{

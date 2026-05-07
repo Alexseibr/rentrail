@@ -28,8 +28,16 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
 
     tenant = await createTestTenant({ companyName: "WO Filter Co" });
     admin = await createTestUser({ email: `wo-admin-${Date.now()}@test.com` });
-    userA = await createTestUser({ email: `wo-userA-${Date.now()}@test.com`, firstName: "Alice", lastName: "Smith" });
-    userB = await createTestUser({ email: `wo-userB-${Date.now()}@test.com`, firstName: "Bob", lastName: "Jones" });
+    userA = await createTestUser({
+      email: `wo-userA-${Date.now()}@test.com`,
+      firstName: "Alice",
+      lastName: "Smith",
+    });
+    userB = await createTestUser({
+      email: `wo-userB-${Date.now()}@test.com`,
+      firstName: "Bob",
+      lastName: "Jones",
+    });
 
     await assignRole(admin.id, tenant.company.id, "admin");
     await assignRole(userA.id, tenant.company.id, "mechanic");
@@ -39,35 +47,26 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       return authHeaders(admin.token, tenant.company.id);
     }
 
-    const resA = await request(testApp)
-      .post("/api/work-orders")
-      .set(h())
-      .send({
-        title: "Work Order for UserA",
-        orderType: "field_repair",
-        assignedToUserId: userA.id,
-      });
+    const resA = await request(testApp).post("/api/work-orders").set(h()).send({
+      title: "Work Order for UserA",
+      orderType: "field_repair",
+      assignedToUserId: userA.id,
+    });
     expect(resA.status).toBe(201);
     woAssignedToA = resA.body.data.id;
 
-    const resB = await request(testApp)
-      .post("/api/work-orders")
-      .set(h())
-      .send({
-        title: "Work Order for UserB",
-        orderType: "workshop_repair",
-        assignedToUserId: userB.id,
-      });
+    const resB = await request(testApp).post("/api/work-orders").set(h()).send({
+      title: "Work Order for UserB",
+      orderType: "workshop_repair",
+      assignedToUserId: userB.id,
+    });
     expect(resB.status).toBe(201);
     woAssignedToB = resB.body.data.id;
 
-    const resU = await request(testApp)
-      .post("/api/work-orders")
-      .set(h())
-      .send({
-        title: "Unassigned Work Order",
-        orderType: "inspection",
-      });
+    const resU = await request(testApp).post("/api/work-orders").set(h()).send({
+      title: "Unassigned Work Order",
+      orderType: "inspection",
+    });
     expect(resU.status).toBe(201);
     woUnassigned = resU.body.data.id;
   }, 30000);
@@ -77,9 +76,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
   }
 
   it("without filter — returns all work orders including all three", async () => {
-    const res = await request(testApp)
-      .get("/api/work-orders")
-      .set(h());
+    const res = await request(testApp).get("/api/work-orders").set(h());
 
     expect(res.status).toBe(200);
     const ids = res.body.data.map((wo: { id: string }) => wo.id);
@@ -114,7 +111,9 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
 
   it("assignedToUserId with unknown user id — returns empty list", async () => {
     const res = await request(testApp)
-      .get("/api/work-orders?assignedToUserId=00000000-0000-0000-0000-000000000000")
+      .get(
+        "/api/work-orders?assignedToUserId=00000000-0000-0000-0000-000000000000",
+      )
       .set(h());
 
     expect(res.status).toBe(200);

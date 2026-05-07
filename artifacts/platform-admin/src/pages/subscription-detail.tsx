@@ -23,7 +23,8 @@ export default function SubscriptionDetailPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["subscription", subId],
-    queryFn: () => api<Record<string, unknown>>(`/platform/billing/subscriptions/${subId}`),
+    queryFn: () =>
+      api<Record<string, unknown>>(`/platform/billing/subscriptions/${subId}`),
     enabled: !!subId,
   });
 
@@ -33,7 +34,8 @@ export default function SubscriptionDetailPage() {
         method: "POST",
         body: JSON.stringify({ reason }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subscription", subId] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["subscription", subId] }),
   });
 
   if (isLoading) {
@@ -48,8 +50,12 @@ export default function SubscriptionDetailPage() {
   if (!data) {
     return (
       <div className="p-6 space-y-4">
-        <PageBreadcrumb items={[{ label: t("nav.billing"), href: "/billing" }]} />
-        <p className="text-muted-foreground">{t("subscriptionDetail.notFound")}</p>
+        <PageBreadcrumb
+          items={[{ label: t("nav.billing"), href: "/billing" }]}
+        />
+        <p className="text-muted-foreground">
+          {t("subscriptionDetail.notFound")}
+        </p>
       </div>
     );
   }
@@ -58,15 +64,21 @@ export default function SubscriptionDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageBreadcrumb items={[
-        { label: t("nav.billing"), href: "/billing" },
-        { label: `${t("subscriptionDetail.title")} #${subId?.slice(0, 8) ?? ""}` },
-      ]} />
+      <PageBreadcrumb
+        items={[
+          { label: t("nav.billing"), href: "/billing" },
+          {
+            label: `${t("subscriptionDetail.title")} #${subId?.slice(0, 8) ?? ""}`,
+          },
+        ]}
+      />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">{t("common.status")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("common.status")}
+            </p>
             <Badge variant="secondary" className={statusColors[status] || ""}>
               {status}
             </Badge>
@@ -74,19 +86,27 @@ export default function SubscriptionDetailPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">{t("common.company")}</p>
-            <p className="font-medium">{(data.companyName as string) || (data.companyId as string)}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("common.company")}
+            </p>
+            <p className="font-medium">
+              {(data.companyName as string) || (data.companyId as string)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
             <p className="text-sm text-muted-foreground">{t("common.plan")}</p>
-            <p className="font-medium">{(data.planName as string) || (data.planId as string)}</p>
+            <p className="font-medium">
+              {(data.planName as string) || (data.planId as string)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">{t("subscriptionDetail.periodEnd")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("subscriptionDetail.periodEnd")}
+            </p>
             <p className="font-medium">
               {data.currentPeriodEnd
                 ? new Date(data.currentPeriodEnd as string).toLocaleDateString()
@@ -98,7 +118,9 @@ export default function SubscriptionDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("subscriptionDetail.details")}</CardTitle>
+          <CardTitle className="text-base">
+            {t("subscriptionDetail.details")}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -107,20 +129,36 @@ export default function SubscriptionDetailPage() {
               <span className="font-mono text-xs">{data.id as string}</span>
             </div>
             <div>
-              <span className="text-muted-foreground">{t("subscriptionDetail.created")}:</span>{" "}
-              {data.createdAt ? new Date(data.createdAt as string).toLocaleString() : "-"}
+              <span className="text-muted-foreground">
+                {t("subscriptionDetail.created")}:
+              </span>{" "}
+              {data.createdAt
+                ? new Date(data.createdAt as string).toLocaleString()
+                : "-"}
             </div>
             <div>
-              <span className="text-muted-foreground">{t("subscriptionDetail.periodStart")}:</span>{" "}
-              {data.currentPeriodStart ? new Date(data.currentPeriodStart as string).toLocaleDateString() : "-"}
+              <span className="text-muted-foreground">
+                {t("subscriptionDetail.periodStart")}:
+              </span>{" "}
+              {data.currentPeriodStart
+                ? new Date(
+                    data.currentPeriodStart as string,
+                  ).toLocaleDateString()
+                : "-"}
             </div>
             <div>
-              <span className="text-muted-foreground">{t("subscriptionDetail.trialEnds")}:</span>{" "}
-              {data.trialEndsAt ? new Date(data.trialEndsAt as string).toLocaleDateString() : "-"}
+              <span className="text-muted-foreground">
+                {t("subscriptionDetail.trialEnds")}:
+              </span>{" "}
+              {data.trialEndsAt
+                ? new Date(data.trialEndsAt as string).toLocaleDateString()
+                : "-"}
             </div>
             {data.notes ? (
               <div className="col-span-2">
-                <span className="text-muted-foreground">{t("subscriptionDetail.notes")}:</span>{" "}
+                <span className="text-muted-foreground">
+                  {t("subscriptionDetail.notes")}:
+                </span>{" "}
                 {String(data.notes)}
               </div>
             ) : null}
@@ -130,7 +168,9 @@ export default function SubscriptionDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("subscriptionDetail.actions")}</CardTitle>
+          <CardTitle className="text-base">
+            {t("subscriptionDetail.actions")}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 flex-wrap">
@@ -147,7 +187,12 @@ export default function SubscriptionDetailPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => actionMutation.mutate({ action: "past-due", reason: "Manual mark" })}
+                onClick={() =>
+                  actionMutation.mutate({
+                    action: "past-due",
+                    reason: "Manual mark",
+                  })
+                }
                 disabled={actionMutation.isPending}
               >
                 {t("subscriptionDetail.markPastDue")}
@@ -157,7 +202,12 @@ export default function SubscriptionDetailPage() {
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => actionMutation.mutate({ action: "cancel", reason: "Admin cancellation" })}
+                onClick={() =>
+                  actionMutation.mutate({
+                    action: "cancel",
+                    reason: "Admin cancellation",
+                  })
+                }
                 disabled={actionMutation.isPending}
               >
                 {t("subscriptionDetail.cancel")}

@@ -16,7 +16,10 @@ export async function writeCoordsToCache(
     lng,
     cachedAt: cachedAt ?? new Date().toISOString(),
   };
-  await AsyncStorage.setItem(coordsCacheKey(assetId), JSON.stringify(entry)).catch(() => {});
+  await AsyncStorage.setItem(
+    coordsCacheKey(assetId),
+    JSON.stringify(entry),
+  ).catch(() => {});
 }
 
 export async function readCoordsFromCache(
@@ -25,8 +28,7 @@ export async function readCoordsFromCache(
   try {
     const raw = await AsyncStorage.getItem(coordsCacheKey(assetId));
     if (raw) return JSON.parse(raw) as CachedCoordinates;
-  } catch {
-  }
+  } catch {}
   return null;
 }
 
@@ -43,8 +45,7 @@ export async function readManyCoordsFromCache(
         const id = key.replace("@fleet/coords:", "");
         try {
           result[id] = JSON.parse(value) as CachedCoordinates;
-        } catch {
-        }
+        } catch {}
       }
     });
     return result;

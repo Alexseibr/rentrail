@@ -1,8 +1,17 @@
 import React, { useState, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView,
-  Platform, Share,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -17,7 +26,10 @@ import { useNetwork } from "@/services/network";
 import { enqueue } from "@/services/sync-queue";
 import { isQueueable } from "@/services/offline-policy";
 import { useSync } from "@/contexts/SyncContext";
-import { MediaAttachments, type ExistingAttachment } from "@/components/MediaAttachments";
+import {
+  MediaAttachments,
+  type ExistingAttachment,
+} from "@/components/MediaAttachments";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { readCoordsFromCache } from "@/services/coordsCache";
 import { type CachedCoordinates } from "@/hooks/useCachedCoordinates";
@@ -54,8 +66,10 @@ const STATUS_FLOW: Record<string, string | null> = {
 const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 type Priority = (typeof PRIORITIES)[number];
 
-
-function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatRelativeTime(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return t("rentalDetail.timeJustNow");
@@ -86,8 +100,10 @@ interface IncidentDetail {
   updatedAt: string;
 }
 
-
-async function fetchIncident(companyId: string, id: string): Promise<IncidentDetail> {
+async function fetchIncident(
+  companyId: string,
+  id: string,
+): Promise<IncidentDetail> {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/service-requests/${id}`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
@@ -96,18 +112,27 @@ async function fetchIncident(companyId: string, id: string): Promise<IncidentDet
   return (await res.json()).data as IncidentDetail;
 }
 
-async function fetchAttachments(companyId: string, id: string): Promise<ExistingAttachment[]> {
+async function fetchAttachments(
+  companyId: string,
+  id: string,
+): Promise<ExistingAttachment[]> {
   const token = await getAccessToken();
   const res = await fetch(
     `${BASE_URL}/api/attachments?entityType=incident&entityId=${id}`,
-    { headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId } },
+    {
+      headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
+    },
   );
   if (!res.ok) return [];
   const json = await res.json();
   return (json.data ?? []) as ExistingAttachment[];
 }
 
-async function updateStatus(companyId: string, id: string, status: string): Promise<IncidentDetail> {
+async function updateStatus(
+  companyId: string,
+  id: string,
+  status: string,
+): Promise<IncidentDetail> {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/service-requests/${id}/status`, {
     method: "POST",
@@ -158,7 +183,9 @@ export default function IncidentDetailScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
-  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(null);
+  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(
+    null,
+  );
 
   const [editVisible, setEditVisible] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -230,7 +257,7 @@ export default function IncidentDetailScreen() {
         endpoint: `/api/service-requests/${incident.id}`,
         method: "PATCH",
       });
-      setIncident((prev) => prev ? { ...prev, ...payload } : prev);
+      setIncident((prev) => (prev ? { ...prev, ...payload } : prev));
       setEditVisible(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showSnackbar(t("incidentDetail.editQueued"), "success");
@@ -247,7 +274,8 @@ export default function IncidentDetailScreen() {
     } catch (err: unknown) {
       const isNetworkError =
         err instanceof TypeError ||
-        (err instanceof Error && /network|fetch|failed to fetch/i.test(err.message));
+        (err instanceof Error &&
+          /network|fetch|failed to fetch/i.test(err.message));
 
       if (isNetworkError && isQueueable("edit_incident")) {
         await enqueue({
@@ -261,7 +289,8 @@ export default function IncidentDetailScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showSnackbar(t("incidentDetail.editQueued"), "success");
       } else {
-        const msg = err instanceof Error ? err.message : t("toast.actionFailed");
+        const msg =
+          err instanceof Error ? err.message : t("toast.actionFailed");
         showSnackbar(msg, "error");
       }
     } finally {
@@ -277,23 +306,65 @@ export default function IncidentDetailScreen() {
       (item) =>
         item.actionType === "change_incident_status" &&
         item.endpoint === `/api/service-requests/${incident.id}/status` &&
-        (item.status === "queued" || item.status === "syncing" || item.status === "failed"),
+        (item.status === "queued" ||
+          item.status === "syncing" ||
+          item.status === "failed"),
     );
     const queuedRetries = pendingStatusItem?.retryCount ?? 0;
-    const statusLabel = t(`incidents.status_${newStatus}`, { defaultValue: newStatus });
-    const confirmMsg = queuedRetries > 0
-      ? t("incidentDetail.updateStatusConfirmWithRetries", { status: statusLabel, retries: queuedRetries })
-      : t("incidentDetail.updateStatusConfirm", { status: statusLabel });
+    const statusLabel = t(`incidents.status_${newStatus}`, {
+      defaultValue: newStatus,
+    });
+    const confirmMsg =
+      queuedRetries > 0
+        ? t("incidentDetail.updateStatusConfirmWithRetries", {
+            status: statusLabel,
+            retries: queuedRetries,
+          })
+        : t("incidentDetail.updateStatusConfirm", { status: statusLabel });
 
-    Alert.alert(
-      t("incidentDetail.updateStatus"),
-      confirmMsg,
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("common.confirm"),
-          onPress: async () => {
-            if (!isConnected && isQueueable("change_incident_status")) {
+    Alert.alert(t("incidentDetail.updateStatus"), confirmMsg, [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.confirm"),
+        onPress: async () => {
+          if (!isConnected && isQueueable("change_incident_status")) {
+            try {
+              await enqueue({
+                actionType: "change_incident_status",
+                payload: { status: newStatus },
+                endpoint: `/api/service-requests/${incident.id}/status`,
+                method: "POST",
+              });
+              setIncident((prev) =>
+                prev ? { ...prev, status: newStatus } : prev,
+              );
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
+              showSnackbar(t("incidentDetail.statusQueued"), "success");
+            } catch {
+              showSnackbar(t("toast.actionFailed"), "error");
+            }
+            return;
+          }
+
+          setActionLoading(true);
+          try {
+            const updated = await updateStatus(
+              companyId,
+              incident.id,
+              newStatus,
+            );
+            setIncident(updated);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            showSnackbar(t("toast.statusChanged"), "success");
+          } catch (err: unknown) {
+            const isNetworkError =
+              err instanceof TypeError ||
+              (err instanceof Error &&
+                /network|fetch|failed to fetch/i.test(err.message));
+
+            if (isNetworkError && isQueueable("change_incident_status")) {
               try {
                 await enqueue({
                   actionType: "change_incident_status",
@@ -301,51 +372,27 @@ export default function IncidentDetailScreen() {
                   endpoint: `/api/service-requests/${incident.id}/status`,
                   method: "POST",
                 });
-                setIncident((prev) => prev ? { ...prev, status: newStatus } : prev);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setIncident((prev) =>
+                  prev ? { ...prev, status: newStatus } : prev,
+                );
+                Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Success,
+                );
                 showSnackbar(t("incidentDetail.statusQueued"), "success");
               } catch {
                 showSnackbar(t("toast.actionFailed"), "error");
               }
-              return;
+            } else {
+              const msg =
+                err instanceof Error ? err.message : t("toast.actionFailed");
+              showSnackbar(msg, "error");
             }
-
-            setActionLoading(true);
-            try {
-              const updated = await updateStatus(companyId, incident.id, newStatus);
-              setIncident(updated);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              showSnackbar(t("toast.statusChanged"), "success");
-            } catch (err: unknown) {
-              const isNetworkError =
-                err instanceof TypeError ||
-                (err instanceof Error && /network|fetch|failed to fetch/i.test(err.message));
-
-              if (isNetworkError && isQueueable("change_incident_status")) {
-                try {
-                  await enqueue({
-                    actionType: "change_incident_status",
-                    payload: { status: newStatus },
-                    endpoint: `/api/service-requests/${incident.id}/status`,
-                    method: "POST",
-                  });
-                  setIncident((prev) => prev ? { ...prev, status: newStatus } : prev);
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  showSnackbar(t("incidentDetail.statusQueued"), "success");
-                } catch {
-                  showSnackbar(t("toast.actionFailed"), "error");
-                }
-              } else {
-                const msg = err instanceof Error ? err.message : t("toast.actionFailed");
-                showSnackbar(msg, "error");
-              }
-            } finally {
-              setActionLoading(false);
-            }
-          },
+          } finally {
+            setActionLoading(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
   if (loading) {
@@ -364,7 +411,13 @@ export default function IncidentDetailScreen() {
           {t("incidentDetail.notFound")}
         </Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: colors.primary, marginTop: 12, fontFamily: "Inter_600SemiBold" }}>
+          <Text
+            style={{
+              color: colors.primary,
+              marginTop: 12,
+              fontFamily: "Inter_600SemiBold",
+            }}
+          >
             {t("common.back")}
           </Text>
         </TouchableOpacity>
@@ -376,7 +429,9 @@ export default function IncidentDetailScreen() {
     (item) =>
       item.actionType === "edit_incident" &&
       item.endpoint === `/api/service-requests/${id}` &&
-      (item.status === "queued" || item.status === "syncing" || item.status === "failed"),
+      (item.status === "queued" ||
+        item.status === "syncing" ||
+        item.status === "failed"),
   );
 
   const priorityColor = SEVERITY_COLORS[incident.priority] ?? "#94a3b8";
@@ -387,11 +442,18 @@ export default function IncidentDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.dark }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, backgroundColor: colors.dark },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{incident.title}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {incident.title}
+        </Text>
         <TouchableOpacity onPress={openEdit} style={styles.editBtn}>
           <Feather name="edit-2" size={18} color="#fff" />
         </TouchableOpacity>
@@ -400,19 +462,38 @@ export default function IncidentDetailScreen() {
       {hasPendingEdit ? (
         <View style={styles.pendingBanner}>
           <Feather name="clock" size={14} color="#92400e" />
-          <Text style={styles.pendingBannerText}>{t("incidentDetail.pendingSyncBanner")}</Text>
+          <Text style={styles.pendingBannerText}>
+            {t("incidentDetail.pendingSyncBanner")}
+          </Text>
         </View>
       ) : null}
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={[styles.statusCard, { backgroundColor: statusColor + "18", borderColor: statusColor + "40" }]}>
+        <View
+          style={[
+            styles.statusCard,
+            {
+              backgroundColor: statusColor + "18",
+              borderColor: statusColor + "40",
+            },
+          ]}
+        >
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={[styles.statusLabel, { color: statusColor }]}>
-            {t(`incidents.status_${incident.status}`, { defaultValue: incident.status })}
+            {t(`incidents.status_${incident.status}`, {
+              defaultValue: incident.status,
+            })}
           </Text>
-          <View style={[styles.priorityBadge, { backgroundColor: priorityColor + "20" }]}>
+          <View
+            style={[
+              styles.priorityBadge,
+              { backgroundColor: priorityColor + "20" },
+            ]}
+          >
             <Text style={[styles.priorityText, { color: priorityColor }]}>
-              {t(`incidentDetail.priority_${incident.priority}`, { defaultValue: incident.priority })}
+              {t(`incidentDetail.priority_${incident.priority}`, {
+                defaultValue: incident.priority,
+              })}
             </Text>
           </View>
         </View>
@@ -420,12 +501,16 @@ export default function IncidentDetailScreen() {
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Row
             label={t("incidentDetail.type")}
-            value={t(`incidents.type_${incident.requestType}`, { defaultValue: incident.requestType })}
+            value={t(`incidents.type_${incident.requestType}`, {
+              defaultValue: incident.requestType,
+            })}
             colors={colors}
           />
           <Row
             label={t("incidentDetail.priority")}
-            value={t(`incidentDetail.priority_${incident.priority}`, { defaultValue: incident.priority })}
+            value={t(`incidentDetail.priority_${incident.priority}`, {
+              defaultValue: incident.priority,
+            })}
             colors={colors}
           />
           {incident.assetCode ? (
@@ -443,10 +528,18 @@ export default function IncidentDetailScreen() {
             />
           ) : null}
           {incident.assignedToName?.trim() ? (
-            <Row label={t("incidentDetail.assignedTo")} value={incident.assignedToName} colors={colors} />
+            <Row
+              label={t("incidentDetail.assignedTo")}
+              value={incident.assignedToName}
+              colors={colors}
+            />
           ) : null}
           {incident.locationAddress ? (
-            <Row label={t("incidentDetail.location")} value={incident.locationAddress} colors={colors} />
+            <Row
+              label={t("incidentDetail.location")}
+              value={incident.locationAddress}
+              colors={colors}
+            />
           ) : null}
         </View>
 
@@ -460,9 +553,14 @@ export default function IncidentDetailScreen() {
                 cachedCoords.cachedAt
                   ? t("incidentDetail.assetLocationLastKnown", {
                       time: formatRelativeTime(cachedCoords.cachedAt, t),
-                      defaultValue: formatRelativeTime(cachedCoords.cachedAt, t),
+                      defaultValue: formatRelativeTime(
+                        cachedCoords.cachedAt,
+                        t,
+                      ),
                     })
-                  : t("incidentDetail.assetLocation", { defaultValue: "Asset location" })
+                  : t("incidentDetail.assetLocation", {
+                      defaultValue: "Asset location",
+                    })
               }
               onPress={() =>
                 router.push({
@@ -487,25 +585,45 @@ export default function IncidentDetailScreen() {
 
         {incident.description ? (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {t("incidentDetail.description")}
             </Text>
-            <Text style={[styles.descText, { color: colors.foreground }]}>{incident.description}</Text>
+            <Text style={[styles.descText, { color: colors.foreground }]}>
+              {incident.description}
+            </Text>
           </View>
         ) : null}
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+          <Text
+            style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+          >
             {t("incidentDetail.statusHistory")}
           </Text>
           {statusHistory.map((entry, idx) => (
             <View key={idx} style={styles.historyRow}>
-              <View style={[styles.historyDot, { backgroundColor: STATUS_COLORS[entry.status] ?? "#94a3b8" }]} />
+              <View
+                style={[
+                  styles.historyDot,
+                  { backgroundColor: STATUS_COLORS[entry.status] ?? "#94a3b8" },
+                ]}
+              />
               <View style={styles.historyContent}>
-                <Text style={[styles.historyStatus, { color: colors.foreground }]}>
-                  {t(`incidents.status_${entry.status}`, { defaultValue: entry.status })}
+                <Text
+                  style={[styles.historyStatus, { color: colors.foreground }]}
+                >
+                  {t(`incidents.status_${entry.status}`, {
+                    defaultValue: entry.status,
+                  })}
                 </Text>
-                <Text style={[styles.historyTime, { color: colors.mutedForeground }]}>
+                <Text
+                  style={[
+                    styles.historyTime,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
                   {new Date(entry.at).toLocaleString()}
                 </Text>
               </View>
@@ -541,7 +659,9 @@ export default function IncidentDetailScreen() {
                 <Feather name="arrow-right-circle" size={20} color="#000" />
                 <Text style={styles.actionBtnText}>
                   {t(`incidentDetail.moveTo_${nextStatus}`, {
-                    defaultValue: t(`incidents.status_${nextStatus}`, { defaultValue: nextStatus }),
+                    defaultValue: t(`incidents.status_${nextStatus}`, {
+                      defaultValue: nextStatus,
+                    }),
                   })}
                 </Text>
               </>
@@ -565,16 +685,28 @@ export default function IncidentDetailScreen() {
               <Text style={[styles.modalTitle, { color: colors.foreground }]}>
                 {t("incidentDetail.editTitle")}
               </Text>
-              <TouchableOpacity onPress={() => setEditVisible(false)} disabled={editSaving}>
+              <TouchableOpacity
+                onPress={() => setEditVisible(false)}
+                disabled={editSaving}
+              >
                 <Feather name="x" size={22} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+            >
               {t("incidentDetail.fieldTitle")}
             </Text>
             <TextInput
-              style={[styles.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+              style={[
+                styles.textInput,
+                {
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                },
+              ]}
               value={editTitle}
               onChangeText={setEditTitle}
               placeholder={t("incidentDetail.fieldTitlePlaceholder")}
@@ -583,11 +715,21 @@ export default function IncidentDetailScreen() {
               editable={!editSaving}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+            >
               {t("incidentDetail.fieldDescription")}
             </Text>
             <TextInput
-              style={[styles.textInput, styles.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+              style={[
+                styles.textInput,
+                styles.textArea,
+                {
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                },
+              ]}
               value={editDescription}
               onChangeText={setEditDescription}
               placeholder={t("incidentDetail.fieldDescriptionPlaceholder")}
@@ -598,7 +740,9 @@ export default function IncidentDetailScreen() {
               editable={!editSaving}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+            >
               {t("incidentDetail.fieldPriority")}
             </Text>
             <View style={styles.priorityRow}>
@@ -619,7 +763,12 @@ export default function IncidentDetailScreen() {
                     onPress={() => setEditPriority(p)}
                     disabled={editSaving}
                   >
-                    <Text style={[styles.priorityChipText, { color: selected ? "#fff" : pColor }]}>
+                    <Text
+                      style={[
+                        styles.priorityChipText,
+                        { color: selected ? "#fff" : pColor },
+                      ]}
+                    >
                       {t(`incidentDetail.priority_${p}`, { defaultValue: p })}
                     </Text>
                   </TouchableOpacity>
@@ -628,7 +777,10 @@ export default function IncidentDetailScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: YELLOW, opacity: editSaving ? 0.6 : 1 }]}
+              style={[
+                styles.saveBtn,
+                { backgroundColor: YELLOW, opacity: editSaving ? 0.6 : 1 },
+              ]}
               onPress={handleSaveEdit}
               disabled={editSaving}
               activeOpacity={0.8}
@@ -636,7 +788,9 @@ export default function IncidentDetailScreen() {
               {editSaving ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.saveBtnText}>{t("incidentDetail.saveChanges")}</Text>
+                <Text style={styles.saveBtnText}>
+                  {t("incidentDetail.saveChanges")}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -646,7 +800,9 @@ export default function IncidentDetailScreen() {
   );
 }
 
-function buildStatusHistory(incident: IncidentDetail): Array<{ status: string; at: string }> {
+function buildStatusHistory(
+  incident: IncidentDetail,
+): Array<{ status: string; at: string }> {
   const history: Array<{ status: string; at: string }> = [
     { status: "new", at: incident.createdAt },
   ];
@@ -657,18 +813,33 @@ function buildStatusHistory(incident: IncidentDetail): Array<{ status: string; a
   } else if (incident.status === "on_hold") {
     history.push({ status: "on_hold", at: incident.updatedAt });
   } else if (incident.status === "completed") {
-    history.push({ status: "completed", at: incident.resolvedAt ?? incident.updatedAt });
+    history.push({
+      status: "completed",
+      at: incident.resolvedAt ?? incident.updatedAt,
+    });
   } else if (incident.status === "canceled") {
     history.push({ status: "canceled", at: incident.updatedAt });
   }
   return history;
 }
 
-function Row({ label, value, colors }: { label: string; value: string; colors: ReturnType<typeof useColors> }) {
+function Row({
+  label,
+  value,
+  colors,
+}: {
+  label: string;
+  value: string;
+  colors: ReturnType<typeof useColors>;
+}) {
   return (
     <View style={styles.row}>
-      <Text style={[styles.rowLabel, { color: colors.mutedForeground }]}>{label}</Text>
-      <Text style={[styles.rowValue, { color: colors.foreground }]}>{value}</Text>
+      <Text style={[styles.rowLabel, { color: colors.mutedForeground }]}>
+        {label}
+      </Text>
+      <Text style={[styles.rowValue, { color: colors.foreground }]}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -685,7 +856,12 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
-  editBtn: { width: 40, height: 40, justifyContent: "center", alignItems: "flex-end" },
+  editBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
   headerTitle: {
     flex: 1,
     fontSize: 17,
@@ -718,7 +894,11 @@ const styles = StyleSheet.create({
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   statusLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold" },
   priorityBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  priorityText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" },
+  priorityText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize",
+  },
   section: { borderRadius: 16, padding: 16 },
   sectionTitle: {
     fontSize: 11,
@@ -736,9 +916,20 @@ const styles = StyleSheet.create({
     borderBottomColor: "#00000010",
   },
   rowLabel: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  rowValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "right", flex: 1, marginLeft: 12 },
+  rowValue: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
+    flex: 1,
+    marginLeft: 12,
+  },
   descText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
-  historyRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 12 },
+  historyRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    marginBottom: 12,
+  },
   historyDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
   historyContent: { flex: 1 },
   historyStatus: { fontSize: 14, fontFamily: "Inter_600SemiBold" },

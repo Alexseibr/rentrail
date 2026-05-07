@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-type QueueItemStatus = "queued" | "syncing" | "failed" | "completed" | "canceled";
+type QueueItemStatus =
+  | "queued"
+  | "syncing"
+  | "failed"
+  | "completed"
+  | "canceled";
 
 interface QueueItem {
   id: string;
@@ -39,7 +44,9 @@ function resolveConfirmMessage(
     (item) =>
       item.actionType === "vehicle_command" &&
       item.endpoint === endpoint &&
-      (item.status === "queued" || item.status === "syncing" || item.status === "failed"),
+      (item.status === "queued" ||
+        item.status === "syncing" ||
+        item.status === "failed"),
   );
   const queuedRetries = pendingItem?.retryCount ?? 0;
   if (queuedRetries > 0) {
@@ -96,19 +103,25 @@ describe("Vehicle command confirmation message selection", () => {
   });
 
   it("does not match a different asset id", () => {
-    const items = [buildItem({ endpoint: "/api/assets/other-asset/lock", retryCount: 3 })];
+    const items = [
+      buildItem({ endpoint: "/api/assets/other-asset/lock", retryCount: 3 }),
+    ];
     const result = resolveConfirmMessage(items, "asset-1", "lock", "Lock");
     expect(result.key).toBe("confirmCommand");
   });
 
   it("does not match a different command type", () => {
-    const items = [buildItem({ endpoint: "/api/assets/asset-1/unlock", retryCount: 3 })];
+    const items = [
+      buildItem({ endpoint: "/api/assets/asset-1/unlock", retryCount: 3 }),
+    ];
     const result = resolveConfirmMessage(items, "asset-1", "lock", "Lock");
     expect(result.key).toBe("confirmCommand");
   });
 
   it("does not match a different action type", () => {
-    const items = [buildItem({ actionType: "change_incident_status", retryCount: 3 })];
+    const items = [
+      buildItem({ actionType: "change_incident_status", retryCount: 3 }),
+    ];
     const result = resolveConfirmMessage(items, "asset-1", "lock", "Lock");
     expect(result.key).toBe("confirmCommand");
   });

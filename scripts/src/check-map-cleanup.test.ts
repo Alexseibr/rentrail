@@ -196,22 +196,36 @@ export default function AliasedMapScreen() {
 // ---------------------------------------------------------------------------
 
 test("WEBVIEW_IMPORT_RE matches default import", () => {
-  assert.ok(WEBVIEW_IMPORT_RE.test(`import WebView from "react-native-webview";`));
-  assert.ok(WEBVIEW_IMPORT_RE.test(`import WebView from 'react-native-webview';`));
+  assert.ok(
+    WEBVIEW_IMPORT_RE.test(`import WebView from "react-native-webview";`),
+  );
+  assert.ok(
+    WEBVIEW_IMPORT_RE.test(`import WebView from 'react-native-webview';`),
+  );
 });
 
 test("WEBVIEW_IMPORT_RE does NOT match aliased import (checker boundary is explicit)", () => {
   // By design the checker only recognises the canonical `WebView` identifier.
   // The convention in replit.md requires keeping `WebView` as the name so screens
   // remain visible to the check.  This test documents that limitation.
-  assert.ok(!WEBVIEW_IMPORT_RE.test(`import RNWebView from "react-native-webview";`));
+  assert.ok(
+    !WEBVIEW_IMPORT_RE.test(`import RNWebView from "react-native-webview";`),
+  );
   const result = checkFile(ALIASED_WEBVIEW_IMPORT);
-  assert.equal(result.hasWebViewImport, false, "aliased import is outside checker scope");
+  assert.equal(
+    result.hasWebViewImport,
+    false,
+    "aliased import is outside checker scope",
+  );
 });
 
 test("WEBVIEW_IMPORT_RE does not match unrelated imports", () => {
   assert.ok(!WEBVIEW_IMPORT_RE.test(`import { View } from "react-native";`));
-  assert.ok(!WEBVIEW_IMPORT_RE.test(`import MiniMapPreview from "@/components/MiniMapPreview";`));
+  assert.ok(
+    !WEBVIEW_IMPORT_RE.test(
+      `import MiniMapPreview from "@/components/MiniMapPreview";`,
+    ),
+  );
 });
 
 test("hasPopupCloseFocusEffect: detects closeMapPopup in useFocusEffect return", () => {

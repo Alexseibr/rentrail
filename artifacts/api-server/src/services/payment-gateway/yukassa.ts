@@ -1,5 +1,12 @@
 import { AppError } from "../../lib/errors";
-import type { PaymentGateway, CreateHoldParams, CaptureParams, VoidParams, RefundParams, GatewayPaymentResult } from "./types";
+import type {
+  PaymentGateway,
+  CreateHoldParams,
+  CaptureParams,
+  VoidParams,
+  RefundParams,
+  GatewayPaymentResult,
+} from "./types";
 
 const BASE_URL = "https://api.yookassa.ru/v3";
 
@@ -7,7 +14,11 @@ function getCredentials() {
   const shopId = process.env["YUKASSA_SHOP_ID"];
   const secretKey = process.env["YUKASSA_SECRET_KEY"];
   if (!shopId || !secretKey) {
-    throw new AppError(500, "ЮKassa credentials not configured (YUKASSA_SHOP_ID / YUKASSA_SECRET_KEY)", "GATEWAY_NOT_CONFIGURED");
+    throw new AppError(
+      500,
+      "ЮKassa credentials not configured (YUKASSA_SHOP_ID / YUKASSA_SECRET_KEY)",
+      "GATEWAY_NOT_CONFIGURED",
+    );
   }
   return { shopId, secretKey };
 }
@@ -22,15 +33,24 @@ function idempotenceKey(): string {
 
 function mapStatus(ykStatus: string): GatewayPaymentResult["status"] {
   switch (ykStatus) {
-    case "pending": return "pending";
-    case "waiting_for_capture": return "authorized";
-    case "succeeded": return "paid";
-    case "canceled": return "voided";
-    default: return "pending";
+    case "pending":
+      return "pending";
+    case "waiting_for_capture":
+      return "authorized";
+    case "succeeded":
+      return "paid";
+    case "canceled":
+      return "voided";
+    default:
+      return "pending";
   }
 }
 
-async function ykRequest(method: string, path: string, body?: unknown): Promise<unknown> {
+async function ykRequest(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<unknown> {
   const { shopId, secretKey } = getCredentials();
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
@@ -45,7 +65,11 @@ async function ykRequest(method: string, path: string, body?: unknown): Promise<
   const data = await res.json();
   if (!res.ok) {
     const err = data as { description?: string; code?: string };
-    throw new AppError(502, `ЮKassa error: ${err.description ?? "unknown"}`, err.code ?? "GATEWAY_ERROR");
+    throw new AppError(
+      502,
+      `ЮKassa error: ${err.description ?? "unknown"}`,
+      err.code ?? "GATEWAY_ERROR",
+    );
   }
   return data;
 }
@@ -55,7 +79,10 @@ export const yukassaGateway: PaymentGateway = {
 
   async createHold(params: CreateHoldParams): Promise<GatewayPaymentResult> {
     const body: Record<string, unknown> = {
-      amount: { value: (params.amount / 100).toFixed(2), currency: params.currency },
+      amount: {
+        value: (params.amount / 100).toFixed(2),
+        currency: params.currency,
+      },
       capture: false,
       description: params.description,
       metadata: { orderId: params.orderId, ...params.metadata },
@@ -66,7 +93,10 @@ export const yukassaGateway: PaymentGateway = {
     } else {
       body.confirmation = {
         type: "redirect",
-        return_url: params.returnUrl ?? process.env["YUKASSA_RETURN_URL"] ?? "https://example.com",
+        return_url:
+          params.returnUrl ??
+          process.env["YUKASSA_RETURN_URL"] ??
+          "https://example.com",
       };
     }
 
@@ -80,17 +110,29 @@ export const yukassaGateway: PaymentGateway = {
           {
             description: params.description,
             quantity: "1.00",
-            amount: { value: (params.amount / 100).toFixed(2), currency: params.currency },
+            amount: {
+              value: (params.amount / 100).toFixed(2),
+              currency: params.currency,
+            },
             vat_code: 1,
           },
         ],
       };
     }
 
-    const data = (await ykRequest("POST", "/payments", body)) as Record<string, unknown>;
-    const confirmation = data.confirmation as Record<string, string> | undefined;
-    const paymentMethod = data.payment_method as Record<string, unknown> | undefined;
-    const paymentMethodId = paymentMethod?.saved ? (paymentMethod?.id as string | undefined) : undefined;
+    const data = (await ykRequest("POST", "/payments", body)) as Record<
+      string,
+      unknown
+    >;
+    const confirmation = data.confirmation as
+      | Record<string, string>
+      | undefined;
+    const paymentMethod = data.payment_method as
+      | Record<string, unknown>
+      | undefined;
+    const paymentMethodId = paymentMethod?.saved
+      ? (paymentMethod?.id as string | undefined)
+      : undefined;
 
     return {
       providerPaymentId: data.id as string,
@@ -103,9 +145,16 @@ export const yukassaGateway: PaymentGateway = {
 
   async capturePayment(params: CaptureParams): Promise<GatewayPaymentResult> {
     const body = {
-      amount: { value: (params.amount / 100).toFixed(2), currency: params.currency },
+      amount: {
+        value: (params.amount / 100).toFixed(2),
+        currency: params.currency,
+      },
     };
-    const data = (await ykRequest("POST", `/payments/${params.providerPaymentId}/capture`, body)) as Record<string, unknown>;
+    const data = (await ykRequest(
+      "POST",
+      `/payments/${params.providerPaymentId}/capture`,
+      body,
+    )) as Record<string, unknown>;
     return {
       providerPaymentId: data.id as string,
       status: mapStatus(data.status as string),
@@ -114,7 +163,11 @@ export const yukassaGateway: PaymentGateway = {
   },
 
   async voidPayment(params: VoidParams): Promise<GatewayPaymentResult> {
-    const data = (await ykRequest("POST", `/payments/${params.providerPaymentId}/cancel`, {})) as Record<string, unknown>;
+    const data = (await ykRequest(
+      "POST",
+      `/payments/${params.providerPaymentId}/cancel`,
+      {},
+    )) as Record<string, unknown>;
     return {
       providerPaymentId: data.id as string,
       status: mapStatus(data.status as string),
@@ -125,10 +178,16 @@ export const yukassaGateway: PaymentGateway = {
   async refundPayment(params: RefundParams): Promise<GatewayPaymentResult> {
     const body = {
       payment_id: params.providerPaymentId,
-      amount: { value: (params.amount / 100).toFixed(2), currency: params.currency },
+      amount: {
+        value: (params.amount / 100).toFixed(2),
+        currency: params.currency,
+      },
       description: params.reason,
     };
-    const data = (await ykRequest("POST", "/refunds", body)) as Record<string, unknown>;
+    const data = (await ykRequest("POST", "/refunds", body)) as Record<
+      string,
+      unknown
+    >;
     return {
       providerPaymentId: params.providerPaymentId,
       status: mapStatus(data.status as string),
@@ -136,8 +195,13 @@ export const yukassaGateway: PaymentGateway = {
     };
   },
 
-  async getPaymentStatus(providerPaymentId: string): Promise<GatewayPaymentResult> {
-    const data = (await ykRequest("GET", `/payments/${providerPaymentId}`)) as Record<string, unknown>;
+  async getPaymentStatus(
+    providerPaymentId: string,
+  ): Promise<GatewayPaymentResult> {
+    const data = (await ykRequest(
+      "GET",
+      `/payments/${providerPaymentId}`,
+    )) as Record<string, unknown>;
     return {
       providerPaymentId: data.id as string,
       status: mapStatus(data.status as string),

@@ -1,15 +1,61 @@
-import { db, roles, permissions, rolePermissions, platformRoles } from "@workspace/db";
+import {
+  db,
+  roles,
+  permissions,
+  rolePermissions,
+  platformRoles,
+} from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
 const SYSTEM_ROLES = [
-  { code: "superAdmin", name: "Super Admin", description: "Platform-level admin with full access", isSystem: true },
-  { code: "owner", name: "Owner", description: "Company owner with full company access", isSystem: true },
-  { code: "admin", name: "Admin", description: "Company administrator", isSystem: true },
-  { code: "manager", name: "Manager", description: "Branch/station manager", isSystem: true },
-  { code: "accountant", name: "Accountant", description: "Financial operations", isSystem: true },
-  { code: "operator", name: "Operator", description: "Day-to-day rental operations", isSystem: true },
-  { code: "mechanic", name: "Mechanic", description: "Asset maintenance and repairs", isSystem: true },
-  { code: "viewer", name: "Viewer", description: "Read-only access", isSystem: true },
+  {
+    code: "superAdmin",
+    name: "Super Admin",
+    description: "Platform-level admin with full access",
+    isSystem: true,
+  },
+  {
+    code: "owner",
+    name: "Owner",
+    description: "Company owner with full company access",
+    isSystem: true,
+  },
+  {
+    code: "admin",
+    name: "Admin",
+    description: "Company administrator",
+    isSystem: true,
+  },
+  {
+    code: "manager",
+    name: "Manager",
+    description: "Branch/station manager",
+    isSystem: true,
+  },
+  {
+    code: "accountant",
+    name: "Accountant",
+    description: "Financial operations",
+    isSystem: true,
+  },
+  {
+    code: "operator",
+    name: "Operator",
+    description: "Day-to-day rental operations",
+    isSystem: true,
+  },
+  {
+    code: "mechanic",
+    name: "Mechanic",
+    description: "Asset maintenance and repairs",
+    isSystem: true,
+  },
+  {
+    code: "viewer",
+    name: "Viewer",
+    description: "Read-only access",
+    isSystem: true,
+  },
 ];
 
 const MODULES: Record<string, string[]> = {
@@ -40,7 +86,17 @@ const RESOURCE_ACTIONS: Record<string, string[]> = {
   station: ["create", "read", "update", "delete", "manage"],
   client: ["create", "read", "update", "delete", "manage"],
   asset: ["create", "read", "update", "delete", "changeStatus", "manage"],
-  rental: ["create", "read", "update", "approve", "start", "extend", "complete", "cancel", "manage"],
+  rental: [
+    "create",
+    "read",
+    "update",
+    "approve",
+    "start",
+    "extend",
+    "complete",
+    "cancel",
+    "manage",
+  ],
   blacklist: ["create", "read", "update", "check", "manage"],
   payment: ["create", "read", "refund", "manage"],
   deposit: ["create", "read", "update", "manage"],
@@ -63,7 +119,9 @@ function permsFor(resource: string, actions: string[]): string[] {
 }
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  owner: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) => actions.map((a) => `${r}:${a}`)),
+  owner: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) =>
+    actions.map((a) => `${r}:${a}`),
+  ),
 
   admin: Object.entries(RESOURCE_ACTIONS).flatMap(([r, actions]) =>
     actions
@@ -80,7 +138,16 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("station", ["create", "read", "update"]),
     ...permsFor("client", ["create", "read", "update"]),
     ...permsFor("asset", ["create", "read", "update", "changeStatus"]),
-    ...permsFor("rental", ["create", "read", "update", "approve", "start", "extend", "complete", "cancel"]),
+    ...permsFor("rental", [
+      "create",
+      "read",
+      "update",
+      "approve",
+      "start",
+      "extend",
+      "complete",
+      "cancel",
+    ]),
     ...permsFor("blacklist", ["create", "read", "update", "check"]),
     ...permsFor("payment", ["read"]),
     ...permsFor("deposit", ["read"]),
@@ -113,7 +180,14 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     ...permsFor("station", ["read"]),
     ...permsFor("client", ["create", "read", "update"]),
     ...permsFor("asset", ["read", "update", "changeStatus"]),
-    ...permsFor("rental", ["create", "read", "update", "start", "extend", "complete"]),
+    ...permsFor("rental", [
+      "create",
+      "read",
+      "update",
+      "start",
+      "extend",
+      "complete",
+    ]),
     ...permsFor("blacklist", ["read", "check"]),
     ...permsFor("payment", ["read"]),
     ...permsFor("deposit", ["read"]),
@@ -143,7 +217,11 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 
 export async function seedRolesAndPermissions() {
   for (const role of SYSTEM_ROLES) {
-    const existing = await db.select().from(roles).where(eq(roles.code, role.code)).limit(1);
+    const existing = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.code, role.code))
+      .limit(1);
     if (existing.length === 0) {
       await db.insert(roles).values(role);
     }
@@ -154,7 +232,11 @@ export async function seedRolesAndPermissions() {
     const module = getModule(resource);
     for (const action of actions) {
       const code = `${resource}:${action}`;
-      const existing = await db.select().from(permissions).where(eq(permissions.code, code)).limit(1);
+      const existing = await db
+        .select()
+        .from(permissions)
+        .where(eq(permissions.code, code))
+        .limit(1);
       if (existing.length === 0) {
         const [perm] = await db
           .insert(permissions)
@@ -186,25 +268,56 @@ export async function seedRolesAndPermissions() {
       const existing = await db
         .select()
         .from(rolePermissions)
-        .where(and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permId)))
+        .where(
+          and(
+            eq(rolePermissions.roleId, roleId),
+            eq(rolePermissions.permissionId, permId),
+          ),
+        )
         .limit(1);
 
       if (existing.length === 0) {
-        await db.insert(rolePermissions).values({ roleId, permissionId: permId });
+        await db
+          .insert(rolePermissions)
+          .values({ roleId, permissionId: permId });
       }
     }
   }
 
   const PLATFORM_ROLES = [
-    { code: "superAdmin", name: "Super Admin", description: "Full platform access with all capabilities" },
-    { code: "platformAdmin", name: "Platform Admin", description: "Platform administration and tenant management" },
-    { code: "platformSupport", name: "Platform Support", description: "Read-only tenant inspection and support tools" },
-    { code: "platformFinance", name: "Platform Finance", description: "SaaS billing, invoices, and subscription management" },
-    { code: "platformRisk", name: "Platform Risk", description: "Global blacklist and risk management" },
+    {
+      code: "superAdmin",
+      name: "Super Admin",
+      description: "Full platform access with all capabilities",
+    },
+    {
+      code: "platformAdmin",
+      name: "Platform Admin",
+      description: "Platform administration and tenant management",
+    },
+    {
+      code: "platformSupport",
+      name: "Platform Support",
+      description: "Read-only tenant inspection and support tools",
+    },
+    {
+      code: "platformFinance",
+      name: "Platform Finance",
+      description: "SaaS billing, invoices, and subscription management",
+    },
+    {
+      code: "platformRisk",
+      name: "Platform Risk",
+      description: "Global blacklist and risk management",
+    },
   ];
 
   for (const role of PLATFORM_ROLES) {
-    const existing = await db.select().from(platformRoles).where(eq(platformRoles.code, role.code)).limit(1);
+    const existing = await db
+      .select()
+      .from(platformRoles)
+      .where(eq(platformRoles.code, role.code))
+      .limit(1);
     if (existing.length === 0) {
       await db.insert(platformRoles).values(role);
     }

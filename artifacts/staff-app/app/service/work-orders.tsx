@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator, TextInput, ScrollView, Linking,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+  TextInput,
+  ScrollView,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -43,7 +51,10 @@ function openMaps(lat: number, lng: number) {
     .catch(() => Linking.openURL(webUrl).catch(() => {}));
 }
 
-function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatRelativeTime(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return t("rentalDetail.timeJustNow");
@@ -74,9 +85,16 @@ export default function WorkOrdersScreen() {
   const [filter, setFilter] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState("");
   const [manualRefreshing, setManualRefreshing] = useState(false);
-  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>({});
+  const [coordsMap, setCoordsMap] = useState<Record<string, CachedCoordinates>>(
+    {},
+  );
 
-  const { data: items = [], isLoading, isRefetching, refetch } = useQuery({
+  const {
+    data: items = [],
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
     queryKey: ["workOrders", companyId, filter],
     queryFn: () => fetchWorkOrders(companyId!, filter),
     enabled: !!companyId,
@@ -115,9 +133,10 @@ export default function WorkOrdersScreen() {
   };
 
   const filtered = search.trim()
-    ? items.filter(i =>
-        i.title?.toLowerCase().includes(search.toLowerCase()) ||
-        i.assetCode?.toLowerCase().includes(search.toLowerCase()),
+    ? items.filter(
+        (i) =>
+          i.title?.toLowerCase().includes(search.toLowerCase()) ||
+          i.assetCode?.toLowerCase().includes(search.toLowerCase()),
       )
     : items;
 
@@ -130,7 +149,12 @@ export default function WorkOrdersScreen() {
     { key: "completed", label: t("serviceModule.statusCompleted") },
   ];
 
-  const ACTIVE_STATUSES = ["assigned", "en_route", "in_progress", "waiting_parts"];
+  const ACTIVE_STATUSES = [
+    "assigned",
+    "en_route",
+    "in_progress",
+    "waiting_parts",
+  ];
 
   const renderItem = ({ item }: { item: any }) => {
     const isActive = ACTIVE_STATUSES.includes(item.status);
@@ -139,95 +163,167 @@ export default function WorkOrdersScreen() {
     const coords = item.assetId ? (coordsMap[item.assetId] ?? null) : null;
 
     return (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card }, isActive && styles.cardActive]}
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push(`/service/work-order/${item.id}` as any);
-      }}
-      activeOpacity={0.7}
-    >
-      {isActive && <View style={[styles.cardAccent, { backgroundColor: accentColor }]} />}
-      <View style={styles.cardHeader}>
-        <View style={styles.cardTitleRow}>
-          {isUrgent ? (
-            <Feather name="alert-triangle" size={14} color={PRIORITY_COLORS.urgent} />
-          ) : (
-            <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[item.priority] ?? "#94a3b8" }]} />
+      <TouchableOpacity
+        style={[
+          styles.card,
+          { backgroundColor: colors.card },
+          isActive && styles.cardActive,
+        ]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push(`/service/work-order/${item.id}` as any);
+        }}
+        activeOpacity={0.7}
+      >
+        {isActive && (
+          <View style={[styles.cardAccent, { backgroundColor: accentColor }]} />
+        )}
+        <View style={styles.cardHeader}>
+          <View style={styles.cardTitleRow}>
+            {isUrgent ? (
+              <Feather
+                name="alert-triangle"
+                size={14}
+                color={PRIORITY_COLORS.urgent}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.priorityDot,
+                  {
+                    backgroundColor:
+                      PRIORITY_COLORS[item.priority] ?? "#94a3b8",
+                  },
+                ]}
+              />
+            )}
+            <Text
+              style={[styles.cardTitle, { color: colors.foreground }]}
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor:
+                  (STATUS_COLORS[item.status] ?? "#94a3b8") + "20",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                { color: STATUS_COLORS[item.status] ?? colors.mutedForeground },
+              ]}
+            >
+              {t(`serviceModule.status_${item.status}`, {
+                defaultValue: item.status,
+              })}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.cardMeta}>
+          {item.assetCode && (
+            <View style={styles.metaItem}>
+              <Feather name="cpu" size={12} color={colors.mutedForeground} />
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
+                {item.assetCode}
+              </Text>
+            </View>
           )}
-          <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
-            {item.title}
-          </Text>
+          {item.orderType && (
+            <View style={styles.metaItem}>
+              <Feather name="tool" size={12} color={colors.mutedForeground} />
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
+                {t(`serviceModule.type_${item.orderType}`, {
+                  defaultValue: item.orderType,
+                })}
+              </Text>
+            </View>
+          )}
+          {item.assignedToName && item.assignedToName.trim() !== "" && (
+            <View style={styles.metaItem}>
+              <Feather name="user" size={12} color={colors.mutedForeground} />
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
+                {item.assignedToName}
+              </Text>
+            </View>
+          )}
+          {item.priority && (
+            <View style={styles.metaItem}>
+              <View
+                style={[
+                  styles.priorityMiniDot,
+                  {
+                    backgroundColor:
+                      PRIORITY_COLORS[item.priority] ?? "#94a3b8",
+                  },
+                ]}
+              />
+              <Text
+                style={[styles.metaText, { color: colors.mutedForeground }]}
+              >
+                {t(`serviceModule.priority_${item.priority}`, {
+                  defaultValue: item.priority,
+                })}
+              </Text>
+            </View>
+          )}
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: (STATUS_COLORS[item.status] ?? "#94a3b8") + "20" }]}>
-          <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] ?? colors.mutedForeground }]}>
-            {t(`serviceModule.status_${item.status}`, { defaultValue: item.status })}
+
+        {item.estimatedCost && (
+          <Text style={[styles.costText, { color: colors.mutedForeground }]}>
+            {t("serviceModule.estimated")}:{" "}
+            {parseFloat(item.estimatedCost).toLocaleString("ru-RU")} ₽
           </Text>
-        </View>
-      </View>
+        )}
 
-      <View style={styles.cardMeta}>
-        {item.assetCode && (
-          <View style={styles.metaItem}>
-            <Feather name="cpu" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assetCode}</Text>
-          </View>
-        )}
-        {item.orderType && (
-          <View style={styles.metaItem}>
-            <Feather name="tool" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-              {t(`serviceModule.type_${item.orderType}`, { defaultValue: item.orderType })}
+        {coords && (
+          <TouchableOpacity
+            style={[styles.locationChip, { borderTopColor: colors.border }]}
+            onPress={() => openMaps(coords.lat, coords.lng)}
+            activeOpacity={0.7}
+          >
+            <Feather name="map-pin" size={11} color={colors.primary} />
+            <Text style={[styles.locationText, { color: colors.primary }]}>
+              {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
             </Text>
-          </View>
+            {coords.cachedAt ? (
+              <Text
+                style={[styles.cacheAgeText, { color: colors.mutedForeground }]}
+              >
+                {formatRelativeTime(coords.cachedAt, t)}
+              </Text>
+            ) : null}
+            <Feather
+              name="external-link"
+              size={11}
+              color={colors.mutedForeground}
+            />
+          </TouchableOpacity>
         )}
-        {item.assignedToName && item.assignedToName.trim() !== "" && (
-          <View style={styles.metaItem}>
-            <Feather name="user" size={12} color={colors.mutedForeground} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>{item.assignedToName}</Text>
-          </View>
-        )}
-        {item.priority && (
-          <View style={styles.metaItem}>
-            <View style={[styles.priorityMiniDot, { backgroundColor: PRIORITY_COLORS[item.priority] ?? "#94a3b8" }]} />
-            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-              {t(`serviceModule.priority_${item.priority}`, { defaultValue: item.priority })}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {item.estimatedCost && (
-        <Text style={[styles.costText, { color: colors.mutedForeground }]}>
-          {t("serviceModule.estimated")}: {parseFloat(item.estimatedCost).toLocaleString("ru-RU")} ₽
-        </Text>
-      )}
-
-      {coords && (
-        <TouchableOpacity
-          style={[styles.locationChip, { borderTopColor: colors.border }]}
-          onPress={() => openMaps(coords.lat, coords.lng)}
-          activeOpacity={0.7}
-        >
-          <Feather name="map-pin" size={11} color={colors.primary} />
-          <Text style={[styles.locationText, { color: colors.primary }]}>
-            {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
-          </Text>
-          {coords.cachedAt ? (
-            <Text style={[styles.cacheAgeText, { color: colors.mutedForeground }]}>
-              {formatRelativeTime(coords.cachedAt, t)}
-            </Text>
-          ) : null}
-          <Feather name="external-link" size={11} color={colors.mutedForeground} />
-        </TouchableOpacity>
-      )}
-    </TouchableOpacity>
+      </TouchableOpacity>
     );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.dark }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, backgroundColor: colors.dark },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
@@ -235,7 +331,12 @@ export default function WorkOrdersScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.searchBar,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
         <Feather name="search" size={16} color={colors.mutedForeground} />
         <TextInput
           style={[styles.searchInput, { color: colors.foreground }]}
@@ -258,7 +359,9 @@ export default function WorkOrdersScreen() {
       >
         {FILTERS.map((f) => {
           const isActive = filter === f.key;
-          const activeColor = f.key ? (STATUS_COLORS[f.key] ?? colors.primary) : colors.primary;
+          const activeColor = f.key
+            ? (STATUS_COLORS[f.key] ?? colors.primary)
+            : colors.primary;
           return (
             <TouchableOpacity
               key={String(f.key)}
@@ -272,7 +375,12 @@ export default function WorkOrdersScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.chipText, { color: isActive ? "#fff" : colors.mutedForeground }]}>
+              <Text
+                style={[
+                  styles.chipText,
+                  { color: isActive ? "#fff" : colors.mutedForeground },
+                ]}
+              >
                 {f.label}
               </Text>
             </TouchableOpacity>
@@ -282,17 +390,29 @@ export default function WorkOrdersScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={i => i.id}
+        keyExtractor={(i) => i.id}
         renderItem={renderItem}
-        refreshControl={<RefreshControl refreshing={manualRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={manualRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
         ListEmptyComponent={
           isLoading ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : (
             <View style={styles.empty}>
               <Feather name="tool" size={36} color={colors.mutedForeground} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("serviceModule.noWorkOrders")}</Text>
-              <Text style={[styles.emptyHint, { color: colors.mutedForeground }]}>{t("serviceModule.noWorkOrdersHint")}</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+                {t("serviceModule.noWorkOrders")}
+              </Text>
+              <Text
+                style={[styles.emptyHint, { color: colors.mutedForeground }]}
+              >
+                {t("serviceModule.noWorkOrdersHint")}
+              </Text>
             </View>
           )
         }
@@ -305,31 +425,49 @@ export default function WorkOrdersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
   headerTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#fff" },
   searchBar: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    margin: 12, marginBottom: 6, paddingHorizontal: 12, paddingVertical: 10,
-    borderRadius: 12, borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    margin: 12,
+    marginBottom: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   filterRow: {
-    flexDirection: "row", gap: 8,
-    paddingHorizontal: 12, paddingVertical: 10,
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   chip: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, backgroundColor: "rgba(128,128,128,0.1)",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: "rgba(128,128,128,0.1)",
   },
   chipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   list: { padding: 12, paddingBottom: 60 },
   card: {
-    borderRadius: 16, padding: 16, marginBottom: 10,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
     overflow: "hidden",
   },
   cardActive: {
@@ -346,14 +484,24 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderBottomLeftRadius: 16,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
   cardTitleRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 },
   priorityDot: { width: 8, height: 8, borderRadius: 4 },
   priorityMiniDot: { width: 6, height: 6, borderRadius: 3 },
   cardTitle: { flex: 1, fontSize: 15, fontFamily: "Inter_600SemiBold" },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   statusText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  cardMeta: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 6 },
+  cardMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 6,
+  },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   costText: { fontSize: 12, fontFamily: "Inter_500Medium", marginTop: 4 },
@@ -378,5 +526,10 @@ const styles = StyleSheet.create({
   loader: { marginTop: 60 },
   empty: { alignItems: "center", marginTop: 60, gap: 8 },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  emptyHint: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", paddingHorizontal: 40 },
+  emptyHint: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    paddingHorizontal: 40,
+  },
 });

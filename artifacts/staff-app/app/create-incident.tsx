@@ -29,7 +29,9 @@ export default function CreateIncidentScreen() {
   const { isConnected } = useNetwork();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<"low" | "medium" | "high" | "critical">("medium");
+  const [severity, setSeverity] = useState<
+    "low" | "medium" | "high" | "critical"
+  >("medium");
   const [loading, setLoading] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
 
@@ -41,7 +43,11 @@ export default function CreateIncidentScreen() {
       return;
     }
 
-    const payload = { title: title.trim(), description: description.trim(), severity };
+    const payload = {
+      title: title.trim(),
+      description: description.trim(),
+      severity,
+    };
 
     if (!isConnected && isQueueable("create_incident")) {
       await enqueue({
@@ -86,7 +92,10 @@ export default function CreateIncidentScreen() {
         { text: t("incident.addPhotos"), style: "cancel" },
       ]);
     } catch (err: unknown) {
-      Alert.alert(t("common.error"), err instanceof Error ? err.message : t("incident.failedToCreate"));
+      Alert.alert(
+        t("common.error"),
+        err instanceof Error ? err.message : t("incident.failedToCreate"),
+      );
     } finally {
       setLoading(false);
     }
@@ -94,11 +103,23 @@ export default function CreateIncidentScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>{t("incident.title")}</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>
+            {t("incident.title")}
+          </Text>
           <TextInput
-            style={[styles.input, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
+            style={[
+              styles.input,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.card,
+                color: colors.foreground,
+              },
+            ]}
             placeholder={t("incident.incidentTitle")}
             placeholderTextColor={colors.mutedForeground}
             value={title}
@@ -107,9 +128,18 @@ export default function CreateIncidentScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>{t("incident.description")}</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>
+            {t("incident.description")}
+          </Text>
           <TextInput
-            style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
+            style={[
+              styles.textArea,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.card,
+                color: colors.foreground,
+              },
+            ]}
             placeholder={t("incident.describeIncident")}
             placeholderTextColor={colors.mutedForeground}
             value={description}
@@ -121,7 +151,9 @@ export default function CreateIncidentScreen() {
         </View>
 
         <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.foreground }]}>{t("incident.severity")}</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>
+            {t("incident.severity")}
+          </Text>
           <View style={styles.severityRow}>
             {severities.map((s) => (
               <TouchableOpacity
@@ -129,8 +161,10 @@ export default function CreateIncidentScreen() {
                 style={[
                   styles.severityBtn,
                   {
-                    backgroundColor: severity === s ? colors.primary : colors.muted,
-                    borderColor: severity === s ? colors.primary : colors.border,
+                    backgroundColor:
+                      severity === s ? colors.primary : colors.muted,
+                    borderColor:
+                      severity === s ? colors.primary : colors.border,
                   },
                 ]}
                 onPress={() => setSeverity(s)}
@@ -153,7 +187,10 @@ export default function CreateIncidentScreen() {
         )}
 
         <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+          style={[
+            styles.submitBtn,
+            { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 },
+          ]}
           onPress={handleSubmit}
           disabled={loading || !!createdId}
           activeOpacity={0.8}
@@ -162,9 +199,17 @@ export default function CreateIncidentScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Feather name={!isConnected ? "clock" : "check"} size={18} color="#fff" />
+              <Feather
+                name={!isConnected ? "clock" : "check"}
+                size={18}
+                color="#fff"
+              />
               <Text style={styles.submitText}>
-                {createdId ? t("incident.created") : !isConnected ? t("incident.queueForLater") : t("incident.createIncident")}
+                {createdId
+                  ? t("incident.created")
+                  : !isConnected
+                    ? t("incident.queueForLater")
+                    : t("incident.createIncident")}
               </Text>
             </>
           )}
@@ -179,11 +224,36 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 40, gap: 16 },
   field: { gap: 6 },
   label: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, height: 48, fontSize: 15, fontFamily: "Inter_400Regular" },
-  textArea: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular", minHeight: 100 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    height: 48,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+  },
+  textArea: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    minHeight: 100,
+  },
   severityRow: { flexDirection: "row", gap: 8 },
-  severityBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: "center" },
-  severityText: { fontSize: 13, fontFamily: "Inter_500Medium", textTransform: "capitalize" as const },
+  severityBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  severityText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    textTransform: "capitalize" as const,
+  },
   submitBtn: {
     flexDirection: "row",
     alignItems: "center",

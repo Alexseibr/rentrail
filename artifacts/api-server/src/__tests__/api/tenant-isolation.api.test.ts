@@ -36,13 +36,20 @@ describe("Multi-Tenant Isolation", () => {
 
     userA = await createTestUser({ email: `iso-a-${Date.now()}@test.com` });
     userB = await createTestUser({ email: `iso-b-${Date.now()}@test.com` });
-    superAdmin = await createTestUser({ email: `iso-super-${Date.now()}@test.com`, isSuperAdmin: true });
+    superAdmin = await createTestUser({
+      email: `iso-super-${Date.now()}@test.com`,
+      isSuperAdmin: true,
+    });
 
     await assignRole(userA.id, tenantA.company.id, "admin");
     await assignRole(userB.id, tenantB.company.id, "admin");
 
-    assetA = await createTestAsset(tenantA.company.id, tenantA.branch.id, { stationId: tenantA.station.id });
-    assetB = await createTestAsset(tenantB.company.id, tenantB.branch.id, { stationId: tenantB.station.id });
+    assetA = await createTestAsset(tenantA.company.id, tenantA.branch.id, {
+      stationId: tenantA.station.id,
+    });
+    assetB = await createTestAsset(tenantB.company.id, tenantB.branch.id, {
+      stationId: tenantB.station.id,
+    });
     clientA = await createTestClient(tenantA.company.id);
     clientB = await createTestClient(tenantB.company.id);
   }, 30000);

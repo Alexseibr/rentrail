@@ -15,7 +15,10 @@ import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSync } from "@/contexts/SyncContext";
 import { useNetwork } from "@/services/network";
-import { getPushRegistrationStatus, registerForPushNotifications } from "@/services/push";
+import {
+  getPushRegistrationStatus,
+  registerForPushNotifications,
+} from "@/services/push";
 import { toggleLanguage } from "../../i18n/i18n";
 
 export default function SettingsScreen() {
@@ -24,10 +27,15 @@ export default function SettingsScreen() {
   const { user, logout, companyId } = useAuth();
   const { pendingCount } = useSync();
   const { isConnected } = useNetwork();
-  const [pushStatus, setPushStatus] = useState({ hasToken: false, isRegistered: false });
+  const [pushStatus, setPushStatus] = useState({
+    hasToken: false,
+    isRegistered: false,
+  });
 
   useEffect(() => {
-    getPushRegistrationStatus().then((s) => setPushStatus({ hasToken: s.hasToken, isRegistered: s.isRegistered }));
+    getPushRegistrationStatus().then((s) =>
+      setPushStatus({ hasToken: s.hasToken, isRegistered: s.isRegistered }),
+    );
   }, []);
 
   const handlePushToggle = async () => {
@@ -46,7 +54,11 @@ export default function SettingsScreen() {
     }
     Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
       { text: t("settings.cancel"), style: "cancel" },
-      { text: t("settings.signOut"), style: "destructive", onPress: () => logout() },
+      {
+        text: t("settings.signOut"),
+        style: "destructive",
+        onPress: () => logout(),
+      },
     ]);
   };
 
@@ -67,7 +79,11 @@ export default function SettingsScreen() {
     {
       title: t("settings.account"),
       items: [
-        { label: user?.email ?? "—", icon: "user", detail: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() },
+        {
+          label: user?.email ?? "—",
+          icon: "user",
+          detail: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim(),
+        },
       ],
     },
     {
@@ -82,7 +98,9 @@ export default function SettingsScreen() {
         {
           label: t("settings.pushNotifications"),
           icon: "bell",
-          detail: pushStatus.isRegistered ? t("settings.registered") : t("settings.notRegistered"),
+          detail: pushStatus.isRegistered
+            ? t("settings.registered")
+            : t("settings.notRegistered"),
           onPress: handlePushToggle,
         },
         {
@@ -106,7 +124,9 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         {rows.map((section) => (
           <View key={section.title} style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {section.title}
             </Text>
             <View style={[styles.card, { backgroundColor: colors.card }]}>
@@ -115,17 +135,36 @@ export default function SettingsScreen() {
                   key={item.label}
                   style={[
                     styles.row,
-                    idx < section.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    idx < section.items.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
                   ]}
                   onPress={item.onPress}
                   disabled={!item.onPress}
                   activeOpacity={item.onPress ? 0.7 : 1}
                 >
-                  <View style={[styles.rowIconWrap, { backgroundColor: colors.primary + "18" }]}>
-                    <Feather name={item.icon} size={16} color={colors.primary} />
+                  <View
+                    style={[
+                      styles.rowIconWrap,
+                      { backgroundColor: colors.primary + "18" },
+                    ]}
+                  >
+                    <Feather
+                      name={item.icon}
+                      size={16}
+                      color={colors.primary}
+                    />
                   </View>
-                  <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
-                  <Text style={[styles.rowDetail, { color: item.color ?? colors.mutedForeground }]}>
+                  <Text style={[styles.rowLabel, { color: colors.foreground }]}>
+                    {item.label}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.rowDetail,
+                      { color: item.color ?? colors.mutedForeground },
+                    ]}
+                  >
                     {item.detail}
                   </Text>
                 </TouchableOpacity>
@@ -135,12 +174,17 @@ export default function SettingsScreen() {
         ))}
 
         <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: colors.destructive + "10" }]}
+          style={[
+            styles.logoutBtn,
+            { backgroundColor: colors.destructive + "10" },
+          ]}
           onPress={handleLogout}
           activeOpacity={0.7}
         >
           <Feather name="log-out" size={18} color={colors.destructive} />
-          <Text style={[styles.logoutText, { color: colors.destructive }]}>{t("settings.signOut")}</Text>
+          <Text style={[styles.logoutText, { color: colors.destructive }]}>
+            {t("settings.signOut")}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

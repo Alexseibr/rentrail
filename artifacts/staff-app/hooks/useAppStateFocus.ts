@@ -7,14 +7,20 @@ export function useAppStateFocus(onFocus: () => void) {
   onFocusRef.current = onFocus;
 
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", (next: AppStateStatus) => {
-      const prev = appState.current;
-      appState.current = next;
+    const subscription = AppState.addEventListener(
+      "change",
+      (next: AppStateStatus) => {
+        const prev = appState.current;
+        appState.current = next;
 
-      if (next === "active" && (prev === "background" || prev === "inactive")) {
-        onFocusRef.current();
-      }
-    });
+        if (
+          next === "active" &&
+          (prev === "background" || prev === "inactive")
+        ) {
+          onFocusRef.current();
+        }
+      },
+    );
 
     return () => subscription.remove();
   }, []);

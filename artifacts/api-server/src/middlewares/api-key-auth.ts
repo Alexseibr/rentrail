@@ -10,7 +10,11 @@ declare global {
   }
 }
 
-export async function authenticateApiKey(req: Request, _res: Response, next: NextFunction): Promise<void> {
+export async function authenticateApiKey(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> {
   const apiKey = req.headers["x-api-key"] as string | undefined;
   if (!apiKey) {
     throw new UnauthorizedError("Missing X-API-Key header");

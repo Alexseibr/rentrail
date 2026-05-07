@@ -2,12 +2,12 @@
 
 ## 0. Что нужно подготовить заранее
 
-| Что | Где взять | Цена |
-|---|---|---|
-| Apple Developer аккаунт | https://developer.apple.com | $99/год |
-| Google Play Console | https://play.google.com/console | $25 разово |
-| Expo аккаунт | https://expo.dev (Sign up) | Бесплатно |
-| API задеплоен | Replit Publish (отдельная задача) | — |
+| Что                     | Где взять                         | Цена       |
+| ----------------------- | --------------------------------- | ---------- |
+| Apple Developer аккаунт | https://developer.apple.com       | $99/год    |
+| Google Play Console     | https://play.google.com/console   | $25 разово |
+| Expo аккаунт            | https://expo.dev (Sign up)        | Бесплатно  |
+| API задеплоен           | Replit Publish (отдельная задача) | —          |
 
 ## 1. Установка инструментов (один раз, локально)
 
@@ -19,12 +19,14 @@ eas login              # логин в Expo аккаунт
 ## 2. Заполнить плейсхолдеры
 
 ### `app.json`
+
 - `ios.bundleIdentifier` — текущее `com.velocityrides.staffapp`. Замените на свой обратный домен, например `com.mycompany.staffapp`. **Должен совпадать с App Store Connect.**
 - `android.package` — то же самое для Google Play.
 - `extra.eas.projectId` — создаётся командой `eas init` (см. шаг 3).
 - `owner` — ваш username на expo.dev.
 
 ### `eas.json`
+
 - `env.EXPO_PUBLIC_DOMAIN` в каждом профиле — домен опубликованного API без `https://`.
   Например: `staff-api.replit.app` (получите после деплоя API через Replit Publish).
 - `submit.production.ios.appleId` — email Apple ID.
@@ -43,6 +45,7 @@ eas build:configure            # подтвердит конфигурацию
 ## 4. Иконки и сплеш-скрин
 
 Сейчас в `assets/images/`:
+
 - `icon.png` — должна быть **1024×1024 PNG** без прозрачности
 - `splash-icon.png` — рекомендуется **1242×2436** или квадрат 1284×1284
 
@@ -72,15 +75,18 @@ eas submit --profile production --platform android   # → Google Play Internal 
 ```
 
 После этого:
+
 - **iOS**: зайти в App Store Connect → выбрать build → заполнить метаданные (скриншоты, описание) → Submit for Review (1–7 дней).
 - **Android**: в Play Console продвинуть из Internal → Closed/Open testing → Production.
 
 ## 7. Обновления (после первой публикации)
 
 Для JS-only изменений (без нативных модулей) — **EAS Update**:
+
 ```bash
 eas update --branch production --message "fix: rental return"
 ```
+
 Пользователи получат обновление при следующем запуске без обновления через стор.
 
 Для изменений нативного кода (новые expo-плагины) — снова `eas build` + `eas submit`.

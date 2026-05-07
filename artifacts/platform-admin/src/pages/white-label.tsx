@@ -63,7 +63,9 @@ export default function WhiteLabelPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(
+    null,
+  );
   const [editForm, setEditForm] = useState<Record<string, string>>({});
 
   const { data: companies, isLoading: companiesLoading } = useQuery({
@@ -71,14 +73,19 @@ export default function WhiteLabelPage() {
     queryFn: () => {
       const params = new URLSearchParams({ page: "1", limit: "50" });
       if (search) params.set("search", search);
-      return api<{ items: Company[]; pagination: { total: number; totalPages: number } }>(`/platform/companies?${params}`);
+      return api<{
+        items: Company[];
+        pagination: { total: number; totalPages: number };
+      }>(`/platform/companies?${params}`);
     },
   });
 
   const { data: wlSettings, isLoading: wlLoading } = useQuery({
     queryKey: ["white-label", selectedCompanyId],
     queryFn: () =>
-      api<WhiteLabelSettings>(`/platform/companies/${selectedCompanyId}/white-label`),
+      api<WhiteLabelSettings>(
+        `/platform/companies/${selectedCompanyId}/white-label`,
+      ),
     enabled: !!selectedCompanyId,
   });
 
@@ -89,16 +96,23 @@ export default function WhiteLabelPage() {
         body: JSON.stringify(body),
       }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["white-label", selectedCompanyId] }),
+      queryClient.invalidateQueries({
+        queryKey: ["white-label", selectedCompanyId],
+      }),
   });
 
   const toggleMutation = useMutation({
     mutationFn: (enable: boolean) =>
-      api(`/platform/companies/${selectedCompanyId}/white-label/${enable ? "enable" : "disable"}`, {
-        method: "POST",
-      }),
+      api(
+        `/platform/companies/${selectedCompanyId}/white-label/${enable ? "enable" : "disable"}`,
+        {
+          method: "POST",
+        },
+      ),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["white-label", selectedCompanyId] }),
+      queryClient.invalidateQueries({
+        queryKey: ["white-label", selectedCompanyId],
+      }),
   });
 
   const openSettings = (companyId: string) => {
@@ -109,7 +123,9 @@ export default function WhiteLabelPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("whiteLabel.title")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("whiteLabel.title")}
+        </h1>
         <p className="text-muted-foreground">{t("whiteLabel.subtitle")}</p>
       </div>
 
@@ -151,7 +167,9 @@ export default function WhiteLabelPage() {
                         <Palette className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="font-medium">{company.name}</p>
-                          <p className="text-xs text-muted-foreground">{company.slug}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {company.slug}
+                          </p>
                         </div>
                       </div>
                     </TableCell>
@@ -162,7 +180,9 @@ export default function WhiteLabelPage() {
                       {company.whiteLabel?.customDomain ? (
                         <div className="flex items-center gap-1">
                           <Globe className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">{company.whiteLabel.customDomain}</span>
+                          <span className="text-sm">
+                            {company.whiteLabel.customDomain}
+                          </span>
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>
@@ -181,7 +201,9 @@ export default function WhiteLabelPage() {
                           {company.whiteLabel.status}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs">{t("whiteLabel.notConfigured")}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {t("whiteLabel.notConfigured")}
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -198,7 +220,10 @@ export default function WhiteLabelPage() {
                 ))}
                 {companies?.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       {t("companies.noCompanies")}
                     </TableCell>
                   </TableRow>
@@ -209,7 +234,10 @@ export default function WhiteLabelPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedCompanyId} onOpenChange={() => setSelectedCompanyId(null)}>
+      <Dialog
+        open={!!selectedCompanyId}
+        onOpenChange={() => setSelectedCompanyId(null)}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("whiteLabel.settings")}</DialogTitle>
@@ -223,7 +251,9 @@ export default function WhiteLabelPage() {
           ) : wlSettings ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{t("common.status")}</span>
+                <span className="text-sm font-medium">
+                  {t("common.status")}
+                </span>
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="secondary"
@@ -238,16 +268,20 @@ export default function WhiteLabelPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => toggleMutation.mutate(wlSettings.status !== "active")}
+                    onClick={() =>
+                      toggleMutation.mutate(wlSettings.status !== "active")
+                    }
                     disabled={toggleMutation.isPending}
                   >
                     {wlSettings.status === "active" ? (
                       <>
-                        <XCircle className="h-3 w-3 mr-1" /> {t("common.disable")}
+                        <XCircle className="h-3 w-3 mr-1" />{" "}
+                        {t("common.disable")}
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="h-3 w-3 mr-1" /> {t("common.enable")}
+                        <CheckCircle className="h-3 w-3 mr-1" />{" "}
+                        {t("common.enable")}
                       </>
                     )}
                   </Button>
@@ -262,19 +296,55 @@ export default function WhiteLabelPage() {
                 className="space-y-3"
               >
                 {[
-                  { key: "customDomain", label: t("whiteLabel.customDomain"), placeholder: "app.example.com" },
-                  { key: "brandNameOverride", label: t("whiteLabel.brandName"), placeholder: "Acme Rentals" },
-                  { key: "logoUrl", label: t("whiteLabel.logoUrl"), placeholder: "https://..." },
-                  { key: "primaryColor", label: t("whiteLabel.primaryColor"), placeholder: "#3B82F6" },
-                  { key: "secondaryColor", label: t("whiteLabel.secondaryColor"), placeholder: "#10B981" },
-                  { key: "customSupportEmail", label: t("whiteLabel.supportEmail"), placeholder: "support@..." },
-                  { key: "customSupportPhone", label: t("whiteLabel.supportPhone"), placeholder: "+1..." },
+                  {
+                    key: "customDomain",
+                    label: t("whiteLabel.customDomain"),
+                    placeholder: "app.example.com",
+                  },
+                  {
+                    key: "brandNameOverride",
+                    label: t("whiteLabel.brandName"),
+                    placeholder: "Acme Rentals",
+                  },
+                  {
+                    key: "logoUrl",
+                    label: t("whiteLabel.logoUrl"),
+                    placeholder: "https://...",
+                  },
+                  {
+                    key: "primaryColor",
+                    label: t("whiteLabel.primaryColor"),
+                    placeholder: "#3B82F6",
+                  },
+                  {
+                    key: "secondaryColor",
+                    label: t("whiteLabel.secondaryColor"),
+                    placeholder: "#10B981",
+                  },
+                  {
+                    key: "customSupportEmail",
+                    label: t("whiteLabel.supportEmail"),
+                    placeholder: "support@...",
+                  },
+                  {
+                    key: "customSupportPhone",
+                    label: t("whiteLabel.supportPhone"),
+                    placeholder: "+1...",
+                  },
                 ].map(({ key, label, placeholder }) => (
                   <div key={key} className="space-y-1">
                     <Label className="text-xs">{label}</Label>
                     <Input
-                      value={editForm[key] ?? (wlSettings[key as keyof WhiteLabelSettings] as string) ?? ""}
-                      onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                      value={
+                        editForm[key] ??
+                        (wlSettings[
+                          key as keyof WhiteLabelSettings
+                        ] as string) ??
+                        ""
+                      }
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, [key]: e.target.value })
+                      }
                       placeholder={placeholder}
                     />
                   </div>
@@ -288,7 +358,9 @@ export default function WhiteLabelPage() {
                     {t("common.close")}
                   </Button>
                   <Button type="submit" disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? t("common.saving") : t("billing.saveChanges")}
+                    {updateMutation.isPending
+                      ? t("common.saving")
+                      : t("billing.saveChanges")}
                   </Button>
                 </DialogFooter>
               </form>

@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { db, auditLogs, users } from "@workspace/db";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 
 const router: IRouter = Router();
 
@@ -24,7 +27,10 @@ router.get(
     } = req.query as Record<string, string | undefined>;
 
     const pageNum = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limitParam ?? "50", 10) || 50));
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(limitParam ?? "50", 10) || 50),
+    );
     const offset = (pageNum - 1) * limitNum;
 
     const conditions = [eq(auditLogs.companyId, req.tenant!.companyId)];

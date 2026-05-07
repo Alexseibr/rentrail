@@ -53,7 +53,14 @@ function crc16ibm(buf: Buffer, start: number, end: number): number {
   return crc;
 }
 
-function parseIoElements(buf: Buffer, offset: number): { ioElements: Record<number, number | bigint>; eventIoId: number; bytesRead: number } {
+function parseIoElements(
+  buf: Buffer,
+  offset: number,
+): {
+  ioElements: Record<number, number | bigint>;
+  eventIoId: number;
+  bytesRead: number;
+} {
   let pos = offset;
   const ioElements: Record<number, number | bigint> = {};
 
@@ -96,7 +103,10 @@ function parseIoElements(buf: Buffer, offset: number): { ioElements: Record<numb
   return { ioElements, eventIoId, bytesRead: pos - offset };
 }
 
-function parseAvlRecord(buf: Buffer, offset: number): { record: AvlRecord; bytesRead: number } {
+function parseAvlRecord(
+  buf: Buffer,
+  offset: number,
+): { record: AvlRecord; bytesRead: number } {
   let pos = offset;
 
   const tsHi = buf.readUInt32BE(pos);
@@ -126,7 +136,18 @@ function parseAvlRecord(buf: Buffer, offset: number): { record: AvlRecord; bytes
   pos += bytesRead;
 
   return {
-    record: { timestamp, priority, lng, lat, altitude, angle, satellites, speed, eventIoId, ioElements },
+    record: {
+      timestamp,
+      priority,
+      lng,
+      lat,
+      altitude,
+      angle,
+      satellites,
+      speed,
+      eventIoId,
+      ioElements,
+    },
     bytesRead: pos - offset,
   };
 }
@@ -224,7 +245,10 @@ export const TELTONIKA_COMMANDS: Record<string, string> = {
   disable: "setdigout 1 0",
 };
 
-export function buildTeltonikaCommand(commandType: string, payload?: Record<string, unknown>): string | null {
+export function buildTeltonikaCommand(
+  commandType: string,
+  payload?: Record<string, unknown>,
+): string | null {
   if (commandType === "set_speed_limit") {
     const speedKmh = (payload?.speedKmh as number) ?? 25;
     return `setparam 382:${Math.round(speedKmh)}`;
@@ -232,25 +256,33 @@ export function buildTeltonikaCommand(commandType: string, payload?: Record<stri
   return TELTONIKA_COMMANDS[commandType] ?? null;
 }
 
-export function extractBatteryPercent(ioElements: Record<number, number | bigint>): number | undefined {
+export function extractBatteryPercent(
+  ioElements: Record<number, number | bigint>,
+): number | undefined {
   const val = ioElements[113];
   if (val !== undefined) return Number(val);
   return undefined;
 }
 
-export function extractIgnition(ioElements: Record<number, number | bigint>): boolean | undefined {
+export function extractIgnition(
+  ioElements: Record<number, number | bigint>,
+): boolean | undefined {
   const val = ioElements[239];
   if (val !== undefined) return Number(val) === 1;
   return undefined;
 }
 
-export function extractMovement(ioElements: Record<number, number | bigint>): boolean | undefined {
+export function extractMovement(
+  ioElements: Record<number, number | bigint>,
+): boolean | undefined {
   const val = ioElements[240];
   if (val !== undefined) return Number(val) === 1;
   return undefined;
 }
 
-export function extractAnalogInput(ioElements: Record<number, number | bigint>): number | undefined {
+export function extractAnalogInput(
+  ioElements: Record<number, number | bigint>,
+): number | undefined {
   const val = ioElements[9];
   if (val !== undefined) return Number(val) / 1000.0;
   return undefined;

@@ -4,8 +4,18 @@ import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useColors } from "@/hooks/useColors";
-import { type MapLayer, getMapLayer, setMapLayer, initMapLayer } from "@/store/mapLayerStore";
-import { getCachedMapView, initMapView, setMapView, DEFAULT_ZOOM } from "@/store/mapViewStore";
+import {
+  type MapLayer,
+  getMapLayer,
+  setMapLayer,
+  initMapLayer,
+} from "@/store/mapLayerStore";
+import {
+  getCachedMapView,
+  initMapView,
+  setMapView,
+  DEFAULT_ZOOM,
+} from "@/store/mapViewStore";
 
 interface MiniMapPreviewProps {
   lat: number;
@@ -16,7 +26,12 @@ interface MiniMapPreviewProps {
   onCopy: () => void;
 }
 
-function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): string {
+function buildMapHtml(
+  lat: number,
+  lng: number,
+  layer: MapLayer,
+  zoom: number,
+): string {
   const tileUrl =
     layer === "satellite"
       ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -112,10 +127,19 @@ function buildMapHtml(lat: number, lng: number, layer: MapLayer, zoom: number): 
 </html>`;
 }
 
-export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }: MiniMapPreviewProps) {
+export function MiniMapPreview({
+  lat,
+  lng,
+  isLastKnown,
+  label,
+  onPress,
+  onCopy,
+}: MiniMapPreviewProps) {
   const colors = useColors();
   const [layer, setLayerState] = useState<MapLayer>(getMapLayer);
-  const [zoom, setZoom] = useState<number>(() => getCachedMapView()?.zoom ?? DEFAULT_ZOOM);
+  const [zoom, setZoom] = useState<number>(
+    () => getCachedMapView()?.zoom ?? DEFAULT_ZOOM,
+  );
   const userToggledRef = useRef(false);
   const webViewRef = useRef<WebView>(null);
 
@@ -131,7 +155,9 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
         setZoom(persisted.zoom);
       }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Two-layer popup-close contract — both layers are required:
@@ -155,14 +181,18 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
   useFocusEffect(
     useCallback(() => {
       return () => {
-        webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+        webViewRef.current?.injectJavaScript(
+          "window.closeMapPopup && window.closeMapPopup(); true;",
+        );
       };
     }, []),
   );
 
   useEffect(() => {
     return () => {
-      webViewRef.current?.injectJavaScript("window.closeMapPopup && window.closeMapPopup(); true;");
+      webViewRef.current?.injectJavaScript(
+        "window.closeMapPopup && window.closeMapPopup(); true;",
+      );
     };
   }, []);
 
@@ -175,22 +205,33 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
     setLayerState(next);
   }
 
-  const handleMessage = useCallback((event: WebViewMessageEvent) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data) as { type: string; zoom?: number };
-      if (data.type === "tap") {
-        onPress();
-      } else if (data.type === "zoomend" && typeof data.zoom === "number") {
-        setZoom(data.zoom);
-        setMapView({ lat, lng, zoom: data.zoom });
-      }
-    } catch {}
-  }, [lat, lng, onPress]);
+  const handleMessage = useCallback(
+    (event: WebViewMessageEvent) => {
+      try {
+        const data = JSON.parse(event.nativeEvent.data) as {
+          type: string;
+          zoom?: number;
+        };
+        if (data.type === "tap") {
+          onPress();
+        } else if (data.type === "zoomend" && typeof data.zoom === "number") {
+          setZoom(data.zoom);
+          setMapView({ lat, lng, zoom: data.zoom });
+        }
+      } catch {}
+    },
+    [lat, lng, onPress],
+  );
 
   const isSatellite = layer === "satellite";
 
   return (
-    <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.card }]}>
+    <View
+      style={[
+        styles.container,
+        { borderColor: colors.border, backgroundColor: colors.card },
+      ]}
+    >
       <View style={styles.mapWrapper}>
         <WebView
           ref={webViewRef}
@@ -206,7 +247,9 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
         <TouchableOpacity
           style={[
             styles.layerToggle,
-            isSatellite ? styles.layerToggleSatellite : styles.layerToggleStreet,
+            isSatellite
+              ? styles.layerToggleSatellite
+              : styles.layerToggleStreet,
           ]}
           onPress={toggleLayer}
           activeOpacity={0.8}
@@ -217,7 +260,12 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
             size={11}
             color={isSatellite ? "#fff" : "#1a1a1a"}
           />
-          <Text style={[styles.layerToggleText, { color: isSatellite ? "#fff" : "#1a1a1a" }]}>
+          <Text
+            style={[
+              styles.layerToggleText,
+              { color: isSatellite ? "#fff" : "#1a1a1a" },
+            ]}
+          >
             {isSatellite ? "Street" : "Satellite"}
           </Text>
         </TouchableOpacity>
@@ -236,17 +284,34 @@ export function MiniMapPreview({ lat, lng, isLastKnown, label, onPress, onCopy }
             color={isLastKnown ? colors.mutedForeground : colors.primary}
           />
           <View style={styles.coordsBody}>
-            <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.locationLabel, { color: colors.mutedForeground }]}
+            >
               {label}
             </Text>
-            <Text style={[styles.coordsText, { color: isLastKnown ? colors.mutedForeground : colors.foreground }]}>
+            <Text
+              style={[
+                styles.coordsText,
+                {
+                  color: isLastKnown
+                    ? colors.mutedForeground
+                    : colors.foreground,
+                },
+              ]}
+            >
               {lat.toFixed(5)}, {lng.toFixed(5)}
             </Text>
           </View>
-          <Feather name="external-link" size={13} color={colors.mutedForeground} />
+          <Feather
+            name="external-link"
+            size={13}
+            color={colors.mutedForeground}
+          />
         </TouchableOpacity>
 
-        <View style={[styles.verticalDivider, { backgroundColor: colors.border }]} />
+        <View
+          style={[styles.verticalDivider, { backgroundColor: colors.border }]}
+        />
 
         <TouchableOpacity
           style={styles.copyBtn}

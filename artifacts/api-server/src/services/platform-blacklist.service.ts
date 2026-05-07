@@ -20,21 +20,35 @@ export interface GlobalBlacklistListOptions {
   limit?: number;
 }
 
-export async function listGlobalBlacklistEntries(opts: GlobalBlacklistListOptions) {
+export async function listGlobalBlacklistEntries(
+  opts: GlobalBlacklistListOptions,
+) {
   const page = opts.page ?? 1;
   const limit = Math.min(opts.limit ?? 20, 100);
   const offset = (page - 1) * limit;
 
-  const conditions: ReturnType<typeof eq>[] = [eq(blacklistEntries.scopeType, "global" as ScopeType)];
-  if (opts.actionType) conditions.push(eq(blacklistEntries.actionType, opts.actionType));
-  if (opts.reasonCode) conditions.push(eq(blacklistEntries.reasonCode, opts.reasonCode));
+  const conditions: ReturnType<typeof eq>[] = [
+    eq(blacklistEntries.scopeType, "global" as ScopeType),
+  ];
+  if (opts.actionType)
+    conditions.push(eq(blacklistEntries.actionType, opts.actionType));
+  if (opts.reasonCode)
+    conditions.push(eq(blacklistEntries.reasonCode, opts.reasonCode));
   if (opts.from) conditions.push(gte(blacklistEntries.createdAt, opts.from));
   if (opts.to) conditions.push(lte(blacklistEntries.createdAt, opts.to));
 
-  if (opts.phone) conditions.push(ilike(blacklistEntries.phoneSnapshot, `%${opts.phone}%`));
-  if (opts.email) conditions.push(ilike(blacklistEntries.emailSnapshot, `%${opts.email}%`));
-  if (opts.document) conditions.push(ilike(blacklistEntries.documentSnapshot, `%${opts.document}%`));
-  if (opts.fullName) conditions.push(ilike(blacklistEntries.fullNameSnapshot, `%${opts.fullName}%`));
+  if (opts.phone)
+    conditions.push(ilike(blacklistEntries.phoneSnapshot, `%${opts.phone}%`));
+  if (opts.email)
+    conditions.push(ilike(blacklistEntries.emailSnapshot, `%${opts.email}%`));
+  if (opts.document)
+    conditions.push(
+      ilike(blacklistEntries.documentSnapshot, `%${opts.document}%`),
+    );
+  if (opts.fullName)
+    conditions.push(
+      ilike(blacklistEntries.fullNameSnapshot, `%${opts.fullName}%`),
+    );
 
   if (opts.active === true) {
     conditions.push(
@@ -60,7 +74,10 @@ export async function listGlobalBlacklistEntries(opts: GlobalBlacklistListOption
 
   const where = and(...conditions);
 
-  const [totalResult] = await db.select({ count: count() }).from(blacklistEntries).where(where);
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(blacklistEntries)
+    .where(where);
   const total = totalResult?.count ?? 0;
 
   const rows = await db
@@ -81,7 +98,12 @@ export async function getGlobalBlacklistEntry(id: string) {
   const [entry] = await db
     .select()
     .from(blacklistEntries)
-    .where(and(eq(blacklistEntries.id, id), eq(blacklistEntries.scopeType, "global" as ScopeType)))
+    .where(
+      and(
+        eq(blacklistEntries.id, id),
+        eq(blacklistEntries.scopeType, "global" as ScopeType),
+      ),
+    )
     .limit(1);
 
   if (!entry) throw new NotFoundError("Global blacklist entry not found");
@@ -123,26 +145,33 @@ export async function createGlobalBlacklistEntry(input: {
   return entry;
 }
 
-export async function updateGlobalBlacklistEntry(id: string, input: Partial<{
-  actionType: ActionType;
-  reasonCode: string;
-  reasonText: string | null;
-  fullNameSnapshot: string | null;
-  phoneSnapshot: string | null;
-  emailSnapshot: string | null;
-  documentSnapshot: string | null;
-  endsAt: Date | null;
-}>) {
+export async function updateGlobalBlacklistEntry(
+  id: string,
+  input: Partial<{
+    actionType: ActionType;
+    reasonCode: string;
+    reasonText: string | null;
+    fullNameSnapshot: string | null;
+    phoneSnapshot: string | null;
+    emailSnapshot: string | null;
+    documentSnapshot: string | null;
+    endsAt: Date | null;
+  }>,
+) {
   const existing = await getGlobalBlacklistEntry(id);
 
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
   if (input.actionType !== undefined) updateData.actionType = input.actionType;
   if (input.reasonCode !== undefined) updateData.reasonCode = input.reasonCode;
   if (input.reasonText !== undefined) updateData.reasonText = input.reasonText;
-  if (input.fullNameSnapshot !== undefined) updateData.fullNameSnapshot = input.fullNameSnapshot;
-  if (input.phoneSnapshot !== undefined) updateData.phoneSnapshot = input.phoneSnapshot;
-  if (input.emailSnapshot !== undefined) updateData.emailSnapshot = input.emailSnapshot;
-  if (input.documentSnapshot !== undefined) updateData.documentSnapshot = input.documentSnapshot;
+  if (input.fullNameSnapshot !== undefined)
+    updateData.fullNameSnapshot = input.fullNameSnapshot;
+  if (input.phoneSnapshot !== undefined)
+    updateData.phoneSnapshot = input.phoneSnapshot;
+  if (input.emailSnapshot !== undefined)
+    updateData.emailSnapshot = input.emailSnapshot;
+  if (input.documentSnapshot !== undefined)
+    updateData.documentSnapshot = input.documentSnapshot;
   if (input.endsAt !== undefined) updateData.endsAt = input.endsAt;
 
   const [updated] = await db

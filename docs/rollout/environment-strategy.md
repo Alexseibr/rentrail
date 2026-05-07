@@ -3,6 +3,7 @@
 ## Environment Model
 
 ### Local Development
+
 - **Purpose**: Individual developer workstations
 - **Database**: Local PostgreSQL or shared dev database
 - **Storage**: Local filesystem or dev object storage bucket
@@ -11,6 +12,7 @@
 - **URL**: `localhost:PORT`
 
 ### Test / CI
+
 - **Purpose**: Automated test execution
 - **Database**: Ephemeral test database per test run
 - **Storage**: Mock or test bucket
@@ -19,6 +21,7 @@
 - **Tests**: Unit (vitest), API integration (supertest), tenant isolation
 
 ### Staging
+
 - **Purpose**: Pre-production validation, QA, demo environment
 - **Database**: Dedicated PostgreSQL instance (separate from production)
 - **Storage**: Dedicated object storage bucket
@@ -32,6 +35,7 @@
   - Use for final validation before production deploys
 
 ### Production
+
 - **Purpose**: Live customer-facing environment
 - **Database**: Production PostgreSQL with connection pooling
 - **Storage**: Production object storage bucket with backups
@@ -70,6 +74,7 @@
 ### Deploy Steps
 
 1. **Database Migration** (if schema changes)
+
    ```bash
    # Take backup
    pg_dump $DATABASE_URL > backup-$(date +%Y%m%d-%H%M%S).sql
@@ -92,26 +97,26 @@
 
 ### Infrastructure Requirements
 
-| Component | Requirement | Notes |
-|-----------|-------------|-------|
-| PostgreSQL | 14+ | With connection pooling |
-| Node.js | 24.x | As configured in .replit |
-| Object Storage | Replit Object Storage | For file uploads |
-| SSL/TLS | Required | Managed by Replit Deployments |
-| Domain | Custom domain recommended | Replit provides `.replit.app` default |
-| Memory | 512MB minimum | Scale based on tenant count |
-| Backup | Daily automated | Database + object storage |
+| Component      | Requirement               | Notes                                 |
+| -------------- | ------------------------- | ------------------------------------- |
+| PostgreSQL     | 14+                       | With connection pooling               |
+| Node.js        | 24.x                      | As configured in .replit              |
+| Object Storage | Replit Object Storage     | For file uploads                      |
+| SSL/TLS        | Required                  | Managed by Replit Deployments         |
+| Domain         | Custom domain recommended | Replit provides `.replit.app` default |
+| Memory         | 512MB minimum             | Scale based on tenant count           |
+| Backup         | Daily automated           | Database + object storage             |
 
 ### Monitoring Setup
 
-| Signal | Tool | Threshold |
-|--------|------|-----------|
-| Uptime | External ping to `/api/healthz` | Alert if down > 2 min |
-| API Latency | Application logs | Alert if p95 > 1s |
-| Error Rate | Log aggregation | Alert if > 5 errors/min |
-| DB Connections | PostgreSQL monitoring | Alert if pool > 80% |
-| Disk Usage | System metrics | Alert if > 85% |
-| Memory | System metrics | Alert if > 90% |
+| Signal         | Tool                            | Threshold               |
+| -------------- | ------------------------------- | ----------------------- |
+| Uptime         | External ping to `/api/healthz` | Alert if down > 2 min   |
+| API Latency    | Application logs                | Alert if p95 > 1s       |
+| Error Rate     | Log aggregation                 | Alert if > 5 errors/min |
+| DB Connections | PostgreSQL monitoring           | Alert if pool > 80%     |
+| Disk Usage     | System metrics                  | Alert if > 85%          |
+| Memory         | System metrics                  | Alert if > 90%          |
 
 ### Backup Strategy
 
@@ -123,10 +128,10 @@
 
 ### Cron Jobs / Scheduled Tasks
 
-| Task | Schedule | Description |
-|------|----------|-------------|
-| Database backup | Daily 02:00 UTC | pg_dump to backup storage |
-| Overdue rental check | Hourly | Flag rentals past end date |
+| Task                 | Schedule        | Description                             |
+| -------------------- | --------------- | --------------------------------------- |
+| Database backup      | Daily 02:00 UTC | pg_dump to backup storage               |
+| Overdue rental check | Hourly          | Flag rentals past end date              |
 | Subscription billing | Daily 06:00 UTC | Generate invoices for due subscriptions |
-| Session cleanup | Daily 03:00 UTC | Remove expired sessions |
-| Telemetry cleanup | Weekly | Archive old telemetry snapshots |
+| Session cleanup      | Daily 03:00 UTC | Remove expired sessions                 |
+| Telemetry cleanup    | Weekly          | Archive old telemetry snapshots         |

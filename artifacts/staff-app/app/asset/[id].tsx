@@ -106,7 +106,13 @@ function getBatteryColor(pct: number): string {
   return "#22C55E";
 }
 
-function BatteryIcon({ percent, size = 20 }: { percent: number; size?: number }) {
+function BatteryIcon({
+  percent,
+  size = 20,
+}: {
+  percent: number;
+  size?: number;
+}) {
   const safe = Math.min(100, Math.max(0, percent));
   const color = getBatteryColor(safe);
   const bodyWidth = size * 1.6;
@@ -164,7 +170,10 @@ const STATUS_ICON: Record<string, { name: string; color: string }> = {
   canceled: { name: "slash", color: "#9CA3AF" },
 };
 
-function formatRelativeTime(iso: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatRelativeTime(
+  iso: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return t("assetDetail.timeJustNow");
@@ -186,7 +195,9 @@ export default function AssetDetailScreen() {
   const queryClient = useQueryClient();
   const [commanding, setCommanding] = useState<VehicleCommand | null>(null);
   const [commandsExpanded, setCommandsExpanded] = useState(true);
-  const [commandFilter, setCommandFilter] = useState<"all" | "failed" | "acknowledged">("all");
+  const [commandFilter, setCommandFilter] = useState<
+    "all" | "failed" | "acknowledged"
+  >("all");
   const [refreshingTelemetry, setRefreshingTelemetry] = useState(false);
   const prevTelemetryFetching = useRef(false);
   const fastPollUntilRef = useRef<number>(0);
@@ -197,9 +208,17 @@ export default function AssetDetailScreen() {
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(skeletonOpacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(skeletonOpacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-      ])
+        Animated.timing(skeletonOpacity, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(skeletonOpacity, {
+          toValue: 0.4,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
     );
     anim.start();
     return () => anim.stop();
@@ -222,7 +241,8 @@ export default function AssetDetailScreen() {
     queryKey: ["asset-telemetry", id],
     queryFn: () => fetchTelemetry(id!),
     enabled: !!id,
-    refetchInterval: () => (Date.now() < fastPollUntilRef.current ? 5000 : 15000),
+    refetchInterval: () =>
+      Date.now() < fastPollUntilRef.current ? 5000 : 15000,
   });
 
   const fetchCommands = useCallback(() => fetchAssetCommands(id!), [id]);
@@ -235,7 +255,8 @@ export default function AssetDetailScreen() {
     queryKey: ["asset-commands", id],
     queryFn: fetchCommands,
     enabled: !!id,
-    refetchInterval: () => (Date.now() < fastPollUntilRef.current ? 5000 : 15000),
+    refetchInterval: () =>
+      Date.now() < fastPollUntilRef.current ? 5000 : 15000,
   });
 
   useEffect(() => {
@@ -245,7 +266,11 @@ export default function AssetDetailScreen() {
   }, [telemetry, saveCoords]);
 
   useEffect(() => {
-    if (prevTelemetryFetching.current && !telemetryFetching && refreshingTelemetry) {
+    if (
+      prevTelemetryFetching.current &&
+      !telemetryFetching &&
+      refreshingTelemetry
+    ) {
       setRefreshingTelemetry(false);
     }
     prevTelemetryFetching.current = telemetryFetching;
@@ -276,12 +301,17 @@ export default function AssetDetailScreen() {
       (item) =>
         item.actionType === "vehicle_command" &&
         item.endpoint === endpoint &&
-        (item.status === "queued" || item.status === "syncing" || item.status === "failed"),
+        (item.status === "queued" ||
+          item.status === "syncing" ||
+          item.status === "failed"),
     );
     const queuedRetries = pendingItem?.retryCount ?? 0;
     const confirmMsg =
       queuedRetries > 0
-        ? t("assetDetail.confirmCommandWithRetries", { command: label, retries: queuedRetries })
+        ? t("assetDetail.confirmCommandWithRetries", {
+            command: label,
+            retries: queuedRetries,
+          })
         : t("assetDetail.confirmCommand", { command: label });
 
     Alert.alert(t("assetDetail.confirmCommandTitle"), confirmMsg, [
@@ -291,11 +321,59 @@ export default function AssetDetailScreen() {
         onPress: async () => {
           if (!isConnected && isQueueable("vehicle_command")) {
             fastPollUntilRef.current = Date.now() + 30000;
-            queryClient.setQueryData(["fleet-fast-poll-until"], Date.now() + 30000);
+            queryClient.setQueryData(
+              ["fleet-fast-poll-until"],
+              Date.now() + 30000,
+            );
             const offlineOptimisticId = `optimistic-${Date.now()}`;
-            queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
+            queryClient.setQueryData<typeof commands>(
+              ["asset-commands", id],
+              (prev = []) => [
+                {
+                  id: offlineOptimisticId,
+                  commandType: command,
+                  status: "queued",
+                  queuedAt: new Date().toISOString(),
+                  sentAt: null,
+                  acknowledgedAt: null,
+                  failedAt: null,
+                  errorMessage: null,
+                },
+                ...prev,
+              ],
+            );
+            try {
+              await enqueue({
+                actionType: "vehicle_command",
+                payload: { assetId: id, command },
+                endpoint,
+                method: "POST",
+              });
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
+              showSnackbar(t("assetDetail.commandQueued"), "success");
+            } catch {
+              queryClient.setQueryData<typeof commands>(
+                ["asset-commands", id],
+                (prev = []) => prev.filter((c) => c.id !== offlineOptimisticId),
+              );
+              showSnackbar(t("assetDetail.commandFailed"), "error");
+            }
+            return;
+          }
+
+          fastPollUntilRef.current = Date.now() + 30000;
+          queryClient.setQueryData(
+            ["fleet-fast-poll-until"],
+            Date.now() + 30000,
+          );
+          const optimisticId = `optimistic-${Date.now()}`;
+          queryClient.setQueryData<typeof commands>(
+            ["asset-commands", id],
+            (prev = []) => [
               {
-                id: offlineOptimisticId,
+                id: optimisticId,
                 commandType: command,
                 status: "queued",
                 queuedAt: new Date().toISOString(),
@@ -305,41 +383,8 @@ export default function AssetDetailScreen() {
                 errorMessage: null,
               },
               ...prev,
-            ]);
-            try {
-              await enqueue({
-                actionType: "vehicle_command",
-                payload: { assetId: id, command },
-                endpoint,
-                method: "POST",
-              });
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              showSnackbar(t("assetDetail.commandQueued"), "success");
-            } catch {
-              queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
-                prev.filter((c) => c.id !== offlineOptimisticId),
-              );
-              showSnackbar(t("assetDetail.commandFailed"), "error");
-            }
-            return;
-          }
-
-          fastPollUntilRef.current = Date.now() + 30000;
-          queryClient.setQueryData(["fleet-fast-poll-until"], Date.now() + 30000);
-          const optimisticId = `optimistic-${Date.now()}`;
-          queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
-            {
-              id: optimisticId,
-              commandType: command,
-              status: "queued",
-              queuedAt: new Date().toISOString(),
-              sentAt: null,
-              acknowledgedAt: null,
-              failedAt: null,
-              errorMessage: null,
-            },
-            ...prev,
-          ]);
+            ],
+          );
 
           setCommanding(command);
           try {
@@ -352,30 +397,40 @@ export default function AssetDetailScreen() {
               },
             });
             if (res.ok) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
               showSnackbar(t("assetDetail.commandSent"), "success");
               setRefreshingTelemetry(true);
               try {
                 await refetchCommands();
               } catch {
-                queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
-                  prev.filter((c) => c.id !== optimisticId),
+                queryClient.setQueryData<typeof commands>(
+                  ["asset-commands", id],
+                  (prev = []) => prev.filter((c) => c.id !== optimisticId),
                 );
               }
               setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: ["asset-telemetry", id] });
+                queryClient.invalidateQueries({
+                  queryKey: ["asset-telemetry", id],
+                });
               }, 3000);
             } else {
               const json = await res.json().catch(() => ({}));
-              queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
-                prev.filter((c) => c.id !== optimisticId),
+              queryClient.setQueryData<typeof commands>(
+                ["asset-commands", id],
+                (prev = []) => prev.filter((c) => c.id !== optimisticId),
               );
-              showSnackbar(json?.error?.message ?? t("assetDetail.commandFailed"), "error");
+              showSnackbar(
+                json?.error?.message ?? t("assetDetail.commandFailed"),
+                "error",
+              );
             }
           } catch (err: unknown) {
             const isNetworkError =
               err instanceof TypeError ||
-              (err instanceof Error && /network|fetch|failed to fetch/i.test(err.message));
+              (err instanceof Error &&
+                /network|fetch|failed to fetch/i.test(err.message));
 
             if (isNetworkError && isQueueable("vehicle_command")) {
               try {
@@ -385,17 +440,21 @@ export default function AssetDetailScreen() {
                   endpoint,
                   method: "POST",
                 });
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Success,
+                );
                 showSnackbar(t("assetDetail.commandQueued"), "success");
               } catch {
-                queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
-                  prev.filter((c) => c.id !== optimisticId),
+                queryClient.setQueryData<typeof commands>(
+                  ["asset-commands", id],
+                  (prev = []) => prev.filter((c) => c.id !== optimisticId),
                 );
                 showSnackbar(t("assetDetail.commandFailed"), "error");
               }
             } else {
-              queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) =>
-                prev.filter((c) => c.id !== optimisticId),
+              queryClient.setQueryData<typeof commands>(
+                ["asset-commands", id],
+                (prev = []) => prev.filter((c) => c.id !== optimisticId),
               );
               showSnackbar(t("assetDetail.commandFailed"), "error");
             }
@@ -419,7 +478,9 @@ export default function AssetDetailScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Feather name="alert-circle" size={40} color={colors.mutedForeground} />
-        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("assetDetail.notFound")}</Text>
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+          {t("assetDetail.notFound")}
+        </Text>
       </View>
     );
   }
@@ -441,26 +502,51 @@ export default function AssetDetailScreen() {
   });
 
   const lockCommand: VehicleCommand = isLocked ? "unlock" : "lock";
-  const lockLabel = isLocked ? t("assetDetail.commandUnlock") : t("assetDetail.commandLock");
+  const lockLabel = isLocked
+    ? t("assetDetail.commandUnlock")
+    : t("assetDetail.commandLock");
   const lockIcon = isLocked ? "unlock" : "lock";
 
   const alarmCommand: VehicleCommand = isArmed ? "disarm" : "arm";
-  const alarmLabel = isArmed ? t("assetDetail.commandDisarm") : t("assetDetail.commandArm");
+  const alarmLabel = isArmed
+    ? t("assetDetail.commandDisarm")
+    : t("assetDetail.commandArm");
   const alarmIcon = isArmed ? "shield-off" : "shield";
 
-  const unknownStateButtons: { command: VehicleCommand; labelKey: string; icon: string }[] = [
+  const unknownStateButtons: {
+    command: VehicleCommand;
+    labelKey: string;
+    icon: string;
+  }[] = [
     { command: "lock", labelKey: "assetDetail.commandLock", icon: "lock" },
-    { command: "unlock", labelKey: "assetDetail.commandUnlock", icon: "unlock" },
+    {
+      command: "unlock",
+      labelKey: "assetDetail.commandUnlock",
+      icon: "unlock",
+    },
     { command: "arm", labelKey: "assetDetail.commandArm", icon: "shield" },
-    { command: "disarm", labelKey: "assetDetail.commandDisarm", icon: "shield-off" },
+    {
+      command: "disarm",
+      labelKey: "assetDetail.commandDisarm",
+      icon: "shield-off",
+    },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={[styles.headerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.statusBadge, { backgroundColor: colors.secondary }]}>
-            <Text style={[styles.statusText, { color: colors.primary }]}>{asset.status}</Text>
+        <View
+          style={[
+            styles.headerCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View
+            style={[styles.statusBadge, { backgroundColor: colors.secondary }]}
+          >
+            <Text style={[styles.statusText, { color: colors.primary }]}>
+              {asset.status}
+            </Text>
           </View>
           <View style={styles.assetTitleRow}>
             <Text style={[styles.assetTitle, { color: colors.foreground }]}>
@@ -472,9 +558,11 @@ export default function AssetDetailScreen() {
                   styles.headerOnlineDot,
                   {
                     backgroundColor:
-                      telemetry.onlineState === "online" ? "#10B981"
-                      : telemetry.onlineState === "offline" ? "#EF4444"
-                      : "#9CA3AF",
+                      telemetry.onlineState === "online"
+                        ? "#10B981"
+                        : telemetry.onlineState === "offline"
+                          ? "#EF4444"
+                          : "#9CA3AF",
                   },
                 ]}
               />
@@ -485,11 +573,25 @@ export default function AssetDetailScreen() {
           </Text>
         </View>
 
-        <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.detailCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
           {fields.map((f) => (
-            <View key={f.label} style={[styles.fieldRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{f.label}</Text>
-              <Text style={[styles.fieldValue, { color: colors.foreground }]}>{f.value}</Text>
+            <View
+              key={f.label}
+              style={[styles.fieldRow, { borderBottomColor: colors.border }]}
+            >
+              <Text
+                style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+              >
+                {f.label}
+              </Text>
+              <Text style={[styles.fieldValue, { color: colors.foreground }]}>
+                {f.value}
+              </Text>
             </View>
           ))}
         </View>
@@ -502,20 +604,31 @@ export default function AssetDetailScreen() {
             onPress={() => router.push("/create-incident")}
           >
             <Feather name="alert-circle" size={18} color={colors.primary} />
-            <Text style={[styles.actionText, { color: colors.primary }]}>{t("assetDetail.reportIssue")}</Text>
+            <Text style={[styles.actionText, { color: colors.primary }]}>
+              {t("assetDetail.reportIssue")}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.secondary }]}
             onPress={() => router.push("/create-maintenance")}
           >
             <Feather name="tool" size={18} color={colors.primary} />
-            <Text style={[styles.actionText, { color: colors.primary }]}>{t("assetDetail.maintenance")}</Text>
+            <Text style={[styles.actionText, { color: colors.primary }]}>
+              {t("assetDetail.maintenance")}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("assetDetail.vehicleControls")}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+          {t("assetDetail.vehicleControls")}
+        </Text>
 
-        <View style={[styles.telemetryStatsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.telemetryStatsCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
           {isTelemetryLoading ? (
             <>
               {[
@@ -528,26 +641,53 @@ export default function AssetDetailScreen() {
                   key={label}
                   style={[
                     styles.statsRow,
-                    i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    i < arr.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
                   ]}
                 >
-                  <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{label}</Text>
+                  <Text
+                    style={[
+                      styles.statsLabel,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    {label}
+                  </Text>
                   <Animated.View
-                    style={[styles.skeletonPill, { backgroundColor: colors.border, opacity: skeletonOpacity }]}
+                    style={[
+                      styles.skeletonPill,
+                      {
+                        backgroundColor: colors.border,
+                        opacity: skeletonOpacity,
+                      },
+                    ]}
                   />
                 </View>
               ))}
             </>
           ) : !telemetry ? (
             <View style={styles.statsEmpty}>
-              <Text style={[styles.noDeviceHint, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.noDeviceHint, { color: colors.mutedForeground }]}
+              >
                 {t("assetDetail.noDeviceData")}
               </Text>
             </View>
           ) : (
             <>
-              <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.onlineState")}</Text>
+              <View
+                style={[
+                  styles.statsRow,
+                  { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
+              >
+                <Text
+                  style={[styles.statsLabel, { color: colors.mutedForeground }]}
+                >
+                  {t("assetDetail.onlineState")}
+                </Text>
                 {telemetry.onlineState != null ? (
                   <View style={styles.onlineStateBadge}>
                     <View
@@ -555,9 +695,11 @@ export default function AssetDetailScreen() {
                         styles.onlineDot,
                         {
                           backgroundColor:
-                            telemetry.onlineState === "online" ? "#10B981"
-                            : telemetry.onlineState === "offline" ? "#EF4444"
-                            : "#9CA3AF",
+                            telemetry.onlineState === "online"
+                              ? "#10B981"
+                              : telemetry.onlineState === "offline"
+                                ? "#EF4444"
+                                : "#9CA3AF",
                         },
                       ]}
                     />
@@ -566,42 +708,86 @@ export default function AssetDetailScreen() {
                         styles.statsValue,
                         {
                           color:
-                            telemetry.onlineState === "online" ? "#10B981"
-                            : telemetry.onlineState === "offline" ? "#EF4444"
-                            : colors.mutedForeground,
+                            telemetry.onlineState === "online"
+                              ? "#10B981"
+                              : telemetry.onlineState === "offline"
+                                ? "#EF4444"
+                                : colors.mutedForeground,
                         },
                       ]}
                     >
-                      {t(`assetDetail.onlineState_${telemetry.onlineState}`, { defaultValue: telemetry.onlineState })}
+                      {t(`assetDetail.onlineState_${telemetry.onlineState}`, {
+                        defaultValue: telemetry.onlineState,
+                      })}
                     </Text>
                   </View>
                 ) : (
-                  <Text style={[styles.statsValue, { color: colors.foreground }]}>—</Text>
+                  <Text
+                    style={[styles.statsValue, { color: colors.foreground }]}
+                  >
+                    —
+                  </Text>
                 )}
               </View>
-              <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.battery")}</Text>
+              <View
+                style={[
+                  styles.statsRow,
+                  { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
+              >
+                <Text
+                  style={[styles.statsLabel, { color: colors.mutedForeground }]}
+                >
+                  {t("assetDetail.battery")}
+                </Text>
                 {telemetry.batteryPercent != null ? (
                   <View style={styles.batteryValueRow}>
                     <BatteryIcon percent={telemetry.batteryPercent} size={18} />
-                    <Text style={[styles.statsValue, { color: getBatteryColor(telemetry.batteryPercent), marginLeft: 6 }]}>
+                    <Text
+                      style={[
+                        styles.statsValue,
+                        {
+                          color: getBatteryColor(telemetry.batteryPercent),
+                          marginLeft: 6,
+                        },
+                      ]}
+                    >
                       {telemetry.batteryPercent}%
                     </Text>
                   </View>
                 ) : (
-                  <Text style={[styles.statsValue, { color: colors.foreground }]}>—</Text>
+                  <Text
+                    style={[styles.statsValue, { color: colors.foreground }]}
+                  >
+                    —
+                  </Text>
                 )}
               </View>
-              <View style={[styles.statsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.speed")}</Text>
+              <View
+                style={[
+                  styles.statsRow,
+                  { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
+              >
+                <Text
+                  style={[styles.statsLabel, { color: colors.mutedForeground }]}
+                >
+                  {t("assetDetail.speed")}
+                </Text>
                 <Text style={[styles.statsValue, { color: colors.foreground }]}>
                   {telemetry.speed != null ? `${telemetry.speed} km/h` : "—"}
                 </Text>
               </View>
               <View style={styles.statsRow}>
-                <Text style={[styles.statsLabel, { color: colors.mutedForeground }]}>{t("assetDetail.odometer")}</Text>
+                <Text
+                  style={[styles.statsLabel, { color: colors.mutedForeground }]}
+                >
+                  {t("assetDetail.odometer")}
+                </Text>
                 <Text style={[styles.statsValue, { color: colors.foreground }]}>
-                  {telemetry.odometer != null ? `${telemetry.odometer.toLocaleString()} km` : "—"}
+                  {telemetry.odometer != null
+                    ? `${telemetry.odometer.toLocaleString()} km`
+                    : "—"}
                 </Text>
               </View>
             </>
@@ -612,8 +798,12 @@ export default function AssetDetailScreen() {
           const liveLat = telemetry?.lat ?? null;
           const liveLng = telemetry?.lng ?? null;
           const hasLiveLocation = liveLat != null && liveLng != null;
-          const displayLat = hasLiveLocation ? liveLat : cachedCoords?.lat ?? null;
-          const displayLng = hasLiveLocation ? liveLng : cachedCoords?.lng ?? null;
+          const displayLat = hasLiveLocation
+            ? liveLat
+            : (cachedCoords?.lat ?? null);
+          const displayLng = hasLiveLocation
+            ? liveLng
+            : (cachedCoords?.lng ?? null);
           const hasLocation = displayLat != null && displayLng != null;
           const isLastKnown = hasLocation && !hasLiveLocation;
 
@@ -634,7 +824,9 @@ export default function AssetDetailScreen() {
           };
 
           const copyCoords = () => {
-            Share.share({ message: `${displayLat!.toFixed(5)}, ${displayLng!.toFixed(5)}` }).catch(() => {});
+            Share.share({
+              message: `${displayLat!.toFixed(5)}, ${displayLng!.toFixed(5)}`,
+            }).catch(() => {});
           };
 
           return (
@@ -644,7 +836,9 @@ export default function AssetDetailScreen() {
               isLastKnown={isLastKnown}
               label={
                 isLastKnown
-                  ? t("assetDetail.locationLastKnown", { time: formatRelativeTime(cachedCoords!.cachedAt, t) })
+                  ? t("assetDetail.locationLastKnown", {
+                      time: formatRelativeTime(cachedCoords!.cachedAt, t),
+                    })
                   : t("assetDetail.location")
               }
               onPress={openMaps}
@@ -656,7 +850,9 @@ export default function AssetDetailScreen() {
         {refreshingTelemetry && (
           <View style={styles.refreshingRow}>
             <ActivityIndicator size="small" color={colors.mutedForeground} />
-            <Text style={[styles.refreshingText, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.refreshingText, { color: colors.mutedForeground }]}
+            >
               {t("assetDetail.refreshing")}
             </Text>
           </View>
@@ -665,25 +861,47 @@ export default function AssetDetailScreen() {
         {(lockStateKnown || alarmStateKnown) && (
           <Animated.View style={[styles.stateRow, { opacity: stateOpacity }]}>
             {lockStateKnown && (
-              <View style={[styles.stateItem, { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" }]}>
+              <View
+                style={[
+                  styles.stateItem,
+                  { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" },
+                ]}
+              >
                 <Feather
                   name={isLocked ? "lock" : "unlock"}
                   size={15}
                   color={isLocked ? "#2E7D32" : "#C62828"}
                 />
-                <Text style={[styles.stateText, { color: isLocked ? "#2E7D32" : "#C62828" }]}>
-                  {isLocked ? t("assetDetail.locked") : t("assetDetail.unlocked")}
+                <Text
+                  style={[
+                    styles.stateText,
+                    { color: isLocked ? "#2E7D32" : "#C62828" },
+                  ]}
+                >
+                  {isLocked
+                    ? t("assetDetail.locked")
+                    : t("assetDetail.unlocked")}
                 </Text>
               </View>
             )}
             {alarmStateKnown && (
-              <View style={[styles.stateItem, { backgroundColor: isArmed ? "#E8F5E9" : "#FFF3E0" }]}>
+              <View
+                style={[
+                  styles.stateItem,
+                  { backgroundColor: isArmed ? "#E8F5E9" : "#FFF3E0" },
+                ]}
+              >
                 <Feather
                   name={isArmed ? "shield" : "shield-off"}
                   size={15}
                   color={isArmed ? "#2E7D32" : "#E65100"}
                 />
-                <Text style={[styles.stateText, { color: isArmed ? "#2E7D32" : "#E65100" }]}>
+                <Text
+                  style={[
+                    styles.stateText,
+                    { color: isArmed ? "#2E7D32" : "#E65100" },
+                  ]}
+                >
                   {isArmed ? t("assetDetail.armed") : t("assetDetail.disarmed")}
                 </Text>
               </View>
@@ -691,97 +909,168 @@ export default function AssetDetailScreen() {
           </Animated.View>
         )}
 
-        {!isTelemetryLoading && !!telemetry && <View style={styles.commandsGrid}>
-          {lockStateKnown ? (
-            <TouchableOpacity
-              style={[styles.commandBtn, {
-                backgroundColor: isLocked ? "#FFEBEE" : colors.card,
-                borderColor: colors.border,
-              }]}
-              onPress={() => handleCommand(lockCommand, lockLabel)}
-              disabled={!!commanding}
-              activeOpacity={0.7}
-            >
-              {commanding === "lock" || commanding === "unlock" ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Feather name={lockIcon as any} size={20} color={isLocked ? "#C62828" : colors.foreground} />
-              )}
-              <Text style={[styles.commandText, { color: isLocked ? "#C62828" : colors.foreground }]}>
-                {lockLabel}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              {(["lock", "unlock"] as VehicleCommand[]).map((cmd) => {
-                const btn = unknownStateButtons.find((b) => b.command === cmd)!;
-                return (
-                  <TouchableOpacity
-                    key={cmd}
-                    style={[styles.commandBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                    onPress={() => handleCommand(cmd, t(btn.labelKey))}
-                    disabled={!!commanding}
-                    activeOpacity={0.7}
-                  >
-                    {commanding === cmd ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <Feather name={btn.icon as any} size={20} color={colors.foreground} />
-                    )}
-                    <Text style={[styles.commandText, { color: colors.foreground }]}>{t(btn.labelKey)}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </>
-          )}
+        {!isTelemetryLoading && !!telemetry && (
+          <View style={styles.commandsGrid}>
+            {lockStateKnown ? (
+              <TouchableOpacity
+                style={[
+                  styles.commandBtn,
+                  {
+                    backgroundColor: isLocked ? "#FFEBEE" : colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => handleCommand(lockCommand, lockLabel)}
+                disabled={!!commanding}
+                activeOpacity={0.7}
+              >
+                {commanding === "lock" || commanding === "unlock" ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Feather
+                    name={lockIcon as any}
+                    size={20}
+                    color={isLocked ? "#C62828" : colors.foreground}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.commandText,
+                    { color: isLocked ? "#C62828" : colors.foreground },
+                  ]}
+                >
+                  {lockLabel}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                {(["lock", "unlock"] as VehicleCommand[]).map((cmd) => {
+                  const btn = unknownStateButtons.find(
+                    (b) => b.command === cmd,
+                  )!;
+                  return (
+                    <TouchableOpacity
+                      key={cmd}
+                      style={[
+                        styles.commandBtn,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                      onPress={() => handleCommand(cmd, t(btn.labelKey))}
+                      disabled={!!commanding}
+                      activeOpacity={0.7}
+                    >
+                      {commanding === cmd ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.primary}
+                        />
+                      ) : (
+                        <Feather
+                          name={btn.icon as any}
+                          size={20}
+                          color={colors.foreground}
+                        />
+                      )}
+                      <Text
+                        style={[
+                          styles.commandText,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {t(btn.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
 
-          {alarmStateKnown ? (
-            <TouchableOpacity
-              style={[styles.commandBtn, {
-                backgroundColor: isArmed ? "#FFF3E0" : "#E8F5E9",
-                borderColor: colors.border,
-              }]}
-              onPress={() => handleCommand(alarmCommand, alarmLabel)}
-              disabled={!!commanding}
-              activeOpacity={0.7}
-            >
-              {commanding === "arm" || commanding === "disarm" ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Feather name={alarmIcon as any} size={20} color={isArmed ? "#E65100" : "#2E7D32"} />
-              )}
-              <Text style={[styles.commandText, { color: isArmed ? "#E65100" : "#2E7D32" }]}>
-                {alarmLabel}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              {(["arm", "disarm"] as VehicleCommand[]).map((cmd) => {
-                const btn = unknownStateButtons.find((b) => b.command === cmd)!;
-                return (
-                  <TouchableOpacity
-                    key={cmd}
-                    style={[styles.commandBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                    onPress={() => handleCommand(cmd, t(btn.labelKey))}
-                    disabled={!!commanding}
-                    activeOpacity={0.7}
-                  >
-                    {commanding === cmd ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    ) : (
-                      <Feather name={btn.icon as any} size={20} color={colors.foreground} />
-                    )}
-                    <Text style={[styles.commandText, { color: colors.foreground }]}>{t(btn.labelKey)}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </>
-          )}
-        </View>}
+            {alarmStateKnown ? (
+              <TouchableOpacity
+                style={[
+                  styles.commandBtn,
+                  {
+                    backgroundColor: isArmed ? "#FFF3E0" : "#E8F5E9",
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => handleCommand(alarmCommand, alarmLabel)}
+                disabled={!!commanding}
+                activeOpacity={0.7}
+              >
+                {commanding === "arm" || commanding === "disarm" ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Feather
+                    name={alarmIcon as any}
+                    size={20}
+                    color={isArmed ? "#E65100" : "#2E7D32"}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.commandText,
+                    { color: isArmed ? "#E65100" : "#2E7D32" },
+                  ]}
+                >
+                  {alarmLabel}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                {(["arm", "disarm"] as VehicleCommand[]).map((cmd) => {
+                  const btn = unknownStateButtons.find(
+                    (b) => b.command === cmd,
+                  )!;
+                  return (
+                    <TouchableOpacity
+                      key={cmd}
+                      style={[
+                        styles.commandBtn,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                      onPress={() => handleCommand(cmd, t(btn.labelKey))}
+                      disabled={!!commanding}
+                      activeOpacity={0.7}
+                    >
+                      {commanding === cmd ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.primary}
+                        />
+                      ) : (
+                        <Feather
+                          name={btn.icon as any}
+                          size={20}
+                          color={colors.foreground}
+                        />
+                      )}
+                      <Text
+                        style={[
+                          styles.commandText,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {t(btn.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+          </View>
+        )}
 
         {telemetry?.recordedAt && (
           <Text style={[styles.lastUpdate, { color: colors.mutedForeground }]}>
-            {t("assetDetail.lastUpdate")}: {new Date(telemetry.recordedAt).toLocaleString()}
+            {t("assetDetail.lastUpdate")}:{" "}
+            {new Date(telemetry.recordedAt).toLocaleString()}
           </Text>
         )}
 
@@ -790,7 +1079,12 @@ export default function AssetDetailScreen() {
           onPress={() => setCommandsExpanded((v) => !v)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginTop: 0 }]}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.mutedForeground, marginTop: 0 },
+            ]}
+          >
             {t("assetDetail.recentCommands")}
           </Text>
           <Feather
@@ -810,7 +1104,11 @@ export default function AssetDetailScreen() {
                     styles.commandFilterChip,
                     commandFilter === f
                       ? { backgroundColor: colors.primary }
-                      : { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 },
+                      : {
+                          backgroundColor: colors.card,
+                          borderColor: colors.border,
+                          borderWidth: 1,
+                        },
                   ]}
                   onPress={() => setCommandFilter(f)}
                   activeOpacity={0.7}
@@ -818,7 +1116,10 @@ export default function AssetDetailScreen() {
                   <Text
                     style={[
                       styles.commandFilterChipText,
-                      { color: commandFilter === f ? "#fff" : colors.mutedForeground },
+                      {
+                        color:
+                          commandFilter === f ? "#fff" : colors.mutedForeground,
+                      },
                     ]}
                   >
                     {t(`assetDetail.filterCmd_${f}`)}
@@ -827,15 +1128,29 @@ export default function AssetDetailScreen() {
               ))}
             </View>
 
-            <View style={[styles.commandHistoryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.commandHistoryCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
               {commandsLoading ? (
                 <View style={styles.commandHistoryEmpty}>
                   <ActivityIndicator size="small" color={colors.primary} />
                 </View>
               ) : filteredCommands.length === 0 ? (
                 <View style={styles.commandHistoryEmpty}>
-                  <Feather name="inbox" size={20} color={colors.mutedForeground} />
-                  <Text style={[styles.commandHistoryEmptyText, { color: colors.mutedForeground }]}>
+                  <Feather
+                    name="inbox"
+                    size={20}
+                    color={colors.mutedForeground}
+                  />
+                  <Text
+                    style={[
+                      styles.commandHistoryEmptyText,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
                     {commandFilter === "all"
                       ? t("assetDetail.noRecentCommands")
                       : t("assetDetail.noCommandsForFilter")}
@@ -843,32 +1158,65 @@ export default function AssetDetailScreen() {
                 </View>
               ) : (
                 filteredCommands.map((cmd, index) => {
-                  const iconMeta = STATUS_ICON[cmd.status] ?? STATUS_ICON.queued;
+                  const iconMeta =
+                    STATUS_ICON[cmd.status] ?? STATUS_ICON.queued;
                   const isLast = index === filteredCommands.length - 1;
                   return (
                     <View
                       key={cmd.id}
                       style={[
                         styles.commandHistoryRow,
-                        !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                        !isLast && {
+                          borderBottomWidth: 1,
+                          borderBottomColor: colors.border,
+                        },
                       ]}
                     >
-                      <Feather name={iconMeta.name as any} size={16} color={iconMeta.color} />
+                      <Feather
+                        name={iconMeta.name as any}
+                        size={16}
+                        color={iconMeta.color}
+                      />
                       <View style={styles.commandHistoryInfo}>
-                        <Text style={[styles.commandHistoryType, { color: colors.foreground }]}>
-                          {t(`assetDetail.cmdType_${cmd.commandType}`, { defaultValue: cmd.commandType.replace(/_/g, " ") })}
+                        <Text
+                          style={[
+                            styles.commandHistoryType,
+                            { color: colors.foreground },
+                          ]}
+                        >
+                          {t(`assetDetail.cmdType_${cmd.commandType}`, {
+                            defaultValue: cmd.commandType.replace(/_/g, " "),
+                          })}
                         </Text>
                         {cmd.errorMessage ? (
-                          <Text style={[styles.commandHistoryError, { color: "#EF4444" }]} numberOfLines={1}>
+                          <Text
+                            style={[
+                              styles.commandHistoryError,
+                              { color: "#EF4444" },
+                            ]}
+                            numberOfLines={1}
+                          >
                             {cmd.errorMessage}
                           </Text>
                         ) : null}
                       </View>
                       <View style={styles.commandHistoryRight}>
-                        <Text style={[styles.commandHistoryStatus, { color: iconMeta.color }]}>
-                          {t(`assetDetail.cmdStatus_${cmd.status}`, { defaultValue: cmd.status })}
+                        <Text
+                          style={[
+                            styles.commandHistoryStatus,
+                            { color: iconMeta.color },
+                          ]}
+                        >
+                          {t(`assetDetail.cmdStatus_${cmd.status}`, {
+                            defaultValue: cmd.status,
+                          })}
                         </Text>
-                        <Text style={[styles.commandHistoryTime, { color: colors.mutedForeground }]}>
+                        <Text
+                          style={[
+                            styles.commandHistoryTime,
+                            { color: colors.mutedForeground },
+                          ]}
+                        >
                           {formatRelativeTime(cmd.queuedAt, t)}
                         </Text>
                       </View>
@@ -890,21 +1238,60 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
   scroll: { padding: 16, gap: 16, paddingBottom: 40 },
   headerCard: { borderRadius: 12, borderWidth: 1, padding: 16, gap: 6 },
-  statusBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  statusText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize" as const,
+  },
   assetTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   headerOnlineDot: { width: 10, height: 10, borderRadius: 5, marginTop: 2 },
   assetTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
   assetSub: { fontSize: 14, fontFamily: "Inter_400Regular" },
   detailCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  fieldRow: { flexDirection: "row", justifyContent: "space-between", padding: 14, borderBottomWidth: 1 },
+  fieldRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 14,
+    borderBottomWidth: 1,
+  },
   fieldLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  fieldValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  fieldValue: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize" as const,
+  },
   actionsRow: { flexDirection: "row", gap: 10 },
-  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12 },
+  actionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 14,
+    borderRadius: 12,
+  },
   actionText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  sectionTitle: { fontSize: 11, fontFamily: "Inter_600SemiBold", textTransform: "uppercase", letterSpacing: 1, marginTop: 4, marginLeft: 4 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingHorizontal: 4 },
+  sectionTitle: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
   stateRow: { flexDirection: "row", gap: 8 },
   stateItem: {
     flex: 1,
@@ -920,26 +1307,85 @@ const styles = StyleSheet.create({
   refreshingRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   refreshingText: { fontSize: 12, fontFamily: "Inter_400Regular" },
   commandsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  commandBtn: { flexBasis: "47%", flexGrow: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12, borderWidth: 1 },
+  commandBtn: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
   commandText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  lastUpdate: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 4 },
-  noDeviceHint: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginVertical: 4 },
+  lastUpdate: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  noDeviceHint: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    marginVertical: 4,
+  },
   commandHistoryCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  commandHistoryEmpty: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 20 },
+  commandHistoryEmpty: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 20,
+  },
   commandHistoryEmptyText: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  commandHistoryRow: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
+  commandHistoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+  },
   commandHistoryInfo: { flex: 1 },
-  commandHistoryType: { fontSize: 13, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
-  commandHistoryError: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  commandHistoryType: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize" as const,
+  },
+  commandHistoryError: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
+  },
   commandHistoryRight: { alignItems: "flex-end", gap: 2 },
-  commandHistoryStatus: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  commandHistoryStatus: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize" as const,
+  },
   commandHistoryTime: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  telemetrySkeleton: { borderRadius: 10, borderWidth: 1, paddingVertical: 16, alignItems: "center", justifyContent: "center" },
+  telemetrySkeleton: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   commandFilterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 2 },
-  commandFilterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  commandFilterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
   commandFilterChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   telemetryStatsCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  statsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 13 },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
   statsLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
   statsValue: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   batteryValueRow: { flexDirection: "row", alignItems: "center" },

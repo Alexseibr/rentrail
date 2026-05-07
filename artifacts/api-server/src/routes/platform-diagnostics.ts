@@ -10,7 +10,13 @@ const router = Router();
 const adminRoles = requirePlatformRole("superAdmin", "platformAdmin");
 
 const serviceNameParams = z.object({
-  serviceName: z.enum(["email", "storage", "queues", "telemetry-ingest", "mobile-push"]),
+  serviceName: z.enum([
+    "email",
+    "storage",
+    "queues",
+    "telemetry-ingest",
+    "mobile-push",
+  ]),
 });
 
 router.get(
@@ -61,7 +67,9 @@ router.get(
   adminRoles,
   validate({ params: serviceNameParams }),
   async (req, res) => {
-    const status = diagService.getServiceStatus(req.params.serviceName as string)!;
+    const status = diagService.getServiceStatus(
+      req.params.serviceName as string,
+    )!;
     await createPlatformAuditLog(req, {
       action: "platform.diagnostics.check",
       entityType: "service",

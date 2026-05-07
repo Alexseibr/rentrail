@@ -1,4 +1,12 @@
-export type { PaymentGateway, PaymentGatewayProvider, CreateHoldParams, CaptureParams, VoidParams, RefundParams, GatewayPaymentResult } from "./types";
+export type {
+  PaymentGateway,
+  PaymentGatewayProvider,
+  CreateHoldParams,
+  CaptureParams,
+  VoidParams,
+  RefundParams,
+  GatewayPaymentResult,
+} from "./types";
 import type { PaymentGateway, PaymentGatewayProvider } from "./types";
 import { yukassaGateway } from "./yukassa";
 import { tinkoffGateway } from "./tinkoff";
@@ -13,11 +21,18 @@ const GATEWAYS: Record<PaymentGatewayProvider, PaymentGateway> = {
 
 export function getGateway(provider: PaymentGatewayProvider): PaymentGateway {
   const gw = GATEWAYS[provider];
-  if (!gw) throw new AppError(400, `Unsupported payment gateway: ${provider}`, "UNSUPPORTED_GATEWAY");
+  if (!gw)
+    throw new AppError(
+      400,
+      `Unsupported payment gateway: ${provider}`,
+      "UNSUPPORTED_GATEWAY",
+    );
   return gw;
 }
 
-export function isValidProvider(provider: string): provider is PaymentGatewayProvider {
+export function isValidProvider(
+  provider: string,
+): provider is PaymentGatewayProvider {
   return ["yukassa", "tinkoff", "cloudpayments"].includes(provider);
 }
 

@@ -15,7 +15,10 @@ router.get("/health", (_req, res) => {
 });
 
 router.get("/health/full", async (_req, res) => {
-  const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
+  const checks: Record<
+    string,
+    { status: string; latencyMs?: number; error?: string }
+  > = {};
 
   const dbStart = Date.now();
   try {

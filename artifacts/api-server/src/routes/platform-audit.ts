@@ -24,18 +24,32 @@ router.get(
       } = req.query as Record<string, string | undefined>;
 
       const pageNum = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
-      const limitNum = Math.min(100, Math.max(1, parseInt(limitParam ?? "50", 10) || 50));
+      const limitNum = Math.min(
+        100,
+        Math.max(1, parseInt(limitParam ?? "50", 10) || 50),
+      );
       const offset = (pageNum - 1) * limitNum;
 
       const conditions = [];
-      if (actorUserId) conditions.push(eq(platformAuditLogs.actorUserId, actorUserId));
-      if (action) conditions.push(eq(platformAuditLogs.action, action as string));
-      if (entityType) conditions.push(eq(platformAuditLogs.entityType, entityType as string));
-      if (targetCompanyId) conditions.push(eq(platformAuditLogs.targetCompanyId, targetCompanyId));
-      if (from) conditions.push(gte(platformAuditLogs.createdAt, new Date(from as string)));
-      if (to) conditions.push(lte(platformAuditLogs.createdAt, new Date(to as string)));
+      if (actorUserId)
+        conditions.push(eq(platformAuditLogs.actorUserId, actorUserId));
+      if (action)
+        conditions.push(eq(platformAuditLogs.action, action as string));
+      if (entityType)
+        conditions.push(eq(platformAuditLogs.entityType, entityType as string));
+      if (targetCompanyId)
+        conditions.push(eq(platformAuditLogs.targetCompanyId, targetCompanyId));
+      if (from)
+        conditions.push(
+          gte(platformAuditLogs.createdAt, new Date(from as string)),
+        );
+      if (to)
+        conditions.push(
+          lte(platformAuditLogs.createdAt, new Date(to as string)),
+        );
 
-      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      const whereClause =
+        conditions.length > 0 ? and(...conditions) : undefined;
 
       const [logs, countResult] = await Promise.all([
         db

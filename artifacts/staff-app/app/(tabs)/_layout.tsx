@@ -18,7 +18,9 @@ function NativeTabLayout() {
   const { t } = useTranslation();
   const { user, companyId } = useAuth();
   const memberships = user?.memberships || user?.companies;
-  const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const roleCode =
+    memberships?.find((c) => c.companyId === companyId)?.roleCode ||
+    memberships?.[0]?.roleCode;
 
   return (
     <NativeTabs>
@@ -54,7 +56,12 @@ function NativeTabLayout() {
       )}
       {canAccessTab(roleCode, "operations") && (
         <NativeTabs.Trigger name="operations">
-          <Icon sf={{ default: "wrench.and.screwdriver", selected: "wrench.and.screwdriver.fill" }} />
+          <Icon
+            sf={{
+              default: "wrench.and.screwdriver",
+              selected: "wrench.and.screwdriver.fill",
+            }}
+          />
           <Label>{t("nav.ops")}</Label>
         </NativeTabs.Trigger>
       )}
@@ -78,7 +85,9 @@ function ClassicTabLayout() {
   const { user, companyId } = useAuth();
   const { pendingCount } = useSync();
   const memberships = user?.memberships || user?.companies;
-  const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const roleCode =
+    memberships?.find((c) => c.companyId === companyId)?.roleCode ||
+    memberships?.[0]?.roleCode;
 
   return (
     <Tabs
@@ -102,7 +111,9 @@ function ClassicTabLayout() {
           backgroundColor: isIOS ? "transparent" : colors.dark,
           borderTopWidth: 0,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : { height: Platform.OS === "android" ? 64 : 88 }),
+          ...(isWeb
+            ? { height: 84 }
+            : { height: Platform.OS === "android" ? 64 : 88 }),
           paddingBottom: Platform.OS === "android" ? 8 : undefined,
         },
         tabBarBackground: () =>
@@ -141,7 +152,11 @@ function ClassicTabLayout() {
           href: canAccessTab(roleCode, "index") ? undefined : null,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? "house.fill" : "house"} tintColor={color} size={24} />
+              <SymbolView
+                name={focused ? "house.fill" : "house"}
+                tintColor={color}
+                size={24}
+              />
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="home" size={22} color={color} />
@@ -156,7 +171,11 @@ function ClassicTabLayout() {
           href: canAccessTab(roleCode, "my-shift") ? undefined : null,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? "clipboard.fill" : "clipboard"} tintColor={color} size={24} />
+              <SymbolView
+                name={focused ? "clipboard.fill" : "clipboard"}
+                tintColor={color}
+                size={24}
+              />
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="clipboard" size={22} color={color} />
@@ -186,7 +205,11 @@ function ClassicTabLayout() {
           href: canAccessTab(roleCode, "map") ? undefined : null,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? "map.fill" : "map"} tintColor={color} size={24} />
+              <SymbolView
+                name={focused ? "map.fill" : "map"}
+                tintColor={color}
+                size={24}
+              />
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="map" size={22} color={color} />
@@ -201,7 +224,11 @@ function ClassicTabLayout() {
           href: canAccessTab(roleCode, "rentals") ? undefined : null,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? "doc.text.fill" : "doc.text"} tintColor={color} size={24} />
+              <SymbolView
+                name={focused ? "doc.text.fill" : "doc.text"}
+                tintColor={color}
+                size={24}
+              />
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="file-text" size={22} color={color} />
@@ -215,10 +242,24 @@ function ClassicTabLayout() {
           title: t("nav.ops"),
           href: canAccessTab(roleCode, "operations") ? undefined : null,
           tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: "#f59e0b", fontSize: 10, minWidth: 16, height: 16, lineHeight: 16 },
+          tabBarBadgeStyle: {
+            backgroundColor: "#f59e0b",
+            fontSize: 10,
+            minWidth: 16,
+            height: 16,
+            lineHeight: 16,
+          },
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? "wrench.and.screwdriver.fill" : "wrench.and.screwdriver"} tintColor={color} size={24} />
+              <SymbolView
+                name={
+                  focused
+                    ? "wrench.and.screwdriver.fill"
+                    : "wrench.and.screwdriver"
+                }
+                tintColor={color}
+                size={24}
+              />
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="settings" size={22} color={color} />
@@ -233,7 +274,11 @@ function ClassicTabLayout() {
           href: canAccessTab(roleCode, "settings") ? undefined : null,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? "gearshape.fill" : "gearshape"} tintColor={color} size={24} />
+              <SymbolView
+                name={focused ? "gearshape.fill" : "gearshape"}
+                tintColor={color}
+                size={24}
+              />
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="user" size={22} color={color} />

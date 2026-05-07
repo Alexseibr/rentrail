@@ -46,14 +46,19 @@ interface TelemetrySnapshot {
   lng: number | null;
 }
 
-async function fetchTelemetry(assetId: string): Promise<TelemetrySnapshot | null> {
+async function fetchTelemetry(
+  assetId: string,
+): Promise<TelemetrySnapshot | null> {
   const token = await getAccessToken();
   const companyId = await getCompanyId();
   if (!token || !companyId) return null;
 
-  const res = await fetch(`${BASE_URL}/api/telemetry/assets/${assetId}/latest`, {
-    headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
-  });
+  const res = await fetch(
+    `${BASE_URL}/api/telemetry/assets/${assetId}/latest`,
+    {
+      headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
+    },
+  );
   if (!res.ok) return null;
   const { data } = await res.json();
   return data;
@@ -109,7 +114,9 @@ export default function RentalDetailScreen() {
     queryKey: ["rental-telemetry", assetId],
     queryFn: () => fetchTelemetry(assetId!),
     enabled: !!assetId,
-    refetchInterval: ["active", "overdue", "extended"].includes(rental?.status) ? 15000 : false,
+    refetchInterval: ["active", "overdue", "extended"].includes(rental?.status)
+      ? 15000
+      : false,
   });
 
   const { cachedCoords, saveCoords } = useCachedCoordinates(assetId);
@@ -125,7 +132,11 @@ export default function RentalDetailScreen() {
   }, [rental?.status]);
 
   useEffect(() => {
-    if (prevTelemetryFetching.current && !telemetryFetching && refreshingTelemetry) {
+    if (
+      prevTelemetryFetching.current &&
+      !telemetryFetching &&
+      refreshingTelemetry
+    ) {
       setRefreshingTelemetry(false);
     }
     prevTelemetryFetching.current = telemetryFetching;
@@ -134,7 +145,10 @@ export default function RentalDetailScreen() {
   const handleVehicleCommand = (command: VehicleCommand) => {
     if (!assetId) return;
     if (!canReturn) return;
-    const label = command === "lock" ? t("rentalDetail.commandLock") : t("rentalDetail.commandUnlock");
+    const label =
+      command === "lock"
+        ? t("rentalDetail.commandLock")
+        : t("rentalDetail.commandUnlock");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       t("rentalDetail.confirmCommandTitle"),
@@ -159,19 +173,28 @@ export default function RentalDetailScreen() {
                 },
               );
               if (res.ok) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Success,
+                );
                 const activeStatuses = ["active", "overdue", "extended"];
                 if (activeStatuses.includes(rentalStatusRef.current ?? "")) {
                   setRefreshingTelemetry(true);
                   setTimeout(() => {
-                    if (activeStatuses.includes(rentalStatusRef.current ?? "")) {
-                      queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
+                    if (
+                      activeStatuses.includes(rentalStatusRef.current ?? "")
+                    ) {
+                      queryClient.invalidateQueries({
+                        queryKey: ["rental-telemetry", assetId],
+                      });
                     }
                   }, 3000);
                 }
               } else {
                 const json = await res.json().catch(() => ({}));
-                Alert.alert(t("common.error"), json?.error?.message ?? t("rentalDetail.commandFailed"));
+                Alert.alert(
+                  t("common.error"),
+                  json?.error?.message ?? t("rentalDetail.commandFailed"),
+                );
               }
             } catch {
               Alert.alert(t("common.error"), t("rentalDetail.commandFailed"));
@@ -214,7 +237,9 @@ export default function RentalDetailScreen() {
           setRefreshingTelemetry(true);
           setTimeout(() => {
             if (activeStatuses.includes(rentalStatusRef.current ?? "")) {
-              queryClient.invalidateQueries({ queryKey: ["rental-telemetry", assetId] });
+              queryClient.invalidateQueries({
+                queryKey: ["rental-telemetry", assetId],
+              });
             }
           }, 3000);
         }
@@ -239,7 +264,9 @@ export default function RentalDetailScreen() {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Feather name="alert-circle" size={40} color={colors.mutedForeground} />
-        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("rentalDetail.notFound")}</Text>
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+          {t("rentalDetail.notFound")}
+        </Text>
       </View>
     );
   }
@@ -247,7 +274,10 @@ export default function RentalDetailScreen() {
   const fields = [
     { label: t("rentalDetail.status"), value: rental.status },
     { label: t("rentalDetail.type"), value: rental.rentalType },
-    { label: t("rentalDetail.created"), value: new Date(rental.createdAt).toLocaleDateString() },
+    {
+      label: t("rentalDetail.created"),
+      value: new Date(rental.createdAt).toLocaleDateString(),
+    },
   ].filter((f) => f.value);
 
   const canReturn = ["active", "overdue", "extended"].includes(rental.status);
@@ -261,8 +291,8 @@ export default function RentalDetailScreen() {
   const liveLat = telemetry?.lat ?? null;
   const liveLng = telemetry?.lng ?? null;
   const hasLiveLocation = liveLat != null && liveLng != null;
-  const displayLat = hasLiveLocation ? liveLat : cachedCoords?.lat ?? null;
-  const displayLng = hasLiveLocation ? liveLng : cachedCoords?.lng ?? null;
+  const displayLat = hasLiveLocation ? liveLat : (cachedCoords?.lat ?? null);
+  const displayLng = hasLiveLocation ? liveLng : (cachedCoords?.lng ?? null);
   const hasLocation = displayLat != null && displayLng != null;
   const isLastKnownLocation = hasLocation && !hasLiveLocation;
 
@@ -285,14 +315,23 @@ export default function RentalDetailScreen() {
     if (!hasLocation) return;
     const lat = displayLat!;
     const lng = displayLng!;
-    Share.share({ message: `${lat.toFixed(5)}, ${lng.toFixed(5)}` }).catch(() => {});
+    Share.share({ message: `${lat.toFixed(5)}, ${lng.toFixed(5)}` }).catch(
+      () => {},
+    );
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={[styles.headerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.statusBadge, { backgroundColor: colors.secondary }]}>
+        <View
+          style={[
+            styles.headerCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View
+            style={[styles.statusBadge, { backgroundColor: colors.secondary }]}
+          >
             <Text style={[styles.statusText, { color: colors.primary }]}>
               {rental.status.replace(/_/g, " ")}
             </Text>
@@ -302,63 +341,130 @@ export default function RentalDetailScreen() {
           </Text>
         </View>
 
-        <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.detailCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
           {fields.map((f) => (
-            <View key={f.label} style={[styles.fieldRow, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>{f.label}</Text>
-              <Text style={[styles.fieldValue, { color: colors.foreground }]}>{f.value}</Text>
+            <View
+              key={f.label}
+              style={[styles.fieldRow, { borderBottomColor: colors.border }]}
+            >
+              <Text
+                style={[styles.fieldLabel, { color: colors.mutedForeground }]}
+              >
+                {f.label}
+              </Text>
+              <Text style={[styles.fieldValue, { color: colors.foreground }]}>
+                {f.value}
+              </Text>
             </View>
           ))}
         </View>
 
         {assetId && (
-          <View style={[styles.vehicleStatusCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.vehicleStatusTitle, { color: colors.mutedForeground }]}>
+          <View
+            style={[
+              styles.vehicleStatusCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.vehicleStatusTitle,
+                { color: colors.mutedForeground },
+              ]}
+            >
               {t("rentalDetail.vehicleStatus")}
             </Text>
 
             {isTelemetryLoading && (
-              <ActivityIndicator size="small" color={colors.mutedForeground} style={styles.telemetrySpinner} />
+              <ActivityIndicator
+                size="small"
+                color={colors.mutedForeground}
+                style={styles.telemetrySpinner}
+              />
             )}
 
             {!isTelemetryLoading && isTelemetrySuccess && !telemetry && (
-              <Text style={[styles.noDeviceText, { color: colors.mutedForeground }]}>
+              <Text
+                style={[styles.noDeviceText, { color: colors.mutedForeground }]}
+              >
                 {t("rentalDetail.noDeviceData")}
               </Text>
             )}
 
             {refreshingTelemetry && (
               <View style={styles.refreshingRow}>
-                <ActivityIndicator size="small" color={colors.mutedForeground} />
-                <Text style={[styles.refreshingText, { color: colors.mutedForeground }]}>
+                <ActivityIndicator
+                  size="small"
+                  color={colors.mutedForeground}
+                />
+                <Text
+                  style={[
+                    styles.refreshingText,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
                   {t("rentalDetail.refreshing")}
                 </Text>
               </View>
             )}
 
             {hasTelemetryBadges && (
-              <View style={[styles.badgesRow, refreshingTelemetry && styles.badgesRowFading]}>
+              <View
+                style={[
+                  styles.badgesRow,
+                  refreshingTelemetry && styles.badgesRowFading,
+                ]}
+              >
                 {lockStateKnown && (
-                  <View style={[styles.badge, { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" }]}>
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: isLocked ? "#E8F5E9" : "#FFEBEE" },
+                    ]}
+                  >
                     <Feather
                       name={isLocked ? "lock" : "unlock"}
                       size={13}
                       color={isLocked ? "#2E7D32" : "#C62828"}
                     />
-                    <Text style={[styles.badgeText, { color: isLocked ? "#2E7D32" : "#C62828" }]}>
-                      {isLocked ? t("rentalDetail.locked") : t("rentalDetail.unlocked")}
+                    <Text
+                      style={[
+                        styles.badgeText,
+                        { color: isLocked ? "#2E7D32" : "#C62828" },
+                      ]}
+                    >
+                      {isLocked
+                        ? t("rentalDetail.locked")
+                        : t("rentalDetail.unlocked")}
                     </Text>
                   </View>
                 )}
                 {onlineStateKnown && (
-                  <View style={[styles.badge, { backgroundColor: isOnline ? "#E3F2FD" : "#F5F5F5" }]}>
+                  <View
+                    style={[
+                      styles.badge,
+                      { backgroundColor: isOnline ? "#E3F2FD" : "#F5F5F5" },
+                    ]}
+                  >
                     <Feather
                       name={isOnline ? "wifi" : "wifi-off"}
                       size={13}
                       color={isOnline ? "#1565C0" : "#757575"}
                     />
-                    <Text style={[styles.badgeText, { color: isOnline ? "#1565C0" : "#757575" }]}>
-                      {isOnline ? t("rentalDetail.online") : t("rentalDetail.offline")}
+                    <Text
+                      style={[
+                        styles.badgeText,
+                        { color: isOnline ? "#1565C0" : "#757575" },
+                      ]}
+                    >
+                      {isOnline
+                        ? t("rentalDetail.online")
+                        : t("rentalDetail.offline")}
                     </Text>
                   </View>
                 )}
@@ -372,7 +478,9 @@ export default function RentalDetailScreen() {
                 isLastKnown={isLastKnownLocation}
                 label={
                   isLastKnownLocation
-                    ? t("rentalDetail.locationLastKnown", { time: formatCacheAge(cachedCoords!.cachedAt, t) })
+                    ? t("rentalDetail.locationLastKnown", {
+                        time: formatCacheAge(cachedCoords!.cachedAt, t),
+                      })
                     : t("rentalDetail.location")
                 }
                 onPress={handleOpenLocation}
@@ -380,32 +488,49 @@ export default function RentalDetailScreen() {
               />
             )}
 
-            {!isTelemetryLoading && !!telemetry && lockStateKnown && canReturn && (
-              <View style={styles.commandsRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.commandBtn,
-                    { backgroundColor: isLocked ? "#FFEBEE" : colors.secondary, borderColor: colors.border },
-                  ]}
-                  onPress={() => handleVehicleCommand(isLocked ? "unlock" : "lock")}
-                  disabled={!!commanding}
-                  activeOpacity={0.7}
-                >
-                  {commanding === "lock" || commanding === "unlock" ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <Feather
-                      name={isLocked ? "unlock" : "lock"}
-                      size={15}
-                      color={isLocked ? "#C62828" : colors.primary}
-                    />
-                  )}
-                  <Text style={[styles.commandBtnText, { color: isLocked ? "#C62828" : colors.primary }]}>
-                    {isLocked ? t("rentalDetail.commandUnlock") : t("rentalDetail.commandLock")}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            {!isTelemetryLoading &&
+              !!telemetry &&
+              lockStateKnown &&
+              canReturn && (
+                <View style={styles.commandsRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.commandBtn,
+                      {
+                        backgroundColor: isLocked
+                          ? "#FFEBEE"
+                          : colors.secondary,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={() =>
+                      handleVehicleCommand(isLocked ? "unlock" : "lock")
+                    }
+                    disabled={!!commanding}
+                    activeOpacity={0.7}
+                  >
+                    {commanding === "lock" || commanding === "unlock" ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Feather
+                        name={isLocked ? "unlock" : "lock"}
+                        size={15}
+                        color={isLocked ? "#C62828" : colors.primary}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.commandBtnText,
+                        { color: isLocked ? "#C62828" : colors.primary },
+                      ]}
+                    >
+                      {isLocked
+                        ? t("rentalDetail.commandUnlock")
+                        : t("rentalDetail.commandLock")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
           </View>
         )}
 
@@ -418,16 +543,30 @@ export default function RentalDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Feather name="log-in" size={18} color="#fff" />
-                <Text style={styles.returnBtnText}>{t("rentalDetail.processReturn")}</Text>
+                <Text style={styles.returnBtnText}>
+                  {t("rentalDetail.processReturn")}
+                </Text>
               </TouchableOpacity>
             ) : (
-              <View style={[styles.returnForm, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.returnTitle, { color: colors.foreground }]}>{t("rentalDetail.returnVehicle")}</Text>
+              <View
+                style={[
+                  styles.returnForm,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
+                <Text
+                  style={[styles.returnTitle, { color: colors.foreground }]}
+                >
+                  {t("rentalDetail.returnVehicle")}
+                </Text>
 
                 <MediaAttachments entityType="rental" entityId={id!} />
 
                 <TextInput
-                  style={[styles.notesInput, { borderColor: colors.border, color: colors.foreground }]}
+                  style={[
+                    styles.notesInput,
+                    { borderColor: colors.border, color: colors.foreground },
+                  ]}
                   placeholder={t("rentalDetail.returnNotes")}
                   placeholderTextColor={colors.mutedForeground}
                   value={returnNotes}
@@ -442,17 +581,26 @@ export default function RentalDetailScreen() {
                     style={[styles.cancelBtn, { borderColor: colors.border }]}
                     onPress={() => setShowReturn(false)}
                   >
-                    <Text style={[styles.cancelText, { color: colors.foreground }]}>{t("rentalDetail.cancel")}</Text>
+                    <Text
+                      style={[styles.cancelText, { color: colors.foreground }]}
+                    >
+                      {t("rentalDetail.cancel")}
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.confirmBtn, { backgroundColor: colors.primary }]}
+                    style={[
+                      styles.confirmBtn,
+                      { backgroundColor: colors.primary },
+                    ]}
                     onPress={() => returnMutation.mutate()}
                     disabled={returnMutation.isPending}
                   >
                     {returnMutation.isPending ? (
                       <ActivityIndicator color="#fff" size="small" />
                     ) : (
-                      <Text style={styles.confirmText}>{t("rentalDetail.completeReturn")}</Text>
+                      <Text style={styles.confirmText}>
+                        {t("rentalDetail.completeReturn")}
+                      </Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -471,34 +619,101 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 15, fontFamily: "Inter_500Medium" },
   scroll: { padding: 16, gap: 16, paddingBottom: 40 },
   headerCard: { borderRadius: 12, borderWidth: 1, padding: 16, gap: 6 },
-  statusBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  statusText: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
-  rentalTitle: { fontSize: 20, fontFamily: "Inter_700Bold", textTransform: "capitalize" as const },
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize" as const,
+  },
+  rentalTitle: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    textTransform: "capitalize" as const,
+  },
   detailCard: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
-  fieldRow: { flexDirection: "row", justifyContent: "space-between", padding: 14, borderBottomWidth: 1 },
+  fieldRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 14,
+    borderBottomWidth: 1,
+  },
   fieldLabel: { fontSize: 13, fontFamily: "Inter_500Medium" },
-  fieldValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", textTransform: "capitalize" as const },
+  fieldValue: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "capitalize" as const,
+  },
   vehicleStatusCard: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 10 },
-  vehicleStatusTitle: { fontSize: 12, fontFamily: "Inter_600SemiBold", textTransform: "uppercase" as const, letterSpacing: 0.5 },
+  vehicleStatusTitle: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
   telemetrySpinner: { alignSelf: "flex-start" },
   noDeviceText: { fontSize: 13, fontFamily: "Inter_400Regular" },
   refreshingRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   refreshingText: { fontSize: 12, fontFamily: "Inter_500Medium" },
   badgesRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   badgesRowFading: { opacity: 0.4 },
-  badge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
   badgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   commandsRow: { flexDirection: "row", gap: 8 },
-  commandBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 10, borderWidth: 1 },
+  commandBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
   commandBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   returnSection: {},
-  returnBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 14, borderRadius: 12 },
-  returnBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  returnBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 14,
+    borderRadius: 12,
+  },
+  returnBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+  },
   returnForm: { borderRadius: 12, borderWidth: 1, padding: 16, gap: 16 },
   returnTitle: { fontSize: 17, fontFamily: "Inter_600SemiBold" },
-  notesInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "Inter_400Regular", minHeight: 80 },
+  notesInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    minHeight: 80,
+  },
   returnActions: { flexDirection: "row", gap: 10 },
-  cancelBtn: { flex: 1, padding: 12, borderRadius: 10, borderWidth: 1, alignItems: "center" },
+  cancelBtn: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+  },
   cancelText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   confirmBtn: { flex: 1, padding: 12, borderRadius: 10, alignItems: "center" },
   confirmText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },

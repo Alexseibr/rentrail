@@ -10,19 +10,40 @@ import { eq, count, sql, and } from "drizzle-orm";
 
 export async function getPlatformHealthSummary() {
   const [totalTenants] = await db.select({ count: count() }).from(companies);
-  const [activeTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "active"));
-  const [trialTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "trial"));
-  const [pendingTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "pending"));
-  const [blockedTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "blocked"));
-  const [suspendedTenants] = await db.select({ count: count() }).from(companies).where(eq(companies.status, "suspended"));
+  const [activeTenants] = await db
+    .select({ count: count() })
+    .from(companies)
+    .where(eq(companies.status, "active"));
+  const [trialTenants] = await db
+    .select({ count: count() })
+    .from(companies)
+    .where(eq(companies.status, "trial"));
+  const [pendingTenants] = await db
+    .select({ count: count() })
+    .from(companies)
+    .where(eq(companies.status, "pending"));
+  const [blockedTenants] = await db
+    .select({ count: count() })
+    .from(companies)
+    .where(eq(companies.status, "blocked"));
+  const [suspendedTenants] = await db
+    .select({ count: count() })
+    .from(companies)
+    .where(eq(companies.status, "suspended"));
 
   const [totalAssets] = await db.select({ count: count() }).from(assets);
-  const [activeAssets] = await db.select({ count: count() }).from(assets).where(
-    sql`${assets.status} IN ('available', 'reserved', 'awaiting_pickup', 'rented')`,
-  );
+  const [activeAssets] = await db
+    .select({ count: count() })
+    .from(assets)
+    .where(
+      sql`${assets.status} IN ('available', 'reserved', 'awaiting_pickup', 'rented')`,
+    );
 
   const [totalDevices] = await db.select({ count: count() }).from(devices);
-  const [offlineDevices] = await db.select({ count: count() }).from(devices).where(eq(devices.status, "offline"));
+  const [offlineDevices] = await db
+    .select({ count: count() })
+    .from(devices)
+    .where(eq(devices.status, "offline"));
 
   const mrrRows = await db
     .select({ price: saasPlans.price })
@@ -73,7 +94,10 @@ export async function getTenantHealthList() {
     .select({
       companyId: devices.companyId,
       total: count().as("device_total"),
-      offline: sql<number>`COUNT(*) FILTER (WHERE ${devices.status} = 'offline')`.as("device_offline"),
+      offline:
+        sql<number>`COUNT(*) FILTER (WHERE ${devices.status} = 'offline')`.as(
+          "device_offline",
+        ),
     })
     .from(devices)
     .groupBy(devices.companyId)
@@ -89,7 +113,9 @@ export async function getTenantHealthList() {
       createdAt: companies.createdAt,
       assets: sql<number>`COALESCE(${assetCounts.count}, 0)`.mapWith(Number),
       devices: sql<number>`COALESCE(${deviceCounts.total}, 0)`.mapWith(Number),
-      offlineDevices: sql<number>`COALESCE(${deviceCounts.offline}, 0)`.mapWith(Number),
+      offlineDevices: sql<number>`COALESCE(${deviceCounts.offline}, 0)`.mapWith(
+        Number,
+      ),
     })
     .from(companies)
     .leftJoin(assetCounts, eq(assetCounts.companyId, companies.id))
@@ -98,20 +124,50 @@ export async function getTenantHealthList() {
 
   return rows.map((row) => {
     let healthStatus: "healthy" | "degraded" | "unhealthy" = "healthy";
-    if (row.devices > 0 && row.offlineDevices / row.devices > 0.5) healthStatus = "unhealthy";
-    else if (row.devices > 0 && row.offlineDevices / row.devices > 0.2) healthStatus = "degraded";
+    if (row.devices > 0 && row.offlineDevices / row.devices > 0.5)
+      healthStatus = "unhealthy";
+    else if (row.devices > 0 && row.offlineDevices / row.devices > 0.2)
+      healthStatus = "degraded";
 
     return { ...row, healthStatus };
   });
 }
 
 export function getServiceStatus(serviceName: string) {
-  const serviceStubs: Record<string, { name: string; status: string; message: string; lastChecked: string }> = {
-    email: { name: "Email Service", status: "not_configured", message: "Email integration not configured", lastChecked: new Date().toISOString() },
-    storage: { name: "Object Storage", status: "ok", message: "GCS object storage available", lastChecked: new Date().toISOString() },
-    queues: { name: "Job Queue", status: "not_configured", message: "Queue service not configured", lastChecked: new Date().toISOString() },
-    "telemetry-ingest": { name: "Telemetry Ingest", status: "ok", message: "M2M telemetry ingest available via provider API keys", lastChecked: new Date().toISOString() },
-    "mobile-push": { name: "Mobile Push", status: "not_configured", message: "Push notification service not configured", lastChecked: new Date().toISOString() },
+  const serviceStubs: Record<
+    string,
+    { name: string; status: string; message: string; lastChecked: string }
+  > = {
+    email: {
+      name: "Email Service",
+      status: "not_configured",
+      message: "Email integration not configured",
+      lastChecked: new Date().toISOString(),
+    },
+    storage: {
+      name: "Object Storage",
+      status: "ok",
+      message: "GCS object storage available",
+      lastChecked: new Date().toISOString(),
+    },
+    queues: {
+      name: "Job Queue",
+      status: "not_configured",
+      message: "Queue service not configured",
+      lastChecked: new Date().toISOString(),
+    },
+    "telemetry-ingest": {
+      name: "Telemetry Ingest",
+      status: "ok",
+      message: "M2M telemetry ingest available via provider API keys",
+      lastChecked: new Date().toISOString(),
+    },
+    "mobile-push": {
+      name: "Mobile Push",
+      status: "not_configured",
+      message: "Push notification service not configured",
+      lastChecked: new Date().toISOString(),
+    },
   };
 
   const service = serviceStubs[serviceName];
@@ -120,6 +176,12 @@ export function getServiceStatus(serviceName: string) {
 }
 
 export function getAllServiceStatuses() {
-  const services = ["email", "storage", "queues", "telemetry-ingest", "mobile-push"];
+  const services = [
+    "email",
+    "storage",
+    "queues",
+    "telemetry-ingest",
+    "mobile-push",
+  ];
   return services.map((s) => getServiceStatus(s)!);
 }

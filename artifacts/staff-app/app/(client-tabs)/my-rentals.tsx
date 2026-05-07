@@ -33,7 +33,10 @@ interface Rental {
   createdAt: string;
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; accent: string }> = {
+const STATUS_COLORS: Record<
+  string,
+  { bg: string; text: string; accent: string }
+> = {
   active: { bg: "#E8F5E9", text: "#2E7D32", accent: "#4CAF50" },
   overdue: { bg: "#FFEBEE", text: "#C62828", accent: "#E53935" },
   completed: { bg: "#E3F2FD", text: "#1565C0", accent: "#2196F3" },
@@ -51,13 +54,22 @@ function useLiveElapsed(startAt: string | null, active: boolean): string {
   const [elapsed, setElapsed] = useState("");
 
   useEffect(() => {
-    if (!active || !startAt) { setElapsed(""); return; }
+    if (!active || !startAt) {
+      setElapsed("");
+      return;
+    }
     const calc = () => {
-      const diff = Math.max(0, Math.floor((Date.now() - new Date(startAt).getTime()) / 1000));
+      const diff = Math.max(
+        0,
+        Math.floor((Date.now() - new Date(startAt).getTime()) / 1000),
+      );
       const h = Math.floor(diff / 3600);
       const m = Math.floor((diff % 3600) / 60);
       const s = diff % 60;
-      if (h > 0) setElapsed(`${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+      if (h > 0)
+        setElapsed(
+          `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`,
+        );
       else setElapsed(`${m}:${String(s).padStart(2, "0")}`);
     };
     calc();
@@ -146,7 +158,9 @@ export default function MyRentalsScreen() {
     }, [fetchRentals]),
   );
 
-  useAppStateFocus(() => { fetchRentals(); });
+  useAppStateFocus(() => {
+    fetchRentals();
+  });
 
   const handleReturnPress = async (rentalId: string) => {
     if (confirmingId !== rentalId) {
@@ -160,14 +174,17 @@ export default function MyRentalsScreen() {
     setReturning(rentalId);
     try {
       const token = await getAccessToken();
-      const res = await fetch(`${BASE_URL}/api/client/rentals/${rentalId}/return`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "x-company-id": companyId || "",
+      const res = await fetch(
+        `${BASE_URL}/api/client/rentals/${rentalId}/return`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "x-company-id": companyId || "",
+          },
         },
-      });
+      );
       if (res.ok) {
         fetchRentals();
         showSnackbar(t("toast.returnSuccess"), "success");
@@ -195,24 +212,38 @@ export default function MyRentalsScreen() {
     const isActive = item.status === "active";
     const isOverdue = item.status === "overdue";
     const isLive = isActive || isOverdue;
-    const typeIcon = item.assetType ? (ASSET_TYPE_ICONS[item.assetType] || "circle") : "circle";
+    const typeIcon = item.assetType
+      ? ASSET_TYPE_ICONS[item.assetType] || "circle"
+      : "circle";
     const isConfirming = confirmingId === item.id;
     const isReturning = returning === item.id;
 
     return (
       <View style={[styles.card, isLive && styles.cardActive]}>
-        {isLive && <View style={[styles.cardAccent, { backgroundColor: statusStyle.accent }]} />}
+        {isLive && (
+          <View
+            style={[styles.cardAccent, { backgroundColor: statusStyle.accent }]}
+          />
+        )}
 
         <TouchableOpacity
           activeOpacity={0.75}
           onPress={() =>
-            router.push({ pathname: "/(client-tabs)/rental-detail", params: { id: item.id } })
+            router.push({
+              pathname: "/(client-tabs)/rental-detail",
+              params: { id: item.id },
+            })
           }
         >
           <View style={styles.cardHeader}>
-            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <View
+              style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}
+            >
               <Text style={[styles.statusText, { color: statusStyle.text }]}>
-                {t(`clientRentals.status_${item.status}`, item.status.toUpperCase())}
+                {t(
+                  `clientRentals.status_${item.status}`,
+                  item.status.toUpperCase(),
+                )}
               </Text>
             </View>
             {isLive && <ActiveTimer startAt={item.startAt} />}
@@ -223,7 +254,9 @@ export default function MyRentalsScreen() {
 
           <View style={styles.vehicleRow}>
             {item.assetType && (
-              <View style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}>
+              <View
+                style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}
+              >
                 <Feather name={typeIcon as any} size={18} color="#F5C518" />
               </View>
             )}
@@ -233,7 +266,9 @@ export default function MyRentalsScreen() {
                   {item.assetBrand} {item.assetModel}
                 </Text>
               ) : (
-                <Text style={styles.vehicleName}>{t("clientRentals.vehicle")}</Text>
+                <Text style={styles.vehicleName}>
+                  {t("clientRentals.vehicle")}
+                </Text>
               )}
               {item.assetCode && (
                 <Text style={styles.vehicleCode}>{item.assetCode}</Text>
@@ -245,7 +280,9 @@ export default function MyRentalsScreen() {
           {item.startAt && (
             <View style={styles.timeRow}>
               <Feather name="play-circle" size={13} color="#8c8c8c" />
-              <Text style={styles.timeLabel}>{t("clientRentals.started")}:</Text>
+              <Text style={styles.timeLabel}>
+                {t("clientRentals.started")}:
+              </Text>
               <Text style={styles.timeValue}>{formatDate(item.startAt)}</Text>
             </View>
           )}
@@ -253,7 +290,9 @@ export default function MyRentalsScreen() {
             <View style={styles.timeRow}>
               <Feather name="check-circle" size={13} color="#8c8c8c" />
               <Text style={styles.timeLabel}>{t("clientRentals.ended")}:</Text>
-              <Text style={styles.timeValue}>{formatDate(item.actualEndAt)}</Text>
+              <Text style={styles.timeValue}>
+                {formatDate(item.actualEndAt)}
+              </Text>
             </View>
           )}
         </TouchableOpacity>
@@ -274,12 +313,16 @@ export default function MyRentalsScreen() {
             ) : isConfirming ? (
               <>
                 <Feather name="check" size={16} color="#fff" />
-                <Text style={styles.returnButtonText}>{t("clientRentals.confirmReturn")}</Text>
+                <Text style={styles.returnButtonText}>
+                  {t("clientRentals.confirmReturn")}
+                </Text>
               </>
             ) : (
               <>
                 <Feather name="corner-down-left" size={16} color="#fff" />
-                <Text style={styles.returnButtonText}>{t("clientRentals.returnVehicle")}</Text>
+                <Text style={styles.returnButtonText}>
+                  {t("clientRentals.returnVehicle")}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -296,7 +339,9 @@ export default function MyRentalsScreen() {
     );
   }
 
-  const activeRentals = rentals.filter((r) => r.status === "active" || r.status === "overdue");
+  const activeRentals = rentals.filter(
+    (r) => r.status === "active" || r.status === "overdue",
+  );
 
   return (
     <View style={styles.container}>
@@ -304,7 +349,10 @@ export default function MyRentalsScreen() {
         data={rentals}
         keyExtractor={(r) => r.id}
         renderItem={renderRental}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[
+          styles.list,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -325,7 +373,9 @@ export default function MyRentalsScreen() {
             <View style={styles.emptyIconWrap}>
               <Feather name="clock" size={36} color="#F5C518" />
             </View>
-            <Text style={styles.emptyTitle}>{t("clientRentals.noRentals")}</Text>
+            <Text style={styles.emptyTitle}>
+              {t("clientRentals.noRentals")}
+            </Text>
             <Text style={styles.emptyHint}>{t("clientRentals.goRent")}</Text>
           </View>
         }
@@ -336,7 +386,12 @@ export default function MyRentalsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f5f5f5" },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
   list: { padding: 16, gap: 10 },
   sectionLabel: {
     fontSize: 11,
@@ -390,8 +445,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   vehicleInfo: { flex: 1 },
-  vehicleName: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
-  vehicleCode: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8c8c8c", marginTop: 1 },
+  vehicleName: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#1a1a1a",
+  },
+  vehicleCode: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#8c8c8c",
+    marginTop: 1,
+  },
   timeRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   timeLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: "#8c8c8c" },
   timeValue: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#555" },
@@ -408,7 +472,11 @@ const styles = StyleSheet.create({
   returnButtonConfirm: {
     backgroundColor: "#F5C518",
   },
-  returnButtonText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" },
+  returnButtonText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#fff",
+  },
   emptyWrap: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyIconWrap: {
     width: 72,
@@ -418,6 +486,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  emptyTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
+  emptyTitle: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    color: "#1a1a1a",
+  },
   emptyHint: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#8c8c8c" },
 });

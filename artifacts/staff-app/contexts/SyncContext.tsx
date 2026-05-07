@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import {
   getQueueItems,
@@ -24,7 +31,10 @@ const SyncContext = createContext<SyncContextType | null>(null);
 export function SyncProvider({ children }: { children: ReactNode }) {
   const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncResult, setLastSyncResult] = useState<{ processed: number; failed: number } | null>(null);
+  const [lastSyncResult, setLastSyncResult] = useState<{
+    processed: number;
+    failed: number;
+  } | null>(null);
 
   useEffect(() => {
     getQueueItems().then(setQueueItems);
@@ -32,11 +42,14 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     const unsub = onQueueChange(setQueueItems);
 
-    const appSub = AppState.addEventListener("change", (state: AppStateStatus) => {
-      if (state === "active") {
-        processQueue();
-      }
-    });
+    const appSub = AppState.addEventListener(
+      "change",
+      (state: AppStateStatus) => {
+        if (state === "active") {
+          processQueue();
+        }
+      },
+    );
 
     return () => {
       unsub();
@@ -51,7 +64,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     for (const item of queueItems) {
       if (item.status !== "completed" && item.status !== "canceled") continue;
       if (item.snoozed) continue;
-      const completedAt = item.completedAt ? new Date(item.completedAt).getTime() : 0;
+      const completedAt = item.completedAt
+        ? new Date(item.completedAt).getTime()
+        : 0;
       const deadline = completedAt + AUTO_CLEAR_DELAY_MS;
       if (nextDeadline === null || deadline < nextDeadline) {
         nextDeadline = deadline;
@@ -80,7 +95,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   ).length;
 
   return (
-    <SyncContext.Provider value={{ queueItems, pendingCount, isSyncing, syncNow, lastSyncResult }}>
+    <SyncContext.Provider
+      value={{ queueItems, pendingCount, isSyncing, syncNow, lastSyncResult }}
+    >
       {children}
     </SyncContext.Provider>
   );

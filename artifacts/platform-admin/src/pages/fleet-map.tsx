@@ -5,13 +5,23 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -55,7 +65,9 @@ export default function FleetMapPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId
+    ? { "x-company-id": companyId }
+    : {};
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
@@ -64,7 +76,8 @@ export default function FleetMapPage() {
 
   const { data, isLoading } = useQuery<FleetMapItem[]>({
     queryKey: ["fleet-map", companyId],
-    queryFn: () => api<FleetMapItem[]>("/fleet-map", { headers: companyHeaders }),
+    queryFn: () =>
+      api<FleetMapItem[]>("/fleet-map", { headers: companyHeaders }),
     enabled: !!companyId,
     refetchInterval: 30000,
   });
@@ -82,7 +95,10 @@ export default function FleetMapPage() {
 
   const totalOnMap = withCoords.length;
   const totalOffline = items.length - totalOnMap;
-  const avgBattery = withCoords.filter((i) => i.batteryPercent != null).reduce((s, i) => s + (i.batteryPercent || 0), 0) /
+  const avgBattery =
+    withCoords
+      .filter((i) => i.batteryPercent != null)
+      .reduce((s, i) => s + (i.batteryPercent || 0), 0) /
     (withCoords.filter((i) => i.batteryPercent != null).length || 1);
 
   useEffect(() => {
@@ -95,7 +111,8 @@ export default function FleetMapPage() {
     });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
       maxZoom: 19,
     }).addTo(map);
 
@@ -129,9 +146,10 @@ export default function FleetMapPage() {
         iconAnchor: [14, 14],
       });
 
-      const batteryBar = item.batteryPercent != null
-        ? `<div style="margin-top:6px;background:#e5e7eb;border-radius:4px;height:8px;width:100%"><div style="background:${item.batteryPercent > 20 ? "#22c55e" : "#ef4444"};height:8px;border-radius:4px;width:${item.batteryPercent}%"></div></div>`
-        : "";
+      const batteryBar =
+        item.batteryPercent != null
+          ? `<div style="margin-top:6px;background:#e5e7eb;border-radius:4px;height:8px;width:100%"><div style="background:${item.batteryPercent > 20 ? "#22c55e" : "#ef4444"};height:8px;border-radius:4px;width:${item.batteryPercent}%"></div></div>`
+          : "";
 
       const popup = `
         <div style="min-width:180px;font-family:sans-serif">
@@ -148,33 +166,59 @@ export default function FleetMapPage() {
         </div>
       `;
 
-      L.marker([item.lat!, item.lng!], { icon }).bindPopup(popup).addTo(markersRef.current!);
+      L.marker([item.lat!, item.lng!], { icon })
+        .bindPopup(popup)
+        .addTo(markersRef.current!);
     });
 
-    const bounds = L.latLngBounds(filtered.map((i) => [i.lat!, i.lng!] as [number, number]));
-    mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    const bounds = L.latLngBounds(
+      filtered.map((i) => [i.lat!, i.lng!] as [number, number]),
+    );
+    mapInstanceRef.current.fitBounds(bounds, {
+      padding: [40, 40],
+      maxZoom: 14,
+    });
   }, [filtered, t]);
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("map.title", "Карта транспорта")}</h1>
-          <p className="text-muted-foreground">{t("map.subtitle", "Местоположение и состояние транспорта в реальном времени")}</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("map.title", "Карта транспорта")}
+          </h1>
+          <p className="text-muted-foreground">
+            {t(
+              "map.subtitle",
+              "Местоположение и состояние транспорта в реальном времени",
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("common.all")}</SelectItem>
-              {statuses.map((s) => <SelectItem key={s} value={s}>{t(`status.${s}`, s)}</SelectItem>)}
+              {statuses.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {t(`status.${s}`, s)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("common.all")}</SelectItem>
-              {types.map((tp) => <SelectItem key={tp} value={tp}>{t(`assetType.${tp}`, tp)}</SelectItem>)}
+              {types.map((tp) => (
+                <SelectItem key={tp} value={tp}>
+                  {t(`assetType.${tp}`, tp)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -184,33 +228,53 @@ export default function FleetMapPage() {
         <Card>
           <CardContent className="pt-3 pb-3">
             <div className="text-2xl font-bold">{items.length}</div>
-            <p className="text-xs text-muted-foreground">{t("map.totalVehicles", "Всего транспорта")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("map.totalVehicles", "Всего транспорта")}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-3 pb-3">
-            <div className="text-2xl font-bold text-green-600">{totalOnMap}</div>
-            <p className="text-xs text-muted-foreground">{t("map.onMap", "На карте")}</p>
+            <div className="text-2xl font-bold text-green-600">
+              {totalOnMap}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("map.onMap", "На карте")}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-3 pb-3">
-            <div className="text-2xl font-bold text-gray-400">{totalOffline}</div>
-            <p className="text-xs text-muted-foreground">{t("map.offline", "Без координат")}</p>
+            <div className="text-2xl font-bold text-gray-400">
+              {totalOffline}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("map.offline", "Без координат")}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-3 pb-3">
-            <div className="text-2xl font-bold text-purple-600">{Math.round(avgBattery)}%</div>
-            <p className="text-xs text-muted-foreground">{t("map.avgBattery", "Средний заряд")}</p>
+            <div className="text-2xl font-bold text-purple-600">
+              {Math.round(avgBattery)}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("map.avgBattery", "Средний заряд")}
+            </p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardContent className="p-0 relative">
-          {isLoading && <Skeleton className="absolute inset-0 h-[500px] w-full rounded-xl z-10" />}
-          <div ref={mapRef} className="h-[500px] w-full rounded-xl" style={{ zIndex: 0 }} />
+          {isLoading && (
+            <Skeleton className="absolute inset-0 h-[500px] w-full rounded-xl z-10" />
+          )}
+          <div
+            ref={mapRef}
+            className="h-[500px] w-full rounded-xl"
+            style={{ zIndex: 0 }}
+          />
         </CardContent>
       </Card>
 
@@ -220,8 +284,13 @@ export default function FleetMapPage() {
           if (count === 0) return null;
           return (
             <div key={status} className="flex items-center gap-2 text-sm">
-              <div className="w-3 h-3 rounded-full" style={{ background: color }} />
-              <span>{t(`status.${status}`, status)}: {count}</span>
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ background: color }}
+              />
+              <span>
+                {t(`status.${status}`, status)}: {count}
+              </span>
             </div>
           );
         })}

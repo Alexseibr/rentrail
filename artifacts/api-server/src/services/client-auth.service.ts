@@ -21,22 +21,17 @@ export async function clientLoginWithPassword(
     ? and(eq(clients.phone, rawPhone), eq(clients.companyId, companyId))
     : eq(clients.phone, rawPhone);
 
-  let matchingClients = await db
-    .select()
-    .from(clients)
-    .where(conditions);
+  let matchingClients = await db.select().from(clients).where(conditions);
 
   if (matchingClients.length === 0 && phone !== rawPhone) {
     const conditionsNorm = companyId
       ? and(eq(clients.phone, phone), eq(clients.companyId, companyId))
       : eq(clients.phone, phone);
-    matchingClients = await db
-      .select()
-      .from(clients)
-      .where(conditionsNorm);
+    matchingClients = await db.select().from(clients).where(conditionsNorm);
   }
 
-  const client = matchingClients.find((c) => c.status === "active") ?? matchingClients[0];
+  const client =
+    matchingClients.find((c) => c.status === "active") ?? matchingClients[0];
 
   if (!client) {
     throw new UnauthorizedError("Invalid phone number or password");
@@ -65,7 +60,11 @@ export async function clientLoginWithPassword(
   });
 
   const refreshToken = jwt.sign(
-    { clientId: client.id, companyId: client.companyId, tokenType: "client-refresh" },
+    {
+      clientId: client.id,
+      companyId: client.companyId,
+      tokenType: "client-refresh",
+    },
     config.jwt.refreshSecret,
     { expiresIn: "30d" },
   );

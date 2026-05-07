@@ -1,6 +1,15 @@
 import {
-  db, maintenanceLogs, maintenanceSchedules, spareParts, sparePartTransactions,
-  workOrderParts, workOrders, assets, branches, users, companies,
+  db,
+  maintenanceLogs,
+  maintenanceSchedules,
+  spareParts,
+  sparePartTransactions,
+  workOrderParts,
+  workOrders,
+  assets,
+  branches,
+  users,
+  companies,
 } from "@workspace/db";
 import { eq, and, desc, lte, lt, sql, inArray, isNull, or } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
@@ -33,7 +42,9 @@ export async function getMaintenanceLog(id: string, companyId: string) {
     .from(maintenanceLogs)
     .leftJoin(assets, eq(maintenanceLogs.assetId, assets.id))
     .leftJoin(users, eq(maintenanceLogs.performedByUserId, users.id))
-    .where(and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.companyId, companyId)))
+    .where(
+      and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.companyId, companyId)),
+    )
     .limit(1);
   return row ?? null;
 }
@@ -43,7 +54,9 @@ export async function updateMaintenanceLog(
   companyId: string,
   data: { notes?: string; cost?: string; odometerKm?: string },
 ) {
-  const updateData: Partial<typeof maintenanceLogs.$inferInsert> & { updatedAt: Date } = {
+  const updateData: Partial<typeof maintenanceLogs.$inferInsert> & {
+    updatedAt: Date;
+  } = {
     updatedAt: new Date(),
   };
   if (data.notes !== undefined) updateData.notes = data.notes;
@@ -53,15 +66,28 @@ export async function updateMaintenanceLog(
   const [row] = await db
     .update(maintenanceLogs)
     .set(updateData)
-    .where(and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.companyId, companyId)))
+    .where(
+      and(eq(maintenanceLogs.id, id), eq(maintenanceLogs.companyId, companyId)),
+    )
     .returning();
   return row ?? null;
 }
 
-export async function listMaintenanceLogs(companyId: string, assetId?: string, limit = 50, logType?: string) {
+export async function listMaintenanceLogs(
+  companyId: string,
+  assetId?: string,
+  limit = 50,
+  logType?: string,
+) {
   const clauses = [eq(maintenanceLogs.companyId, companyId)];
   if (assetId) clauses.push(eq(maintenanceLogs.assetId, assetId));
-  if (logType) clauses.push(eq(maintenanceLogs.logType, logType as typeof maintenanceLogs.$inferSelect["logType"]));
+  if (logType)
+    clauses.push(
+      eq(
+        maintenanceLogs.logType,
+        logType as (typeof maintenanceLogs.$inferSelect)["logType"],
+      ),
+    );
   const conditions = and(...clauses);
 
   return db
@@ -116,7 +142,7 @@ export async function createMaintenanceLog(
       assetId: data.assetId,
       branchId: data.branchId,
       workOrderId: data.workOrderId,
-      logType: data.logType as typeof maintenanceLogs.$inferInsert["logType"],
+      logType: data.logType as (typeof maintenanceLogs.$inferInsert)["logType"],
       performedAt: data.performedAt,
       performedByUserId: data.performedByUserId,
       odometerKm: data.odometerKm?.toString(),
@@ -128,7 +154,15 @@ export async function createMaintenanceLog(
     })
     .returning();
 
-  await updateScheduleAfterLog(companyId, data.assetId, data.logType, data.performedAt, data.odometerKm, data.nextServiceKm, data.nextServiceDate);
+  await updateScheduleAfterLog(
+    companyId,
+    data.assetId,
+    data.logType,
+    data.performedAt,
+    data.odometerKm,
+    data.nextServiceKm,
+    data.nextServiceDate,
+  );
 
   return log;
 }
@@ -148,8 +182,14 @@ async function updateScheduleAfterLog(
     .where(
       and(
         eq(maintenanceSchedules.companyId, companyId),
-        eq(maintenanceSchedules.scheduleType, logType as typeof maintenanceSchedules.$inferSelect["scheduleType"]),
-        or(eq(maintenanceSchedules.assetId, assetId), isNull(maintenanceSchedules.assetId)),
+        eq(
+          maintenanceSchedules.scheduleType,
+          logType as (typeof maintenanceSchedules.$inferSelect)["scheduleType"],
+        ),
+        or(
+          eq(maintenanceSchedules.assetId, assetId),
+          isNull(maintenanceSchedules.assetId),
+        ),
         eq(maintenanceSchedules.enabled, true),
       ),
     );
@@ -183,9 +223,15 @@ async function updateScheduleAfterLog(
 
 // ─── Maintenance Schedules ────────────────────────────────────────────────────
 
-export async function listMaintenanceSchedules(companyId: string, assetId?: string) {
+export async function listMaintenanceSchedules(
+  companyId: string,
+  assetId?: string,
+) {
   const conditions = assetId
-    ? and(eq(maintenanceSchedules.companyId, companyId), eq(maintenanceSchedules.assetId, assetId))
+    ? and(
+        eq(maintenanceSchedules.companyId, companyId),
+        eq(maintenanceSchedules.assetId, assetId),
+      )
     : eq(maintenanceSchedules.companyId, companyId);
 
   return db
@@ -253,21 +299,27 @@ export async function createMaintenanceSchedule(
     lastDoneAt?: Date;
   },
 ) {
-  const nextDueAt = data.lastDoneAt && data.intervalDays
-    ? new Date(data.lastDoneAt.getTime() + data.intervalDays * 86400_000)
-    : data.intervalDays ? new Date(Date.now() + data.intervalDays * 86400_000) : undefined;
+  const nextDueAt =
+    data.lastDoneAt && data.intervalDays
+      ? new Date(data.lastDoneAt.getTime() + data.intervalDays * 86400_000)
+      : data.intervalDays
+        ? new Date(Date.now() + data.intervalDays * 86400_000)
+        : undefined;
 
-  const nextDueKm = data.lastDoneKm && data.intervalKm
-    ? (data.lastDoneKm + data.intervalKm).toString()
-    : undefined;
+  const nextDueKm =
+    data.lastDoneKm && data.intervalKm
+      ? (data.lastDoneKm + data.intervalKm).toString()
+      : undefined;
 
   const [schedule] = await db
     .insert(maintenanceSchedules)
     .values({
       companyId,
       assetId: data.assetId,
-      assetType: data.assetType as typeof maintenanceSchedules.$inferInsert["assetType"],
-      scheduleType: data.scheduleType as typeof maintenanceSchedules.$inferInsert["scheduleType"],
+      assetType:
+        data.assetType as (typeof maintenanceSchedules.$inferInsert)["assetType"],
+      scheduleType:
+        data.scheduleType as (typeof maintenanceSchedules.$inferInsert)["scheduleType"],
       name: data.name,
       intervalKm: data.intervalKm?.toString(),
       intervalDays: data.intervalDays,
@@ -280,11 +332,22 @@ export async function createMaintenanceSchedule(
   return schedule;
 }
 
-export async function updateMaintenanceSchedule(id: string, companyId: string, data: Record<string, unknown>) {
+export async function updateMaintenanceSchedule(
+  id: string,
+  companyId: string,
+  data: Record<string, unknown>,
+) {
   const [row] = await db
     .update(maintenanceSchedules)
-    .set({ ...data, updatedAt: new Date() } as Partial<typeof maintenanceSchedules.$inferInsert> & { updatedAt: Date })
-    .where(and(eq(maintenanceSchedules.id, id), eq(maintenanceSchedules.companyId, companyId)))
+    .set({ ...data, updatedAt: new Date() } as Partial<
+      typeof maintenanceSchedules.$inferInsert
+    > & { updatedAt: Date })
+    .where(
+      and(
+        eq(maintenanceSchedules.id, id),
+        eq(maintenanceSchedules.companyId, companyId),
+      ),
+    )
     .returning();
   if (!row) throw new NotFoundError("Schedule not found");
   return row;
@@ -293,20 +356,32 @@ export async function updateMaintenanceSchedule(id: string, companyId: string, d
 export async function deleteMaintenanceSchedule(id: string, companyId: string) {
   const [row] = await db
     .delete(maintenanceSchedules)
-    .where(and(eq(maintenanceSchedules.id, id), eq(maintenanceSchedules.companyId, companyId)))
+    .where(
+      and(
+        eq(maintenanceSchedules.id, id),
+        eq(maintenanceSchedules.companyId, companyId),
+      ),
+    )
     .returning({ id: maintenanceSchedules.id });
   if (!row) throw new NotFoundError("Schedule not found");
 }
 
 // ─── Spare Parts ──────────────────────────────────────────────────────────────
 
-export async function listSpareParts(companyId: string, branchId?: string, lowStockOnly = false) {
+export async function listSpareParts(
+  companyId: string,
+  branchId?: string,
+  lowStockOnly = false,
+) {
   const rows = await db
     .select()
     .from(spareParts)
     .where(
       branchId
-        ? and(eq(spareParts.companyId, companyId), eq(spareParts.branchId, branchId))
+        ? and(
+            eq(spareParts.companyId, companyId),
+            eq(spareParts.branchId, branchId),
+          )
         : eq(spareParts.companyId, companyId),
     )
     .orderBy(spareParts.category, spareParts.name);
@@ -329,18 +404,21 @@ export async function getSparePart(id: string, companyId: string) {
   return part;
 }
 
-export async function createSparePart(companyId: string, data: {
-  branchId?: string;
-  name: string;
-  sku?: string;
-  category: string;
-  unit?: string;
-  qtyInStock?: number;
-  minQtyAlert?: number;
-  costPrice?: number;
-  location?: string;
-  notes?: string;
-}) {
+export async function createSparePart(
+  companyId: string,
+  data: {
+    branchId?: string;
+    name: string;
+    sku?: string;
+    category: string;
+    unit?: string;
+    qtyInStock?: number;
+    minQtyAlert?: number;
+    costPrice?: number;
+    location?: string;
+    notes?: string;
+  },
+) {
   const [part] = await db
     .insert(spareParts)
     .values({
@@ -348,7 +426,7 @@ export async function createSparePart(companyId: string, data: {
       branchId: data.branchId,
       name: data.name,
       sku: data.sku,
-      category: data.category as typeof spareParts.$inferInsert["category"],
+      category: data.category as (typeof spareParts.$inferInsert)["category"],
       unit: data.unit ?? "шт",
       qtyInStock: data.qtyInStock?.toString() ?? "0",
       minQtyAlert: data.minQtyAlert?.toString() ?? "0",
@@ -360,10 +438,16 @@ export async function createSparePart(companyId: string, data: {
   return part;
 }
 
-export async function updateSparePart(id: string, companyId: string, data: Record<string, unknown>) {
+export async function updateSparePart(
+  id: string,
+  companyId: string,
+  data: Record<string, unknown>,
+) {
   const [row] = await db
     .update(spareParts)
-    .set({ ...data, updatedAt: new Date() } as Partial<typeof spareParts.$inferInsert> & { updatedAt: Date })
+    .set({ ...data, updatedAt: new Date() } as Partial<
+      typeof spareParts.$inferInsert
+    > & { updatedAt: Date })
     .where(and(eq(spareParts.id, id), eq(spareParts.companyId, companyId)))
     .returning();
   if (!row) throw new NotFoundError("Spare part not found");
@@ -380,9 +464,16 @@ export async function deleteSparePart(id: string, companyId: string) {
 
 // ─── Spare Part Transactions ──────────────────────────────────────────────────
 
-export async function listSparePartTransactions(companyId: string, partId?: string, limit = 100) {
+export async function listSparePartTransactions(
+  companyId: string,
+  partId?: string,
+  limit = 100,
+) {
   const conditions = partId
-    ? and(eq(sparePartTransactions.companyId, companyId), eq(sparePartTransactions.partId, partId))
+    ? and(
+        eq(sparePartTransactions.companyId, companyId),
+        eq(sparePartTransactions.partId, partId),
+      )
     : eq(sparePartTransactions.companyId, companyId);
 
   return db
@@ -423,11 +514,16 @@ export async function createSparePartTransaction(
   const part = await getSparePart(data.partId, companyId);
 
   const currentQty = parseFloat(part.qtyInStock);
-  const isOut = data.transactionType === "out" || data.transactionType === "write_off";
+  const isOut =
+    data.transactionType === "out" || data.transactionType === "write_off";
   const newQty = isOut ? currentQty - data.qty : currentQty + data.qty;
 
   if (isOut && newQty < 0) {
-    throw new AppError(400, `Недостаточно запчастей на складе. Доступно: ${currentQty} ${part.unit}`, "INSUFFICIENT_STOCK");
+    throw new AppError(
+      400,
+      `Недостаточно запчастей на складе. Доступно: ${currentQty} ${part.unit}`,
+      "INSUFFICIENT_STOCK",
+    );
   }
 
   const [transaction] = await db
@@ -436,7 +532,8 @@ export async function createSparePartTransaction(
       companyId,
       partId: data.partId,
       workOrderId: data.workOrderId,
-      transactionType: data.transactionType as typeof sparePartTransactions.$inferInsert["transactionType"],
+      transactionType:
+        data.transactionType as (typeof sparePartTransactions.$inferInsert)["transactionType"],
       qty: data.qty.toString(),
       unitCost: data.unitCost?.toString(),
       notes: data.notes,
@@ -449,7 +546,10 @@ export async function createSparePartTransaction(
     .set({ qtyInStock: newQty.toString(), updatedAt: new Date() })
     .where(eq(spareParts.id, data.partId));
 
-  logger.info({ partId: data.partId, type: data.transactionType, qty: data.qty, newQty }, "Spare part transaction created");
+  logger.info(
+    { partId: data.partId, type: data.transactionType, qty: data.qty, newQty },
+    "Spare part transaction created",
+  );
 
   return transaction;
 }
@@ -483,7 +583,9 @@ export async function addPartToWorkOrder(
   const [wo] = await db
     .select({ id: workOrders.id })
     .from(workOrders)
-    .where(and(eq(workOrders.id, workOrderId), eq(workOrders.companyId, companyId)))
+    .where(
+      and(eq(workOrders.id, workOrderId), eq(workOrders.companyId, companyId)),
+    )
     .limit(1);
   if (!wo) throw new NotFoundError("Work order not found");
 
@@ -499,7 +601,12 @@ export async function addPartToWorkOrder(
   const [existing] = await db
     .select()
     .from(workOrderParts)
-    .where(and(eq(workOrderParts.workOrderId, workOrderId), eq(workOrderParts.partId, data.partId)))
+    .where(
+      and(
+        eq(workOrderParts.workOrderId, workOrderId),
+        eq(workOrderParts.partId, data.partId),
+      ),
+    )
     .limit(1);
 
   if (existing) {
@@ -524,11 +631,21 @@ export async function addPartToWorkOrder(
   return row;
 }
 
-export async function removePartFromWorkOrder(id: string, workOrderId: string, companyId: string, userId: string) {
+export async function removePartFromWorkOrder(
+  id: string,
+  workOrderId: string,
+  companyId: string,
+  userId: string,
+) {
   const [part] = await db
     .select()
     .from(workOrderParts)
-    .where(and(eq(workOrderParts.id, id), eq(workOrderParts.workOrderId, workOrderId)))
+    .where(
+      and(
+        eq(workOrderParts.id, id),
+        eq(workOrderParts.workOrderId, workOrderId),
+      ),
+    )
     .limit(1);
   if (!part) throw new NotFoundError("Work order part not found");
 
@@ -568,7 +685,9 @@ export async function getServiceStats(companyId: string) {
     );
 
   const [monthCost] = await db
-    .select({ total: sql<number>`coalesce(sum(${maintenanceLogs.cost}::numeric), 0)::float` })
+    .select({
+      total: sql<number>`coalesce(sum(${maintenanceLogs.cost}::numeric), 0)::float`,
+    })
     .from(maintenanceLogs)
     .where(
       and(
@@ -589,7 +708,12 @@ export async function getServiceStats(companyId: string) {
     .from(maintenanceLogs)
     .leftJoin(assets, eq(maintenanceLogs.assetId, assets.id))
     .where(eq(maintenanceLogs.companyId, companyId))
-    .groupBy(maintenanceLogs.assetId, assets.internalCode, assets.brand, assets.model)
+    .groupBy(
+      maintenanceLogs.assetId,
+      assets.internalCode,
+      assets.brand,
+      assets.model,
+    )
     .orderBy(sql`totalCost desc`)
     .limit(10);
 

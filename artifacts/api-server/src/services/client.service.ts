@@ -20,13 +20,23 @@ export async function getClient(id: string, companyId: string) {
   return client;
 }
 
-export async function updateClient(id: string, companyId: string, data: Partial<InsertClient>) {
+export async function updateClient(
+  id: string,
+  companyId: string,
+  data: Partial<InsertClient>,
+) {
   delete (data as Record<string, unknown>).archivedAt;
 
   const [client] = await db
     .update(clients)
     .set({ ...data, updatedAt: new Date() })
-    .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.archivedAt)))
+    .where(
+      and(
+        eq(clients.id, id),
+        eq(clients.companyId, companyId),
+        isNull(clients.archivedAt),
+      ),
+    )
     .returning();
 
   if (!client) {
@@ -39,7 +49,13 @@ export async function archiveClient(id: string, companyId: string) {
   const [client] = await db
     .update(clients)
     .set({ archivedAt: new Date(), updatedAt: new Date(), status: "archived" })
-    .where(and(eq(clients.id, id), eq(clients.companyId, companyId), isNull(clients.archivedAt)))
+    .where(
+      and(
+        eq(clients.id, id),
+        eq(clients.companyId, companyId),
+        isNull(clients.archivedAt),
+      ),
+    )
     .returning();
 
   if (!client) {
@@ -56,7 +72,8 @@ export async function restoreClient(id: string, companyId: string) {
     .limit(1);
 
   if (!current) throw new NotFoundError("Client not found");
-  if (!current.archivedAt) throw new AppError(422, "Client is not archived", "NOT_ARCHIVED");
+  if (!current.archivedAt)
+    throw new AppError(422, "Client is not archived", "NOT_ARCHIVED");
 
   const [client] = await db
     .update(clients)
@@ -68,8 +85,5 @@ export async function restoreClient(id: string, companyId: string) {
 }
 
 export async function listClients(companyId: string) {
-  return db
-    .select()
-    .from(clients)
-    .where(eq(clients.companyId, companyId));
+  return db.select().from(clients).where(eq(clients.companyId, companyId));
 }

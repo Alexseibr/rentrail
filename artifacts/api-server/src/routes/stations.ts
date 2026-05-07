@@ -2,13 +2,21 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as stationService from "../services/station.service";
 import { createAuditLog } from "../lib/audit";
 
 const router: IRouter = Router();
 
-const stationTypes = ["hub", "pickup_point", "service_center", "warehouse"] as const;
+const stationTypes = [
+  "hub",
+  "pickup_point",
+  "service_center",
+  "warehouse",
+] as const;
 
 const createStationSchema = z.object({
   branchId: z.string().uuid(),
@@ -53,7 +61,10 @@ router.get(
   requirePermission("station:read"),
   async (req, res) => {
     const branchId = req.query.branchId as string | undefined;
-    const stations = await stationService.listStations(req.tenant!.companyId, branchId);
+    const stations = await stationService.listStations(
+      req.tenant!.companyId,
+      branchId,
+    );
     res.json({ data: stations });
   },
 );
@@ -65,7 +76,10 @@ router.get(
   requirePermission("station:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const station = await stationService.getStation(req.params.id as string, req.tenant!.companyId);
+    const station = await stationService.getStation(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: station });
   },
 );
@@ -77,8 +91,15 @@ router.patch(
   requirePermission("station:update"),
   validate({ params: idParams, body: updateStationSchema }),
   async (req, res) => {
-    const old = await stationService.getStation(req.params.id as string, req.tenant!.companyId);
-    const station = await stationService.updateStation(req.params.id as string, req.tenant!.companyId, req.body);
+    const old = await stationService.getStation(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
+    const station = await stationService.updateStation(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.body,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

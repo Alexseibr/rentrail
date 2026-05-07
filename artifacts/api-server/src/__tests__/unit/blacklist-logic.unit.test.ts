@@ -29,7 +29,12 @@ function resolveBlacklistEntries(
 }
 
 function getStrongestAction(entries: BlacklistEntry[]): string | null {
-  const priority = ["blocked_global", "blocked_company", "blocked_branch", "warning"];
+  const priority = [
+    "blocked_global",
+    "blocked_company",
+    "blocked_branch",
+    "warning",
+  ];
   for (const action of priority) {
     if (entries.some((e) => e.action === action)) return action;
   }
@@ -46,7 +51,15 @@ describe("Blacklist Resolution Logic", () => {
   describe("scope filtering", () => {
     it("global scope matches any company/branch", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "global", companyId: null, branchId: null, startsAt: new Date("2025-01-01"), endsAt: null, action: "blocked_global", reason: "fraud" },
+        {
+          scopeType: "global",
+          companyId: null,
+          branchId: null,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "blocked_global",
+          reason: "fraud",
+        },
       ];
       const result = resolveBlacklistEntries(entries, COMPANY_A, BRANCH_X, NOW);
       expect(result).toHaveLength(1);
@@ -54,64 +67,160 @@ describe("Blacklist Resolution Logic", () => {
 
     it("company scope matches only matching company", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "company", companyId: COMPANY_A, branchId: null, startsAt: new Date("2025-01-01"), endsAt: null, action: "blocked_company", reason: "overdue" },
+        {
+          scopeType: "company",
+          companyId: COMPANY_A,
+          branchId: null,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "blocked_company",
+          reason: "overdue",
+        },
       ];
-      expect(resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW)).toHaveLength(1);
-      expect(resolveBlacklistEntries(entries, COMPANY_B, undefined, NOW)).toHaveLength(0);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW),
+      ).toHaveLength(1);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_B, undefined, NOW),
+      ).toHaveLength(0);
     });
 
     it("branch scope matches only matching branch", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "branch", companyId: COMPANY_A, branchId: BRANCH_X, startsAt: new Date("2025-01-01"), endsAt: null, action: "blocked_branch", reason: "damage" },
+        {
+          scopeType: "branch",
+          companyId: COMPANY_A,
+          branchId: BRANCH_X,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "blocked_branch",
+          reason: "damage",
+        },
       ];
-      expect(resolveBlacklistEntries(entries, COMPANY_A, BRANCH_X, NOW)).toHaveLength(1);
-      expect(resolveBlacklistEntries(entries, COMPANY_A, BRANCH_Y, NOW)).toHaveLength(0);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_A, BRANCH_X, NOW),
+      ).toHaveLength(1);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_A, BRANCH_Y, NOW),
+      ).toHaveLength(0);
     });
 
     it("branch scope does not match when branchId is undefined", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "branch", companyId: COMPANY_A, branchId: BRANCH_X, startsAt: new Date("2025-01-01"), endsAt: null, action: "blocked_branch", reason: "damage" },
+        {
+          scopeType: "branch",
+          companyId: COMPANY_A,
+          branchId: BRANCH_X,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "blocked_branch",
+          reason: "damage",
+        },
       ];
-      expect(resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW)).toHaveLength(0);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW),
+      ).toHaveLength(0);
     });
   });
 
   describe("temporal filtering", () => {
     it("excludes entries not yet started", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "global", companyId: null, branchId: null, startsAt: new Date("2026-01-01"), endsAt: null, action: "blocked_global", reason: "future" },
+        {
+          scopeType: "global",
+          companyId: null,
+          branchId: null,
+          startsAt: new Date("2026-01-01"),
+          endsAt: null,
+          action: "blocked_global",
+          reason: "future",
+        },
       ];
-      expect(resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW)).toHaveLength(0);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW),
+      ).toHaveLength(0);
     });
 
     it("excludes expired entries", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "global", companyId: null, branchId: null, startsAt: new Date("2025-01-01"), endsAt: new Date("2025-06-01"), action: "blocked_global", reason: "expired" },
+        {
+          scopeType: "global",
+          companyId: null,
+          branchId: null,
+          startsAt: new Date("2025-01-01"),
+          endsAt: new Date("2025-06-01"),
+          action: "blocked_global",
+          reason: "expired",
+        },
       ];
-      expect(resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW)).toHaveLength(0);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW),
+      ).toHaveLength(0);
     });
 
     it("includes entries with no expiration", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "global", companyId: null, branchId: null, startsAt: new Date("2025-01-01"), endsAt: null, action: "blocked_global", reason: "permanent" },
+        {
+          scopeType: "global",
+          companyId: null,
+          branchId: null,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "blocked_global",
+          reason: "permanent",
+        },
       ];
-      expect(resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW)).toHaveLength(1);
+      expect(
+        resolveBlacklistEntries(entries, COMPANY_A, undefined, NOW),
+      ).toHaveLength(1);
     });
   });
 
   describe("strongest action resolution", () => {
     it("returns blocked_global as strongest", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "global", companyId: null, branchId: null, startsAt: new Date("2025-01-01"), endsAt: null, action: "blocked_global", reason: "a" },
-        { scopeType: "company", companyId: COMPANY_A, branchId: null, startsAt: new Date("2025-01-01"), endsAt: null, action: "blocked_company", reason: "b" },
-        { scopeType: "branch", companyId: COMPANY_A, branchId: BRANCH_X, startsAt: new Date("2025-01-01"), endsAt: null, action: "warning", reason: "c" },
+        {
+          scopeType: "global",
+          companyId: null,
+          branchId: null,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "blocked_global",
+          reason: "a",
+        },
+        {
+          scopeType: "company",
+          companyId: COMPANY_A,
+          branchId: null,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "blocked_company",
+          reason: "b",
+        },
+        {
+          scopeType: "branch",
+          companyId: COMPANY_A,
+          branchId: BRANCH_X,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "warning",
+          reason: "c",
+        },
       ];
       expect(getStrongestAction(entries)).toBe("blocked_global");
     });
 
     it("returns warning when only warnings exist", () => {
       const entries: BlacklistEntry[] = [
-        { scopeType: "branch", companyId: COMPANY_A, branchId: BRANCH_X, startsAt: new Date("2025-01-01"), endsAt: null, action: "warning", reason: "minor" },
+        {
+          scopeType: "branch",
+          companyId: COMPANY_A,
+          branchId: BRANCH_X,
+          startsAt: new Date("2025-01-01"),
+          endsAt: null,
+          action: "warning",
+          reason: "minor",
+        },
       ];
       expect(getStrongestAction(entries)).toBe("warning");
     });

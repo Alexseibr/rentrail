@@ -35,14 +35,25 @@ export default function ClientTabLayout() {
           backgroundColor: isIOS ? "transparent" : colors.dark,
           borderTopWidth: 0,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : { height: Platform.OS === "android" ? 64 : 88 }),
+          ...(isWeb
+            ? { height: 84 }
+            : { height: Platform.OS === "android" ? 64 : 88 }),
           paddingBottom: Platform.OS === "android" ? 8 : undefined,
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView
+              intensity={100}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
           ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.dark }]} />
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: colors.dark },
+              ]}
+            />
           ) : null,
         tabBarItemStyle: { paddingTop: 6 },
         tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 11 },

@@ -32,7 +32,11 @@ export default function OperationsScreen() {
     }
     Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
       { text: t("common.cancel"), style: "cancel" },
-      { text: t("settings.signOut"), style: "destructive", onPress: () => logout() },
+      {
+        text: t("settings.signOut"),
+        style: "destructive",
+        onPress: () => logout(),
+      },
     ]);
   };
 
@@ -50,20 +54,61 @@ export default function OperationsScreen() {
     {
       title: t("operations.fieldActions"),
       items: [
-        { label: t("operations.scanAsset"), icon: "maximize", route: "/scanner" },
-        { label: t("operations.reportIncident"), icon: "alert-circle", route: "/create-incident" },
-        { label: t("operations.newMaintenance"), icon: "tool", route: "/create-maintenance" },
-        { label: t("operations.notifications"), icon: "bell", route: "/notifications" },
+        {
+          label: t("operations.scanAsset"),
+          icon: "maximize",
+          route: "/scanner",
+        },
+        {
+          label: t("operations.reportIncident"),
+          icon: "alert-circle",
+          route: "/create-incident",
+        },
+        {
+          label: t("operations.newMaintenance"),
+          icon: "tool",
+          route: "/create-maintenance",
+        },
+        {
+          label: t("operations.notifications"),
+          icon: "bell",
+          route: "/notifications",
+        },
       ],
     },
     {
       title: t("serviceModule.serviceSection"),
       items: [
-        { label: t("serviceModule.workOrders"), icon: "clipboard", route: "/service/work-orders", color: "#3b82f6" },
-        { label: t("incidents.listTitle"), icon: "alert-circle", route: "/incidents", color: "#ef4444" },
-        { label: t("serviceModule.spareParts"), icon: "package", route: "/service/spare-parts", color: "#f59e0b" },
-        { label: t("maintenance.listTitle"), icon: "tool", route: "/maintenance", color: "#8b5cf6" },
-        { label: t("serviceModule.schedules"), icon: "calendar", route: "/service/schedules", color: "#22c55e" },
+        {
+          label: t("serviceModule.workOrders"),
+          icon: "clipboard",
+          route: "/service/work-orders",
+          color: "#3b82f6",
+        },
+        {
+          label: t("incidents.listTitle"),
+          icon: "alert-circle",
+          route: "/incidents",
+          color: "#ef4444",
+        },
+        {
+          label: t("serviceModule.spareParts"),
+          icon: "package",
+          route: "/service/spare-parts",
+          color: "#f59e0b",
+        },
+        {
+          label: t("maintenance.listTitle"),
+          icon: "tool",
+          route: "/maintenance",
+          color: "#8b5cf6",
+        },
+        {
+          label: t("serviceModule.schedules"),
+          icon: "calendar",
+          route: "/service/schedules",
+          color: "#22c55e",
+        },
       ],
     },
     {
@@ -85,33 +130,64 @@ export default function OperationsScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         {sections.map((section) => (
           <View key={section.title} style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {section.title}
             </Text>
-            <View style={[styles.sectionCard, { backgroundColor: colors.card }]}>
+            <View
+              style={[styles.sectionCard, { backgroundColor: colors.card }]}
+            >
               {section.items.map((item, idx) => (
                 <TouchableOpacity
                   key={item.label}
                   style={[
                     styles.row,
-                    idx < section.items.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    idx < section.items.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(item.route as Parameters<typeof router.push>[0]);
+                    router.push(
+                      item.route as Parameters<typeof router.push>[0],
+                    );
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.rowIconWrap, { backgroundColor: (item.color ?? colors.primary) + "18" }]}>
-                    <Feather name={item.icon} size={18} color={item.color ?? colors.primary} />
+                  <View
+                    style={[
+                      styles.rowIconWrap,
+                      {
+                        backgroundColor: (item.color ?? colors.primary) + "18",
+                      },
+                    ]}
+                  >
+                    <Feather
+                      name={item.icon}
+                      size={18}
+                      color={item.color ?? colors.primary}
+                    />
                   </View>
-                  <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
+                  <Text style={[styles.rowLabel, { color: colors.foreground }]}>
+                    {item.label}
+                  </Text>
                   {item.badge ? (
-                    <View style={[styles.badge, { backgroundColor: colors.warning }]}>
+                    <View
+                      style={[
+                        styles.badge,
+                        { backgroundColor: colors.warning },
+                      ]}
+                    >
                       <Text style={styles.badgeText}>{item.badge}</Text>
                     </View>
                   ) : null}
-                  <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+                  <Feather
+                    name="chevron-right"
+                    size={18}
+                    color={colors.mutedForeground}
+                  />
                 </TouchableOpacity>
               ))}
             </View>
@@ -119,12 +195,16 @@ export default function OperationsScreen() {
         ))}
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+          <Text
+            style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+          >
             {t("settings.account")}
           </Text>
           {user && (
             <Text style={[styles.userInfo, { color: colors.mutedForeground }]}>
-              {user.firstName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : user.phone}
+              {user.firstName
+                ? `${user.firstName} ${user.lastName ?? ""}`.trim()
+                : user.phone}
             </Text>
           )}
           <TouchableOpacity

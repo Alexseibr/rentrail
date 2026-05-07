@@ -112,7 +112,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      const deactivated = res.body.data.find((p: { id: string }) => p.id === createdPlanId);
+      const deactivated = res.body.data.find(
+        (p: { id: string }) => p.id === createdPlanId,
+      );
       expect(deactivated).toBeDefined();
       expect(deactivated.isActive).toBe(false);
     });
@@ -191,10 +193,16 @@ describe("Platform Billing", () => {
       const planRes = await request(testApp)
         .post("/api/platform/billing/plans")
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ name: "Sub Lifecycle", code: `sub-lc-${Date.now()}`, price: 7900 });
+        .send({
+          name: "Sub Lifecycle",
+          code: `sub-lc-${Date.now()}`,
+          price: 7900,
+        });
       subPlanId = planRes.body.data.id;
 
-      const tenant = await createTestTenant({ companyName: "Sub Lifecycle Co" });
+      const tenant = await createTestTenant({
+        companyName: "Sub Lifecycle Co",
+      });
       const setRes = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
@@ -320,7 +328,9 @@ describe("Platform Billing", () => {
           companyId: tenantA.company.id,
           amount: 9900,
           currency: "USD",
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          dueDate: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
           notes: "Monthly subscription",
         });
 
@@ -421,7 +431,9 @@ describe("Platform Billing", () => {
 
       expect(res.status).toBe(200);
       for (const item of res.body.data.items) {
-        expect(new Date(item.createdAt).getTime()).toBeGreaterThanOrEqual(new Date(from).getTime());
+        expect(new Date(item.createdAt).getTime()).toBeGreaterThanOrEqual(
+          new Date(from).getTime(),
+        );
       }
     });
 
@@ -433,7 +445,9 @@ describe("Platform Billing", () => {
 
       expect(res.status).toBe(200);
       for (const item of res.body.data.items) {
-        expect(new Date(item.createdAt).getTime()).toBeLessThanOrEqual(new Date(to).getTime());
+        expect(new Date(item.createdAt).getTime()).toBeLessThanOrEqual(
+          new Date(to).getTime(),
+        );
       }
     });
 
@@ -441,7 +455,9 @@ describe("Platform Billing", () => {
       const from = new Date(Date.now() - 60000).toISOString();
       const to = new Date(Date.now() + 60000).toISOString();
       const res = await request(testApp)
-        .get(`/api/platform/billing/invoices?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
+        .get(
+          `/api/platform/billing/invoices?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+        )
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
@@ -465,7 +481,9 @@ describe("Platform Billing", () => {
     it("combines date range with status and company filters", async () => {
       const from = new Date(Date.now() - 60000).toISOString();
       const res = await request(testApp)
-        .get(`/api/platform/billing/invoices?companyId=${tenantA.company.id}&from=${encodeURIComponent(from)}`)
+        .get(
+          `/api/platform/billing/invoices?companyId=${tenantA.company.id}&from=${encodeURIComponent(from)}`,
+        )
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
@@ -502,7 +520,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       await request(testApp)
-        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/mark-paid`)
+        .post(
+          `/api/platform/billing/invoices/${createRes.body.data.id}/mark-paid`,
+        )
         .set("Authorization", `Bearer ${platformFinance.token}`)
         .send({ amount: 3000, method: "wire" });
 
@@ -542,7 +562,11 @@ describe("Platform Billing", () => {
       const planRes = await request(testApp)
         .post("/api/platform/billing/plans")
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ name: "Audit Sub Plan", code: `audit-sub-${Date.now()}`, price: 1000 });
+        .send({
+          name: "Audit Sub Plan",
+          code: `audit-sub-${Date.now()}`,
+          price: 1000,
+        });
 
       const tenant = await createTestTenant({ companyName: "Audit Sub Co" });
       const setRes = await request(testApp)
@@ -551,7 +575,9 @@ describe("Platform Billing", () => {
         .send({ planId: planRes.body.data.id });
 
       await request(testApp)
-        .post(`/api/platform/billing/subscriptions/${setRes.body.data.id}/activate`)
+        .post(
+          `/api/platform/billing/subscriptions/${setRes.body.data.id}/activate`,
+        )
         .set("Authorization", `Bearer ${platformFinance.token}`)
         .send({ reason: "Trial completed" });
 
@@ -610,14 +636,20 @@ describe("Platform Billing", () => {
       const planRes = await request(testApp)
         .post("/api/platform/billing/plans")
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ name: "Soon Inactive", code: `inactive-${Date.now()}`, price: 100 });
+        .send({
+          name: "Soon Inactive",
+          code: `inactive-${Date.now()}`,
+          price: 100,
+        });
 
       await request(testApp)
         .patch(`/api/platform/billing/plans/${planRes.body.data.id}`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
         .send({ isActive: false });
 
-      const tenant = await createTestTenant({ companyName: "Inactive Plan Co" });
+      const tenant = await createTestTenant({
+        companyName: "Inactive Plan Co",
+      });
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
@@ -640,7 +672,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       const res = await request(testApp)
-        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/mark-paid`)
+        .post(
+          `/api/platform/billing/invoices/${createRes.body.data.id}/mark-paid`,
+        )
         .set("Authorization", `Bearer ${platformFinance.token}`)
         .send({ amount: 3000, method: "card" });
 
@@ -675,8 +709,7 @@ describe("Platform Billing", () => {
     });
 
     it("unauthenticated request is rejected", async () => {
-      const res = await request(testApp)
-        .get("/api/platform/billing/plans");
+      const res = await request(testApp).get("/api/platform/billing/plans");
 
       expect(res.status).toBe(401);
     });

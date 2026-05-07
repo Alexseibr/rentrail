@@ -5,7 +5,12 @@ import { isQueueable } from "./offline-policy";
 
 const QUEUE_KEY = "sync_mutation_queue";
 
-export type QueueItemStatus = "queued" | "syncing" | "failed" | "completed" | "canceled";
+export type QueueItemStatus =
+  | "queued"
+  | "syncing"
+  | "failed"
+  | "completed"
+  | "canceled";
 
 export interface QueueItem {
   id: string;
@@ -83,14 +88,19 @@ export async function getQueueItems(): Promise<QueueItem[]> {
 
 export async function getPendingCount(): Promise<number> {
   const items = await loadQueue();
-  return items.filter((i) => i.status === "queued" || i.status === "failed").length;
+  return items.filter((i) => i.status === "queued" || i.status === "failed")
+    .length;
 }
 
 export async function cancelItem(id: string) {
   const queue = await loadQueue();
   const updated = queue.map((item) =>
     item.id === id && (item.status === "queued" || item.status === "failed")
-      ? { ...item, status: "canceled" as const, completedAt: new Date().toISOString() }
+      ? {
+          ...item,
+          status: "canceled" as const,
+          completedAt: new Date().toISOString(),
+        }
       : item,
   );
   await saveQueue(updated);
@@ -100,7 +110,12 @@ export async function retryItem(id: string) {
   const queue = await loadQueue();
   const updated = queue.map((item) =>
     item.id === id && item.status === "failed"
-      ? { ...item, status: "queued" as const, retryCount: 0, lastError: undefined }
+      ? {
+          ...item,
+          status: "queued" as const,
+          retryCount: 0,
+          lastError: undefined,
+        }
       : item,
   );
   await saveQueue(updated);
@@ -112,7 +127,12 @@ export async function retryAllFailed(): Promise<number> {
   const updated = queue.map((item) => {
     if (item.status !== "failed") return item;
     count++;
-    return { ...item, status: "queued" as const, retryCount: 0, lastError: undefined };
+    return {
+      ...item,
+      status: "queued" as const,
+      retryCount: 0,
+      lastError: undefined,
+    };
   });
   if (count > 0) {
     await saveQueue(updated);
@@ -122,7 +142,9 @@ export async function retryAllFailed(): Promise<number> {
 
 export async function clearCompleted() {
   const queue = await loadQueue();
-  const active = queue.filter((i) => i.status !== "completed" && i.status !== "canceled");
+  const active = queue.filter(
+    (i) => i.status !== "completed" && i.status !== "canceled",
+  );
   await saveQueue(active);
 }
 
@@ -132,7 +154,9 @@ export async function clearCompletedOlderThan(ageMs: number) {
   const remaining = queue.filter((item) => {
     if (item.status !== "completed" && item.status !== "canceled") return true;
     if (item.snoozed) return true;
-    const completedAt = item.completedAt ? new Date(item.completedAt).getTime() : 0;
+    const completedAt = item.completedAt
+      ? new Date(item.completedAt).getTime()
+      : 0;
     return now - completedAt < ageMs;
   });
   if (remaining.length !== queue.length) {
@@ -175,7 +199,10 @@ export async function setItemSnoozed(id: string, snoozed: boolean) {
 
 let _syncing = false;
 
-export async function processQueue(): Promise<{ processed: number; failed: number }> {
+export async function processQueue(): Promise<{
+  processed: number;
+  failed: number;
+}> {
   if (_syncing) return { processed: 0, failed: 0 };
 
   const network = getNetworkState();
@@ -190,7 +217,9 @@ export async function processQueue(): Promise<{ processed: number; failed: numbe
     if (!token) return { processed: 0, failed: 0 };
 
     const queue = await loadQueue();
-    const pending = queue.filter((i) => i.status === "queued" || i.status === "failed");
+    const pending = queue.filter(
+      (i) => i.status === "queued" || i.status === "failed",
+    );
 
     for (const item of pending) {
       if (item.retryCount >= 5) {

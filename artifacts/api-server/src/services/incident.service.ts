@@ -4,7 +4,11 @@ import { sql } from "drizzle-orm";
 
 type IncidentStatus = typeof incidents.$inferSelect.status;
 
-export async function listIncidents(companyId: string, branchId?: string, status?: string) {
+export async function listIncidents(
+  companyId: string,
+  branchId?: string,
+  status?: string,
+) {
   const conditions = [eq(incidents.companyId, companyId)];
   if (branchId) conditions.push(eq(incidents.branchId, branchId));
   if (status) conditions.push(eq(incidents.status, status as IncidentStatus));
@@ -59,10 +63,16 @@ export async function createIncident(data: {
   return row;
 }
 
-export async function updateIncident(id: string, companyId: string, data: Record<string, unknown>) {
+export async function updateIncident(
+  id: string,
+  companyId: string,
+  data: Record<string, unknown>,
+) {
   const [row] = await db
     .update(incidents)
-    .set({ ...data, updatedAt: new Date() } as Partial<typeof incidents.$inferInsert> & { updatedAt: Date })
+    .set({ ...data, updatedAt: new Date() } as Partial<
+      typeof incidents.$inferInsert
+    > & { updatedAt: Date })
     .where(and(eq(incidents.id, id), eq(incidents.companyId, companyId)))
     .returning();
   return row;

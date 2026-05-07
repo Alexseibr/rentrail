@@ -1,4 +1,9 @@
-import { db, companies, userCompanyMemberships, type InsertCompany } from "@workspace/db";
+import {
+  db,
+  companies,
+  userCompanyMemberships,
+  type InsertCompany,
+} from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { NotFoundError, ConflictError } from "../lib/errors";
 
@@ -60,7 +65,10 @@ export async function listUserCompanies(userId: string) {
   return result.filter((c) => companyIds.includes(c.id));
 }
 
-export async function userHasCompanyAccess(userId: string, companyId: string): Promise<boolean> {
+export async function userHasCompanyAccess(
+  userId: string,
+  companyId: string,
+): Promise<boolean> {
   const [membership] = await db
     .select({ id: userCompanyMemberships.id })
     .from(userCompanyMemberships)

@@ -36,11 +36,18 @@ import { useLocation } from "wouter";
 
 interface PaginatedResponse<T> {
   items: T[];
-  pagination: { page: number; limit: number; total: number; totalPages: number };
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 function formatCurrency(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount / 100);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(
+    amount / 100,
+  );
 }
 
 const subStatusColors: Record<string, string> = {
@@ -72,12 +79,16 @@ function PlansTab() {
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ["billing", "plans"],
-    queryFn: () => api<Array<Record<string, unknown>>>("/platform/billing/plans"),
+    queryFn: () =>
+      api<Array<Record<string, unknown>>>("/platform/billing/plans"),
   });
 
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api("/platform/billing/plans", { method: "POST", body: JSON.stringify(body) }),
+      api("/platform/billing/plans", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["billing", "plans"] });
       setShowCreate(false);
@@ -86,7 +97,10 @@ function PlansTab() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api(`/platform/billing/plans/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+      api(`/platform/billing/plans/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["billing", "plans"] });
       setEditPlanId(null);
@@ -130,19 +144,40 @@ function PlansTab() {
             <TableBody>
               {(plans || []).map((plan) => (
                 <TableRow key={plan.id as string}>
-                  <TableCell className="font-medium">{plan.name as string}</TableCell>
-                  <TableCell className="text-muted-foreground">{plan.code as string}</TableCell>
+                  <TableCell className="font-medium">
+                    {plan.name as string}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {plan.code as string}
+                  </TableCell>
                   <TableCell>
-                    {formatCurrency(plan.price as number, plan.currency as string)}
+                    {formatCurrency(
+                      plan.price as number,
+                      plan.currency as string,
+                    )}
                   </TableCell>
                   <TableCell>{plan.billingInterval as string}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className={plan.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                      {plan.isActive ? t("common.active") : t("common.inactive")}
+                    <Badge
+                      variant="secondary"
+                      className={
+                        plan.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
+                      }
+                    >
+                      {plan.isActive
+                        ? t("common.active")
+                        : t("common.inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => openEdit(plan)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => openEdit(plan)}
+                    >
                       <Pencil className="h-3 w-3 mr-1" />
                       {t("common.edit")}
                     </Button>
@@ -151,7 +186,10 @@ function PlansTab() {
               ))}
               {plans?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     {t("billing.noPlans")}
                   </TableCell>
                 </TableRow>
@@ -206,25 +244,39 @@ function PlansTab() {
                 <Label>{t("billing.billingInterval")}</Label>
                 <Select
                   value={form.billingInterval}
-                  onValueChange={(v) => setForm({ ...form, billingInterval: v })}
+                  onValueChange={(v) =>
+                    setForm({ ...form, billingInterval: v })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">{t("billing.monthly")}</SelectItem>
-                    <SelectItem value="quarterly">{t("billing.quarterly")}</SelectItem>
-                    <SelectItem value="yearly">{t("billing.yearly")}</SelectItem>
+                    <SelectItem value="monthly">
+                      {t("billing.monthly")}
+                    </SelectItem>
+                    <SelectItem value="quarterly">
+                      {t("billing.quarterly")}
+                    </SelectItem>
+                    <SelectItem value="yearly">
+                      {t("billing.yearly")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreate(false)}
+              >
                 {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? t("common.creating") : t("common.create")}
+                {createMutation.isPending
+                  ? t("common.creating")
+                  : t("common.create")}
               </Button>
             </DialogFooter>
           </form>
@@ -274,25 +326,39 @@ function PlansTab() {
                 <Label>{t("billing.billingInterval")}</Label>
                 <Select
                   value={form.billingInterval}
-                  onValueChange={(v) => setForm({ ...form, billingInterval: v })}
+                  onValueChange={(v) =>
+                    setForm({ ...form, billingInterval: v })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">{t("billing.monthly")}</SelectItem>
-                    <SelectItem value="quarterly">{t("billing.quarterly")}</SelectItem>
-                    <SelectItem value="yearly">{t("billing.yearly")}</SelectItem>
+                    <SelectItem value="monthly">
+                      {t("billing.monthly")}
+                    </SelectItem>
+                    <SelectItem value="quarterly">
+                      {t("billing.quarterly")}
+                    </SelectItem>
+                    <SelectItem value="yearly">
+                      {t("billing.yearly")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditPlanId(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditPlanId(null)}
+              >
                 {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? t("common.saving") : t("billing.saveChanges")}
+                {updateMutation.isPending
+                  ? t("common.saving")
+                  : t("billing.saveChanges")}
               </Button>
             </DialogFooter>
           </form>
@@ -312,7 +378,10 @@ function SubscriptionsTab() {
   const { data, isLoading } = useQuery({
     queryKey: ["billing", "subscriptions", statusFilter, page],
     queryFn: () => {
-      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
       if (statusFilter !== "all") params.set("status", statusFilter);
       return api<PaginatedResponse<Record<string, unknown>>>(
         `/platform/billing/subscriptions?${params}`,
@@ -367,7 +436,9 @@ function SubscriptionsTab() {
                   <TableCell className="font-medium">
                     {(sub.companyName as string) || (sub.companyId as string)}
                   </TableCell>
-                  <TableCell>{(sub.planName as string) || (sub.planId as string)}</TableCell>
+                  <TableCell>
+                    {(sub.planName as string) || (sub.planId as string)}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="secondary"
@@ -378,14 +449,19 @@ function SubscriptionsTab() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {sub.currentPeriodEnd
-                      ? new Date(sub.currentPeriodEnd as string).toLocaleDateString()
+                      ? new Date(
+                          sub.currentPeriodEnd as string,
+                        ).toLocaleDateString()
                       : "-"}
                   </TableCell>
                 </TableRow>
               ))}
               {data?.items.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={4}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     {t("billing.noSubscriptions")}
                   </TableCell>
                 </TableRow>
@@ -394,7 +470,9 @@ function SubscriptionsTab() {
           </Table>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} {t("common.total")}</p>
+              <p className="text-sm text-muted-foreground">
+                {data?.pagination?.total ?? 0} {t("common.total")}
+              </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -435,7 +513,10 @@ function InvoicesTab() {
   const { data, isLoading } = useQuery({
     queryKey: ["billing", "invoices", statusFilter, page],
     queryFn: () => {
-      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
       if (statusFilter !== "all") params.set("status", statusFilter);
       return api<PaginatedResponse<Record<string, unknown>>>(
         `/platform/billing/invoices?${params}`,
@@ -449,13 +530,15 @@ function InvoicesTab() {
         method: "POST",
         body: JSON.stringify({ amount, method: "manual" }),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] }),
   });
 
   const voidMutation = useMutation({
     mutationFn: (id: string) =>
       api(`/platform/billing/invoices/${id}/void`, { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["billing", "invoices"] }),
   });
 
   const totalPages = data?.pagination?.totalPages ?? 0;
@@ -507,7 +590,10 @@ function InvoicesTab() {
                     {(inv.companyName as string) || (inv.companyId as string)}
                   </TableCell>
                   <TableCell>
-                    {formatCurrency(inv.amount as number, inv.currency as string)}
+                    {formatCurrency(
+                      inv.amount as number,
+                      inv.currency as string,
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -543,7 +629,9 @@ function InvoicesTab() {
                             size="sm"
                             variant="ghost"
                             className="text-destructive"
-                            onClick={() => voidMutation.mutate(inv.id as string)}
+                            onClick={() =>
+                              voidMutation.mutate(inv.id as string)
+                            }
                             disabled={voidMutation.isPending}
                           >
                             {t("billing.void")}
@@ -567,7 +655,10 @@ function InvoicesTab() {
               ))}
               {data?.items.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     {t("billing.noInvoices")}
                   </TableCell>
                 </TableRow>
@@ -576,7 +667,9 @@ function InvoicesTab() {
           </Table>
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <p className="text-sm text-muted-foreground">{data?.pagination?.total ?? 0} {t("common.total")}</p>
+              <p className="text-sm text-muted-foreground">
+                {data?.pagination?.total ?? 0} {t("common.total")}
+              </p>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -616,7 +709,10 @@ function PaymentsTab() {
   const { data, isLoading } = useQuery({
     queryKey: ["billing", "payments", companyFilter, invoiceFilter, page],
     queryFn: () => {
-      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
       if (companyFilter) params.set("companyId", companyFilter);
       if (invoiceFilter) params.set("invoiceId", invoiceFilter);
       return api<PaginatedResponse<Record<string, unknown>>>(
@@ -637,13 +733,19 @@ function PaymentsTab() {
         <Input
           placeholder={t("billing.filterByCompanyId")}
           value={companyFilter}
-          onChange={(e) => { setCompanyFilter(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setCompanyFilter(e.target.value);
+            setPage(1);
+          }}
           className="max-w-xs"
         />
         <Input
           placeholder={t("billing.filterByInvoiceId")}
           value={invoiceFilter}
-          onChange={(e) => { setInvoiceFilter(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setInvoiceFilter(e.target.value);
+            setPage(1);
+          }}
           className="max-w-xs"
         />
       </div>
@@ -659,61 +761,75 @@ function PaymentsTab() {
                 <TableHead>{t("billing.date")}</TableHead>
               </TableRow>
             </TableHeader>
-          <TableBody>
-            {items.map((payment) => (
-              <TableRow key={payment.id as string}>
-                <TableCell className="font-medium">
-                  {(payment.companyName as string) || (payment.companyId as string) || "-"}
-                </TableCell>
-                <TableCell>
-                  {formatCurrency(payment.amount as number, payment.currency as string)}
-                </TableCell>
-                <TableCell className="capitalize">{(payment.method as string) || "-"}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {(payment.reference as string) || "-"}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {payment.createdAt
-                    ? new Date(payment.createdAt as string).toLocaleDateString()
-                    : "-"}
-                </TableCell>
-              </TableRow>
-            ))}
-            {items.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  {t("billing.noPayments")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <p className="text-sm text-muted-foreground">{total} {t("common.total")}</p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm">
-                {t("common.page", { page, totalPages })}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+            <TableBody>
+              {items.map((payment) => (
+                <TableRow key={payment.id as string}>
+                  <TableCell className="font-medium">
+                    {(payment.companyName as string) ||
+                      (payment.companyId as string) ||
+                      "-"}
+                  </TableCell>
+                  <TableCell>
+                    {formatCurrency(
+                      payment.amount as number,
+                      payment.currency as string,
+                    )}
+                  </TableCell>
+                  <TableCell className="capitalize">
+                    {(payment.method as string) || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {(payment.reference as string) || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {payment.createdAt
+                      ? new Date(
+                          payment.createdAt as string,
+                        ).toLocaleDateString()
+                      : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {items.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    {t("billing.noPayments")}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <p className="text-sm text-muted-foreground">
+                {total} {t("common.total")}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm">
+                  {t("common.page", { page, totalPages })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
         </CardContent>
       </Card>
     </>
@@ -726,14 +842,18 @@ export default function BillingPage() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{t("billing.title")}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("billing.title")}
+        </h1>
         <p className="text-muted-foreground">{t("billing.title")}</p>
       </div>
 
       <Tabs defaultValue="plans">
         <TabsList>
           <TabsTrigger value="plans">{t("billing.plans")}</TabsTrigger>
-          <TabsTrigger value="subscriptions">{t("billing.subscriptions")}</TabsTrigger>
+          <TabsTrigger value="subscriptions">
+            {t("billing.subscriptions")}
+          </TabsTrigger>
           <TabsTrigger value="invoices">{t("billing.invoices")}</TabsTrigger>
           <TabsTrigger value="payments">{t("billing.payments")}</TabsTrigger>
         </TabsList>

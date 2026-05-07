@@ -34,54 +34,63 @@ export default function ScannerScreen() {
   const [resolving, setResolving] = useState(false);
   const [manualCode, setManualCode] = useState("");
 
-  const resolveCode = useCallback(async (code: string) => {
-    if (!isConnected) {
-      Alert.alert(t("scanner.offline"), t("scanner.offlineMessage"));
-      return;
-    }
-
-    setResolving(true);
-    try {
-      const token = await getAccessToken();
-      const companyId = await getCompanyId();
-      if (!token || !companyId) {
-        Alert.alert(t("common.error"), t("scanner.notAuthenticated"));
+  const resolveCode = useCallback(
+    async (code: string) => {
+      if (!isConnected) {
+        Alert.alert(t("scanner.offline"), t("scanner.offlineMessage"));
         return;
       }
 
-      const res = await fetch(`${BASE_URL}/api/scan/resolve`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "x-company-id": companyId,
-        },
-        body: JSON.stringify({ code }),
-      });
+      setResolving(true);
+      try {
+        const token = await getAccessToken();
+        const companyId = await getCompanyId();
+        if (!token || !companyId) {
+          Alert.alert(t("common.error"), t("scanner.notAuthenticated"));
+          return;
+        }
 
-      if (!res.ok) {
+        const res = await fetch(`${BASE_URL}/api/scan/resolve`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "x-company-id": companyId,
+          },
+          body: JSON.stringify({ code }),
+        });
+
+        if (!res.ok) {
+          Alert.alert(t("common.error"), t("scanner.failedToResolve"));
+          return;
+        }
+
+        const { data } = await res.json();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        if (data.type === "asset") {
+          router.replace(`/asset/${data.entity.id}`);
+        } else if (data.type === "device") {
+          Alert.alert(
+            t("scanner.deviceFound"),
+            `Device: ${data.entity.externalId}`,
+          );
+        } else {
+          Alert.alert(
+            t("scanner.notFound"),
+            t("scanner.notFoundMessage", { code }),
+          );
+          setScanned(false);
+        }
+      } catch {
         Alert.alert(t("common.error"), t("scanner.failedToResolve"));
-        return;
-      }
-
-      const { data } = await res.json();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      if (data.type === "asset") {
-        router.replace(`/asset/${data.entity.id}`);
-      } else if (data.type === "device") {
-        Alert.alert(t("scanner.deviceFound"), `Device: ${data.entity.externalId}`);
-      } else {
-        Alert.alert(t("scanner.notFound"), t("scanner.notFoundMessage", { code }));
         setScanned(false);
+      } finally {
+        setResolving(false);
       }
-    } catch {
-      Alert.alert(t("common.error"), t("scanner.failedToResolve"));
-      setScanned(false);
-    } finally {
-      setResolving(false);
-    }
-  }, [isConnected, router, t]);
+    },
+    [isConnected, router, t],
+  );
 
   const handleBarCodeScanned = useCallback(
     ({ data: rawValue }: { data: string }) => {
@@ -118,10 +127,7 @@ export default function ScannerScreen() {
         <Text style={styles.permSub}>
           {t("scanner.allowCameraDescription")}
         </Text>
-        <TouchableOpacity
-          style={styles.permBtn}
-          onPress={requestPermission}
-        >
+        <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>{t("scanner.allowCamera")}</Text>
         </TouchableOpacity>
       </View>
@@ -133,7 +139,9 @@ export default function ScannerScreen() {
       {Platform.OS !== "web" ? (
         <CameraView
           style={StyleSheet.absoluteFill}
-          barcodeScannerSettings={{ barcodeTypes: ["qr", "code128", "ean13", "code39"] }}
+          barcodeScannerSettings={{
+            barcodeTypes: ["qr", "code128", "ean13", "code39"],
+          }}
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         />
       ) : null}
@@ -157,7 +165,9 @@ export default function ScannerScreen() {
           </View>
         )}
 
-        <View style={[styles.manualWrap, { paddingBottom: insets.bottom + 16 }]}>
+        <View
+          style={[styles.manualWrap, { paddingBottom: insets.bottom + 16 }]}
+        >
           <Text style={styles.manualLabel}>{t("scanner.orEnterManually")}</Text>
           <View style={styles.manualRow}>
             <TextInput
@@ -188,7 +198,13 @@ export default function ScannerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16, paddingHorizontal: 40 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 40,
+  },
   permIconWrap: {
     width: 88,
     height: 88,
@@ -197,8 +213,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  permText: { fontSize: 18, fontFamily: "Inter_700Bold", color: "#ffffff", textAlign: "center" },
-  permSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", color: "rgba(255,255,255,0.5)" },
+  permText: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#ffffff",
+    textAlign: "center",
+  },
+  permSub: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    color: "rgba(255,255,255,0.5)",
+  },
   permBtn: {
     paddingHorizontal: 28,
     paddingVertical: 14,
@@ -207,7 +233,10 @@ const styles = StyleSheet.create({
     backgroundColor: YELLOW,
   },
   permBtnText: { color: "#1a1a1a", fontSize: 15, fontFamily: "Inter_700Bold" },
-  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: "space-between" },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "space-between",
+  },
   backBtn: {
     width: 44,
     height: 44,
@@ -229,14 +258,48 @@ const styles = StyleSheet.create({
     height: 36,
     borderColor: YELLOW,
   },
-  tl: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 },
-  tr: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
-  bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
-  br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
-  loadingWrap: { position: "absolute", top: "50%", alignSelf: "center", alignItems: "center", gap: 10 },
+  tl: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderTopLeftRadius: 8,
+  },
+  tr: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderTopRightRadius: 8,
+  },
+  bl: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderBottomLeftRadius: 8,
+  },
+  br: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomRightRadius: 8,
+  },
+  loadingWrap: {
+    position: "absolute",
+    top: "50%",
+    alignSelf: "center",
+    alignItems: "center",
+    gap: 10,
+  },
   loadingText: { color: "#fff", fontSize: 14, fontFamily: "Inter_500Medium" },
   manualWrap: { paddingHorizontal: 24, gap: 10 },
-  manualLabel: { color: "rgba(255,255,255,0.6)", fontSize: 13, fontFamily: "Inter_500Medium" },
+  manualLabel: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
   manualRow: { flexDirection: "row", gap: 8 },
   manualInput: {
     flex: 1,
@@ -256,5 +319,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: YELLOW,
   },
-  rescanText: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "center", marginTop: 4, color: YELLOW },
+  rescanText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+    marginTop: 4,
+    color: YELLOW,
+  },
 });

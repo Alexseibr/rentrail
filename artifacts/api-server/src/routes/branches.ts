@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import { requireCompanyAccess, requirePermission } from "../middlewares/authorize";
+import {
+  requireCompanyAccess,
+  requirePermission,
+} from "../middlewares/authorize";
 import * as branchService from "../services/branch.service";
 import { createAuditLog } from "../lib/audit";
 
@@ -63,7 +66,10 @@ router.get(
   requirePermission("branch:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const branch = await branchService.getBranch(req.params.id as string, req.tenant!.companyId);
+    const branch = await branchService.getBranch(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     res.json({ data: branch });
   },
 );
@@ -75,8 +81,15 @@ router.patch(
   requirePermission("branch:update"),
   validate({ params: idParams, body: updateBranchSchema }),
   async (req, res) => {
-    const old = await branchService.getBranch(req.params.id as string, req.tenant!.companyId);
-    const branch = await branchService.updateBranch(req.params.id as string, req.tenant!.companyId, req.body);
+    const old = await branchService.getBranch(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
+    const branch = await branchService.updateBranch(
+      req.params.id as string,
+      req.tenant!.companyId,
+      req.body,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -98,7 +111,10 @@ router.post(
   requirePermission("branch:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { branch, previousStatus } = await branchService.deactivateBranch(req.params.id as string, req.tenant!.companyId);
+    const { branch, previousStatus } = await branchService.deactivateBranch(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
@@ -120,7 +136,10 @@ router.post(
   requirePermission("branch:update"),
   validate({ params: idParams }),
   async (req, res) => {
-    const { branch, previousStatus } = await branchService.activateBranch(req.params.id as string, req.tenant!.companyId);
+    const { branch, previousStatus } = await branchService.activateBranch(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
     await createAuditLog({
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,

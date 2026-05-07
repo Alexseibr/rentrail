@@ -9,12 +9,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLocation } from "wouter";
-import { Plus, Play, CheckCircle, XCircle, RotateCcw, Search, ClipboardList, AlertCircle, Clock, AlertTriangle } from "lucide-react";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
+import {
+  Plus,
+  Play,
+  CheckCircle,
+  XCircle,
+  RotateCcw,
+  Search,
+  ClipboardList,
+  AlertCircle,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { toast } from "@/hooks/use-toast";
 
@@ -42,15 +80,27 @@ export default function RentalsCompanyPage() {
   const queryClient = useQueryClient();
   const { canWriteRental } = useRolePermissions();
   const companyId = user?.memberships?.[0]?.companyId;
-  const companyHeaders: Record<string, string> = companyId ? { "x-company-id": companyId } : {};
+  const companyHeaders: Record<string, string> = companyId
+    ? { "x-company-id": companyId }
+    : {};
 
   const [showCreate, setShowCreate] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [actionDialog, setActionDialog] = useState<{ id: string; action: string; rental: any } | null>(null);
+  const [actionDialog, setActionDialog] = useState<{
+    id: string;
+    action: string;
+    rental: any;
+  } | null>(null);
   const [returnNotes, setReturnNotes] = useState("");
   const [cancelReason, setCancelReason] = useState("");
-  const [form, setForm] = useState({ clientId: "", assetId: "", startAt: "", plannedEndAt: "", notes: "" });
+  const [form, setForm] = useState({
+    clientId: "",
+    assetId: "",
+    startAt: "",
+    plannedEndAt: "",
+    notes: "",
+  });
 
   const clientsQuery = useQuery({
     queryKey: ["clients", companyId],
@@ -61,7 +111,8 @@ export default function RentalsCompanyPage() {
 
   const assetsQuery = useQuery({
     queryKey: ["assets-available", companyId],
-    queryFn: () => api<any>("/assets?status=available", { headers: companyHeaders }),
+    queryFn: () =>
+      api<any>("/assets?status=available", { headers: companyHeaders }),
     enabled: !!companyId && showCreate,
   });
   const availableAssets = assetsQuery.data ?? [];
@@ -76,28 +127,51 @@ export default function RentalsCompanyPage() {
   });
   const allItems = rentalsQuery.data ?? [];
   const items = search
-    ? allItems.filter((r: any) =>
-        (r.clientName?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (r.assetCode?.toLowerCase() || "").includes(search.toLowerCase())
+    ? allItems.filter(
+        (r: any) =>
+          (r.clientName?.toLowerCase() || "").includes(search.toLowerCase()) ||
+          (r.assetCode?.toLowerCase() || "").includes(search.toLowerCase()),
       )
     : allItems;
 
   const createMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api("/rentals", { method: "POST", body: JSON.stringify(body), headers: companyHeaders }),
+      api("/rentals", {
+        method: "POST",
+        body: JSON.stringify(body),
+        headers: companyHeaders,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rentals"] });
       setShowCreate(false);
-      setForm({ clientId: "", assetId: "", startAt: "", plannedEndAt: "", notes: "" });
+      setForm({
+        clientId: "",
+        assetId: "",
+        startAt: "",
+        plannedEndAt: "",
+        notes: "",
+      });
       toast({ title: t("toast.rentalCreated") });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.saveFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.saveFailed"),
+        variant: "destructive",
+      });
     },
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ id, action, body }: { id: string; action: string; body?: Record<string, unknown> }) =>
+    mutationFn: ({
+      id,
+      action,
+      body,
+    }: {
+      id: string;
+      action: string;
+      body?: Record<string, unknown>;
+    }) =>
       api(`/rentals/${id}/${action}`, {
         method: "POST",
         body: body ? JSON.stringify(body) : JSON.stringify({}),
@@ -112,13 +186,20 @@ export default function RentalsCompanyPage() {
       toast({ title: t(`toast.rental_${variables.action}`) });
     },
     onError: () => {
-      toast({ title: t("toast.error"), description: t("toast.actionFailed"), variant: "destructive" });
+      toast({
+        title: t("toast.error"),
+        description: t("toast.actionFailed"),
+        variant: "destructive",
+      });
     },
   });
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    const body: Record<string, unknown> = { clientId: form.clientId, assetId: form.assetId };
+    const body: Record<string, unknown> = {
+      clientId: form.clientId,
+      assetId: form.assetId,
+    };
     if (form.startAt) body.startAt = form.startAt;
     if (form.plannedEndAt) body.plannedEndAt = form.plannedEndAt;
     if (form.notes) body.notes = form.notes;
@@ -134,21 +215,44 @@ export default function RentalsCompanyPage() {
     actionMutation.mutate({ id, action, body });
   }
 
-  const countByStatus = (s: string) => allItems.filter((r: any) => r.status === s).length;
+  const countByStatus = (s: string) =>
+    allItems.filter((r: any) => r.status === s).length;
 
   const getAvailableActions = (rental: any) => {
-    const actions: { key: string; label: string; icon: any; variant?: string }[] = [];
+    const actions: {
+      key: string;
+      label: string;
+      icon: any;
+      variant?: string;
+    }[] = [];
     if (rental.status === "draft") {
-      actions.push({ key: "approve", label: t("rentals.approve", "Одобрить"), icon: CheckCircle });
+      actions.push({
+        key: "approve",
+        label: t("rentals.approve", "Одобрить"),
+        icon: CheckCircle,
+      });
     }
     if (rental.status === "approved" || rental.status === "awaiting_pickup") {
-      actions.push({ key: "start", label: t("rentals.start", "Начать"), icon: Play });
+      actions.push({
+        key: "start",
+        label: t("rentals.start", "Начать"),
+        icon: Play,
+      });
     }
     if (rental.status === "active" || rental.status === "overdue") {
-      actions.push({ key: "return", label: t("rentals.return", "Возврат"), icon: RotateCcw });
+      actions.push({
+        key: "return",
+        label: t("rentals.return", "Возврат"),
+        icon: RotateCcw,
+      });
     }
     if (rental.status !== "completed" && rental.status !== "canceled") {
-      actions.push({ key: "cancel", label: t("rentals.cancel", "Отмена"), icon: XCircle, variant: "destructive" });
+      actions.push({
+        key: "cancel",
+        label: t("rentals.cancel", "Отмена"),
+        icon: XCircle,
+        variant: "destructive",
+      });
     }
     return actions;
   };
@@ -157,8 +261,12 @@ export default function RentalsCompanyPage() {
     <div className="p-6 space-y-6 max-w-7xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("nav.rentals")}</h1>
-          <p className="text-muted-foreground mt-0.5">{t("rentals.subtitle", "Все аренды компании")}</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t("nav.rentals")}
+          </h1>
+          <p className="text-muted-foreground mt-0.5">
+            {t("rentals.subtitle", "Все аренды компании")}
+          </p>
         </div>
         {canWriteRental && (
           <Button onClick={() => setShowCreate(true)} className="gap-2">
@@ -176,19 +284,31 @@ export default function RentalsCompanyPage() {
             <Card
               key={key}
               className={`relative overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${isActive ? "ring-2 ring-primary" : ""}`}
-              onClick={() => setStatusFilter(statusFilter === key ? "all" : key)}
+              onClick={() =>
+                setStatusFilter(statusFilter === key ? "all" : key)
+              }
             >
               <div className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
               <CardContent className="pt-4 pl-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold">{rentalsQuery.isLoading ? <Skeleton className="h-7 w-10" /> : count}</div>
-                    <p className={`text-sm mt-0.5 ${isActive ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                    <div className="text-2xl font-bold">
+                      {rentalsQuery.isLoading ? (
+                        <Skeleton className="h-7 w-10" />
+                      ) : (
+                        count
+                      )}
+                    </div>
+                    <p
+                      className={`text-sm mt-0.5 ${isActive ? "font-semibold text-primary" : "text-muted-foreground"}`}
+                    >
                       {String(t(`status.${key}`, key))}
                     </p>
                   </div>
                   <div className="p-2 rounded-xl bg-muted">
-                    <Icon className={`h-4 w-4 ${accent.replace("bg-", "text-")}`} />
+                    <Icon
+                      className={`h-4 w-4 ${accent.replace("bg-", "text-")}`}
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -202,7 +322,9 @@ export default function RentalsCompanyPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <CardTitle className="text-base font-semibold">
               {t("nav.rentals")}
-              <span className="ml-2 text-sm font-normal text-muted-foreground">({items.length})</span>
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({items.length})
+              </span>
             </CardTitle>
             <div className="flex-1" />
             <div className="relative">
@@ -220,8 +342,18 @@ export default function RentalsCompanyPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("common.all", "Все")}</SelectItem>
-                {["draft", "approved", "awaiting_pickup", "active", "overdue", "completed", "canceled"].map((s) => (
-                  <SelectItem key={s} value={s}>{String(t(`status.${s}`, s))}</SelectItem>
+                {[
+                  "draft",
+                  "approved",
+                  "awaiting_pickup",
+                  "active",
+                  "overdue",
+                  "completed",
+                  "canceled",
+                ].map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {String(t(`status.${s}`, s))}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -230,18 +362,34 @@ export default function RentalsCompanyPage() {
         <CardContent className="p-0">
           {rentalsQuery.isLoading ? (
             <div className="p-6 space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs">{t("rentals.client", "Клиент")}</TableHead>
-                  <TableHead className="text-xs">{t("rentals.asset", "Транспорт")}</TableHead>
-                  <TableHead className="text-xs">{t("rentals.start", "Начало")}</TableHead>
-                  <TableHead className="text-xs">{t("rentals.end", "Окончание")}</TableHead>
-                  <TableHead className="text-xs">{t("common.status")}</TableHead>
-                  {canWriteRental && <TableHead className="text-xs">{t("common.actions", "Действия")}</TableHead>}
+                  <TableHead className="text-xs">
+                    {t("rentals.client", "Клиент")}
+                  </TableHead>
+                  <TableHead className="text-xs">
+                    {t("rentals.asset", "Транспорт")}
+                  </TableHead>
+                  <TableHead className="text-xs">
+                    {t("rentals.start", "Начало")}
+                  </TableHead>
+                  <TableHead className="text-xs">
+                    {t("rentals.end", "Окончание")}
+                  </TableHead>
+                  <TableHead className="text-xs">
+                    {t("common.status")}
+                  </TableHead>
+                  {canWriteRental && (
+                    <TableHead className="text-xs">
+                      {t("common.actions", "Действия")}
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -249,49 +397,71 @@ export default function RentalsCompanyPage() {
                   const isOverdue = rental.status === "overdue";
                   const isActive = rental.status === "active";
                   return (
-                  <TableRow
-                    key={rental.id}
-                    className={`cursor-pointer hover:bg-muted/30 ${isOverdue ? "bg-red-50/60" : ""}`}
-                    onClick={() => navigate(`/rentals/${rental.id}`)}
-                  >
-                    <TableCell className="font-medium text-sm">{rental.clientName || rental.clientId?.slice(0, 8) || "—"}</TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">{rental.assetCode || rental.assetId?.slice(0, 8) || "—"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {rental.startDate || rental.startAt
-                        ? new Date(rental.startDate || rental.startAt).toLocaleDateString("ru-RU")
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {rental.endDate || rental.plannedEndAt
-                        ? new Date(rental.endDate || rental.plannedEndAt).toLocaleDateString("ru-RU")
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`text-xs gap-1 ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}>
-                        {isOverdue && <AlertTriangle className="h-3 w-3" />}
-                        {isActive && <Clock className="h-3 w-3" />}
-                        {String(t(`status.${rental.status}`, rental.status))}
-                      </Badge>
-                    </TableCell>
-                    {canWriteRental && (
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-1">
-                          {getAvailableActions(rental).map((act) => (
-                            <Button
-                              key={act.key}
-                              size="sm"
-                              variant={act.variant === "destructive" ? "destructive" : "outline"}
-                              className="h-7 text-xs px-2 gap-1"
-                              onClick={() => setActionDialog({ id: rental.id, action: act.key, rental })}
-                            >
-                              <act.icon className="h-3 w-3" />
-                              {act.label}
-                            </Button>
-                          ))}
-                        </div>
+                    <TableRow
+                      key={rental.id}
+                      className={`cursor-pointer hover:bg-muted/30 ${isOverdue ? "bg-red-50/60" : ""}`}
+                      onClick={() => navigate(`/rentals/${rental.id}`)}
+                    >
+                      <TableCell className="font-medium text-sm">
+                        {rental.clientName ||
+                          rental.clientId?.slice(0, 8) ||
+                          "—"}
                       </TableCell>
-                    )}
-                  </TableRow>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {rental.assetCode || rental.assetId?.slice(0, 8) || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {rental.startDate || rental.startAt
+                          ? new Date(
+                              rental.startDate || rental.startAt,
+                            ).toLocaleDateString("ru-RU")
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {rental.endDate || rental.plannedEndAt
+                          ? new Date(
+                              rental.endDate || rental.plannedEndAt,
+                            ).toLocaleDateString("ru-RU")
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={`text-xs gap-1 ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}
+                        >
+                          {isOverdue && <AlertTriangle className="h-3 w-3" />}
+                          {isActive && <Clock className="h-3 w-3" />}
+                          {String(t(`status.${rental.status}`, rental.status))}
+                        </Badge>
+                      </TableCell>
+                      {canWriteRental && (
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-1">
+                            {getAvailableActions(rental).map((act) => (
+                              <Button
+                                key={act.key}
+                                size="sm"
+                                variant={
+                                  act.variant === "destructive"
+                                    ? "destructive"
+                                    : "outline"
+                                }
+                                className="h-7 text-xs px-2 gap-1"
+                                onClick={() =>
+                                  setActionDialog({
+                                    id: rental.id,
+                                    action: act.key,
+                                    rental,
+                                  })
+                                }
+                              >
+                                <act.icon className="h-3 w-3" />
+                                {act.label}
+                              </Button>
+                            ))}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
                   );
                 })}
                 {items.length === 0 && allItems.length === 0 && (
@@ -299,13 +469,21 @@ export default function RentalsCompanyPage() {
                     <TableCell colSpan={6} className="py-6">
                       <Empty className="border-0">
                         <EmptyHeader>
-                          <EmptyMedia variant="icon"><ClipboardList className="h-5 w-5" /></EmptyMedia>
+                          <EmptyMedia variant="icon">
+                            <ClipboardList className="h-5 w-5" />
+                          </EmptyMedia>
                           <EmptyTitle>{t("rentals.emptyTitle")}</EmptyTitle>
-                          <EmptyDescription>{t("rentals.emptyDescription")}</EmptyDescription>
+                          <EmptyDescription>
+                            {t("rentals.emptyDescription")}
+                          </EmptyDescription>
                         </EmptyHeader>
                         {canWriteRental && (
                           <EmptyContent>
-                            <Button size="sm" className="gap-1.5" onClick={() => setShowCreate(true)}>
+                            <Button
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => setShowCreate(true)}
+                            >
                               <Plus className="h-3.5 w-3.5" />
                               {t("rentals.create")}
                             </Button>
@@ -320,9 +498,13 @@ export default function RentalsCompanyPage() {
                     <TableCell colSpan={6} className="py-6">
                       <Empty className="border-0">
                         <EmptyHeader>
-                          <EmptyMedia variant="icon"><Search className="h-5 w-5" /></EmptyMedia>
+                          <EmptyMedia variant="icon">
+                            <Search className="h-5 w-5" />
+                          </EmptyMedia>
                           <EmptyTitle>{t("common.noResults")}</EmptyTitle>
-                          <EmptyDescription>{t("common.noResultsDescription")}</EmptyDescription>
+                          <EmptyDescription>
+                            {t("common.noResultsDescription")}
+                          </EmptyDescription>
                         </EmptyHeader>
                       </Empty>
                     </TableCell>
@@ -342,22 +524,42 @@ export default function RentalsCompanyPage() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
               <Label>{t("rentals.client", "Клиент")}</Label>
-              <Select value={form.clientId} onValueChange={(v) => setForm({ ...form, clientId: v })}>
-                <SelectTrigger><SelectValue placeholder={t("rentals.selectClient", "Выберите клиента")} /></SelectTrigger>
+              <Select
+                value={form.clientId}
+                onValueChange={(v) => setForm({ ...form, clientId: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={t("rentals.selectClient", "Выберите клиента")}
+                  />
+                </SelectTrigger>
                 <SelectContent>
-                  {clients.filter((c: any) => c.status === "active").map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.fullName} ({c.phone || c.email})</SelectItem>
-                  ))}
+                  {clients
+                    .filter((c: any) => c.status === "active")
+                    .map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.fullName} ({c.phone || c.email})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>{t("rentals.asset", "Транспорт")}</Label>
-              <Select value={form.assetId} onValueChange={(v) => setForm({ ...form, assetId: v })}>
-                <SelectTrigger><SelectValue placeholder={t("rentals.selectAsset", "Выберите транспорт")} /></SelectTrigger>
+              <Select
+                value={form.assetId}
+                onValueChange={(v) => setForm({ ...form, assetId: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={t("rentals.selectAsset", "Выберите транспорт")}
+                  />
+                </SelectTrigger>
                 <SelectContent>
                   {availableAssets.map((a: any) => (
-                    <SelectItem key={a.id} value={a.id}>{a.internalCode} — {a.brand} {a.model}</SelectItem>
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.internalCode} — {a.brand} {a.model}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -365,21 +567,49 @@ export default function RentalsCompanyPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("rentals.start", "Начало")}</Label>
-                <Input type="datetime-local" value={form.startAt} onChange={(e) => setForm({ ...form, startAt: e.target.value })} />
+                <Input
+                  type="datetime-local"
+                  value={form.startAt}
+                  onChange={(e) =>
+                    setForm({ ...form, startAt: e.target.value })
+                  }
+                />
               </div>
               <div className="space-y-2">
                 <Label>{t("rentals.end", "Окончание")}</Label>
-                <Input type="datetime-local" value={form.plannedEndAt} onChange={(e) => setForm({ ...form, plannedEndAt: e.target.value })} />
+                <Input
+                  type="datetime-local"
+                  value={form.plannedEndAt}
+                  onChange={(e) =>
+                    setForm({ ...form, plannedEndAt: e.target.value })
+                  }
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>{t("rentals.notes", "Заметки")}</Label>
-              <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              <Input
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>{t("common.cancel", "Отмена")}</Button>
-              <Button type="submit" disabled={createMutation.isPending || !form.clientId || !form.assetId}>
-                {createMutation.isPending ? t("common.saving", "Сохранение...") : t("rentals.create", "Создать")}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreate(false)}
+              >
+                {t("common.cancel", "Отмена")}
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  createMutation.isPending || !form.clientId || !form.assetId
+                }
+              >
+                {createMutation.isPending
+                  ? t("common.saving", "Сохранение...")
+                  : t("rentals.create", "Создать")}
               </Button>
             </DialogFooter>
           </form>
@@ -390,35 +620,56 @@ export default function RentalsCompanyPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {actionDialog?.action === "approve" && t("rentals.approve", "Одобрить аренду")}
-              {actionDialog?.action === "start" && t("rentals.start", "Начать аренду")}
-              {actionDialog?.action === "return" && t("rentals.return", "Возврат транспорта")}
-              {actionDialog?.action === "cancel" && t("rentals.cancel", "Отменить аренду")}
+              {actionDialog?.action === "approve" &&
+                t("rentals.approve", "Одобрить аренду")}
+              {actionDialog?.action === "start" &&
+                t("rentals.start", "Начать аренду")}
+              {actionDialog?.action === "return" &&
+                t("rentals.return", "Возврат транспорта")}
+              {actionDialog?.action === "cancel" &&
+                t("rentals.cancel", "Отменить аренду")}
             </DialogTitle>
             <DialogDescription>
-              {t("rentals.client", "Клиент")}: <span className="font-medium">{actionDialog?.rental?.clientName || "—"}</span>
+              {t("rentals.client", "Клиент")}:{" "}
+              <span className="font-medium">
+                {actionDialog?.rental?.clientName || "—"}
+              </span>
             </DialogDescription>
           </DialogHeader>
           {actionDialog?.action === "return" && (
             <div className="space-y-2">
               <Label>{t("rentals.notes", "Заметки")}</Label>
-              <Input value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} placeholder={t("fleet.reasonPlaceholder", "Необязательно")} />
+              <Input
+                value={returnNotes}
+                onChange={(e) => setReturnNotes(e.target.value)}
+                placeholder={t("fleet.reasonPlaceholder", "Необязательно")}
+              />
             </div>
           )}
           {actionDialog?.action === "cancel" && (
             <div className="space-y-2">
               <Label>{t("fleet.reason", "Причина")}</Label>
-              <Input value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder={t("fleet.reasonPlaceholder", "Необязательно")} />
+              <Input
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder={t("fleet.reasonPlaceholder", "Необязательно")}
+              />
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setActionDialog(null)}>{t("common.cancel", "Отмена")}</Button>
+            <Button variant="outline" onClick={() => setActionDialog(null)}>
+              {t("common.cancel", "Отмена")}
+            </Button>
             <Button
-              variant={actionDialog?.action === "cancel" ? "destructive" : "default"}
+              variant={
+                actionDialog?.action === "cancel" ? "destructive" : "default"
+              }
               disabled={actionMutation.isPending}
               onClick={executeAction}
             >
-              {actionMutation.isPending ? t("common.processing", "Обработка...") : t("common.confirm", "Подтвердить")}
+              {actionMutation.isPending
+                ? t("common.processing", "Обработка...")
+                : t("common.confirm", "Подтвердить")}
             </Button>
           </DialogFooter>
         </DialogContent>

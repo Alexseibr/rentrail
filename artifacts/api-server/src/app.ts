@@ -14,7 +14,12 @@ const authLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: "RATE_LIMIT", message: "Too many requests, please try again later" } },
+  message: {
+    error: {
+      code: "RATE_LIMIT",
+      message: "Too many requests, please try again later",
+    },
+  },
   skip: () => process.env.NODE_ENV !== "production",
 });
 
@@ -23,7 +28,9 @@ const iotLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: "RATE_LIMIT", message: "Too many commands, slow down" } },
+  message: {
+    error: { code: "RATE_LIMIT", message: "Too many commands, slow down" },
+  },
   skip: () => process.env.NODE_ENV !== "production",
 });
 
@@ -31,7 +38,8 @@ app.use(correlationId);
 app.use(
   pinoHttp({
     logger,
-    genReqId: (req) => (req as express.Request & { correlationId?: string }).correlationId ?? "",
+    genReqId: (req) =>
+      (req as express.Request & { correlationId?: string }).correlationId ?? "",
     serializers: {
       req(req) {
         return {

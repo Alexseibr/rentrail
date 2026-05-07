@@ -55,13 +55,20 @@ export default function NotificationsScreen() {
   const colors = useColors();
   const queryClient = useQueryClient();
 
-  const { data: notifications = [], isLoading, refetch, isRefetching } = useQuery({
+  const {
+    data: notifications = [],
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
     staleTime: 15000,
   });
 
-  useAppStateFocus(() => { refetch(); });
+  useAppStateFocus(() => {
+    refetch();
+  });
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
@@ -72,7 +79,8 @@ export default function NotificationsScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
   const renderItem = ({ item }: { item: Notification }) => {
@@ -99,11 +107,22 @@ export default function NotificationsScreen() {
           />
         </View>
         <View style={styles.content}>
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: isUnread ? "Inter_600SemiBold" : "Inter_400Regular" }]}>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.foreground,
+                fontFamily: isUnread ? "Inter_600SemiBold" : "Inter_400Regular",
+              },
+            ]}
+          >
             {item.title}
           </Text>
           {item.body && (
-            <Text style={[styles.body, { color: colors.mutedForeground }]} numberOfLines={2}>
+            <Text
+              style={[styles.body, { color: colors.mutedForeground }]}
+              numberOfLines={2}
+            >
               {item.body}
             </Text>
           )}
@@ -111,7 +130,9 @@ export default function NotificationsScreen() {
             {new Date(item.createdAt).toLocaleString()}
           </Text>
         </View>
-        {isUnread && <View style={[styles.dot, { backgroundColor: colors.primary }]} />}
+        {isUnread && (
+          <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+        )}
       </TouchableOpacity>
     );
   };
@@ -127,13 +148,25 @@ export default function NotificationsScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={colors.primary}
+            />
           }
           scrollEnabled={notifications.length > 0}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Feather name="bell-off" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{t("notifications.noNotifications")}</Text>
+              <Feather
+                name="bell-off"
+                size={40}
+                color={colors.mutedForeground}
+              />
+              <Text
+                style={[styles.emptyText, { color: colors.mutedForeground }]}
+              >
+                {t("notifications.noNotifications")}
+              </Text>
             </View>
           }
         />
@@ -145,8 +178,21 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: 16, gap: 8, paddingBottom: 40 },
-  card: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 12, borderWidth: 1, gap: 12 },
-  iconWrap: { width: 40, height: 40, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 12,
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   content: { flex: 1, gap: 2 },
   title: { fontSize: 14 },
   body: { fontSize: 12, fontFamily: "Inter_400Regular" },

@@ -17,7 +17,10 @@ export async function getOrCreateBranding(companyId: string) {
   return created;
 }
 
-export async function updateBranding(companyId: string, data: Partial<typeof companyBranding.$inferInsert>) {
+export async function updateBranding(
+  companyId: string,
+  data: Partial<typeof companyBranding.$inferInsert>,
+) {
   delete (data as Record<string, unknown>).companyId;
   delete (data as Record<string, unknown>).id;
 

@@ -1,7 +1,13 @@
 import React, { useState, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Share,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -52,7 +58,12 @@ async function fetchWorkOrder(companyId: string, id: string) {
   return (await res.json()).data;
 }
 
-async function updateStatus(companyId: string, id: string, status: string, extra?: object) {
+async function updateStatus(
+  companyId: string,
+  id: string,
+  status: string,
+  extra?: object,
+) {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/work-orders/${id}/status`, {
     method: "POST",
@@ -80,7 +91,9 @@ export default function MaintenanceTaskDetailScreen() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(null);
+  const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     if (!companyId || !id) return;
@@ -106,18 +119,23 @@ export default function MaintenanceTaskDetailScreen() {
     setCachedCoords(coords);
   }, [order?.assetId]);
 
-  React.useEffect(() => { load(); }, [load]);
+  React.useEffect(() => {
+    load();
+  }, [load]);
 
   useAppStateFocus(refreshCoords);
 
-  const queueStatusChange = async (newStatus: string, extra?: Record<string, unknown>) => {
+  const queueStatusChange = async (
+    newStatus: string,
+    extra?: Record<string, unknown>,
+  ) => {
     await enqueue({
       actionType: "change_maintenance_status",
       payload: { status: newStatus, ...extra },
       endpoint: `/api/work-orders/${order.id}/status`,
       method: "POST",
     });
-    setOrder((prev: any) => prev ? { ...prev, status: newStatus } : prev);
+    setOrder((prev: any) => (prev ? { ...prev, status: newStatus } : prev));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showSnackbar(t("maintenance.statusQueued"), "success");
   };
@@ -147,7 +165,8 @@ export default function MaintenanceTaskDetailScreen() {
         } catch (err: unknown) {
           const isNetworkError =
             err instanceof TypeError ||
-            (err instanceof Error && /network|fetch|failed to fetch/i.test(err.message));
+            (err instanceof Error &&
+              /network|fetch|failed to fetch/i.test(err.message));
 
           if (isNetworkError && isQueueable("change_maintenance_status")) {
             try {
@@ -156,7 +175,8 @@ export default function MaintenanceTaskDetailScreen() {
               showSnackbar(t("toast.actionFailed"), "error");
             }
           } else {
-            const msg = err instanceof Error ? err.message : t("toast.actionFailed");
+            const msg =
+              err instanceof Error ? err.message : t("toast.actionFailed");
             showSnackbar(msg, "error");
           }
         } finally {
@@ -175,7 +195,10 @@ export default function MaintenanceTaskDetailScreen() {
             t("serviceModule.completeConfirm"),
             [
               { text: t("common.cancel"), style: "cancel" },
-              { text: t("serviceModule.complete"), onPress: () => doComplete("") },
+              {
+                text: t("serviceModule.complete"),
+                onPress: () => doComplete(""),
+              },
             ],
           );
       return;
@@ -199,7 +222,8 @@ export default function MaintenanceTaskDetailScreen() {
     } catch (err: unknown) {
       const isNetworkError =
         err instanceof TypeError ||
-        (err instanceof Error && /network|fetch|failed to fetch/i.test(err.message));
+        (err instanceof Error &&
+          /network|fetch|failed to fetch/i.test(err.message));
 
       if (isNetworkError && isQueueable("change_maintenance_status")) {
         try {
@@ -208,7 +232,8 @@ export default function MaintenanceTaskDetailScreen() {
           showSnackbar(t("toast.actionFailed"), "error");
         }
       } else {
-        const msg = err instanceof Error ? err.message : t("toast.actionFailed");
+        const msg =
+          err instanceof Error ? err.message : t("toast.actionFailed");
         showSnackbar(msg, "error");
       }
     } finally {
@@ -232,7 +257,13 @@ export default function MaintenanceTaskDetailScreen() {
           {t("serviceModule.orderNotFound")}
         </Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: colors.primary, marginTop: 12, fontFamily: "Inter_600SemiBold" }}>
+          <Text
+            style={{
+              color: colors.primary,
+              marginTop: 12,
+              fontFamily: "Inter_600SemiBold",
+            }}
+          >
             {t("common.back")}
           </Text>
         </TouchableOpacity>
@@ -245,31 +276,52 @@ export default function MaintenanceTaskDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.dark }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, backgroundColor: colors.dark },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{order.title}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {order.title}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={[styles.statusCard, { backgroundColor: statusColor + "18", borderColor: statusColor + "40" }]}>
+        <View
+          style={[
+            styles.statusCard,
+            {
+              backgroundColor: statusColor + "18",
+              borderColor: statusColor + "40",
+            },
+          ]}
+        >
           <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
           <Text style={[styles.statusLabel, { color: statusColor }]}>
-            {t(`serviceModule.status_${order.status}`, { defaultValue: order.status })}
+            {t(`serviceModule.status_${order.status}`, {
+              defaultValue: order.status,
+            })}
           </Text>
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Row
             label={t("serviceModule.type")}
-            value={t(`serviceModule.type_${order.orderType}`, { defaultValue: order.orderType })}
+            value={t(`serviceModule.type_${order.orderType}`, {
+              defaultValue: order.orderType,
+            })}
             colors={colors}
           />
           <Row
             label={t("serviceModule.priority")}
-            value={t(`serviceModule.priority_${order.priority}`, { defaultValue: order.priority })}
+            value={t(`serviceModule.priority_${order.priority}`, {
+              defaultValue: order.priority,
+            })}
             colors={colors}
           />
           {order.assetCode && (
@@ -280,10 +332,18 @@ export default function MaintenanceTaskDetailScreen() {
             />
           )}
           {order.assignedToName?.trim() && (
-            <Row label={t("serviceModule.mechanic")} value={order.assignedToName} colors={colors} />
+            <Row
+              label={t("serviceModule.mechanic")}
+              value={order.assignedToName}
+              colors={colors}
+            />
           )}
           {order.branchName && (
-            <Row label={t("serviceModule.branch")} value={order.branchName} colors={colors} />
+            <Row
+              label={t("serviceModule.branch")}
+              value={order.branchName}
+              colors={colors}
+            />
           )}
           {order.estimatedCost && (
             <Row
@@ -304,31 +364,48 @@ export default function MaintenanceTaskDetailScreen() {
                 cachedCoords.cachedAt
                   ? t("incidentDetail.assetLocationLastKnown", {
                       time: (() => {
-                        const diff = Date.now() - new Date(cachedCoords.cachedAt).getTime();
+                        const diff =
+                          Date.now() -
+                          new Date(cachedCoords.cachedAt).getTime();
                         const minutes = Math.floor(diff / 60000);
-                        if (minutes < 1) return t("rentalDetail.timeJustNow", { defaultValue: "just now" });
-                        if (minutes < 60) return t("rentalDetail.timeMinutesAgo", { count: minutes, defaultValue: `${minutes}m ago` });
+                        if (minutes < 1)
+                          return t("rentalDetail.timeJustNow", {
+                            defaultValue: "just now",
+                          });
+                        if (minutes < 60)
+                          return t("rentalDetail.timeMinutesAgo", {
+                            count: minutes,
+                            defaultValue: `${minutes}m ago`,
+                          });
                         const hours = Math.floor(minutes / 60);
-                        if (hours < 24) return t("rentalDetail.timeHoursAgo", { count: hours, defaultValue: `${hours}h ago` });
-                        return t("rentalDetail.timeDaysAgo", { count: Math.floor(hours / 24), defaultValue: `${Math.floor(hours / 24)}d ago` });
+                        if (hours < 24)
+                          return t("rentalDetail.timeHoursAgo", {
+                            count: hours,
+                            defaultValue: `${hours}h ago`,
+                          });
+                        return t("rentalDetail.timeDaysAgo", {
+                          count: Math.floor(hours / 24),
+                          defaultValue: `${Math.floor(hours / 24)}d ago`,
+                        });
                       })(),
                       defaultValue: "Last seen {{time}}",
                     })
-                  : t("incidentDetail.assetLocation", { defaultValue: "Asset location" })
+                  : t("incidentDetail.assetLocation", {
+                      defaultValue: "Asset location",
+                    })
               }
               onPress={() =>
-        router.push({
-          pathname: "/maintenance/map" as never,
-          params: {
-            lat: String(cachedCoords.lat),
-            lng: String(cachedCoords.lng),
-            label:
-              order.assetCode
-                ? `${order.assetCode}${order.assetBrand ? ` · ${order.assetBrand}${order.assetModel ? ` ${order.assetModel}` : ""}` : ""}`
-                : t("maintenanceMap.asset"),
-          },
-        })
-      }
+                router.push({
+                  pathname: "/maintenance/map" as never,
+                  params: {
+                    lat: String(cachedCoords.lat),
+                    lng: String(cachedCoords.lng),
+                    label: order.assetCode
+                      ? `${order.assetCode}${order.assetBrand ? ` · ${order.assetBrand}${order.assetModel ? ` ${order.assetModel}` : ""}` : ""}`
+                      : t("maintenanceMap.asset"),
+                  },
+                })
+              }
               onCopy={() => {
                 Share.share({
                   message: `${cachedCoords.lat.toFixed(5)}, ${cachedCoords.lng.toFixed(5)}`,
@@ -340,33 +417,55 @@ export default function MaintenanceTaskDetailScreen() {
 
         {order.description ? (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {t("serviceModule.description")}
             </Text>
-            <Text style={[styles.descText, { color: colors.foreground }]}>{order.description}</Text>
+            <Text style={[styles.descText, { color: colors.foreground }]}>
+              {order.description}
+            </Text>
           </View>
         ) : null}
 
         {order.resolution ? (
           <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+            >
               {t("serviceModule.resolution")}
             </Text>
-            <Text style={[styles.descText, { color: colors.foreground }]}>{order.resolution}</Text>
+            <Text style={[styles.descText, { color: colors.foreground }]}>
+              {order.resolution}
+            </Text>
           </View>
         ) : null}
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+          <Text
+            style={[styles.sectionTitle, { color: colors.mutedForeground }]}
+          >
             {t("serviceModule.timeline")}
           </Text>
           {order.startedAt && (
-            <Row label={t("serviceModule.started")} value={new Date(order.startedAt).toLocaleString("ru-RU")} colors={colors} />
+            <Row
+              label={t("serviceModule.started")}
+              value={new Date(order.startedAt).toLocaleString("ru-RU")}
+              colors={colors}
+            />
           )}
           {order.completedAt && (
-            <Row label={t("serviceModule.completed")} value={new Date(order.completedAt).toLocaleString("ru-RU")} colors={colors} />
+            <Row
+              label={t("serviceModule.completed")}
+              value={new Date(order.completedAt).toLocaleString("ru-RU")}
+              colors={colors}
+            />
           )}
-          <Row label={t("serviceModule.created")} value={new Date(order.createdAt).toLocaleString("ru-RU")} colors={colors} />
+          <Row
+            label={t("serviceModule.created")}
+            value={new Date(order.createdAt).toLocaleString("ru-RU")}
+            colors={colors}
+          />
         </View>
 
         {nextStatus && (
@@ -387,7 +486,9 @@ export default function MaintenanceTaskDetailScreen() {
                 />
                 <Text style={styles.actionBtnText}>
                   {t(`serviceModule.moveTo_${nextStatus}`, {
-                    defaultValue: t(`serviceModule.status_${nextStatus}`, { defaultValue: nextStatus }),
+                    defaultValue: t(`serviceModule.status_${nextStatus}`, {
+                      defaultValue: nextStatus,
+                    }),
                   })}
                 </Text>
               </>
@@ -399,11 +500,23 @@ export default function MaintenanceTaskDetailScreen() {
   );
 }
 
-function Row({ label, value, colors }: { label: string; value: string; colors: any }) {
+function Row({
+  label,
+  value,
+  colors,
+}: {
+  label: string;
+  value: string;
+  colors: any;
+}) {
   return (
     <View style={styles.row}>
-      <Text style={[styles.rowLabel, { color: colors.mutedForeground }]}>{label}</Text>
-      <Text style={[styles.rowValue, { color: colors.foreground }]}>{value}</Text>
+      <Text style={[styles.rowLabel, { color: colors.mutedForeground }]}>
+        {label}
+      </Text>
+      <Text style={[styles.rowValue, { color: colors.foreground }]}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -413,36 +526,68 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
   notFoundText: { fontSize: 16, fontFamily: "Inter_500Medium" },
   header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
-  headerTitle: { flex: 1, fontSize: 17, fontFamily: "Inter_600SemiBold", color: "#fff", textAlign: "center" },
+  headerTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+    textAlign: "center",
+  },
   scroll: { padding: 16, paddingBottom: 40 },
   statusCard: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 14,
   },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   statusLabel: { fontSize: 15, fontFamily: "Inter_700Bold" },
   section: { borderRadius: 16, padding: 16, marginBottom: 12 },
   sectionTitle: {
-    fontSize: 11, fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase", letterSpacing: 1, marginBottom: 10,
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 10,
   },
   row: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#00000010",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#00000010",
   },
   rowLabel: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  rowValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", textAlign: "right", flex: 1, marginLeft: 12 },
+  rowValue: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "right",
+    flex: 1,
+    marginLeft: 12,
+  },
   descText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
   miniMapWrapper: {
     marginBottom: 12,
   },
   actionBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
-    padding: 16, borderRadius: 16, marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 8,
   },
   actionBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#000" },
 });

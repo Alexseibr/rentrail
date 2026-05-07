@@ -6,7 +6,10 @@ type NetworkState = {
   isInternetReachable: boolean;
 };
 
-let _currentState: NetworkState = { isConnected: true, isInternetReachable: true };
+let _currentState: NetworkState = {
+  isConnected: true,
+  isInternetReachable: true,
+};
 const _listeners: Set<(state: NetworkState) => void> = new Set();
 
 async function checkConnection(): Promise<boolean> {
@@ -29,7 +32,10 @@ async function checkConnection(): Promise<boolean> {
 
 async function updateNetworkState() {
   const online = await checkConnection();
-  const newState: NetworkState = { isConnected: online, isInternetReachable: online };
+  const newState: NetworkState = {
+    isConnected: online,
+    isInternetReachable: online,
+  };
   if (newState.isConnected !== _currentState.isConnected) {
     _currentState = newState;
     _listeners.forEach((fn) => fn(newState));
@@ -58,11 +64,14 @@ export function useNetwork() {
     _listeners.add(setState);
     startPolling();
 
-    const sub = AppState.addEventListener("change", (appState: AppStateStatus) => {
-      if (appState === "active") {
-        updateNetworkState();
-      }
-    });
+    const sub = AppState.addEventListener(
+      "change",
+      (appState: AppStateStatus) => {
+        if (appState === "active") {
+          updateNetworkState();
+        }
+      },
+    );
 
     return () => {
       _listeners.delete(setState);

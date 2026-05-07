@@ -26,7 +26,9 @@ describe("GET /api/work-orders — status filter", () => {
     await seedRolesAndPermissions();
 
     tenant = await createTestTenant({ companyName: "WO Status Filter Co" });
-    admin = await createTestUser({ email: `wo-status-admin-${Date.now()}@test.com` });
+    admin = await createTestUser({
+      email: `wo-status-admin-${Date.now()}@test.com`,
+    });
     await assignRole(admin.id, tenant.company.id, "admin");
 
     function h() {
@@ -139,7 +141,9 @@ describe("GET /api/work-orders — branchId filter", () => {
     await seedRolesAndPermissions();
 
     tenant = await createTestTenant({ companyName: "WO Branch Filter Co" });
-    admin = await createTestUser({ email: `wo-branch-admin-${Date.now()}@test.com` });
+    admin = await createTestUser({
+      email: `wo-branch-admin-${Date.now()}@test.com`,
+    });
     await assignRole(admin.id, tenant.company.id, "admin");
 
     const [branchB] = await db
@@ -152,17 +156,19 @@ describe("GET /api/work-orders — branchId filter", () => {
       return authHeaders(admin.token, tenant.company.id);
     }
 
-    const resA = await request(testApp)
-      .post("/api/work-orders")
-      .set(h())
-      .send({ title: "WO for Branch A", orderType: "inspection", branchId: tenant.branch.id });
+    const resA = await request(testApp).post("/api/work-orders").set(h()).send({
+      title: "WO for Branch A",
+      orderType: "inspection",
+      branchId: tenant.branch.id,
+    });
     expect(resA.status).toBe(201);
     woBranchA = resA.body.data.id;
 
-    const resB = await request(testApp)
-      .post("/api/work-orders")
-      .set(h())
-      .send({ title: "WO for Branch B", orderType: "field_repair", branchId: branchBId });
+    const resB = await request(testApp).post("/api/work-orders").set(h()).send({
+      title: "WO for Branch B",
+      orderType: "field_repair",
+      branchId: branchBId,
+    });
     expect(resB.status).toBe(201);
     woBranchB = resB.body.data.id;
 
@@ -237,7 +243,9 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
     await seedRolesAndPermissions();
 
     tenant = await createTestTenant({ companyName: "WO Combined Filter Co" });
-    admin = await createTestUser({ email: `wo-combined-admin-${Date.now()}@test.com` });
+    admin = await createTestUser({
+      email: `wo-combined-admin-${Date.now()}@test.com`,
+    });
     await assignRole(admin.id, tenant.company.id, "admin");
 
     const [branchB] = await db
@@ -253,14 +261,22 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
     const resADraft = await request(testApp)
       .post("/api/work-orders")
       .set(h())
-      .send({ title: "Branch A Draft", orderType: "inspection", branchId: tenant.branch.id });
+      .send({
+        title: "Branch A Draft",
+        orderType: "inspection",
+        branchId: tenant.branch.id,
+      });
     expect(resADraft.status).toBe(201);
     woBranchADraft = resADraft.body.data.id;
 
     const resACompleted = await request(testApp)
       .post("/api/work-orders")
       .set(h())
-      .send({ title: "Branch A Completed", orderType: "inspection", branchId: tenant.branch.id });
+      .send({
+        title: "Branch A Completed",
+        orderType: "inspection",
+        branchId: tenant.branch.id,
+      });
     expect(resACompleted.status).toBe(201);
     woBranchACompleted = resACompleted.body.data.id;
 
@@ -272,7 +288,11 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
     const resBDraft = await request(testApp)
       .post("/api/work-orders")
       .set(h())
-      .send({ title: "Branch B Draft", orderType: "field_repair", branchId: branchBId });
+      .send({
+        title: "Branch B Draft",
+        orderType: "field_repair",
+        branchId: branchBId,
+      });
     expect(resBDraft.status).toBe(201);
     woBranchBDraft = resBDraft.body.data.id;
   }, 30000);
@@ -331,7 +351,9 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
 
   it("all three filters together (status + branchId + assignedToUserId) still works", async () => {
     const res = await request(testApp)
-      .get(`/api/work-orders?status=draft&branchId=${tenant.branch.id}&assignedToUserId=00000000-0000-0000-0000-000000000000`)
+      .get(
+        `/api/work-orders?status=draft&branchId=${tenant.branch.id}&assignedToUserId=00000000-0000-0000-0000-000000000000`,
+      )
       .set(h());
 
     expect(res.status).toBe(200);

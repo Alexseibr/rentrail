@@ -5,7 +5,11 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { focusManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { Redirect, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -41,7 +45,14 @@ function RootLayoutNav() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1a1a1a" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#1a1a1a",
+        }}
+      >
         <ActivityIndicator size="large" color="#F5C518" />
       </View>
     );
@@ -71,27 +82,53 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack screenOptions={{
-      headerBackTitle: t("common.back"),
-      headerStyle: { backgroundColor: "#1a1a1a" },
-      headerTintColor: "#ffffff",
-      headerTitleStyle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
-      headerShadowVisible: false,
-    }}>
+    <Stack
+      screenOptions={{
+        headerBackTitle: t("common.back"),
+        headerStyle: { backgroundColor: "#1a1a1a" },
+        headerTintColor: "#ffffff",
+        headerTitleStyle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
+        headerShadowVisible: false,
+      }}
+    >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(client-tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
-      <Stack.Screen name="create-incident" options={{ title: t("screens.newIncident") }} />
-      <Stack.Screen name="create-maintenance" options={{ title: t("screens.newMaintenance") }} />
-      <Stack.Screen name="sync-queue" options={{ title: t("screens.syncQueue") }} />
-      <Stack.Screen name="notifications" options={{ title: t("screens.notifications") }} />
+      <Stack.Screen
+        name="scanner"
+        options={{ headerShown: false, presentation: "fullScreenModal" }}
+      />
+      <Stack.Screen
+        name="create-incident"
+        options={{ title: t("screens.newIncident") }}
+      />
+      <Stack.Screen
+        name="create-maintenance"
+        options={{ title: t("screens.newMaintenance") }}
+      />
+      <Stack.Screen
+        name="sync-queue"
+        options={{ title: t("screens.syncQueue") }}
+      />
+      <Stack.Screen
+        name="notifications"
+        options={{ title: t("screens.notifications") }}
+      />
       <Stack.Screen name="asset/[id]" options={{ title: t("screens.asset") }} />
-      <Stack.Screen name="rental/[id]" options={{ title: t("screens.rental") }} />
+      <Stack.Screen
+        name="rental/[id]"
+        options={{ title: t("screens.rental") }}
+      />
       <Stack.Screen name="incident/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="maintenance/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="maintenance/map" options={{ headerShown: false, presentation: "fullScreenModal" }} />
-      <Stack.Screen name="client-scanner" options={{ headerShown: false, presentation: "fullScreenModal" }} />
+      <Stack.Screen
+        name="maintenance/map"
+        options={{ headerShown: false, presentation: "fullScreenModal" }}
+      />
+      <Stack.Screen
+        name="client-scanner"
+        options={{ headerShown: false, presentation: "fullScreenModal" }}
+      />
       <Stack.Screen name="fleet-map" options={{ headerShown: false }} />
     </Stack>
   );

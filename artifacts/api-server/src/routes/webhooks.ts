@@ -23,7 +23,10 @@ router.post("/webhooks/yukassa", async (req, res) => {
 router.post("/webhooks/tinkoff", async (req, res) => {
   try {
     const secretKey = process.env["TINKOFF_SECRET_KEY"];
-    if (secretKey && !verifyTinkoffToken(req.body as Record<string, unknown>, secretKey)) {
+    if (
+      secretKey &&
+      !verifyTinkoffToken(req.body as Record<string, unknown>, secretKey)
+    ) {
       logger.warn("Tinkoff webhook: invalid token, rejecting");
       return res.status(400).json({ ok: false });
     }
@@ -38,8 +41,13 @@ router.post("/webhooks/tinkoff", async (req, res) => {
 router.post("/webhooks/cloudpayments", async (req, res) => {
   try {
     const hmacHeader = req.headers["content-hmac"] as string | undefined;
-    const rawBody: Buffer = (req as any).rawBody ?? Buffer.from(JSON.stringify(req.body));
-    const result = await processCloudpaymentsWebhook(req.body, rawBody, hmacHeader);
+    const rawBody: Buffer =
+      (req as any).rawBody ?? Buffer.from(JSON.stringify(req.body));
+    const result = await processCloudpaymentsWebhook(
+      req.body,
+      rawBody,
+      hmacHeader,
+    );
     return res.json({ code: result.code });
   } catch (err: any) {
     logger.error({ err }, "CloudPayments webhook error");

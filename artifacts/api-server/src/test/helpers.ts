@@ -1,4 +1,19 @@
-import { db, users, companies, branches, stations, roles, permissions, rolePermissions, userCompanyMemberships, userBranchMemberships, clients, assets, platformRoles, platformUserRoles } from "@workspace/db";
+import {
+  db,
+  users,
+  companies,
+  branches,
+  stations,
+  roles,
+  permissions,
+  rolePermissions,
+  userCompanyMemberships,
+  userBranchMemberships,
+  clients,
+  assets,
+  platformRoles,
+  platformUserRoles,
+} from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { signAccessToken } from "../lib/jwt";
@@ -11,7 +26,9 @@ async function ensureRoles(): Promise<Map<string, string>> {
 
   const existingRoles = await db.select().from(roles);
   if (existingRoles.length === 0) {
-    throw new Error("Roles not seeded. Run seed-rbac first or call seedRolesAndPermissions().");
+    throw new Error(
+      "Roles not seeded. Run seed-rbac first or call seedRolesAndPermissions().",
+    );
   }
 
   _rolesCache = new Map(existingRoles.map((r) => [r.code, r.id]));
@@ -43,7 +60,9 @@ export async function createTestUser(opts: {
   lastName?: string;
   platformRoleCodes?: string[];
 }): Promise<TestUser> {
-  const email = opts.email ?? `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`;
+  const email =
+    opts.email ??
+    `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`;
   const password = opts.password ?? "TestPass123!";
   const passwordHash = await bcrypt.hash(password, 4);
 
@@ -61,7 +80,11 @@ export async function createTestUser(opts: {
   const assignedRoleCodes: string[] = [];
   if (opts.platformRoleCodes && opts.platformRoleCodes.length > 0) {
     for (const code of opts.platformRoleCodes) {
-      const [role] = await db.select().from(platformRoles).where(eq(platformRoles.code, code)).limit(1);
+      const [role] = await db
+        .select()
+        .from(platformRoles)
+        .where(eq(platformRoles.code, code))
+        .limit(1);
       if (role) {
         await db.insert(platformUserRoles).values({
           userId: user.id,
@@ -88,7 +111,9 @@ export async function createTestTenant(opts?: {
   companyName?: string;
   slug?: string;
 }): Promise<TestTenant> {
-  const slug = opts?.slug ?? `test-co-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const slug =
+    opts?.slug ??
+    `test-co-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
   const [company] = await db
     .insert(companies)
@@ -122,10 +147,18 @@ export async function createTestTenant(opts?: {
   };
 }
 
-export async function assignRole(userId: string, companyId: string, roleCode: string, branchId?: string) {
+export async function assignRole(
+  userId: string,
+  companyId: string,
+  roleCode: string,
+  branchId?: string,
+) {
   const rolesMap = await ensureRoles();
   const roleId = rolesMap.get(roleCode);
-  if (!roleId) throw new Error(`Role '${roleCode}' not found. Available: ${Array.from(rolesMap.keys()).join(", ")}`);
+  if (!roleId)
+    throw new Error(
+      `Role '${roleCode}' not found. Available: ${Array.from(rolesMap.keys()).join(", ")}`,
+    );
 
   await db.insert(userCompanyMemberships).values({
     userId,
@@ -145,7 +178,11 @@ export async function assignRole(userId: string, companyId: string, roleCode: st
   }
 }
 
-export function authHeaders(token: string, companyId?: string, branchId?: string) {
+export function authHeaders(
+  token: string,
+  companyId?: string,
+  branchId?: string,
+) {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
   };
@@ -154,14 +191,19 @@ export function authHeaders(token: string, companyId?: string, branchId?: string
   return headers;
 }
 
-export async function createTestClient(companyId: string, opts?: { fullName?: string; phone?: string; email?: string }) {
+export async function createTestClient(
+  companyId: string,
+  opts?: { fullName?: string; phone?: string; email?: string },
+) {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const [client] = await db
     .insert(clients)
     .values({
       companyId,
       fullName: opts?.fullName ?? `Client ${suffix}`,
-      phone: opts?.phone ?? `+1${suffix.replace(/\D/g, "").slice(0, 10).padEnd(10, "0")}`,
+      phone:
+        opts?.phone ??
+        `+1${suffix.replace(/\D/g, "").slice(0, 10).padEnd(10, "0")}`,
       email: opts?.email ?? `client-${suffix}@test.com`,
     })
     .returning();
@@ -171,7 +213,12 @@ export async function createTestClient(companyId: string, opts?: { fullName?: st
 export async function createTestAsset(
   companyId: string,
   branchId: string,
-  opts?: { stationId?: string; assetType?: string; status?: string; internalCode?: string },
+  opts?: {
+    stationId?: string;
+    assetType?: string;
+    status?: string;
+    internalCode?: string;
+  },
 ) {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const [asset] = await db
@@ -180,7 +227,11 @@ export async function createTestAsset(
       companyId,
       branchId,
       stationId: opts?.stationId ?? null,
-      assetType: (opts?.assetType ?? "bike") as "bike" | "ebike" | "scooter" | "escooter",
+      assetType: (opts?.assetType ?? "bike") as
+        | "bike"
+        | "ebike"
+        | "scooter"
+        | "escooter",
       status: (opts?.status ?? "available") as any,
       internalCode: opts?.internalCode ?? `ASSET-${suffix}`,
     })

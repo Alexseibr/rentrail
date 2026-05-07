@@ -1,6 +1,13 @@
 import { createHash } from "crypto";
 import { AppError } from "../../lib/errors";
-import type { PaymentGateway, CreateHoldParams, CaptureParams, VoidParams, RefundParams, GatewayPaymentResult } from "./types";
+import type {
+  PaymentGateway,
+  CreateHoldParams,
+  CaptureParams,
+  VoidParams,
+  RefundParams,
+  GatewayPaymentResult,
+} from "./types";
 
 const BASE_URL = "https://securepay.tinkoff.ru/v2";
 
@@ -8,14 +15,24 @@ function getCredentials() {
   const terminalKey = process.env["TINKOFF_TERMINAL_KEY"];
   const secretKey = process.env["TINKOFF_SECRET_KEY"];
   if (!terminalKey || !secretKey) {
-    throw new AppError(500, "Тинькофф credentials not configured (TINKOFF_TERMINAL_KEY / TINKOFF_SECRET_KEY)", "GATEWAY_NOT_CONFIGURED");
+    throw new AppError(
+      500,
+      "Тинькофф credentials not configured (TINKOFF_TERMINAL_KEY / TINKOFF_SECRET_KEY)",
+      "GATEWAY_NOT_CONFIGURED",
+    );
   }
   return { terminalKey, secretKey };
 }
 
-function buildToken(params: Record<string, string | number | boolean | undefined>, secretKey: string): string {
+function buildToken(
+  params: Record<string, string | number | boolean | undefined>,
+  secretKey: string,
+): string {
   const kvPairs = Object.entries(params)
-    .filter(([k, v]) => k !== "Token" && k !== "Receipt" && k !== "DATA" && v !== undefined)
+    .filter(
+      ([k, v]) =>
+        k !== "Token" && k !== "Receipt" && k !== "DATA" && v !== undefined,
+    )
     .sort(([a], [b]) => a.localeCompare(b));
 
   kvPairs.push(["Password", secretKey]);
@@ -25,13 +42,20 @@ function buildToken(params: Record<string, string | number | boolean | undefined
   return createHash("sha256").update(str).digest("hex");
 }
 
-async function tinkoffRequest(action: string, body: Record<string, unknown>): Promise<unknown> {
+async function tinkoffRequest(
+  action: string,
+  body: Record<string, unknown>,
+): Promise<unknown> {
   const { terminalKey, secretKey } = getCredentials();
   const params = { ...body, TerminalKey: terminalKey };
 
   const flat: Record<string, string | number | boolean | undefined> = {};
   for (const [k, v] of Object.entries(params)) {
-    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+    if (
+      typeof v === "string" ||
+      typeof v === "number" ||
+      typeof v === "boolean"
+    ) {
       flat[k] = v;
     }
   }
@@ -46,21 +70,33 @@ async function tinkoffRequest(action: string, body: Record<string, unknown>): Pr
   const data = await res.json();
   const d = data as Record<string, unknown>;
   if (!d.Success) {
-    throw new AppError(502, `Тинькофф error: ${d.Message ?? "unknown"} (${d.ErrorCode ?? ""})`, "GATEWAY_ERROR");
+    throw new AppError(
+      502,
+      `Тинькофф error: ${d.Message ?? "unknown"} (${d.ErrorCode ?? ""})`,
+      "GATEWAY_ERROR",
+    );
   }
   return data;
 }
 
 function mapStatus(status: string): GatewayPaymentResult["status"] {
   switch (status) {
-    case "AUTHORIZED": return "authorized";
-    case "CONFIRMED": return "paid";
-    case "CANCELED": return "voided";
-    case "REVERSED": return "voided";
-    case "REFUNDED": return "refunded";
-    case "PARTIAL_REFUNDED": return "refunded";
-    case "REJECTED": return "failed";
-    default: return "pending";
+    case "AUTHORIZED":
+      return "authorized";
+    case "CONFIRMED":
+      return "paid";
+    case "CANCELED":
+      return "voided";
+    case "REVERSED":
+      return "voided";
+    case "REFUNDED":
+      return "refunded";
+    case "PARTIAL_REFUNDED":
+      return "refunded";
+    case "REJECTED":
+      return "failed";
+    default:
+      return "pending";
   }
 }
 
@@ -86,7 +122,10 @@ export const tinkoffGateway: PaymentGateway = {
       body.FailURL = params.returnUrl;
     }
 
-    const data = (await tinkoffRequest("Init", body)) as Record<string, unknown>;
+    const data = (await tinkoffRequest("Init", body)) as Record<
+      string,
+      unknown
+    >;
     return {
       providerPaymentId: String(data.PaymentId),
       status: mapStatus(data.Status as string),
@@ -100,7 +139,10 @@ export const tinkoffGateway: PaymentGateway = {
       PaymentId: params.providerPaymentId,
       Amount: params.amount,
     };
-    const data = (await tinkoffRequest("Confirm", body)) as Record<string, unknown>;
+    const data = (await tinkoffRequest("Confirm", body)) as Record<
+      string,
+      unknown
+    >;
     return {
       providerPaymentId: String(data.PaymentId),
       status: mapStatus(data.Status as string),
@@ -109,7 +151,9 @@ export const tinkoffGateway: PaymentGateway = {
   },
 
   async voidPayment(params: VoidParams): Promise<GatewayPaymentResult> {
-    const data = (await tinkoffRequest("Cancel", { PaymentId: params.providerPaymentId })) as Record<string, unknown>;
+    const data = (await tinkoffRequest("Cancel", {
+      PaymentId: params.providerPaymentId,
+    })) as Record<string, unknown>;
     return {
       providerPaymentId: String(data.PaymentId),
       status: mapStatus(data.Status as string),
@@ -122,7 +166,10 @@ export const tinkoffGateway: PaymentGateway = {
       PaymentId: params.providerPaymentId,
       Amount: params.amount,
     };
-    const data = (await tinkoffRequest("Cancel", body)) as Record<string, unknown>;
+    const data = (await tinkoffRequest("Cancel", body)) as Record<
+      string,
+      unknown
+    >;
     return {
       providerPaymentId: String(data.PaymentId),
       status: mapStatus(data.Status as string),
@@ -130,8 +177,12 @@ export const tinkoffGateway: PaymentGateway = {
     };
   },
 
-  async getPaymentStatus(providerPaymentId: string): Promise<GatewayPaymentResult> {
-    const data = (await tinkoffRequest("GetState", { PaymentId: providerPaymentId })) as Record<string, unknown>;
+  async getPaymentStatus(
+    providerPaymentId: string,
+  ): Promise<GatewayPaymentResult> {
+    const data = (await tinkoffRequest("GetState", {
+      PaymentId: providerPaymentId,
+    })) as Record<string, unknown>;
     return {
       providerPaymentId: String(data.PaymentId),
       status: mapStatus(data.Status as string),

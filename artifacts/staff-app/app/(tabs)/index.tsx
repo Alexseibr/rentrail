@@ -41,18 +41,23 @@ async function fetchDashboard() {
     fetch(`${BASE_URL}/api/notifications`, { headers }),
   ]);
 
-  const assets = assetsRes.status === "fulfilled" && assetsRes.value.ok
-    ? (await assetsRes.value.json()).data
-    : [];
-  const rentals = rentalsRes.status === "fulfilled" && rentalsRes.value.ok
-    ? (await rentalsRes.value.json()).data
-    : [];
-  const notifications = notifRes.status === "fulfilled" && notifRes.value.ok
-    ? (await notifRes.value.json()).data
-    : [];
+  const assets =
+    assetsRes.status === "fulfilled" && assetsRes.value.ok
+      ? (await assetsRes.value.json()).data
+      : [];
+  const rentals =
+    rentalsRes.status === "fulfilled" && rentalsRes.value.ok
+      ? (await rentalsRes.value.json()).data
+      : [];
+  const notifications =
+    notifRes.status === "fulfilled" && notifRes.value.ok
+      ? (await notifRes.value.json()).data
+      : [];
 
   const activeRentals = Array.isArray(rentals)
-    ? rentals.filter((r: { status: string }) => ["active", "overdue", "extended"].includes(r.status)).length
+    ? rentals.filter((r: { status: string }) =>
+        ["active", "overdue", "extended"].includes(r.status),
+      ).length
     : 0;
   const overdueRentals = Array.isArray(rentals)
     ? rentals.filter((r: { status: string }) => r.status === "overdue").length
@@ -65,13 +70,31 @@ async function fetchDashboard() {
     ? notifications.filter((n: { readAt: string | null }) => !n.readAt).length
     : 0;
 
-  return { activeRentals, overdueRentals, availableAssets, totalAssets, unreadNotifs };
+  return {
+    activeRentals,
+    overdueRentals,
+    availableAssets,
+    totalAssets,
+    unreadNotifs,
+  };
 }
 
 const STAT_CONFIG = [
-  { key: "activeRentals", icon: "play-circle" as const, colorKey: "primary" as const },
-  { key: "overdue", icon: "alert-triangle" as const, colorKey: "destructive" as const },
-  { key: "available", icon: "check-circle" as const, colorKey: "success" as const },
+  {
+    key: "activeRentals",
+    icon: "play-circle" as const,
+    colorKey: "primary" as const,
+  },
+  {
+    key: "overdue",
+    icon: "alert-triangle" as const,
+    colorKey: "destructive" as const,
+  },
+  {
+    key: "available",
+    icon: "check-circle" as const,
+    colorKey: "success" as const,
+  },
   { key: "totalFleet", icon: "grid" as const, colorKey: "info" as const },
 ];
 
@@ -84,9 +107,12 @@ export default function DashboardScreen() {
   const { pendingCount } = useSync();
 
   const memberships = user?.memberships || user?.companies;
-  const roleCode = memberships?.find((c) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
+  const roleCode =
+    memberships?.find((c) => c.companyId === companyId)?.roleCode ||
+    memberships?.[0]?.roleCode;
 
-  const shouldRedirectToShift = !canAccessTab(roleCode, "index") && canAccessTab(roleCode, "my-shift");
+  const shouldRedirectToShift =
+    !canAccessTab(roleCode, "index") && canAccessTab(roleCode, "my-shift");
 
   React.useEffect(() => {
     if (shouldRedirectToShift) {
@@ -104,7 +130,9 @@ export default function DashboardScreen() {
     staleTime: 30000,
   });
 
-  useAppStateFocus(() => { refetch(); });
+  useAppStateFocus(() => {
+    refetch();
+  });
 
   const statValues = [
     data?.activeRentals ?? 0,
@@ -122,12 +150,37 @@ export default function DashboardScreen() {
   };
 
   const quickActions: QuickAction[] = [
-    { label: t("dashboard.scanAsset"), icon: "maximize", onPress: () => router.push("/scanner") },
-    { label: t("dashboard.newIncident"), icon: "alert-circle", onPress: () => router.push("/create-incident") },
-    { label: t("dashboard.maintenance"), icon: "tool", onPress: () => router.push("/create-maintenance") },
-    { label: t("dashboard.notifications"), icon: "bell", onPress: () => router.push("/notifications"), badge: data?.unreadNotifs },
+    {
+      label: t("dashboard.scanAsset"),
+      icon: "maximize",
+      onPress: () => router.push("/scanner"),
+    },
+    {
+      label: t("dashboard.newIncident"),
+      icon: "alert-circle",
+      onPress: () => router.push("/create-incident"),
+    },
+    {
+      label: t("dashboard.maintenance"),
+      icon: "tool",
+      onPress: () => router.push("/create-maintenance"),
+    },
+    {
+      label: t("dashboard.notifications"),
+      icon: "bell",
+      onPress: () => router.push("/notifications"),
+      badge: data?.unreadNotifs,
+    },
     ...(pendingCount > 0
-      ? [{ label: t("dashboard.pendingSync"), icon: "refresh-cw" as const, onPress: () => router.push("/sync-queue"), badge: pendingCount, badgeColor: "#f59e0b" }]
+      ? [
+          {
+            label: t("dashboard.pendingSync"),
+            icon: "refresh-cw" as const,
+            onPress: () => router.push("/sync-queue"),
+            badge: pendingCount,
+            badgeColor: "#f59e0b",
+          },
+        ]
       : []),
   ];
 
@@ -137,7 +190,11 @@ export default function DashboardScreen() {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16 }]}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={colors.primary}
+          />
         }
       >
         <Text style={[styles.greeting, { color: colors.foreground }]}>
@@ -152,12 +209,29 @@ export default function DashboardScreen() {
               {STAT_CONFIG.map((stat, i) => {
                 const statColor = colors[stat.colorKey];
                 return (
-                  <View key={stat.key} style={[styles.statCard, { backgroundColor: colors.card }]}>
-                    <View style={[styles.statIconWrap, { backgroundColor: statColor + "15" }]}>
+                  <View
+                    key={stat.key}
+                    style={[styles.statCard, { backgroundColor: colors.card }]}
+                  >
+                    <View
+                      style={[
+                        styles.statIconWrap,
+                        { backgroundColor: statColor + "15" },
+                      ]}
+                    >
                       <Feather name={stat.icon} size={18} color={statColor} />
                     </View>
-                    <Text style={[styles.statValue, { color: colors.foreground }]}>{statValues[i]}</Text>
-                    <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                    <Text
+                      style={[styles.statValue, { color: colors.foreground }]}
+                    >
+                      {statValues[i]}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
                       {t(`dashboard.${stat.key}`)}
                     </Text>
                   </View>
@@ -165,7 +239,9 @@ export default function DashboardScreen() {
               })}
             </View>
 
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t("dashboard.quickActions")}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+              {t("dashboard.quickActions")}
+            </Text>
             <View style={styles.actionsGrid}>
               {quickActions.map((action) => (
                 <TouchableOpacity
@@ -178,16 +254,37 @@ export default function DashboardScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.actionIconWrap}>
-                    <View style={[styles.actionIconCircle, { backgroundColor: colors.primary + "20" }]}>
-                      <Feather name={action.icon} size={20} color={colors.primary} />
+                    <View
+                      style={[
+                        styles.actionIconCircle,
+                        { backgroundColor: colors.primary + "20" },
+                      ]}
+                    >
+                      <Feather
+                        name={action.icon}
+                        size={20}
+                        color={colors.primary}
+                      />
                     </View>
                     {action.badge && action.badge > 0 ? (
-                      <View style={[styles.actionBadge, { backgroundColor: action.badgeColor ?? colors.destructive }]}>
+                      <View
+                        style={[
+                          styles.actionBadge,
+                          {
+                            backgroundColor:
+                              action.badgeColor ?? colors.destructive,
+                          },
+                        ]}
+                      >
                         <Text style={styles.badgeText}>{action.badge}</Text>
                       </View>
                     ) : null}
                   </View>
-                  <Text style={[styles.actionLabel, { color: colors.foreground }]}>{action.label}</Text>
+                  <Text
+                    style={[styles.actionLabel, { color: colors.foreground }]}
+                  >
+                    {action.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -225,7 +322,12 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 28, fontFamily: "Inter_700Bold" },
   statLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
-  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 28, marginBottom: 14 },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    marginTop: 28,
+    marginBottom: 14,
+  },
   actionsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   actionCard: {
     width: "48%" as unknown as number,
@@ -261,5 +363,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: { color: "#fff", fontSize: 10, fontFamily: "Inter_700Bold" },
-  actionLabel: { fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  actionLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+  },
 });

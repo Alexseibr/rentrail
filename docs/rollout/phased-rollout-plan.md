@@ -9,9 +9,11 @@ The SaaS vehicle rental platform launches through four incremental phases, each 
 ## Phase 0 — Internal Alpha (Weeks 1–3)
 
 ### Objective
+
 Run Tenant #1 (own business) as a real production user to validate all core workflows end-to-end.
 
 ### Entry Criteria
+
 - All hard go-live gates passed (see `go-live-gates.md`)
 - Production environment provisioned with database, storage, secrets, and domain
 - RBAC roles and permissions seeded
@@ -21,6 +23,7 @@ Run Tenant #1 (own business) as a real production user to validate all core work
 - Database backups running on schedule
 
 ### Scope
+
 - Single company, 1–2 branches, limited asset fleet (10–20 vehicles)
 - Staff accounts: owner, admin, 2–3 operators
 - Core modules: rentals, assets, clients, payments, deposits
@@ -28,6 +31,7 @@ Run Tenant #1 (own business) as a real production user to validate all core work
 - Platform admin for monitoring
 
 ### Exit Criteria
+
 - 50+ completed rental cycles without data issues
 - No SEV-1 or unresolved SEV-2 incidents in final 7 days
 - Deposit hold/release flow validated on real transactions
@@ -36,6 +40,7 @@ Run Tenant #1 (own business) as a real production user to validate all core work
 - Staff feedback collected and critical UX issues addressed
 
 ### Non-Goals
+
 - Public-facing pages for external customers
 - B2B features
 - IoT/telemetry integration (can be enabled but not required)
@@ -45,9 +50,11 @@ Run Tenant #1 (own business) as a real production user to validate all core work
 ## Phase 1 — Controlled Beta (Weeks 4–6)
 
 ### Objective
+
 Onboard 1–3 external companies under close support to validate tenant isolation and multi-tenant operations.
 
 ### Entry Criteria
+
 - Phase 0 exit criteria met
 - Tenant onboarding checklist validated (see `tenant-onboarding-checklist.md`)
 - Tenant isolation verified (data cannot leak between companies)
@@ -55,6 +62,7 @@ Onboard 1–3 external companies under close support to validate tenant isolatio
 - Billing plans configured (at least one free/trial plan)
 
 ### Scope
+
 - 2–4 total companies (including Tenant #1)
 - Each beta tenant gets 1 branch, 5–15 assets
 - All core modules enabled
@@ -62,6 +70,7 @@ Onboard 1–3 external companies under close support to validate tenant isolatio
 - Platform admin monitoring all tenants
 
 ### Exit Criteria
+
 - All beta tenants have completed 20+ rentals each
 - No tenant isolation violations detected
 - Billing cycle tested: subscription created, invoice generated, payment recorded
@@ -74,9 +83,11 @@ Onboard 1–3 external companies under close support to validate tenant isolatio
 ## Phase 2 — Paid Pilot (Weeks 7–10)
 
 ### Objective
+
 Onboard 5–10 paying customers to validate commercial viability, billing accuracy, and scalability.
 
 ### Entry Criteria
+
 - Phase 1 exit criteria met
 - Pricing tiers finalized and billing automation working
 - Invoice generation and payment tracking validated
@@ -84,6 +95,7 @@ Onboard 5–10 paying customers to validate commercial viability, billing accura
 - Known limitations document shared with pilot customers
 
 ### Scope
+
 - 8–14 total companies
 - Multiple asset types per tenant (bikes, ebikes, scooters, escooters)
 - Multi-branch setups for larger tenants
@@ -91,6 +103,7 @@ Onboard 5–10 paying customers to validate commercial viability, billing accura
 - Public company pages enabled for tenants who request them
 
 ### Exit Criteria
+
 - 80%+ of pilot tenants are actively using the platform weekly
 - Monthly recurring revenue tracking accurate vs. subscription records
 - Average onboarding time < 1 hour
@@ -103,9 +116,11 @@ Onboard 5–10 paying customers to validate commercial viability, billing accura
 ## Phase 3 — Public Launch (Week 11+)
 
 ### Objective
+
 Open self-service signup and marketing for general availability.
 
 ### Entry Criteria
+
 - Phase 2 exit criteria met
 - Self-service signup flow working (company creation → trial start)
 - Automated billing (subscription lifecycle, invoice generation, payment reminders)
@@ -114,6 +129,7 @@ Open self-service signup and marketing for general availability.
 - Release cadence established (see `release-cadence.md`)
 
 ### Scope
+
 - Unlimited tenant signup
 - All plan tiers available
 - Self-service onboarding with guided setup wizard
@@ -121,6 +137,7 @@ Open self-service signup and marketing for general availability.
 - Full platform admin operations
 
 ### Success Markers (30-day post-launch)
+
 - 20+ active tenants
 - < 5% churn rate
 - First-rental time under 30 minutes from account creation
@@ -132,12 +149,12 @@ Open self-service signup and marketing for general availability.
 
 ## Timeline Summary
 
-| Phase | Duration | Tenants | Focus |
-|-------|----------|---------|-------|
-| Phase 0: Internal Alpha | 3 weeks | 1 (own) | Core workflow validation |
-| Phase 1: Controlled Beta | 3 weeks | 2–4 | Tenant isolation, onboarding |
-| Phase 2: Paid Pilot | 4 weeks | 8–14 | Commercial viability |
-| Phase 3: Public Launch | Ongoing | Unlimited | Growth and scaling |
+| Phase                    | Duration | Tenants   | Focus                        |
+| ------------------------ | -------- | --------- | ---------------------------- |
+| Phase 0: Internal Alpha  | 3 weeks  | 1 (own)   | Core workflow validation     |
+| Phase 1: Controlled Beta | 3 weeks  | 2–4       | Tenant isolation, onboarding |
+| Phase 2: Paid Pilot      | 4 weeks  | 8–14      | Commercial viability         |
+| Phase 3: Public Launch   | Ongoing  | Unlimited | Growth and scaling           |
 
 ## Non-Goals of Initial Launch
 

@@ -48,7 +48,10 @@ const __dirname = dirname(__filename);
 // scripts/src/ -> scripts/ -> workspace root
 const WORKSPACE_ROOT = join(__dirname, "../..");
 const STAFF_APP_SCREENS_DIR = join(WORKSPACE_ROOT, "artifacts/staff-app/app");
-const PLATFORM_ADMIN_SRC_DIR = join(WORKSPACE_ROOT, "artifacts/platform-admin/src");
+const PLATFORM_ADMIN_SRC_DIR = join(
+  WORKSPACE_ROOT,
+  "artifacts/platform-admin/src",
+);
 
 // Recursively collect .tsx files
 function walkTsx(dir: string): string[] {
@@ -80,7 +83,10 @@ function run(): void {
     const result = checkFile(content);
     if (!result.hasWebViewImport) continue;
     if (result.missing.length > 0) {
-      violations.push({ file: relative(WORKSPACE_ROOT, file), missing: result.missing });
+      violations.push({
+        file: relative(WORKSPACE_ROOT, file),
+        missing: result.missing,
+      });
     }
   }
 
@@ -91,7 +97,10 @@ function run(): void {
     const result = checkWebFile(content);
     if (!result.hasLeafletImport) continue;
     if (result.missing.length > 0) {
-      violations.push({ file: relative(WORKSPACE_ROOT, file), missing: result.missing });
+      violations.push({
+        file: relative(WORKSPACE_ROOT, file),
+        missing: result.missing,
+      });
     }
   }
 

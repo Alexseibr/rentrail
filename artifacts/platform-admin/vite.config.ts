@@ -36,7 +36,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
+      "@assets": path.resolve(
+        import.meta.dirname,
+        "..",
+        "..",
+        "attached_assets",
+      ),
     },
     dedupe: ["react", "react-dom"],
   },
@@ -57,7 +62,8 @@ export default defineConfig({
       [`${basePath}api`]: {
         target: "http://localhost:8080",
         changeOrigin: true,
-        rewrite: (p: string) => p.replace(new RegExp(`^${basePath}api`), "/api"),
+        rewrite: (p: string) =>
+          p.replace(new RegExp(`^${basePath}api`), "/api"),
       },
     },
   },

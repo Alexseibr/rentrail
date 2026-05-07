@@ -66,7 +66,11 @@ export default function ProfileScreen() {
     }
     Alert.alert(t("settings.signOut"), t("settings.signOutConfirm"), [
       { text: t("settings.cancel"), style: "cancel" },
-      { text: t("settings.signOut"), style: "destructive", onPress: () => logout() },
+      {
+        text: t("settings.signOut"),
+        style: "destructive",
+        onPress: () => logout(),
+      },
     ]);
   };
 
@@ -78,23 +82,48 @@ export default function ProfileScreen() {
     );
   }
 
-  const displayName = profile?.fullName || user?.fullName || `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+  const displayName =
+    profile?.fullName ||
+    user?.fullName ||
+    `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: insets.bottom + 100 },
+      ]}
     >
       <View style={styles.avatarSection}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {displayName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+            {displayName
+              .split(" ")
+              .map((w) => w[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()}
           </Text>
         </View>
         <Text style={styles.name}>{displayName}</Text>
         {profile?.status && (
-          <View style={[styles.statusBadge, profile.status === "active" ? styles.statusActive : styles.statusInactive]}>
-            <Text style={[styles.statusText, profile.status === "active" ? styles.statusActiveText : styles.statusInactiveText]}>
+          <View
+            style={[
+              styles.statusBadge,
+              profile.status === "active"
+                ? styles.statusActive
+                : styles.statusInactive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                profile.status === "active"
+                  ? styles.statusActiveText
+                  : styles.statusInactiveText,
+              ]}
+            >
               {profile.status}
             </Text>
           </View>
@@ -102,20 +131,40 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.infoCard}>
-        <InfoRow icon="phone" label={t("clientProfile.phone")} value={profile?.phone || user?.phone || "—"} />
+        <InfoRow
+          icon="phone"
+          label={t("clientProfile.phone")}
+          value={profile?.phone || user?.phone || "—"}
+        />
         <View style={styles.divider} />
-        <InfoRow icon="mail" label={t("clientProfile.email")} value={profile?.email || user?.email || "—"} />
+        <InfoRow
+          icon="mail"
+          label={t("clientProfile.email")}
+          value={profile?.email || user?.email || "—"}
+        />
         <View style={styles.divider} />
-        <InfoRow icon="star" label={t("clientProfile.rating")} value={String(profile?.rating ?? 0)} />
+        <InfoRow
+          icon="star"
+          label={t("clientProfile.rating")}
+          value={String(profile?.rating ?? 0)}
+        />
         <View style={styles.divider} />
         <InfoRow
           icon="calendar"
           label={t("clientProfile.memberSince")}
-          value={profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "—"}
+          value={
+            profile?.createdAt
+              ? new Date(profile.createdAt).toLocaleDateString()
+              : "—"
+          }
         />
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleLogout}
+        activeOpacity={0.8}
+      >
         <Feather name="log-out" size={18} color="#E53935" />
         <Text style={styles.logoutText}>{t("settings.signOut")}</Text>
       </TouchableOpacity>
@@ -123,7 +172,15 @@ export default function ProfileScreen() {
   );
 }
 
-function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+}) {
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoLeft}>
@@ -137,7 +194,12 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f5f5f5" },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
   content: { padding: 16, gap: 20 },
   avatarSection: { alignItems: "center", gap: 8, paddingTop: 16 },
   avatar: {
@@ -166,10 +228,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12 },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
   infoLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   infoLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#8c8c8c" },
-  infoValue: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#1a1a1a" },
+  infoValue: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#1a1a1a",
+  },
   divider: { height: 1, backgroundColor: "#f0f0f0" },
   logoutButton: {
     flexDirection: "row",
@@ -182,5 +253,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FDEDED",
   },
-  logoutText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#E53935" },
+  logoutText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#E53935",
+  },
 });

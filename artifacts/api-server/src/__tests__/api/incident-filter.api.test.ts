@@ -25,8 +25,12 @@ describe("GET /api/incidents — status filter", () => {
     clearRolesCache();
     await seedRolesAndPermissions();
 
-    tenant = await createTestTenant({ companyName: "Incident Status Filter Co" });
-    admin = await createTestUser({ email: `incident-status-admin-${Date.now()}@test.com` });
+    tenant = await createTestTenant({
+      companyName: "Incident Status Filter Co",
+    });
+    admin = await createTestUser({
+      email: `incident-status-admin-${Date.now()}@test.com`,
+    });
     await assignRole(admin.id, tenant.company.id, "admin");
 
     function h() {
@@ -70,9 +74,7 @@ describe("GET /api/incidents — status filter", () => {
   }
 
   it("without filter — returns all incidents including all three", async () => {
-    const res = await request(testApp)
-      .get("/api/incidents")
-      .set(h());
+    const res = await request(testApp).get("/api/incidents").set(h());
 
     expect(res.status).toBe(200);
     const ids = res.body.data.map((i: { id: string }) => i.id);
@@ -150,8 +152,12 @@ describe("GET /api/incidents — branchId filter", () => {
     clearRolesCache();
     await seedRolesAndPermissions();
 
-    tenant = await createTestTenant({ companyName: "Incident Branch Filter Co" });
-    admin = await createTestUser({ email: `incident-branch-admin-${Date.now()}@test.com` });
+    tenant = await createTestTenant({
+      companyName: "Incident Branch Filter Co",
+    });
+    admin = await createTestUser({
+      email: `incident-branch-admin-${Date.now()}@test.com`,
+    });
     await assignRole(admin.id, tenant.company.id, "admin");
 
     const [branchB] = await db
@@ -164,17 +170,19 @@ describe("GET /api/incidents — branchId filter", () => {
       return authHeaders(admin.token, tenant.company.id);
     }
 
-    const resA = await request(testApp)
-      .post("/api/incidents")
-      .set(h())
-      .send({ title: "Incident for Branch A", branchId: tenant.branch.id, severity: "medium" });
+    const resA = await request(testApp).post("/api/incidents").set(h()).send({
+      title: "Incident for Branch A",
+      branchId: tenant.branch.id,
+      severity: "medium",
+    });
     expect(resA.status).toBe(201);
     incidentBranchA = resA.body.data.id;
 
-    const resB = await request(testApp)
-      .post("/api/incidents")
-      .set(h())
-      .send({ title: "Incident for Branch B", branchId: branchBId, severity: "high" });
+    const resB = await request(testApp).post("/api/incidents").set(h()).send({
+      title: "Incident for Branch B",
+      branchId: branchBId,
+      severity: "high",
+    });
     expect(resB.status).toBe(201);
     incidentBranchB = resB.body.data.id;
 
@@ -248,13 +256,20 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
     clearRolesCache();
     await seedRolesAndPermissions();
 
-    tenant = await createTestTenant({ companyName: "Incident Combined Filter Co" });
-    admin = await createTestUser({ email: `incident-combined-admin-${Date.now()}@test.com` });
+    tenant = await createTestTenant({
+      companyName: "Incident Combined Filter Co",
+    });
+    admin = await createTestUser({
+      email: `incident-combined-admin-${Date.now()}@test.com`,
+    });
     await assignRole(admin.id, tenant.company.id, "admin");
 
     const [branchB] = await db
       .insert(branches)
-      .values({ companyId: tenant.company.id, name: "Incident Branch B Combined" })
+      .values({
+        companyId: tenant.company.id,
+        name: "Incident Branch B Combined",
+      })
       .returning();
     branchBId = branchB.id;
 
@@ -265,14 +280,22 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
     const resAOpen = await request(testApp)
       .post("/api/incidents")
       .set(h())
-      .send({ title: "Branch A Open", branchId: tenant.branch.id, severity: "medium" });
+      .send({
+        title: "Branch A Open",
+        branchId: tenant.branch.id,
+        severity: "medium",
+      });
     expect(resAOpen.status).toBe(201);
     incidentBranchAOpen = resAOpen.body.data.id;
 
     const resAResolved = await request(testApp)
       .post("/api/incidents")
       .set(h())
-      .send({ title: "Branch A Resolved", branchId: tenant.branch.id, severity: "low" });
+      .send({
+        title: "Branch A Resolved",
+        branchId: tenant.branch.id,
+        severity: "low",
+      });
     expect(resAResolved.status).toBe(201);
     incidentBranchAResolved = resAResolved.body.data.id;
 

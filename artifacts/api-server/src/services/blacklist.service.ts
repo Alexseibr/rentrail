@@ -1,13 +1,30 @@
-import { db, blacklistEntries, clients, type InsertBlacklistEntry } from "@workspace/db";
+import {
+  db,
+  blacklistEntries,
+  clients,
+  type InsertBlacklistEntry,
+} from "@workspace/db";
 import { eq, and, or, isNull, gt } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 
-export async function createBlacklistEntry(data: InsertBlacklistEntry & { clientId?: string; companyId?: string }) {
+export async function createBlacklistEntry(
+  data: InsertBlacklistEntry & { clientId?: string; companyId?: string },
+) {
   if (data.clientId && data.companyId) {
     const [client] = await db
-      .select({ fullName: clients.fullName, phone: clients.phone, email: clients.email, documentNumber: clients.documentNumber })
+      .select({
+        fullName: clients.fullName,
+        phone: clients.phone,
+        email: clients.email,
+        documentNumber: clients.documentNumber,
+      })
       .from(clients)
-      .where(and(eq(clients.id, data.clientId), eq(clients.companyId, data.companyId)))
+      .where(
+        and(
+          eq(clients.id, data.clientId),
+          eq(clients.companyId, data.companyId),
+        ),
+      )
       .limit(1);
 
     if (client) {
@@ -33,7 +50,12 @@ export async function getBlacklistEntry(id: string, companyId: string) {
   const [entry] = await db
     .select()
     .from(blacklistEntries)
-    .where(and(eq(blacklistEntries.id, id), eq(blacklistEntries.companyId, companyId)))
+    .where(
+      and(
+        eq(blacklistEntries.id, id),
+        eq(blacklistEntries.companyId, companyId),
+      ),
+    )
     .limit(1);
 
   if (!entry) {
@@ -46,7 +68,12 @@ export async function revokeBlacklistEntry(id: string, companyId: string) {
   const [entry] = await db
     .update(blacklistEntries)
     .set({ endsAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(blacklistEntries.id, id), eq(blacklistEntries.companyId, companyId)))
+    .where(
+      and(
+        eq(blacklistEntries.id, id),
+        eq(blacklistEntries.companyId, companyId),
+      ),
+    )
     .returning();
 
   if (!entry) {
@@ -70,14 +97,22 @@ export interface BlacklistDecision {
   strongestAction: string | null;
   strongestSeverity: number;
   isBlocked: boolean;
-  entries: typeof blacklistEntries.$inferSelect[];
+  entries: (typeof blacklistEntries.$inferSelect)[];
 }
 
-export async function checkClientBlacklist(clientId: string, companyId: string, branchId?: string): Promise<BlacklistDecision> {
+export async function checkClientBlacklist(
+  clientId: string,
+  companyId: string,
+  branchId?: string,
+): Promise<BlacklistDecision> {
   const now = new Date();
 
   const [client] = await db
-    .select({ phone: clients.phone, email: clients.email, documentNumber: clients.documentNumber })
+    .select({
+      phone: clients.phone,
+      email: clients.email,
+      documentNumber: clients.documentNumber,
+    })
     .from(clients)
     .where(eq(clients.id, clientId))
     .limit(1);
@@ -88,17 +123,23 @@ export async function checkClientBlacklist(clientId: string, companyId: string, 
     .where(
       and(
         eq(blacklistEntries.clientId, clientId),
-        or(
-          isNull(blacklistEntries.endsAt),
-          gt(blacklistEntries.endsAt, now),
-        ),
+        or(isNull(blacklistEntries.endsAt), gt(blacklistEntries.endsAt, now)),
       ),
     );
 
   const globalIdentityConditions: ReturnType<typeof eq>[] = [];
-  if (client?.phone) globalIdentityConditions.push(eq(blacklistEntries.phoneSnapshot, client.phone));
-  if (client?.email) globalIdentityConditions.push(eq(blacklistEntries.emailSnapshot, client.email));
-  if (client?.documentNumber) globalIdentityConditions.push(eq(blacklistEntries.documentSnapshot, client.documentNumber));
+  if (client?.phone)
+    globalIdentityConditions.push(
+      eq(blacklistEntries.phoneSnapshot, client.phone),
+    );
+  if (client?.email)
+    globalIdentityConditions.push(
+      eq(blacklistEntries.emailSnapshot, client.email),
+    );
+  if (client?.documentNumber)
+    globalIdentityConditions.push(
+      eq(blacklistEntries.documentSnapshot, client.documentNumber),
+    );
 
   let globalEntries: typeof clientScopedEntries = [];
   if (globalIdentityConditions.length > 0) {
@@ -109,10 +150,7 @@ export async function checkClientBlacklist(clientId: string, companyId: string, 
         and(
           eq(blacklistEntries.scopeType, "global"),
           or(...globalIdentityConditions),
-          or(
-            isNull(blacklistEntries.endsAt),
-            gt(blacklistEntries.endsAt, now),
-          ),
+          or(isNull(blacklistEntries.endsAt), gt(blacklistEntries.endsAt, now)),
         ),
       );
   }

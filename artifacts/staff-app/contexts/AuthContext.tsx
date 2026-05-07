@@ -1,6 +1,21 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { STORAGE_KEYS, storeTokens, clearAuth, getAccessToken, getCompanyId, setCompanyId as storeCompanyId, setBranchId as storeBranchId } from "@/services/api";
+import {
+  STORAGE_KEYS,
+  storeTokens,
+  clearAuth,
+  getAccessToken,
+  getCompanyId,
+  setCompanyId as storeCompanyId,
+  setBranchId as storeBranchId,
+} from "@/services/api";
 import { setBaseUrl, setAuthTokenGetter } from "@workspace/api-client-react";
 import { unregisterPushToken } from "@/services/push";
 
@@ -39,7 +54,10 @@ interface AuthContextType extends AuthState {
   loginWithPhone: (phone: string, password: string) => Promise<void>;
   loginAsClient: (phone: string, password: string) => Promise<void>;
   requestOtp: (phone: string) => Promise<{ devCode?: string }>;
-  verifyOtp: (phone: string, code: string) => Promise<{ needsPassword: boolean }>;
+  verifyOtp: (
+    phone: string,
+    code: string,
+  ) => Promise<{ needsPassword: boolean }>;
   setPhonePassword: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   setCompanyId: (id: string) => Promise<void>;
@@ -52,10 +70,22 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-async function fetchWithAuth(url: string, options: RequestInit = {}, accessToken?: string) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+async function fetchWithAuth(
+  url: string,
+  options: RequestInit = {},
+  accessToken?: string,
+) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
-  const res = await fetch(url, { ...options, headers: { ...headers, ...(options.headers as Record<string, string> || {}) } });
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      ...headers,
+      ...((options.headers as Record<string, string>) || {}),
+    },
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error || "Request failed");
@@ -86,7 +116,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (token && storedUser) {
         const user = JSON.parse(storedUser);
-        setState({ user, isAuthenticated: true, isLoading: false, companyId, branchId });
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          companyId,
+          branchId,
+        });
       } else {
         setState((s) => ({ ...s, isLoading: false }));
       }
@@ -95,33 +131,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const applyAuthResult = useCallback(async (accessToken: string, refreshToken: string) => {
-    await storeTokens(accessToken, refreshToken);
-    const { data: userData } = await fetchWithAuth(`${BASE_URL}/api/auth/me`, {}, accessToken);
-    await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-    let companyId = await getCompanyId();
-    if (!companyId && userData.memberships?.length > 0) {
-      companyId = userData.memberships[0].companyId as string;
-      await storeCompanyId(companyId);
-    }
-    setState({ user: userData, isAuthenticated: true, isLoading: false, companyId: companyId ?? null, branchId: null });
-  }, []);
+  const applyAuthResult = useCallback(
+    async (accessToken: string, refreshToken: string) => {
+      await storeTokens(accessToken, refreshToken);
+      const { data: userData } = await fetchWithAuth(
+        `${BASE_URL}/api/auth/me`,
+        {},
+        accessToken,
+      );
+      await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+      let companyId = await getCompanyId();
+      if (!companyId && userData.memberships?.length > 0) {
+        companyId = userData.memberships[0].companyId as string;
+        await storeCompanyId(companyId);
+      }
+      setState({
+        user: userData,
+        isAuthenticated: true,
+        isLoading: false,
+        companyId: companyId ?? null,
+        branchId: null,
+      });
+    },
+    [],
+  );
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/login`, {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    await applyAuthResult(data.accessToken, data.refreshToken);
-  }, [applyAuthResult]);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/login`, {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      await applyAuthResult(data.accessToken, data.refreshToken);
+    },
+    [applyAuthResult],
+  );
 
-  const loginWithPhone = useCallback(async (phone: string, password: string) => {
-    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/login`, {
-      method: "POST",
-      body: JSON.stringify({ phone, password }),
-    });
-    await applyAuthResult(data.accessToken, data.refreshToken);
-  }, [applyAuthResult]);
+  const loginWithPhone = useCallback(
+    async (phone: string, password: string) => {
+      const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/login`, {
+        method: "POST",
+        body: JSON.stringify({ phone, password }),
+      });
+      await applyAuthResult(data.accessToken, data.refreshToken);
+    },
+    [applyAuthResult],
+  );
 
   const loginAsClient = useCallback(async (phone: string, password: string) => {
     const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/client/login`, {
@@ -144,25 +199,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.user.companyId) {
       await storeCompanyId(data.user.companyId);
     }
-    setState({ user, isAuthenticated: true, isLoading: false, companyId: data.user.companyId || null, branchId: null });
+    setState({
+      user,
+      isAuthenticated: true,
+      isLoading: false,
+      companyId: data.user.companyId || null,
+      branchId: null,
+    });
   }, []);
 
-  const requestOtp = useCallback(async (phone: string): Promise<{ devCode?: string }> => {
-    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/request-otp`, {
-      method: "POST",
-      body: JSON.stringify({ phone }),
-    });
-    return { devCode: data.devCode };
-  }, []);
+  const requestOtp = useCallback(
+    async (phone: string): Promise<{ devCode?: string }> => {
+      const { data } = await fetchWithAuth(
+        `${BASE_URL}/api/auth/phone/request-otp`,
+        {
+          method: "POST",
+          body: JSON.stringify({ phone }),
+        },
+      );
+      return { devCode: data.devCode };
+    },
+    [],
+  );
 
-  const verifyOtp = useCallback(async (phone: string, code: string): Promise<{ needsPassword: boolean }> => {
-    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/verify-otp`, {
-      method: "POST",
-      body: JSON.stringify({ phone, code }),
-    });
-    await applyAuthResult(data.accessToken, data.refreshToken);
-    return { needsPassword: data.needsPassword };
-  }, [applyAuthResult]);
+  const verifyOtp = useCallback(
+    async (
+      phone: string,
+      code: string,
+    ): Promise<{ needsPassword: boolean }> => {
+      const { data } = await fetchWithAuth(
+        `${BASE_URL}/api/auth/phone/verify-otp`,
+        {
+          method: "POST",
+          body: JSON.stringify({ phone, code }),
+        },
+      );
+      await applyAuthResult(data.accessToken, data.refreshToken);
+      return { needsPassword: data.needsPassword };
+    },
+    [applyAuthResult],
+  );
 
   const setPhonePassword = useCallback(async (password: string) => {
     const token = await getAccessToken();
@@ -185,7 +261,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } finally {
       await clearAuth();
-      setState({ user: null, isAuthenticated: false, isLoading: false, companyId: null, branchId: null });
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        companyId: null,
+        branchId: null,
+      });
     }
   }, []);
 
@@ -202,7 +284,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     const token = await getAccessToken();
     if (!token) return;
-    const { data: userData } = await fetchWithAuth(`${BASE_URL}/api/auth/me`, {}, token);
+    const { data: userData } = await fetchWithAuth(
+      `${BASE_URL}/api/auth/me`,
+      {},
+      token,
+    );
     await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
     setState((s) => ({ ...s, user: userData }));
   }, []);
@@ -210,20 +296,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isClient = state.user?.tokenType === "client";
 
   return (
-    <AuthContext.Provider value={{
-      ...state,
-      login,
-      loginWithPhone,
-      loginAsClient,
-      requestOtp,
-      verifyOtp,
-      setPhonePassword,
-      logout,
-      setCompanyId: setCompanyIdFn,
-      setBranchId: setBranchIdFn,
-      refreshUser,
-      isClient,
-    }}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        login,
+        loginWithPhone,
+        loginAsClient,
+        requestOtp,
+        verifyOtp,
+        setPhonePassword,
+        logout,
+        setCompanyId: setCompanyIdFn,
+        setBranchId: setBranchIdFn,
+        refreshUser,
+        isClient,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

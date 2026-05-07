@@ -10,10 +10,26 @@ import { Bike, ArrowLeft } from "lucide-react";
 type Step = "phone" | "password" | "otp" | "set-password";
 
 const DEMO_ACCOUNTS = [
-  { labelKey: "login.demoOwner", phone: "+79991000001", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
-  { labelKey: "login.demoAdmin", phone: "+79991000002", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
-  { labelKey: "login.demoUrbanOwner", phone: "+79991000008", color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground" },
-  { labelKey: "login.demoOperator", phone: "+79991000004", color: "bg-primary hover:bg-primary/90 text-primary-foreground" },
+  {
+    labelKey: "login.demoOwner",
+    phone: "+79991000001",
+    color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground",
+  },
+  {
+    labelKey: "login.demoAdmin",
+    phone: "+79991000002",
+    color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground",
+  },
+  {
+    labelKey: "login.demoUrbanOwner",
+    phone: "+79991000008",
+    color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground",
+  },
+  {
+    labelKey: "login.demoOperator",
+    phone: "+79991000004",
+    color: "bg-primary hover:bg-primary/90 text-primary-foreground",
+  },
 ];
 
 const DEMO_PASSWORD = "demo1234";
@@ -22,14 +38,14 @@ export default function LoginPage() {
   const { loginWithPhone, requestOtp, verifyOtp, setPhonePassword } = useAuth();
   const { t } = useTranslation();
 
-  const [step, setStep]         = useState<Step>("phone");
-  const [phone, setPhone]       = useState("");
+  const [step, setStep] = useState<Step>("phone");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [otpCode, setOtpCode]   = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [devCode, setDevCode]   = useState<string | null>(null);
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
 
   const handlePhoneContinue = (e: React.FormEvent) => {
@@ -46,7 +62,11 @@ export default function LoginPage() {
     try {
       await loginWithPhone(phone.trim(), password);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.loginFailed"));
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : (err as Error).message || t("login.loginFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -61,7 +81,11 @@ export default function LoginPage() {
       setOtpCode("");
       setStep("otp");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.codeSendFailed"));
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : (err as Error).message || t("login.codeSendFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -78,7 +102,11 @@ export default function LoginPage() {
         setStep("set-password");
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.invalidCode"));
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : (err as Error).message || t("login.invalidCode"),
+      );
     } finally {
       setLoading(false);
     }
@@ -91,7 +119,11 @@ export default function LoginPage() {
     try {
       await setPhonePassword(newPassword);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : (err as Error).message || t("login.setPasswordFailed"));
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : (err as Error).message || t("login.setPasswordFailed"),
+      );
     } finally {
       setLoading(false);
     }
@@ -103,7 +135,9 @@ export default function LoginPage() {
     try {
       await loginWithPhone(demoPhone, DEMO_PASSWORD);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("login.demoLoginFailed"));
+      setError(
+        err instanceof ApiError ? err.message : t("login.demoLoginFailed"),
+      );
     } finally {
       setDemoLoading(null);
     }
@@ -113,10 +147,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sidebar via-sidebar to-[hsl(220,20%,18%)] px-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: `radial-gradient(circle at 25% 25%, hsl(45, 96%, 53%) 0%, transparent 50%),
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 25% 25%, hsl(45, 96%, 53%) 0%, transparent 50%),
                           radial-gradient(circle at 75% 75%, hsl(45, 96%, 53%) 0%, transparent 50%)`,
-      }} />
+        }}
+      />
 
       <div className="w-full max-w-sm space-y-5 relative z-10">
         <div className="text-center mb-8">
@@ -130,10 +167,10 @@ export default function LoginPage() {
         <div className="bg-card rounded-2xl shadow-xl p-6">
           <div className="text-center mb-5">
             <p className="text-sm text-muted-foreground">
-              {step === "phone"         && t("login.enterPhone")}
-              {step === "password"      && t("login.signInAs", { phone })}
-              {step === "otp"           && t("login.enterCode", { phone })}
-              {step === "set-password"  && t("login.createPassword")}
+              {step === "phone" && t("login.enterPhone")}
+              {step === "password" && t("login.signInAs", { phone })}
+              {step === "otp" && t("login.enterCode", { phone })}
+              {step === "set-password" && t("login.createPassword")}
             </p>
           </div>
 
@@ -146,7 +183,9 @@ export default function LoginPage() {
           {step === "phone" && (
             <form onSubmit={handlePhoneContinue} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium">{t("login.phoneLabel")}</Label>
+                <Label htmlFor="phone" className="text-sm font-medium">
+                  {t("login.phoneLabel")}
+                </Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -167,7 +206,9 @@ export default function LoginPage() {
           {step === "password" && (
             <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">{t("login.password")}</Label>
+                <Label htmlFor="password" className="text-sm font-medium">
+                  {t("login.password")}
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -184,7 +225,10 @@ export default function LoginPage() {
               <div className="flex items-center justify-between text-sm">
                 <button
                   type="button"
-                  onClick={() => { setStep("phone"); setError(""); }}
+                  onClick={() => {
+                    setStep("phone");
+                    setError("");
+                  }}
                   className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
                 >
                   <ArrowLeft className="h-3 w-3" />
@@ -206,11 +250,14 @@ export default function LoginPage() {
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               {devCode && (
                 <div className="rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-foreground">
-                  {t("login.devModeCode")} <span className="font-mono font-bold text-lg">{devCode}</span>
+                  {t("login.devModeCode")}{" "}
+                  <span className="font-mono font-bold text-lg">{devCode}</span>
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="otp" className="text-sm font-medium">{t("login.digitCode")}</Label>
+                <Label htmlFor="otp" className="text-sm font-medium">
+                  {t("login.digitCode")}
+                </Label>
                 <Input
                   id="otp"
                   type="text"
@@ -218,19 +265,28 @@ export default function LoginPage() {
                   maxLength={6}
                   placeholder="000000"
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) =>
+                    setOtpCode(e.target.value.replace(/\D/g, ""))
+                  }
                   required
                   autoFocus
                   className="text-center text-2xl tracking-widest font-mono"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={busy || otpCode.length !== 6}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={busy || otpCode.length !== 6}
+              >
                 {loading ? t("login.verifying") : t("login.verifyCode")}
               </Button>
               <div className="flex items-center justify-between text-sm">
                 <button
                   type="button"
-                  onClick={() => { setStep("password"); setError(""); }}
+                  onClick={() => {
+                    setStep("password");
+                    setError("");
+                  }}
                   className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
                 >
                   <ArrowLeft className="h-3 w-3" />
@@ -254,7 +310,9 @@ export default function LoginPage() {
                 {t("login.setPasswordHint")}
               </p>
               <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-sm font-medium">{t("login.newPassword")}</Label>
+                <Label htmlFor="new-password" className="text-sm font-medium">
+                  {t("login.newPassword")}
+                </Label>
                 <Input
                   id="new-password"
                   type="password"
@@ -267,7 +325,11 @@ export default function LoginPage() {
                   autoComplete="new-password"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={busy || newPassword.length < 6}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={busy || newPassword.length < 6}
+              >
                 {loading ? t("common.saving") : t("login.setPasswordContinue")}
               </Button>
             </form>
@@ -291,7 +353,10 @@ export default function LoginPage() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground text-center mt-3">
-            {t("login.testNumbers")} <span className="font-mono text-foreground/70">+7 999 000 000X</span>
+            {t("login.testNumbers")}{" "}
+            <span className="font-mono text-foreground/70">
+              +7 999 000 000X
+            </span>
           </p>
         </div>
       </div>

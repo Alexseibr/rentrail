@@ -17,6 +17,7 @@ I like functional programming.
 The project is a pnpm monorepo using Node.js 24 and TypeScript 5.9. The backend API is built with Express 5, utilizing PostgreSQL with Drizzle ORM, Zod for validation, and JWT with bcrypt for authentication. API codegen is handled by Orval from an OpenAPI spec, and esbuild is used for the build process.
 
 ### UI/UX Decisions
+
 A mobile staff application, built with Expo/React Native, provides intuitive workflows for operators, featuring a Yandex Go-inspired design system (dark navigation, amber/yellow accents, light gray content, white cards with shadows). It supports client/courier mode through a separate login flow.
 
 A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owners with management capabilities, also using a Yandex Go-inspired design system (dark sidebar, amber/yellow accents, light gray background). It offers platform-level management (Companies, Billing, Diagnostics, Analytics) and company-level views (Fleet, Rentals, Clients, Branches, Settings, Service, Map), with role-based access filtering for navigation and actions.
@@ -38,6 +39,7 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 A CI script (`pnpm run check-map-cleanup`) enforces both conventions automatically, scanning `artifacts/staff-app/app/` (WebView contract) and `artifacts/platform-admin/src/` (Leaflet contract).
 
 ### Technical Implementations
+
 - **Multi-Tenancy:** Enforced via `x-company-id` header and `companyId` filtering on all database queries.
 - **Authentication & Authorization:** Phone number-based login with OTP or password. JWT for access/refresh tokens and a permission-based RBAC system.
 - **Database Schema:** PostgreSQL schema with 30+ tables managed by Drizzle ORM.

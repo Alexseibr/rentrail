@@ -4,7 +4,10 @@ function hasPermission(userPerms: Set<string>, required: string): boolean {
   return userPerms.has(required);
 }
 
-function hasAllPermissions(userPerms: Set<string>, required: string[]): boolean {
+function hasAllPermissions(
+  userPerms: Set<string>,
+  required: string[],
+): boolean {
   return required.every((code) => userPerms.has(code));
 }
 
@@ -18,12 +21,27 @@ function superAdminBypass(isSuperAdmin: boolean, _required: string[]): boolean {
 
 describe("Permission Resolution", () => {
   const adminPerms = new Set([
-    "company:read", "company:update",
-    "branch:create", "branch:read", "branch:update", "branch:delete",
-    "asset:create", "asset:read", "asset:update", "asset:changeStatus",
-    "rental:create", "rental:read", "rental:update", "rental:approve", "rental:start", "rental:complete",
-    "client:create", "client:read", "client:update",
-    "payment:create", "payment:read",
+    "company:read",
+    "company:update",
+    "branch:create",
+    "branch:read",
+    "branch:update",
+    "branch:delete",
+    "asset:create",
+    "asset:read",
+    "asset:update",
+    "asset:changeStatus",
+    "rental:create",
+    "rental:read",
+    "rental:update",
+    "rental:approve",
+    "rental:start",
+    "rental:complete",
+    "client:create",
+    "client:read",
+    "client:update",
+    "payment:create",
+    "payment:read",
   ]);
 
   const viewerPerms = new Set([
@@ -36,8 +54,11 @@ describe("Permission Resolution", () => {
   ]);
 
   const operatorPerms = new Set([
-    "asset:read", "asset:changeStatus",
-    "rental:read", "rental:start", "rental:complete",
+    "asset:read",
+    "asset:changeStatus",
+    "rental:read",
+    "rental:start",
+    "rental:complete",
     "client:read",
   ]);
 
@@ -61,21 +82,37 @@ describe("Permission Resolution", () => {
 
   describe("hasAllPermissions", () => {
     it("admin has all asset CRUD", () => {
-      expect(hasAllPermissions(adminPerms, ["asset:create", "asset:read", "asset:update"])).toBe(true);
+      expect(
+        hasAllPermissions(adminPerms, [
+          "asset:create",
+          "asset:read",
+          "asset:update",
+        ]),
+      ).toBe(true);
     });
 
     it("viewer lacks write permissions", () => {
-      expect(hasAllPermissions(viewerPerms, ["asset:create", "asset:read"])).toBe(false);
+      expect(
+        hasAllPermissions(viewerPerms, ["asset:create", "asset:read"]),
+      ).toBe(false);
     });
   });
 
   describe("hasAnyPermission", () => {
     it("viewer has at least one of create/read", () => {
-      expect(hasAnyPermission(viewerPerms, ["asset:create", "asset:read"])).toBe(true);
+      expect(
+        hasAnyPermission(viewerPerms, ["asset:create", "asset:read"]),
+      ).toBe(true);
     });
 
     it("viewer has none of write permissions", () => {
-      expect(hasAnyPermission(viewerPerms, ["asset:create", "asset:update", "asset:delete"])).toBe(false);
+      expect(
+        hasAnyPermission(viewerPerms, [
+          "asset:create",
+          "asset:update",
+          "asset:delete",
+        ]),
+      ).toBe(false);
     });
   });
 
