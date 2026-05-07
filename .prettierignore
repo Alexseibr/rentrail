@@ -4,3 +4,9 @@ dist/
 build/
 .expo/
 pnpm-lock.yaml
+lib/api-client-react/src/generated/
+lib/api-client-react/dist/
+lib/api-zod/src/generated/
+lib/api-zod/dist/
+artifacts/mockup-sandbox/src/.generated/
+artifacts/staff-app/expo-env.d.ts
