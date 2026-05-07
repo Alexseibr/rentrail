@@ -2,6 +2,7 @@
   "nav": {
     "home": "Home",
     "assets": "Assets",
+    "map": "Map",
     "rentals": "Rentals",
     "ops": "Ops",
     "settings": "Settings",
@@ -526,7 +527,9 @@
     "noLocation": "{{count}} no location",
     "noAccess": "You don't have permission to view the fleet map",
     "openInMaps": "Open in Maps",
-    "recenter": "Re-center fleet"
+    "recenter": "Re-center fleet",
+    "updated": "Updated at {{time}}",
+    "fastPoll": "Live"
   },
   "common": {
     "error": "Error",

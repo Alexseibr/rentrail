@@ -15,12 +15,16 @@ import { useTranslation } from "react-i18next";
 import WebView from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { canAccessTab } from "@/utils/permissions";
 import { writeCoordsToCache, readManyCoordsFromCache } from "@/services/coordsCache";
 import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
+
+const FAST_POLL_MS = 5000;
+const SLOW_POLL_MS = 30000;
 
 const FLEET_MAP_VIEW_KEY = "@prefs/fleetMapView";
 
@@ -285,16 +289,18 @@ export default function FleetMapScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, companyId } = useAuth();
+  const queryClient = useQueryClient();
 
   const memberships = user?.memberships || user?.companies;
   const roleCode = memberships?.find((c: { companyId: string }) => c.companyId === companyId)?.roleCode || memberships?.[0]?.roleCode;
-  const hasAccess = canAccessTab(roleCode, "assets");
+  const hasAccess = canAccessTab(roleCode, "map");
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const webViewRef = useRef<InstanceType<typeof WebView> | null>(null);
   const recenterScaleAnim = useRef(new Animated.Value(1)).current;
   const tooltipOpacity = useRef(new Animated.Value(0)).current;
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [pins, setPins] = useState<PinData[]>([]);
@@ -304,6 +310,40 @@ export default function FleetMapScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const [savedView, setSavedView] = useState<FleetMapView | null>(null);
+  const [fastPollUntil, setFastPollUntil] = useState<number>(() => {
+    const cached = queryClient.getQueryData<number>(["fleet-fast-poll-until"]);
+    return cached && cached > Date.now() ? cached : 0;
+  });
+
+  useEffect(() => {
+    const cached = queryClient.getQueryData<number>(["fleet-fast-poll-until"]);
+    if (cached && cached > Date.now()) {
+      setFastPollUntil(cached);
+    }
+
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (
+        event.type === "updated" &&
+        Array.isArray(event.query.queryKey) &&
+        event.query.queryKey[0] === "fleet-fast-poll-until"
+      ) {
+        const until = queryClient.getQueryData<number>(["fleet-fast-poll-until"]);
+        if (until && until > Date.now()) {
+          setFastPollUntil(until);
+        }
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
+  const isFastPolling = Date.now() < fastPollUntil;
+
+  useEffect(() => {
+    if (!isFastPolling) return;
+    const remaining = fastPollUntil - Date.now();
+    const timer = setTimeout(() => setFastPollUntil(0), remaining);
+    return () => clearTimeout(timer);
+  }, [fastPollUntil, isFastPolling]);
 
   useEffect(() => {
     AsyncStorage.getItem(FLEET_MAP_VIEW_KEY).then((raw) => {
@@ -417,6 +457,23 @@ export default function FleetMapScreen() {
   useEffect(() => {
     loadMap(false);
   }, [loadMap]);
+
+  useEffect(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    const interval = isFastPolling ? FAST_POLL_MS : SLOW_POLL_MS;
+    pollTimerRef.current = setInterval(() => {
+      loadMap(false);
+    }, interval);
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, [isFastPolling, loadMap]);
 
   const openInMapsLabel = t("fleetMap.openInMaps");
   const mapHtml = useMemo(() => buildFleetMapHtml(pins, openInMapsLabel, savedView ?? undefined), [pins, openInMapsLabel, savedView]);

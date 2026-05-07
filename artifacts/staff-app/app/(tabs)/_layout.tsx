@@ -40,6 +40,12 @@ function NativeTabLayout() {
           <Label>{t("nav.assets")}</Label>
         </NativeTabs.Trigger>
       )}
+      {canAccessTab(roleCode, "map") && (
+        <NativeTabs.Trigger name="map">
+          <Icon sf={{ default: "map", selected: "map.fill" }} />
+          <Label>{t("nav.map")}</Label>
+        </NativeTabs.Trigger>
+      )}
       {canAccessTab(roleCode, "rentals") && (
         <NativeTabs.Trigger name="rentals">
           <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
@@ -169,6 +175,21 @@ function ClassicTabLayout() {
             ) : (
               <View style={focused ? tabStyles.activeIconWrap : undefined}>
                 <Feather name="grid" size={22} color={color} />
+              </View>
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: t("nav.map"),
+          href: canAccessTab(roleCode, "map") ? undefined : null,
+          tabBarIcon: ({ color, focused }) =>
+            isIOS ? (
+              <SymbolView name={focused ? "map.fill" : "map"} tintColor={color} size={24} />
+            ) : (
+              <View style={focused ? tabStyles.activeIconWrap : undefined}>
+                <Feather name="map" size={22} color={color} />
               </View>
             ),
         }}

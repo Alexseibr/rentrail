@@ -291,6 +291,7 @@ export default function AssetDetailScreen() {
         onPress: async () => {
           if (!isConnected && isQueueable("vehicle_command")) {
             fastPollUntilRef.current = Date.now() + 30000;
+            queryClient.setQueryData(["fleet-fast-poll-until"], Date.now() + 30000);
             const offlineOptimisticId = `optimistic-${Date.now()}`;
             queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
               {
@@ -324,6 +325,7 @@ export default function AssetDetailScreen() {
           }
 
           fastPollUntilRef.current = Date.now() + 30000;
+          queryClient.setQueryData(["fleet-fast-poll-until"], Date.now() + 30000);
           const optimisticId = `optimistic-${Date.now()}`;
           queryClient.setQueryData<typeof commands>(["asset-commands", id], (prev = []) => [
             {
