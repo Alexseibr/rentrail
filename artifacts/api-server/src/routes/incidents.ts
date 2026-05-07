@@ -28,7 +28,7 @@ router.get("/incidents", authenticate, requireCompanyAccess, requirePermission("
 
 router.get("/incidents/:id", authenticate, requireCompanyAccess, requirePermission("asset:read"), async (req, res) => {
   try {
-    const item = await incidentService.getIncident(req.params.id, req.tenant!.companyId);
+    const item = await incidentService.getIncident(String(req.params.id), req.tenant!.companyId);
     if (!item) return res.status(404).json({ error: "Not found" });
     return res.json({ data: item });
   } catch (err: any) {
@@ -61,7 +61,7 @@ router.post("/incidents/:id/status", authenticate, requireCompanyAccess, require
   try {
     const update: Record<string, unknown> = { status: req.body.status };
     if (req.body.status === "resolved") update.resolvedAt = new Date();
-    const item = await incidentService.updateIncident(req.params.id, req.tenant!.companyId, update);
+    const item = await incidentService.updateIncident(String(req.params.id), req.tenant!.companyId, update);
     if (!item) return res.status(404).json({ error: "Not found" });
     return res.json({ data: item });
   } catch (err: any) {

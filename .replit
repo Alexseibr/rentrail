@@ -26,6 +26,10 @@ author = "agent"
 task = "workflow.run"
 args = "check-map-cleanup"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "ci"
+
 [[workflows.workflow]]
 name = "check-map-cleanup"
 author = "agent"
@@ -33,6 +37,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm run check-map-cleanup"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "ci"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run ci"
 
 [workflows.workflow.metadata]
 isValidation = true
