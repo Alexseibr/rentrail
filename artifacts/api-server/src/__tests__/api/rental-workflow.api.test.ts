@@ -58,6 +58,7 @@ describe("Rental Workflow API", () => {
   async function forceRentalStatus(rentalId: string, status: string) {
     await db
       .update(rentals)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .set({ status: status as any })
       .where(eq(rentals.id, rentalId));
   }

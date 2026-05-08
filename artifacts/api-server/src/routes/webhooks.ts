@@ -14,6 +14,7 @@ router.post("/webhooks/yukassa", async (req, res) => {
   try {
     const result = await processYukassaWebhook(req.body);
     return res.json(result);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     logger.error({ err }, "YuKassa webhook error");
     return res.status(500).json({ ok: false });
@@ -32,6 +33,7 @@ router.post("/webhooks/tinkoff", async (req, res) => {
     }
     const result = await processTinkoffWebhook(req.body);
     return res.json(result);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     logger.error({ err }, "Tinkoff webhook error");
     return res.status(500).json({ ok: false });
@@ -42,6 +44,7 @@ router.post("/webhooks/cloudpayments", async (req, res) => {
   try {
     const hmacHeader = req.headers["content-hmac"] as string | undefined;
     const rawBody: Buffer =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (req as any).rawBody ?? Buffer.from(JSON.stringify(req.body));
     const result = await processCloudpaymentsWebhook(
       req.body,
@@ -49,6 +52,7 @@ router.post("/webhooks/cloudpayments", async (req, res) => {
       hmacHeader,
     );
     return res.json({ code: result.code });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     logger.error({ err }, "CloudPayments webhook error");
     return res.status(500).json({ code: 13 });

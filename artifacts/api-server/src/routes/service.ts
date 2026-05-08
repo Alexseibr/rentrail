@@ -47,6 +47,7 @@ router.get(
         statusParam,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /service-requests error");
       return res
@@ -199,6 +200,7 @@ router.get(
         req.query.assignedToUserId as string | undefined,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /work-orders error");
       return res
@@ -234,6 +236,7 @@ router.post(
         estimatedCost: req.body.estimatedCost,
       });
       return res.status(201).json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "POST /work-orders error");
       return res.status(err.statusCode ?? 500).json({
@@ -308,6 +311,7 @@ router.get(
         req.query.branchId as string | undefined,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /mechanics error");
       return res
@@ -356,10 +360,20 @@ router.get(
       ORDER BY asset_id, recorded_at DESC
     `);
 
-      const snapRows = Array.isArray(latestResult)
-        ? latestResult
-        : ((latestResult as any).rows ?? []);
-      const latestByAsset = new Map<string, any>();
+      interface TelemetrySnapRow {
+        assetId: string;
+        lat: number | null;
+        lng: number | null;
+        batteryPercent: number | null;
+        speed: number | null;
+        lockState: string | null;
+        recordedAt: Date | null;
+      }
+      const snapRows: TelemetrySnapRow[] = Array.isArray(latestResult)
+        ? (latestResult as TelemetrySnapRow[])
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((latestResult as any).rows ?? []);
+      const latestByAsset = new Map<string, TelemetrySnapRow>();
       for (const snap of snapRows) {
         if (snap.assetId) latestByAsset.set(snap.assetId, snap);
       }
@@ -378,6 +392,7 @@ router.get(
       });
 
       return res.json({ data: result });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /fleet-map error");
       return res
@@ -419,6 +434,7 @@ router.get(
         logTypeParam,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /maintenance-logs error");
       return res
@@ -463,6 +479,7 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "POST /maintenance-logs error");
       return res.status(err.statusCode ?? 500).json({
@@ -488,6 +505,7 @@ router.get(
           error: { code: "NOT_FOUND", message: "Maintenance log not found" },
         });
       return res.json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /maintenance-logs/:id error");
       return res
@@ -531,6 +549,7 @@ router.patch(
           error: { code: "NOT_FOUND", message: "Maintenance log not found" },
         });
       return res.json({ data: row });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "PATCH /maintenance-logs/:id error");
       return res
@@ -554,6 +573,7 @@ router.get(
         req.query.assetId as string | undefined,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -573,6 +593,7 @@ router.get(
         req.tenant!.companyId,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -611,6 +632,7 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -644,6 +666,7 @@ router.patch(
         safe,
       );
       return res.json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -665,6 +688,7 @@ router.delete(
         req.tenant!.companyId,
       );
       return res.status(204).send();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -689,6 +713,7 @@ router.get(
         req.query.lowStock === "true",
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -709,6 +734,7 @@ router.get(
         req.tenant!.companyId,
       );
       return res.json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -747,6 +773,7 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -782,6 +809,7 @@ router.patch(
         safe,
       );
       return res.json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -803,6 +831,7 @@ router.delete(
         req.tenant!.companyId,
       );
       return res.status(204).send();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -825,6 +854,7 @@ router.get(
         req.query.limit ? parseInt(req.query.limit as string) : 100,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -862,6 +892,7 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -884,6 +915,7 @@ router.get(
         String(req.params.id),
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -916,6 +948,7 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -939,6 +972,7 @@ router.delete(
         req.user!.userId,
       );
       return res.status(204).send();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const status = err.statusCode ?? 500;
       return res.status(status).json({
@@ -966,6 +1000,7 @@ router.get(
         String(req.params.id),
       );
       return res.json({ data: { ...item, parts } });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       return res
         .status(500)
@@ -987,6 +1022,7 @@ router.get(
         req.tenant!.companyId,
       );
       return res.json({ data: stats });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /service-stats error");
       return res

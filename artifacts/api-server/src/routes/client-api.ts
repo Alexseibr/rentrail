@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { authenticate } from "../middlewares/authenticate";
 import {
   db,
@@ -22,7 +22,7 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
-function requireClient(req: any) {
+function requireClient(req: Request) {
   if (
     req.user?.tokenType !== "client" ||
     !req.user?.clientId ||
@@ -36,7 +36,7 @@ function requireClient(req: any) {
   };
 }
 
-function handleError(res: any, err: any, context: string) {
+function handleError(res: Response, err: unknown, context: string) {
   if (err instanceof UnauthorizedError) {
     res
       .status(401)
@@ -175,6 +175,7 @@ router.get("/client/vehicles", authenticate, async (req, res) => {
     });
 
     res.json({ data: result });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "GET /client/vehicles");
   }
@@ -252,6 +253,7 @@ router.get("/client/rentals", authenticate, async (req, res) => {
     });
 
     res.json({ data: result });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "GET /client/rentals");
   }
@@ -305,20 +307,19 @@ router.post("/client/rentals", authenticate, async (req, res) => {
       throw new BadRequestError("Your account is not active");
     }
 
-    let plan: any = null;
-    if (rentalPlanId) {
-      const [p] = await db
-        .select()
-        .from(rentalPlans)
-        .where(
-          and(
-            eq(rentalPlans.id, rentalPlanId),
-            eq(rentalPlans.companyId, companyId),
-          ),
-        )
-        .limit(1);
-      plan = p;
-    }
+    const [planRecord] = rentalPlanId
+      ? await db
+          .select()
+          .from(rentalPlans)
+          .where(
+            and(
+              eq(rentalPlans.id, rentalPlanId),
+              eq(rentalPlans.companyId, companyId),
+            ),
+          )
+          .limit(1)
+      : [];
+    const plan = planRecord ?? null;
 
     const [rental] = await db
       .insert(rentals)
@@ -343,6 +344,7 @@ router.post("/client/rentals", authenticate, async (req, res) => {
       .where(eq(assets.id, assetId));
 
     res.status(201).json({ data: rental });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "POST /client/rentals");
   }
@@ -388,6 +390,7 @@ router.post("/client/rentals/:id/return", authenticate, async (req, res) => {
     }
 
     res.json({ data: updated });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "POST /client/rentals/:id/return");
   }
@@ -415,6 +418,7 @@ router.get("/client/profile", authenticate, async (req, res) => {
     if (!client) throw new NotFoundError("Client not found");
 
     res.json({ data: { ...client, tokenType: "client" } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "GET /client/profile");
   }
@@ -461,6 +465,7 @@ router.get("/client/vehicles/lookup", authenticate, async (req, res) => {
       .limit(1);
 
     res.json({ data: { ...asset, hasActiveRental: !!activeRental } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "GET /client/vehicles/lookup");
   }
@@ -515,6 +520,7 @@ router.get("/client/vehicles/:id", authenticate, async (req, res) => {
           : null,
       },
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "GET /client/vehicles/:id");
   }
@@ -543,6 +549,7 @@ router.get("/client/vehicles/:id/locations", authenticate, async (req, res) => {
         recordedAt: l.recordedAt,
       })),
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "GET /client/vehicles/:id/locations");
   }
@@ -561,6 +568,7 @@ router.post("/client/vehicles/:id/lock", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "POST /client/vehicles/:id/lock");
   }
@@ -579,6 +587,7 @@ router.post("/client/vehicles/:id/unlock", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "POST /client/vehicles/:id/unlock");
   }
@@ -597,6 +606,7 @@ router.post("/client/vehicles/:id/arm", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "POST /client/vehicles/:id/arm");
   }
@@ -615,6 +625,7 @@ router.post("/client/vehicles/:id/disarm", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "POST /client/vehicles/:id/disarm");
   }
@@ -702,6 +713,7 @@ router.get("/client/rentals/:id", authenticate, async (req, res) => {
           : null,
       },
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     handleError(res, err, "GET /client/rentals/:id");
   }

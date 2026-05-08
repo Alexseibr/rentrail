@@ -232,6 +232,7 @@ export async function createTestAsset(
         | "ebike"
         | "scooter"
         | "escooter",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: (opts?.status ?? "available") as any,
       internalCode: opts?.internalCode ?? `ASSET-${suffix}`,
     })

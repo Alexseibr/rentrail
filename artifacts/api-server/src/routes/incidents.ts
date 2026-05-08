@@ -43,6 +43,7 @@ router.get(
         statusParam,
       );
       return res.json({ data: items });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /incidents error");
       return res
@@ -65,6 +66,7 @@ router.get(
       );
       if (!item) return res.status(404).json({ error: "Not found" });
       return res.json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "GET /incidents/:id error");
       return res
@@ -95,6 +97,7 @@ router.post(
         reportedByUserId: req.user!.userId,
       });
       return res.status(201).json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "POST /incidents error");
       return res
@@ -120,6 +123,7 @@ router.post(
       );
       if (!item) return res.status(404).json({ error: "Not found" });
       return res.json({ data: item });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error({ err }, "POST /incidents/:id/status error");
       return res

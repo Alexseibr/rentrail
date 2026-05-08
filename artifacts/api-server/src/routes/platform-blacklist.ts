@@ -74,7 +74,9 @@ router.get(
       entityType: "blacklist_entry",
     });
     const result = await platformBlacklistService.listGlobalBlacklistEntries({
-      actionType: req.query.actionType as any,
+      actionType: req.query.actionType as
+        | (typeof blacklistActionTypes)[number]
+        | undefined,
       active:
         req.query.active === "true"
           ? true

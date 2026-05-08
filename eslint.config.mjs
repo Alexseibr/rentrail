@@ -48,6 +48,16 @@ export default [
   },
   {
     files: [
+      "artifacts/api-server/src/**/*.ts",
+      "lib/db/src/**/*.ts",
+      "lib/api-spec/**/*.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: [
       "artifacts/platform-admin/src/**/*.ts",
       "artifacts/platform-admin/src/**/*.tsx",
       "artifacts/staff-app/app/**/*.ts",
