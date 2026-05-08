@@ -13,7 +13,6 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "expo-router";
-import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAccessToken } from "@/services/api";
 
@@ -31,7 +30,6 @@ interface ClientProfile {
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
-  const _colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
 
@@ -184,11 +182,7 @@ function InfoRow({
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoLeft}>
-        <Feather
-          name={icon as React.ComponentProps<typeof Feather>["name"]}
-          size={18}
-          color="#8c8c8c"
-        />
+        <Feather name={icon as any} size={18} color="#8c8c8c" /> // eslint-disable-line @typescript-eslint/no-explicit-any
         <Text style={styles.infoLabel}>{label}</Text>
       </View>
       <Text style={styles.infoValue}>{value}</Text>

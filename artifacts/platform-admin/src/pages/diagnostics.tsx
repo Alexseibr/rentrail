@@ -95,7 +95,8 @@ export default function DiagnosticsPage() {
       );
       const items = res ?? [];
       return items.map(
-        (t): TenantHealth => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (t: any): TenantHealth => ({
           companyId: String(t.companyId ?? t.id ?? ""),
           companyName: String(t.companyName ?? t.name ?? ""),
           status: String(t.status ?? t.healthStatus ?? "healthy"),

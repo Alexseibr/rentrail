@@ -211,7 +211,8 @@ export default function AssetDetailPage() {
           <CardContent className="p-0">
             {historyQuery.isLoading ? (
               <div className="p-6 space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
+                {Array.from({ length: 3 }).map(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (_: any, i) => (
                   <Skeleton key={i} className="h-8 w-full" />
                 ))}
               </div>
@@ -229,7 +230,9 @@ export default function AssetDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((entry, i: number) => (
+                  {history.map(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (entry: any, i: number) => (
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
                         {entry.createdAt

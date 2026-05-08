@@ -14,7 +14,6 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
-import { useColors } from "@/hooks/useColors";
 import { parseScanResult } from "@/services/scanner";
 import { getAccessToken, getCompanyId } from "@/services/api";
 import { useNetwork } from "@/services/network";
@@ -25,7 +24,6 @@ const YELLOW = "#F5C518";
 
 export default function ScannerScreen() {
   const { t } = useTranslation();
-  const _colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isConnected } = useNetwork();

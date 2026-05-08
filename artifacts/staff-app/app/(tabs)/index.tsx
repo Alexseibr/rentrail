@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -100,7 +99,6 @@ const STAT_CONFIG = [
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const colors = useColors();
-  const _insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, companyId } = useAuth();
   const { pendingCount } = useSync();

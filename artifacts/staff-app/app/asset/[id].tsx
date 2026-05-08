@@ -927,9 +927,7 @@ export default function AssetDetailScreen() {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Feather
-                    name={
-                      lockIcon as React.ComponentProps<typeof Feather>["name"]
-                    }
+                    name={lockIcon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
                     size={20}
                     color={isLocked ? "#C62828" : colors.foreground}
                   />
@@ -970,11 +968,7 @@ export default function AssetDetailScreen() {
                         />
                       ) : (
                         <Feather
-                          name={
-                            btn.icon as React.ComponentProps<
-                              typeof Feather
-                            >["name"]
-                          }
+                          name={btn.icon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
                           size={20}
                           color={colors.foreground}
                         />
@@ -1010,9 +1004,7 @@ export default function AssetDetailScreen() {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Feather
-                    name={
-                      alarmIcon as React.ComponentProps<typeof Feather>["name"]
-                    }
+                    name={alarmIcon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
                     size={20}
                     color={isArmed ? "#E65100" : "#2E7D32"}
                   />
@@ -1053,11 +1045,7 @@ export default function AssetDetailScreen() {
                         />
                       ) : (
                         <Feather
-                          name={
-                            btn.icon as React.ComponentProps<
-                              typeof Feather
-                            >["name"]
-                          }
+                          name={btn.icon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
                           size={20}
                           color={colors.foreground}
                         />
@@ -1184,11 +1172,7 @@ export default function AssetDetailScreen() {
                       ]}
                     >
                       <Feather
-                        name={
-                          iconMeta.name as React.ComponentProps<
-                            typeof Feather
-                          >["name"]
-                        }
+                        name={iconMeta.name as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
                         size={16}
                         color={iconMeta.color}
                       />

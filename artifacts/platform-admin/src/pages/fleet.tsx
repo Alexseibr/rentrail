@@ -150,38 +150,31 @@ export default function FleetPage() {
     ? { "x-company-id": companyId }
     : {};
 
-  const [showCreate, setShowCreate] = useState(false);
-  const [editAsset, setEditAsset] = useState<Asset | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editAsset, setEditAsset] = useState<any>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [statusChange, setStatusChange] = useState<{
     id: string;
     current: string;
   } | null>(null);
-  const [newStatus, setNewStatus] = useState("");
-  const [statusReason, setStatusReason] = useState("");
-  const [archiveConfirm, setArchiveConfirm] = useState<Asset | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const branchesQuery = useQuery({
-    queryKey: ["branches", companyId],
-    queryFn: () => api<Branch[]>("/branches", { headers: companyHeaders }),
+    queryFn: () => api("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const branches = branchesQuery.data ?? [];
 
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId, statusFilter],
-    queryFn: () => {
-      const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api<Asset[]>(`/assets${params}`, { headers: companyHeaders });
+      return api(`/assets${params}`, { headers: companyHeaders });
     },
     enabled: !!companyId,
   });
-  const allItems = assetsQuery.data ?? [];
-  const items = search
-    ? allItems.filter(
-        (a) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (a: any) =>
           (a.internalCode?.toLowerCase() || "").includes(
             search.toLowerCase(),
           ) ||
@@ -296,7 +289,8 @@ export default function FleetPage() {
     setShowCreate(true);
   }
 
-  function openEdit(asset: Asset) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function openEdit(asset: any) {
     setShowCreate(false);
     setEditAsset(asset);
     setForm({
@@ -333,8 +327,7 @@ export default function FleetPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  const countByStatus = (s: string) =>
-    allItems.filter((a) => a.status === s).length;
+    allItems.filter((a: any) => a.status === s).length;  // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const KPI_FLEET = [
     { key: "available", accent: "bg-green-500" },
@@ -362,8 +355,7 @@ export default function FleetPage() {
         )}
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {KPI_FLEET.map(({ key, accent }) => {
+        {KPI_FLEET.map(({ key, accent, textAccent: _textAccent }) => {
           const count = countByStatus(key);
           const isActive = statusFilter === key;
           return (
@@ -472,10 +464,8 @@ export default function FleetPage() {
                   )}
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {items.map((asset) => {
-                  const TypeIcon =
-                    ASSET_TYPE_ICONS[asset.assetType ?? ""] || Bike;
+                {items.map((asset: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
+                  const TypeIcon = ASSET_TYPE_ICONS[asset.assetType] || Bike;
                   const typeColor =
                     ASSET_TYPE_COLORS[asset.assetType ?? ""] ||
                     ASSET_TYPE_COLORS.bike;
@@ -675,7 +665,7 @@ export default function FleetPage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
+                    {branches.map((b: any) => (  // eslint-disable-line @typescript-eslint/no-explicit-any
                       <SelectItem key={b.id} value={b.id}>
                         {b.name}
                       </SelectItem>

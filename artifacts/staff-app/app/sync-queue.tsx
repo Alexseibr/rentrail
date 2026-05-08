@@ -299,11 +299,7 @@ export default function SyncQueueScreen() {
       >
         <View style={styles.cardHeader}>
           <Feather
-            name={
-              (STATUS_ICONS[item.status] ?? "circle") as React.ComponentProps<
-                typeof Feather
-              >["name"]
-            }
+            name={(STATUS_ICONS[item.status] ?? "circle") as any} // eslint-disable-line @typescript-eslint/no-explicit-any
             size={18}
             color={statusColor}
           />

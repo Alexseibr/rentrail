@@ -56,7 +56,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T = unknown>(
+export async function api<T = any>(
   path: string,
   options: Omit<RequestInit, "headers"> & {
     headers?: Record<string, string>;

@@ -111,7 +111,8 @@ export default function SchedulesScreen() {
 
   const displayed = showOverdueOnly ? overdue : schedules;
 
-  const getUrgency = (item: Schedule): "overdue" | "soon" | "ok" => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getUrgency = (item: any): "overdue" | "soon" | "ok" => {
     const days = daysUntil(item.nextDueAt);
     if (days !== null && days < 0) return "overdue";
     if (days !== null && days <= 7) return "soon";
@@ -124,7 +125,8 @@ export default function SchedulesScreen() {
     return GREEN;
   };
 
-  const renderItem = ({ item }: { item: Schedule }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderItem = ({ item }: { item: any }) => {
     const urgency = getUrgency(item);
     const color = urgencyColor(urgency);
     const days = daysUntil(item.nextDueAt);

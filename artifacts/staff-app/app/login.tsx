@@ -13,7 +13,6 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
-import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Step = "phone" | "password" | "otp" | "set-password";
@@ -39,7 +38,6 @@ const DEMO_CLIENT_PASSWORD = "client123";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
-  const _colors = useColors();
   const insets = useSafeAreaInsets();
   const {
     loginWithPhone,

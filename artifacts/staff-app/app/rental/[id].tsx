@@ -12,7 +12,7 @@ import {
   Share,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
@@ -88,7 +88,6 @@ export default function RentalDetailScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const _router = useRouter();
   const queryClient = useQueryClient();
   const [returnNotes, setReturnNotes] = useState("");
   const [showReturn, setShowReturn] = useState(false);

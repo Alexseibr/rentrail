@@ -101,11 +101,7 @@ export default function NotificationsScreen() {
       >
         <View style={[styles.iconWrap, { backgroundColor: colors.secondary }]}>
           <Feather
-            name={
-              (TYPE_ICONS[item.type] ?? "bell") as React.ComponentProps<
-                typeof Feather
-              >["name"]
-            }
+            name={(TYPE_ICONS[item.type] ?? "bell") as any} // eslint-disable-line @typescript-eslint/no-explicit-any
             size={18}
             color={colors.primary}
           />

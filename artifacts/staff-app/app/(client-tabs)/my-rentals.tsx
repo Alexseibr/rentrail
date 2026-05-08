@@ -257,13 +257,7 @@ export default function MyRentalsScreen() {
               <View
                 style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}
               >
-                <Feather
-                  name={
-                    typeIcon as React.ComponentProps<typeof Feather>["name"]
-                  }
-                  size={18}
-                  color="#F5C518"
-                />
+                <Feather name={typeIcon as any} size={18} color="#F5C518" /> // eslint-disable-line @typescript-eslint/no-explicit-any
               </View>
             )}
             <View style={styles.vehicleInfo}>

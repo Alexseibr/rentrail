@@ -229,10 +229,7 @@ export default function AssetsScreen() {
             ]}
           >
             <Feather
-              name={
-                (TYPE_ICONS[item.assetType] ??
-                  "circle") as React.ComponentProps<typeof Feather>["name"]
-              }
+              name={(TYPE_ICONS[item.assetType] ?? "circle") as any} // eslint-disable-line @typescript-eslint/no-explicit-any
               size={18}
               color={colors.primary}
             />

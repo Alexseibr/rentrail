@@ -160,7 +160,7 @@ export default function AnalyticsPage() {
   const topByRentals = useQuery({
     queryKey: ["analytics", "tenants", "rentals"],
     queryFn: async () => {
-      const res = await api<unknown>(
+      const res = await api(
         "/platform/analytics/tenants?metric=rentals&limit=8",
       );
       const raw = res as Record<string, unknown>;
@@ -170,7 +170,8 @@ export default function AnalyticsPage() {
           ? (raw.items as Record<string, unknown>[])
           : [];
       return items.map(
-        (t): TopTenant => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (t: any): TopTenant => ({
           companyId: String(t.companyId ?? t.id ?? ""),
           companyName: String(t.companyName ?? t.name ?? ""),
           value: Number(t.value ?? t.count ?? 0),
@@ -182,7 +183,7 @@ export default function AnalyticsPage() {
   const topByAssets = useQuery({
     queryKey: ["analytics", "tenants", "assets"],
     queryFn: async () => {
-      const res = await api<unknown>(
+      const res = await api(
         "/platform/analytics/tenants?metric=assets&limit=8",
       );
       const raw = res as Record<string, unknown>;
@@ -192,7 +193,8 @@ export default function AnalyticsPage() {
           ? (raw.items as Record<string, unknown>[])
           : [];
       return items.map(
-        (t): TopTenant => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (t: any): TopTenant => ({
           companyId: String(t.companyId ?? t.id ?? ""),
           companyName: String(t.companyName ?? t.name ?? ""),
           value: Number(t.value ?? t.count ?? 0),
@@ -200,6 +202,19 @@ export default function AnalyticsPage() {
       );
     },
   });
+
+  const _rentalStatusData = [
+    {
+      name: t("common.active"),
+      value: usage.data?.activeRentals ?? 0,
+      color: "#22c55e",
+    },
+    {
+      name: t("status.completed"),
+      value: usage.data?.completedRentals ?? 0,
+      color: "#9ca3af",
+    },
+  ].filter((d) => d.value > 0);
 
   const subscriptionData = [
     {

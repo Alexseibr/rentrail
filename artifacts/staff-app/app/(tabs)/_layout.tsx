@@ -6,7 +6,7 @@ import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 import { useColors } from "@/hooks/useColors";
@@ -78,8 +78,6 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const { t } = useTranslation();
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const _isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const { user, companyId } = useAuth();

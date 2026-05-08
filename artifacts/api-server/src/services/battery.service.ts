@@ -120,7 +120,7 @@ export async function assignBattery(
     .limit(1);
   if (!asset) throw new NotFoundError("Asset not found");
 
-  await getBattery(data.batteryId, companyId);
+  const _battery = await getBattery(data.batteryId, companyId);
 
   const activeOnBattery = await db
     .select()

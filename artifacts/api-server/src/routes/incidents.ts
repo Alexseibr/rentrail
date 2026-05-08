@@ -45,12 +45,9 @@ router.get(
       return res.json({ data: items });
     } catch (err: unknown) {
       logger.error({ err }, "GET /incidents error");
-      return res.status(500).json({
-        error: {
-          code: "INTERNAL",
-          message: err instanceof Error ? err.message : undefined,
-        },
-      });
+      return res
+        .status(500)
+        .json({ error: { code: "INTERNAL", message: (err as Error)?.message } });
     }
   },
 );
@@ -70,12 +67,9 @@ router.get(
       return res.json({ data: item });
     } catch (err: unknown) {
       logger.error({ err }, "GET /incidents/:id error");
-      return res.status(500).json({
-        error: {
-          code: "INTERNAL",
-          message: err instanceof Error ? err.message : undefined,
-        },
-      });
+      return res
+        .status(500)
+        .json({ error: { code: "INTERNAL", message: (err as Error)?.message } });
     }
   },
 );
@@ -103,12 +97,9 @@ router.post(
       return res.status(201).json({ data: item });
     } catch (err: unknown) {
       logger.error({ err }, "POST /incidents error");
-      return res.status(500).json({
-        error: {
-          code: "INTERNAL",
-          message: err instanceof Error ? err.message : undefined,
-        },
-      });
+      return res
+        .status(500)
+        .json({ error: { code: "INTERNAL", message: (err as Error)?.message } });
     }
   },
 );
@@ -131,12 +122,9 @@ router.post(
       return res.json({ data: item });
     } catch (err: unknown) {
       logger.error({ err }, "POST /incidents/:id/status error");
-      return res.status(500).json({
-        error: {
-          code: "INTERNAL",
-          message: err instanceof Error ? err.message : undefined,
-        },
-      });
+      return res
+        .status(500)
+        .json({ error: { code: "INTERNAL", message: (err as Error)?.message } });
     }
   },
 );

@@ -115,6 +115,13 @@ const RESOURCE_ACTIONS: Record<string, string[]> = {
   command: ["create", "read", "manage"],
 };
 
+function _allPermsFor(resources: string[]): string[] {
+  return resources.flatMap((r) =>
+    (RESOURCE_ACTIONS[r] || []).map((a) => `${r}:${a}`),
+  );
+}
+
+
 function permsFor(resource: string, actions: string[]): string[] {
   return actions.map((a) => `${resource}:${a}`);
 }

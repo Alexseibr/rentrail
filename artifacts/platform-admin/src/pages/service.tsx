@@ -235,15 +235,10 @@ export default function ServicePage() {
   const [tab, setTab] = useState("requests");
   const [showCreate, setShowCreate] = useState(false);
   const [showCreateWO, setShowCreateWO] = useState(false);
-  const [assignDialog, setAssignDialog] = useState<{
-    id: string;
-    title?: string;
-  } | null>(null);
-  const [statusDialog, setStatusDialog] = useState<{
-    id: string;
-    title?: string;
-    type: string;
-  } | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [assignDialog, setAssignDialog] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [statusDialog, setStatusDialog] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedMechanic, setSelectedMechanic] = useState("");
@@ -274,7 +269,7 @@ export default function ServicePage() {
     queryKey: ["service-requests", companyId, statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api<ServiceRequest[]>(`/service-requests${params}`, {
+      return api(`/service-requests${params}`, {
         headers: companyHeaders,
       });
     },
@@ -283,69 +278,58 @@ export default function ServicePage() {
 
   const workOrdersQuery = useQuery({
     queryKey: ["work-orders", companyId],
-    queryFn: () =>
-      api<ServiceWorkOrder[]>("/work-orders", { headers: companyHeaders }),
+    queryFn: () => api("/work-orders", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () =>
-      api<ServiceBranch[]>("/branches", { headers: companyHeaders }),
+    queryFn: () => api("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const assetsQuery = useQuery({
     queryKey: ["assets-all", companyId],
-    queryFn: () => api<ServiceAsset[]>("/assets", { headers: companyHeaders }),
+    queryFn: () => api("/assets", { headers: companyHeaders }),
     enabled: !!companyId && (showCreate || showCreateWO),
   });
 
   const mechanicsQuery = useQuery({
     queryKey: ["mechanics", companyId],
-    queryFn: () =>
-      api<ServiceMechanic[]>("/mechanics", { headers: companyHeaders }),
+    queryFn: () => api("/mechanics", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const sparePartsQuery = useQuery({
     queryKey: ["spare-parts", companyId],
-    queryFn: () =>
-      api<ServiceSparePart[]>("/spare-parts", { headers: companyHeaders }),
+    queryFn: () => api("/spare-parts", { headers: companyHeaders }),
     enabled: !!companyId && tab === "spareParts",
   });
 
   const maintenanceLogsQuery = useQuery({
     queryKey: ["maintenance-logs", companyId],
     queryFn: () =>
-      api<ServiceMaintenanceLog[]>("/maintenance-logs?limit=100", {
-        headers: companyHeaders,
-      }),
+      api("/maintenance-logs?limit=100", { headers: companyHeaders }),
     enabled: !!companyId && tab === "logs",
   });
 
   const schedulesQuery = useQuery({
     queryKey: ["maintenance-schedules", companyId],
     queryFn: () =>
-      api<ServiceSchedule[]>("/maintenance-schedules", {
-        headers: companyHeaders,
-      }),
+      api("/maintenance-schedules", { headers: companyHeaders }),
     enabled: !!companyId && tab === "schedules",
   });
 
   const overdueQuery = useQuery({
     queryKey: ["maintenance-schedules-overdue", companyId],
     queryFn: () =>
-      api<ServiceSchedule[]>("/maintenance-schedules/overdue", {
-        headers: companyHeaders,
-      }),
+      api("/maintenance-schedules/overdue", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const serviceStatsQuery = useQuery({
     queryKey: ["service-stats", companyId],
-    queryFn: () =>
-      api<ServiceStats>("/service-stats", { headers: companyHeaders }),
+    queryFn: () => api("/service-stats", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
@@ -358,21 +342,19 @@ export default function ServicePage() {
   const workOrders = Array.isArray(workOrdersQuery.data)
     ? workOrdersQuery.data
     : [];
-  const spareParts: ServiceSparePart[] = Array.isArray(sparePartsQuery.data)
+  const spareParts = Array.isArray(sparePartsQuery.data)
     ? sparePartsQuery.data
     : [];
-  const maintenanceLogs: ServiceMaintenanceLog[] = Array.isArray(
-    maintenanceLogsQuery.data,
-  )
+  const maintenanceLogs = Array.isArray(maintenanceLogsQuery.data)
     ? maintenanceLogsQuery.data
     : [];
-  const schedules: ServiceSchedule[] = Array.isArray(schedulesQuery.data)
+  const schedules = Array.isArray(schedulesQuery.data)
     ? schedulesQuery.data
     : [];
-  const overdue: ServiceSchedule[] = Array.isArray(overdueQuery.data)
+  const overdue = Array.isArray(overdueQuery.data)
     ? overdueQuery.data
     : [];
-  const stats: ServiceStats | undefined = serviceStatsQuery.data;
+  const stats = serviceStatsQuery.data;
 
   const lowStockParts = spareParts.filter(
     (p) => parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert),

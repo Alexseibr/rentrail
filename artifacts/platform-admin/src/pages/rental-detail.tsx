@@ -68,17 +68,11 @@ export default function RentalDetailPage() {
     ? { "x-company-id": companyId }
     : {};
 
-  const rentalQuery = useQuery({
-    queryKey: ["rental", params.id],
-    queryFn: () =>
-      api<RentalDetail>(`/rentals/${params.id}`, { headers: companyHeaders }),
+      api(`/rentals/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
-  const historyQuery = useQuery({
-    queryKey: ["rental-history", params.id],
-    queryFn: () =>
-      api<StatusHistoryEntry[]>(`/rentals/${params.id}/status-history`, {
+      api(`/rentals/${params.id}/status-history`, {
         headers: companyHeaders,
       }),
     enabled: !!companyId && !!params.id,
@@ -242,8 +236,7 @@ export default function RentalDetailPage() {
                     <TableHead>{t("fleet.reason")}</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {history.map((entry, i: number) => (
+                  {history.map((entry: any, i: number) => (  // eslint-disable-line @typescript-eslint/no-explicit-any
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
                         {entry.createdAt
