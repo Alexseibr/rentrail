@@ -24,7 +24,6 @@ describe("Multi-Tenant Isolation", () => {
   let assetA: Awaited<ReturnType<typeof createTestAsset>>;
   let assetB: Awaited<ReturnType<typeof createTestAsset>>;
   let clientA: Awaited<ReturnType<typeof createTestClient>>;
-  let _clientB: Awaited<ReturnType<typeof createTestClient>>;
 
   beforeAll(async () => {
     clearRolesCache();
@@ -50,7 +49,7 @@ describe("Multi-Tenant Isolation", () => {
       stationId: tenantB.station.id,
     });
     clientA = await createTestClient(tenantA.company.id);
-    _clientB = await createTestClient(tenantB.company.id);
+    await createTestClient(tenantB.company.id);
   }, 30000);
 
   describe("company-level isolation — assets", () => {

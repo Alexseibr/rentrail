@@ -13,11 +13,6 @@ import { eq, and, desc, sql } from "drizzle-orm";
 type ServiceRequestStatus = typeof serviceRequests.$inferSelect.status;
 type WorkOrderStatus = typeof workOrders.$inferSelect.status;
 
-const _userFullName =
-  sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`.as(
-    "assigned_to_name",
-  );
-
 export async function listServiceRequests(
   companyId: string,
   branchId?: string,

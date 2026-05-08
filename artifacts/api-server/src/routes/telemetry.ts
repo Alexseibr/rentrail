@@ -40,15 +40,6 @@ const ingestSchema = z.object({
 
 const idParams = z.object({ id: z.string().uuid() });
 
-const _queryFilters = z.object({
-  from: z.string().optional(),
-  to: z.string().optional(),
-  eventType: z.string().optional(),
-  severity: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(500).optional(),
-  offset: z.coerce.number().int().min(0).optional(),
-});
-
 router.post(
   "/telemetry/ingest",
   authenticateApiKey,
