@@ -36,7 +36,7 @@ args = "unit-tests"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "lint"
+args = "format-check"
 
 [[workflows.workflow]]
 name = "check-map-cleanup"
@@ -72,12 +72,12 @@ args = "pnpm run test:unit"
 isValidation = true
 
 [[workflows.workflow]]
-name = "lint"
+name = "format-check"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm run lint"
+args = "pnpm run format:check"
 
 [workflows.workflow.metadata]
 isValidation = true
