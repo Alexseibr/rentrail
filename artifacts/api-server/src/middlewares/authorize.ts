@@ -22,14 +22,6 @@ export interface TenantContext {
   permissions: Set<string>;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      tenant?: TenantContext;
-    }
-  }
-}
-
 const COMPANY_BLOCKED_STATUSES = ["blocked", "canceled"];
 const COMPANY_SUSPENDED_STATUS = "suspended";
 

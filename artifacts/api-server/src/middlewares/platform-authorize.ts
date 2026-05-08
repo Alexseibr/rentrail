@@ -6,14 +6,6 @@ export interface PlatformContext {
   activePlatformRole: string;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      platformContext?: PlatformContext;
-    }
-  }
-}
-
 export function requirePlatformRole(...allowedRoles: string[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {

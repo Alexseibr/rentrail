@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { verifyAccessToken, type AccessTokenPayload } from "../lib/jwt";
+import { verifyAccessToken } from "../lib/jwt";
 import { UnauthorizedError } from "../lib/errors";
 import { loadUserPlatformRoles } from "../lib/platform-roles";
 
@@ -7,6 +7,7 @@ export interface PlatformUserContext {
   platformRoles: string[];
 }
 
+<<<<<<< HEAD
 declare global {
   namespace Express {
     interface Request {
@@ -16,6 +17,8 @@ declare global {
   }
 }
 
+=======
+>>>>>>> 69c7b69 (task(204): promote @typescript-eslint/no-namespace to error via express.d.ts)
 export function authenticate(
   req: Request,
   _res: Response,

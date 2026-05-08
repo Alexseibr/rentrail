@@ -3,14 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 
 const HEADER = "x-correlation-id";
 
-declare global {
-  namespace Express {
-    interface Request {
-      correlationId?: string;
-    }
-  }
-}
-
 export function correlationId(
   req: Request,
   res: Response,
