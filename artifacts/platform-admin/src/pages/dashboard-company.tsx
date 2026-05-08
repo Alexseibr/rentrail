@@ -38,7 +38,13 @@ import {
   EmptyContent,
 } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
   available: "bg-green-100 text-green-800",

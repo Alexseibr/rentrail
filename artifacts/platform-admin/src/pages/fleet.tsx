@@ -337,14 +337,10 @@ export default function FleetPage() {
     allItems.filter((a) => a.status === s).length;
 
   const KPI_FLEET = [
-    { key: "available", accent: "bg-green-500", textAccent: "text-green-500" },
-    { key: "rented", accent: "bg-blue-500", textAccent: "text-blue-500" },
-    {
-      key: "maintenance",
-      accent: "bg-yellow-500",
-      textAccent: "text-yellow-500",
-    },
-    { key: "overdue", accent: "bg-red-500", textAccent: "text-red-500" },
+    { key: "available", accent: "bg-green-500" },
+    { key: "rented", accent: "bg-blue-500" },
+    { key: "maintenance", accent: "bg-yellow-500" },
+    { key: "overdue", accent: "bg-red-500" },
   ];
 
   return (
@@ -367,7 +363,7 @@ export default function FleetPage() {
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {KPI_FLEET.map(({ key, accent, textAccent: _textAccent }) => {
+        {KPI_FLEET.map(({ key, accent }) => {
           const count = countByStatus(key);
           const isActive = statusFilter === key;
           return (
