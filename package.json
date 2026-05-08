@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "prettier --check .",
     "lint:eslint": "eslint .",
+    "lint:eslint:strict": "eslint . --max-warnings 0",
     "lint:eslint:fix": "eslint . --fix",
     "lint:fix": "prettier --write .",
     "format:check": "prettier --check . || (printf '\\n[Format check failed] One or more files are not formatted correctly.\\nRun: pnpm run lint:fix\\n\\n' >&2 && exit 1)",

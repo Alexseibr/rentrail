@@ -90,12 +90,12 @@ isValidation = true
 name = "lint"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm run lint:eslint"
-
 [workflows.workflow.metadata]
 isValidation = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run lint:eslint:strict"
 
 [agent]
 stack = "PNPM_WORKSPACE"
