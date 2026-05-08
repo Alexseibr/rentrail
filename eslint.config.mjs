@@ -38,22 +38,12 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-require-imports": "error",
       "@typescript-eslint/no-namespace": "error",
-    },
-  },
-  {
-    files: [
-      "artifacts/api-server/src/**/*.ts",
-      "lib/db/src/**/*.ts",
-      "lib/api-spec/**/*.ts",
-    ],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {
