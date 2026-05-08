@@ -184,23 +184,25 @@ export default function MaintenanceTaskDetailScreen() {
         }
       };
 
-      Alert.prompt
-        ? Alert.prompt(
-            t("serviceModule.completeOrder"),
-            t("serviceModule.enterResolution"),
-            (resolution) => doComplete(resolution ?? ""),
-          )
-        : Alert.alert(
-            t("serviceModule.completeOrder"),
-            t("serviceModule.completeConfirm"),
-            [
-              { text: t("common.cancel"), style: "cancel" },
-              {
-                text: t("serviceModule.complete"),
-                onPress: () => doComplete(""),
-              },
-            ],
-          );
+      if (Alert.prompt) {
+        Alert.prompt(
+          t("serviceModule.completeOrder"),
+          t("serviceModule.enterResolution"),
+          (resolution) => doComplete(resolution ?? ""),
+        );
+      } else {
+        Alert.alert(
+          t("serviceModule.completeOrder"),
+          t("serviceModule.completeConfirm"),
+          [
+            { text: t("common.cancel"), style: "cancel" },
+            {
+              text: t("serviceModule.complete"),
+              onPress: () => doComplete(""),
+            },
+          ],
+        );
+      }
       return;
     }
 

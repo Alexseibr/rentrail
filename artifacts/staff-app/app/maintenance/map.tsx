@@ -363,16 +363,18 @@ export default function MaintenanceMapModal() {
   );
 
   useEffect(() => {
+    const iframe = iframeRef.current;
+    const webView = webViewRef.current;
     return () => {
       if (isWeb) {
         try {
-          iframeRef.current?.contentWindow?.postMessage(
+          iframe?.contentWindow?.postMessage(
             JSON.stringify({ type: "closePopup" }),
             "*",
           );
         } catch {}
       } else {
-        webViewRef.current?.injectJavaScript(
+        webView?.injectJavaScript(
           "window.closeMapPopup && window.closeMapPopup(); true;",
         );
       }

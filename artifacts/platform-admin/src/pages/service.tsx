@@ -491,8 +491,9 @@ export default function ServicePage() {
         </div>
       )}
       {overdue.length > 0 && (
-        <div
-          className="flex items-center gap-3 rounded-xl bg-orange-50 border border-orange-200 px-4 py-3 cursor-pointer hover:bg-orange-100 transition-colors"
+        <button
+          type="button"
+          className="flex items-center gap-3 rounded-xl bg-orange-50 border border-orange-200 px-4 py-3 cursor-pointer hover:bg-orange-100 transition-colors w-full text-left"
           onClick={() => setTab("schedules")}
         >
           <CalendarClock className="h-4 w-4 text-orange-600 shrink-0" />
@@ -500,7 +501,7 @@ export default function ServicePage() {
             <span className="font-semibold">{overdue.length}</span>{" "}
             {t("service.overdueSchedules", "графиков ТО просрочено")}
           </p>
-        </div>
+        </button>
       )}
 
       {/* KPI cards */}

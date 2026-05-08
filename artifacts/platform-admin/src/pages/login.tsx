@@ -193,6 +193,7 @@ export default function LoginPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   autoComplete="tel"
                 />
@@ -215,6 +216,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   autoComplete="current-password"
                 />
@@ -269,6 +271,7 @@ export default function LoginPage() {
                     setOtpCode(e.target.value.replace(/\D/g, ""))
                   }
                   required
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   className="text-center text-2xl tracking-widest font-mono"
                 />
@@ -321,6 +324,7 @@ export default function LoginPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   autoComplete="new-password"
                 />

@@ -114,16 +114,6 @@ export default function DashboardScreen() {
   const shouldRedirectToShift =
     !canAccessTab(roleCode, "index") && canAccessTab(roleCode, "my-shift");
 
-  React.useEffect(() => {
-    if (shouldRedirectToShift) {
-      router.replace("/my-shift" as never);
-    }
-  }, [shouldRedirectToShift, router]);
-
-  if (shouldRedirectToShift) {
-    return <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />;
-  }
-
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["dashboard"],
     queryFn: fetchDashboard,
@@ -133,6 +123,16 @@ export default function DashboardScreen() {
   useAppStateFocus(() => {
     refetch();
   });
+
+  React.useEffect(() => {
+    if (shouldRedirectToShift) {
+      router.replace("/my-shift" as never);
+    }
+  }, [shouldRedirectToShift, router]);
+
+  if (shouldRedirectToShift) {
+    return <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />;
+  }
 
   const statValues = [
     data?.activeRentals ?? 0,

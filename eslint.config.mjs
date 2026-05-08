@@ -1,5 +1,8 @@
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
+import reactHooksPlugin from "eslint-plugin-react-hooks";
+import jsxA11yPlugin from "eslint-plugin-jsx-a11y";
+import reactPlugin from "eslint-plugin-react";
 
 export default [
   {
@@ -34,6 +37,35 @@ export default [
       ],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-require-imports": "error",
+    },
+  },
+  {
+    files: [
+      "artifacts/platform-admin/src/**/*.ts",
+      "artifacts/platform-admin/src/**/*.tsx",
+      "artifacts/staff-app/app/**/*.ts",
+      "artifacts/staff-app/app/**/*.tsx",
+    ],
+    plugins: {
+      "react-hooks": reactHooksPlugin,
+      react: reactPlugin,
+    },
+    rules: {
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+      "react/jsx-key": "error",
+    },
+  },
+  {
+    files: [
+      "artifacts/platform-admin/src/**/*.tsx",
+      "artifacts/platform-admin/src/**/*.jsx",
+    ],
+    plugins: {
+      "jsx-a11y": jsxA11yPlugin,
+    },
+    rules: {
+      ...jsxA11yPlugin.flatConfigs.recommended.rules,
     },
   },
 ];

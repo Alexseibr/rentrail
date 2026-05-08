@@ -292,19 +292,21 @@ export default function WorkOrderDetailScreen() {
           ? `${t("serviceModule.enterResolution")}\n\n${t("serviceModule.retriesNote", { retries: queuedRetries })}`
           : t("serviceModule.enterResolution");
 
-      Alert.prompt
-        ? Alert.prompt(
-            t("serviceModule.completeOrder"),
-            promptMessage,
-            (resolution) => doComplete(resolution ?? ""),
-          )
-        : Alert.alert(t("serviceModule.completeOrder"), completeConfirmMsg, [
-            { text: t("common.cancel"), style: "cancel" },
-            {
-              text: t("serviceModule.complete"),
-              onPress: () => doComplete(""),
-            },
-          ]);
+      if (Alert.prompt) {
+        Alert.prompt(
+          t("serviceModule.completeOrder"),
+          promptMessage,
+          (resolution) => doComplete(resolution ?? ""),
+        );
+      } else {
+        Alert.alert(t("serviceModule.completeOrder"), completeConfirmMsg, [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("serviceModule.complete"),
+            onPress: () => doComplete(""),
+          },
+        ]);
+      }
       return;
     }
 
