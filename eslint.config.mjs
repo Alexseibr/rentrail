@@ -19,6 +19,8 @@ export default [
       ".local/**",
       // Playwright Python runtime installed by Replit — not our application code
       ".pythonlibs/**",
+      // Replit auth templates — not our application code
+      ".replit-auth/**",
     ],
   },
   {
@@ -41,6 +43,7 @@ export default [
       ],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-require-imports": "error",
+      "@typescript-eslint/no-namespace": ["error", { allowDeclarations: true }],
     },
   },
   {
