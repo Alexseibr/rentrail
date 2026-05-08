@@ -92,7 +92,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm run lint"
+args = "pnpm run lint:eslint"
 
 [workflows.workflow.metadata]
 isValidation = true
