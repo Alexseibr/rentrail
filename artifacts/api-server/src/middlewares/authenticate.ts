@@ -7,18 +7,6 @@ export interface PlatformUserContext {
   platformRoles: string[];
 }
 
-<<<<<<< HEAD
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AccessTokenPayload;
-      platformUser?: PlatformUserContext;
-    }
-  }
-}
-
-=======
->>>>>>> 69c7b69 (task(204): promote @typescript-eslint/no-namespace to error via express.d.ts)
 export function authenticate(
   req: Request,
   _res: Response,

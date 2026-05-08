@@ -7,14 +7,6 @@ import {
 } from "../services/webhook-payment.service";
 import { logger } from "../lib/logger";
 
-declare global {
-  namespace Express {
-    interface Request {
-      rawBody?: Buffer;
-    }
-  }
-}
-
 const router = Router();
 
 router.post("/webhooks/yukassa", async (req, res) => {

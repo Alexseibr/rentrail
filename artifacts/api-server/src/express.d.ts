@@ -12,6 +12,7 @@ declare global {
       apiKeyContext?: { companyId: string; provider: string; keyId: string };
       correlationId?: string;
       platformContext?: PlatformContext;
+      rawBody?: Buffer;
     }
   }
 }
