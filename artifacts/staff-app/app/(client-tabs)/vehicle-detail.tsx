@@ -281,7 +281,7 @@ export default function VehicleDetailScreen() {
                   height: "100%",
                   border: "none",
                   borderRadius: 16,
-                } as any
+                } as React.CSSProperties
               }
             />
           ) : (

@@ -29,6 +29,34 @@ import { MiniMapPreview } from "@/components/MiniMapPreview";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
 
+interface WorkOrder {
+  id: string;
+  status: string;
+  priority?: string;
+  title?: string;
+  description?: string;
+  assetId?: string;
+  assetCode?: string;
+  assetBrand?: string;
+  assetModel?: string;
+  assetType?: string;
+  branchName?: string;
+  orderType?: string;
+  estimatedCost?: string;
+  actualCost?: string;
+  resolution?: string;
+  assignedToName?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt?: string;
+  parts?: Array<{
+    id: string;
+    partName?: string;
+    partUnit?: string;
+    qtyUsed?: string;
+  }>;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   draft: "#94a3b8",
   assigned: "#3b82f6",
@@ -88,7 +116,7 @@ export default function MaintenanceTaskDetailScreen() {
   const { isConnected } = useNetwork();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(
@@ -129,13 +157,14 @@ export default function MaintenanceTaskDetailScreen() {
     newStatus: string,
     extra?: Record<string, unknown>,
   ) => {
+    if (!order) return;
     await enqueue({
       actionType: "change_maintenance_status",
       payload: { status: newStatus, ...extra },
       endpoint: `/api/work-orders/${order.id}/status`,
       method: "POST",
     });
-    setOrder((prev: any) => (prev ? { ...prev, status: newStatus } : prev));
+    setOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showSnackbar(t("maintenance.statusQueued"), "success");
   };
@@ -465,7 +494,11 @@ export default function MaintenanceTaskDetailScreen() {
           )}
           <Row
             label={t("serviceModule.created")}
-            value={new Date(order.createdAt).toLocaleString("ru-RU")}
+            value={
+              order.createdAt
+                ? new Date(order.createdAt).toLocaleString("ru-RU")
+                : "—"
+            }
             colors={colors}
           />
         </View>
@@ -509,7 +542,7 @@ function Row({
 }: {
   label: string;
   value: string;
-  colors: any;
+  colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
 }) {
   return (
     <View style={styles.row}>

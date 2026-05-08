@@ -64,6 +64,24 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-sky-100 text-sky-800",
 };
 
+interface DashboardAsset {
+  id: string;
+  status: string;
+}
+
+interface DashboardRental {
+  id: string;
+  status: string;
+  clientId?: string;
+  clientName?: string;
+  assetId?: string;
+  assetCode?: string;
+  createdAt?: string;
+  startAt?: string;
+  startDate?: string;
+  actualEndAt?: string;
+}
+
 const PIE_COLORS: Record<string, string> = {
   available: "#22c55e",
   rented: "#3b82f6",
@@ -140,25 +158,29 @@ export default function CompanyDashboardPage() {
 
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId],
-    queryFn: () => api<any>("/assets", { headers: companyHeaders }),
+    queryFn: () =>
+      api<DashboardAsset[]>("/assets", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const rentalsQuery = useQuery({
     queryKey: ["rentals", companyId],
-    queryFn: () => api<any>("/rentals", { headers: companyHeaders }),
+    queryFn: () =>
+      api<DashboardRental[]>("/rentals", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const clientsQuery = useQuery({
     queryKey: ["clients", companyId],
-    queryFn: () => api<any>("/clients", { headers: companyHeaders }),
+    queryFn: () =>
+      api<{ id: string }[]>("/clients", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () => api<any>("/branches", { headers: companyHeaders }),
+    queryFn: () =>
+      api<{ id: string }[]>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
@@ -174,19 +196,19 @@ export default function CompanyDashboardPage() {
     branchesQuery.isLoading;
 
   const activeRentals = rentals.filter(
-    (r: any) => r.status === "active" || r.status === "overdue",
+    (r) => r.status === "active" || r.status === "overdue",
   );
-  const overdueRentals = rentals.filter((r: any) => r.status === "overdue");
+  const overdueRentals = rentals.filter((r) => r.status === "overdue");
   const recentRentals = [...rentals]
     .sort(
-      (a: any, b: any) =>
+      (a, b) =>
         new Date(b.createdAt || b.startDate || 0).getTime() -
         new Date(a.createdAt || a.startDate || 0).getTime(),
     )
     .slice(0, 6);
 
   const assetStatusCounts: Record<string, number> = {};
-  assets.forEach((a: any) => {
+  assets.forEach((a) => {
     assetStatusCounts[a.status] = (assetStatusCounts[a.status] || 0) + 1;
   });
 
@@ -534,7 +556,7 @@ export default function CompanyDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentRentals.map((rental: any) => (
+                {recentRentals.map((rental) => (
                   <TableRow key={rental.id} className="hover:bg-muted/30">
                     <TableCell className="font-medium text-sm">
                       {rental.clientName || rental.clientId?.slice(0, 8) || "—"}
@@ -545,7 +567,7 @@ export default function CompanyDashboardPage() {
                     <TableCell className="text-sm text-muted-foreground">
                       {rental.startDate || rental.startAt
                         ? new Date(
-                            rental.startDate || rental.startAt,
+                            (rental.startDate || rental.startAt) ?? "",
                           ).toLocaleDateString("ru-RU")
                         : "—"}
                     </TableCell>

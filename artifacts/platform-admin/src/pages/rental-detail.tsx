@@ -17,6 +17,38 @@ import {
 import { User, Bike, Calendar, Clock, FileText } from "lucide-react";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
+interface RentalDetail {
+  id: string;
+  clientId?: string;
+  clientName?: string;
+  assetId?: string;
+  assetCode?: string;
+  rentalType?: string;
+  status?: string;
+  startAt?: string;
+  startDate?: string;
+  plannedEndAt?: string;
+  endDate?: string;
+  actualEndAt?: string;
+  returnedAt?: string;
+  totalAmount?: number;
+  totalPrice?: number;
+  notes?: string;
+  createdAt?: string;
+}
+
+interface StatusHistoryEntry {
+  id: string;
+  oldStatus?: string;
+  toStatus?: string;
+  newStatus?: string;
+  status?: string;
+  reason?: string;
+  notes?: string;
+  changedBy?: string;
+  createdAt?: string;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   completed: "bg-gray-100 text-gray-800",
@@ -39,14 +71,14 @@ export default function RentalDetailPage() {
   const rentalQuery = useQuery({
     queryKey: ["rental", params.id],
     queryFn: () =>
-      api<any>(`/rentals/${params.id}`, { headers: companyHeaders }),
+      api<RentalDetail>(`/rentals/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
   const historyQuery = useQuery({
     queryKey: ["rental-history", params.id],
     queryFn: () =>
-      api<any>(`/rentals/${params.id}/status-history`, {
+      api<StatusHistoryEntry[]>(`/rentals/${params.id}/status-history`, {
         headers: companyHeaders,
       }),
     enabled: !!companyId && !!params.id,
@@ -138,9 +170,9 @@ export default function RentalDetailPage() {
           </p>
         </div>
         <Badge
-          className={`text-sm px-3 py-1 ${STATUS_COLORS[rental.status] || "bg-gray-100"}`}
+          className={`text-sm px-3 py-1 ${STATUS_COLORS[rental.status ?? ""] || "bg-gray-100"}`}
         >
-          {String(t(`status.${rental.status}`, rental.status))}
+          {String(t(`status.${rental.status}`, rental.status ?? ""))}
         </Badge>
       </div>
 
@@ -211,7 +243,7 @@ export default function RentalDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((entry: any, i: number) => (
+                  {history.map((entry, i: number) => (
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
                         {entry.createdAt
@@ -222,7 +254,10 @@ export default function RentalDetailPage() {
                         <Badge
                           className={
                             STATUS_COLORS[
-                              entry.newStatus || entry.toStatus || entry.status
+                              entry.newStatus ||
+                                entry.toStatus ||
+                                entry.status ||
+                                ""
                             ] || "bg-gray-100"
                           }
                         >

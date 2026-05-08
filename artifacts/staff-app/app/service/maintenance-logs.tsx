@@ -20,6 +20,19 @@ import { getAccessToken } from "@/services/api";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
+interface MaintenanceLog {
+  id: string;
+  assetId?: string;
+  assetCode?: string;
+  logType?: string;
+  notes?: string;
+  performedAt: string;
+  performedByName?: string;
+  cost?: string;
+  odometerKm?: string;
+  createdAt?: string;
+}
+
 const LOG_TYPE_ICONS: Record<string, string> = {
   general_service: "tool",
   tire_change: "disc",
@@ -44,7 +57,7 @@ async function fetchLogs(companyId: string, assetId?: string, limit = 50) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   const json = await res.json();
-  return json.data as any[];
+  return json.data as MaintenanceLog[];
 }
 
 export default function MaintenanceLogsScreen() {
@@ -88,8 +101,8 @@ export default function MaintenanceLogsScreen() {
       )
     : logs;
 
-  const renderItem = ({ item }: { item: any }) => {
-    const iconName = (LOG_TYPE_ICONS[item.logType] ??
+  const renderItem = ({ item }: { item: MaintenanceLog }) => {
+    const iconName = (LOG_TYPE_ICONS[item.logType ?? ""] ??
       "tool") as React.ComponentProps<typeof Feather>["name"];
     return (
       <View style={[styles.card, { backgroundColor: colors.card }]}>

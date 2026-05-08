@@ -928,7 +928,9 @@ export default function AssetDetailScreen() {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Feather
-                    name={lockIcon as any}
+                    name={
+                      lockIcon as React.ComponentProps<typeof Feather>["name"]
+                    }
                     size={20}
                     color={isLocked ? "#C62828" : colors.foreground}
                   />
@@ -969,7 +971,11 @@ export default function AssetDetailScreen() {
                         />
                       ) : (
                         <Feather
-                          name={btn.icon as any}
+                          name={
+                            btn.icon as React.ComponentProps<
+                              typeof Feather
+                            >["name"]
+                          }
                           size={20}
                           color={colors.foreground}
                         />
@@ -1005,7 +1011,9 @@ export default function AssetDetailScreen() {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Feather
-                    name={alarmIcon as any}
+                    name={
+                      alarmIcon as React.ComponentProps<typeof Feather>["name"]
+                    }
                     size={20}
                     color={isArmed ? "#E65100" : "#2E7D32"}
                   />
@@ -1046,7 +1054,11 @@ export default function AssetDetailScreen() {
                         />
                       ) : (
                         <Feather
-                          name={btn.icon as any}
+                          name={
+                            btn.icon as React.ComponentProps<
+                              typeof Feather
+                            >["name"]
+                          }
                           size={20}
                           color={colors.foreground}
                         />
@@ -1173,7 +1185,11 @@ export default function AssetDetailScreen() {
                       ]}
                     >
                       <Feather
-                        name={iconMeta.name as any}
+                        name={
+                          iconMeta.name as React.ComponentProps<
+                            typeof Feather
+                          >["name"]
+                        }
                         size={16}
                         color={iconMeta.color}
                       />

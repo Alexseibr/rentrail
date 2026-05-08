@@ -53,6 +53,20 @@ import {
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { toast } from "@/hooks/use-toast";
 
+interface Client {
+  id: string;
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+  birthday?: string;
+  documentType?: string;
+  documentNumber?: string;
+  notes?: string;
+  restore?: boolean;
+  createdAt?: string;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   suspended: "bg-yellow-100 text-yellow-800",
@@ -81,25 +95,25 @@ export default function ClientsCompanyPage() {
     : {};
 
   const [showCreate, setShowCreate] = useState(false);
-  const [editClient, setEditClient] = useState<any>(null);
+  const [editClient, setEditClient] = useState<Client | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
+  const [archiveConfirm, setArchiveConfirm] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const clientsQuery = useQuery({
     queryKey: ["clients", companyId],
-    queryFn: () => api<any>("/clients", { headers: companyHeaders }),
+    queryFn: () => api<Client[]>("/clients", { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const allItems = clientsQuery.data ?? [];
   const filtered =
     statusFilter !== "all"
-      ? allItems.filter((c: any) => c.status === statusFilter)
+      ? allItems.filter((c) => c.status === statusFilter)
       : allItems;
   const items = search
     ? filtered.filter(
-        (c: any) =>
+        (c) =>
           (c.fullName?.toLowerCase() || "").includes(search.toLowerCase()) ||
           (c.phone || "").includes(search) ||
           (c.email?.toLowerCase() || "").includes(search.toLowerCase()),
@@ -180,7 +194,7 @@ export default function ClientsCompanyPage() {
     setShowCreate(true);
   }
 
-  function openEdit(client: any) {
+  function openEdit(client: Client) {
     setShowCreate(false);
     setEditClient(client);
     setForm({
@@ -213,13 +227,11 @@ export default function ClientsCompanyPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  const activeCount = allItems.filter((c: any) => c.status === "active").length;
+  const activeCount = allItems.filter((c) => c.status === "active").length;
   const suspendedCount = allItems.filter(
-    (c: any) => c.status === "suspended",
+    (c) => c.status === "suspended",
   ).length;
-  const blockedCount = allItems.filter(
-    (c: any) => c.status === "blocked",
-  ).length;
+  const blockedCount = allItems.filter((c) => c.status === "blocked").length;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl">
@@ -366,7 +378,7 @@ export default function ClientsCompanyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((client: any) => (
+                {items.map((client) => (
                   <TableRow key={client.id} className="hover:bg-muted/30">
                     <TableCell className="font-medium text-sm">
                       {client.fullName}
@@ -384,9 +396,11 @@ export default function ClientsCompanyPage() {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        className={`text-xs ${STATUS_COLORS[client.status] || "bg-gray-100"}`}
+                        className={`text-xs ${STATUS_COLORS[client.status ?? ""] || "bg-gray-100"}`}
                       >
-                        {String(t(`status.${client.status}`, client.status))}
+                        {String(
+                          t(`status.${client.status}`, client.status ?? ""),
+                        )}
                       </Badge>
                     </TableCell>
                     {canWriteClient && (

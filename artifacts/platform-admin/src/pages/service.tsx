@@ -59,6 +59,91 @@ import {
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { toast } from "@/hooks/use-toast";
 
+interface ServiceRequest {
+  id: string;
+  title?: string;
+  requestType?: string;
+  assetCode?: string;
+  branchCity?: string;
+  branchName?: string;
+  priority?: string;
+  status: string;
+  assignedToName?: string;
+}
+
+interface ServiceWorkOrder {
+  id: string;
+  title?: string;
+  orderType?: string;
+  assetCode?: string;
+  branchCity?: string;
+  branchName?: string;
+  priority?: string;
+  status: string;
+  assignedToName?: string;
+  actualCost?: string;
+  estimatedCost?: string;
+}
+
+interface ServiceSparePart {
+  id: string;
+  name?: string;
+  sku?: string;
+  category?: string;
+  branchName?: string;
+  qtyInStock: string;
+  minQtyAlert: string;
+  unit?: string;
+  costPrice?: string;
+  location?: string;
+}
+
+interface ServiceMaintenanceLog {
+  id: string;
+  logType?: string;
+  assetCode?: string;
+  performedAt: string;
+  performedByName?: string;
+  odometerKm?: number;
+  cost?: string;
+  notes?: string;
+}
+
+interface ServiceSchedule {
+  id: string;
+  name?: string;
+  assetCode?: string;
+  intervalDays?: number;
+  intervalKm?: number;
+  lastDoneAt?: string;
+  nextDueAt?: string | null;
+}
+
+interface ServiceMechanic {
+  userId: string;
+  fullName?: string;
+  phone?: string;
+}
+
+interface ServiceBranch {
+  id: string;
+  name?: string;
+  city?: string;
+}
+
+interface ServiceAsset {
+  id: string;
+  internalCode?: string;
+  brand?: string;
+  model?: string;
+}
+
+interface ServiceStats {
+  monthCost?: number;
+  lowStockCount?: number;
+  overdueSchedules?: number;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
   assigned: "bg-sky-100 text-sky-800",
@@ -150,8 +235,15 @@ export default function ServicePage() {
   const [tab, setTab] = useState("requests");
   const [showCreate, setShowCreate] = useState(false);
   const [showCreateWO, setShowCreateWO] = useState(false);
-  const [assignDialog, setAssignDialog] = useState<any>(null);
-  const [statusDialog, setStatusDialog] = useState<any>(null);
+  const [assignDialog, setAssignDialog] = useState<{
+    id: string;
+    title?: string;
+  } | null>(null);
+  const [statusDialog, setStatusDialog] = useState<{
+    id: string;
+    title?: string;
+    type: string;
+  } | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedMechanic, setSelectedMechanic] = useState("");
@@ -182,7 +274,7 @@ export default function ServicePage() {
     queryKey: ["service-requests", companyId, statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api<any>(`/service-requests${params}`, {
+      return api<ServiceRequest[]>(`/service-requests${params}`, {
         headers: companyHeaders,
       });
     },
@@ -191,58 +283,69 @@ export default function ServicePage() {
 
   const workOrdersQuery = useQuery({
     queryKey: ["work-orders", companyId],
-    queryFn: () => api<any>("/work-orders", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceWorkOrder[]>("/work-orders", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () => api<any>("/branches", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceBranch[]>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const assetsQuery = useQuery({
     queryKey: ["assets-all", companyId],
-    queryFn: () => api<any>("/assets", { headers: companyHeaders }),
+    queryFn: () => api<ServiceAsset[]>("/assets", { headers: companyHeaders }),
     enabled: !!companyId && (showCreate || showCreateWO),
   });
 
   const mechanicsQuery = useQuery({
     queryKey: ["mechanics", companyId],
-    queryFn: () => api<any>("/mechanics", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceMechanic[]>("/mechanics", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const sparePartsQuery = useQuery({
     queryKey: ["spare-parts", companyId],
-    queryFn: () => api<any>("/spare-parts", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceSparePart[]>("/spare-parts", { headers: companyHeaders }),
     enabled: !!companyId && tab === "spareParts",
   });
 
   const maintenanceLogsQuery = useQuery({
     queryKey: ["maintenance-logs", companyId],
     queryFn: () =>
-      api<any>("/maintenance-logs?limit=100", { headers: companyHeaders }),
+      api<ServiceMaintenanceLog[]>("/maintenance-logs?limit=100", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && tab === "logs",
   });
 
   const schedulesQuery = useQuery({
     queryKey: ["maintenance-schedules", companyId],
     queryFn: () =>
-      api<any>("/maintenance-schedules", { headers: companyHeaders }),
+      api<ServiceSchedule[]>("/maintenance-schedules", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && tab === "schedules",
   });
 
   const overdueQuery = useQuery({
     queryKey: ["maintenance-schedules-overdue", companyId],
     queryFn: () =>
-      api<any>("/maintenance-schedules/overdue", { headers: companyHeaders }),
+      api<ServiceSchedule[]>("/maintenance-schedules/overdue", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId,
   });
 
   const serviceStatsQuery = useQuery({
     queryKey: ["service-stats", companyId],
-    queryFn: () => api<any>("/service-stats", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceStats>("/service-stats", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
@@ -255,19 +358,21 @@ export default function ServicePage() {
   const workOrders = Array.isArray(workOrdersQuery.data)
     ? workOrdersQuery.data
     : [];
-  const spareParts: any[] = Array.isArray(sparePartsQuery.data)
+  const spareParts: ServiceSparePart[] = Array.isArray(sparePartsQuery.data)
     ? sparePartsQuery.data
     : [];
-  const maintenanceLogs: any[] = Array.isArray(maintenanceLogsQuery.data)
+  const maintenanceLogs: ServiceMaintenanceLog[] = Array.isArray(
+    maintenanceLogsQuery.data,
+  )
     ? maintenanceLogsQuery.data
     : [];
-  const schedules: any[] = Array.isArray(schedulesQuery.data)
+  const schedules: ServiceSchedule[] = Array.isArray(schedulesQuery.data)
     ? schedulesQuery.data
     : [];
-  const overdue: any[] = Array.isArray(overdueQuery.data)
+  const overdue: ServiceSchedule[] = Array.isArray(overdueQuery.data)
     ? overdueQuery.data
     : [];
-  const stats = serviceStatsQuery.data as any;
+  const stats: ServiceStats | undefined = serviceStatsQuery.data;
 
   const lowStockParts = spareParts.filter(
     (p) => parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert),
@@ -275,7 +380,7 @@ export default function ServicePage() {
 
   const filteredRequests = search
     ? requests.filter(
-        (r: any) =>
+        (r) =>
           r.title?.toLowerCase().includes(search.toLowerCase()) ||
           r.assetCode?.toLowerCase().includes(search.toLowerCase()),
       )
@@ -440,9 +545,9 @@ export default function ServicePage() {
   }
 
   const countByStatus = (s: string) =>
-    requests.filter((r: any) => r.status === s).length;
+    requests.filter((r) => r.status === s).length;
   const urgentCount = requests.filter(
-    (r: any) =>
+    (r) =>
       r.priority === "urgent" &&
       r.status !== "completed" &&
       r.status !== "canceled",
@@ -712,14 +817,17 @@ export default function ServicePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRequests.map((sr: any) => (
+                    {filteredRequests.map((sr) => (
                       <TableRow key={sr.id} className="hover:bg-muted/30">
                         <TableCell className="font-medium max-w-48 truncate text-sm">
                           {sr.title}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {String(
-                            t(`service.type.${sr.requestType}`, sr.requestType),
+                            t(
+                              `service.type.${sr.requestType}`,
+                              sr.requestType ?? "",
+                            ),
                           )}
                         </TableCell>
                         <TableCell className="font-mono text-sm text-muted-foreground">
@@ -730,10 +838,13 @@ export default function ServicePage() {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={`text-xs ${PRIORITY_COLORS[sr.priority] || ""}`}
+                            className={`text-xs ${PRIORITY_COLORS[sr.priority ?? ""] || ""}`}
                           >
                             {String(
-                              t(`service.priority.${sr.priority}`, sr.priority),
+                              t(
+                                `service.priority.${sr.priority}`,
+                                sr.priority ?? "",
+                              ),
                             )}
                           </Badge>
                         </TableCell>
@@ -875,7 +986,7 @@ export default function ServicePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {workOrders.map((wo: any) => (
+                    {workOrders.map((wo) => (
                       <TableRow key={wo.id} className="hover:bg-muted/30">
                         <TableCell className="font-medium max-w-48 truncate text-sm">
                           {wo.title}
@@ -884,7 +995,7 @@ export default function ServicePage() {
                           {String(
                             t(
                               `service.orderType.${wo.orderType}`,
-                              wo.orderType,
+                              wo.orderType ?? "",
                             ),
                           )}
                         </TableCell>
@@ -896,10 +1007,13 @@ export default function ServicePage() {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={`text-xs ${PRIORITY_COLORS[wo.priority] || ""}`}
+                            className={`text-xs ${PRIORITY_COLORS[wo.priority ?? ""] || ""}`}
                           >
                             {String(
-                              t(`service.priority.${wo.priority}`, wo.priority),
+                              t(
+                                `service.priority.${wo.priority}`,
+                                wo.priority ?? "",
+                              ),
                             )}
                           </Badge>
                         </TableCell>
@@ -1041,7 +1155,7 @@ export default function ServicePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredParts.map((p: any) => {
+                    {filteredParts.map((p) => {
                       const isLow =
                         parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert);
                       return (
@@ -1186,10 +1300,10 @@ export default function ServicePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLogs.map((l: any) => (
+                    {filteredLogs.map((l) => (
                       <TableRow key={l.id} className="hover:bg-muted/30">
                         <TableCell className="text-sm font-medium">
-                          {LOG_TYPE_LABELS[l.logType] ?? l.logType}
+                          {LOG_TYPE_LABELS[l.logType ?? ""] ?? l.logType}
                         </TableCell>
                         <TableCell className="font-mono text-sm text-muted-foreground">
                           {l.assetCode || "—"}
@@ -1311,7 +1425,7 @@ export default function ServicePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {schedules.map((s: any) => {
+                    {schedules.map((s) => {
                       const days = daysUntil(s.nextDueAt);
                       const isOverdue = days !== null && days < 0;
                       const isSoon = days !== null && days >= 0 && days <= 7;
@@ -1426,7 +1540,7 @@ export default function ServicePage() {
                     <SelectValue placeholder={t("fleet.selectBranch")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b: any) => (
+                    {branches.map((b) => (
                       <SelectItem key={b.id} value={b.id}>
                         {b.name} ({b.city})
                       </SelectItem>
@@ -1486,7 +1600,7 @@ export default function ServicePage() {
                     <SelectValue placeholder={t("rentals.selectAsset")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allAssets.map((a: any) => (
+                    {allAssets.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
                         {a.internalCode} — {a.brand} {a.model}
                       </SelectItem>
@@ -1560,7 +1674,7 @@ export default function ServicePage() {
                     <SelectValue placeholder={t("fleet.selectBranch")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b: any) => (
+                    {branches.map((b) => (
                       <SelectItem key={b.id} value={b.id}>
                         {b.name} ({b.city})
                       </SelectItem>
@@ -1623,7 +1737,7 @@ export default function ServicePage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {mechanics.map((m: any) => (
+                    {mechanics.map((m) => (
                       <SelectItem key={m.userId} value={m.userId}>
                         {m.fullName} ({m.phone})
                       </SelectItem>
@@ -1694,7 +1808,7 @@ export default function ServicePage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {mechanics.map((m: any) => (
+                  {mechanics.map((m) => (
                     <SelectItem key={m.userId} value={m.userId}>
                       {m.fullName} ({m.phone})
                     </SelectItem>
@@ -1710,7 +1824,7 @@ export default function ServicePage() {
             <Button
               onClick={() =>
                 assignMutation.mutate({
-                  id: assignDialog.id,
+                  id: assignDialog?.id ?? "",
                   userId: selectedMechanic,
                 })
               }
@@ -1784,9 +1898,9 @@ export default function ServicePage() {
             <Button
               onClick={() =>
                 statusMutation.mutate({
-                  id: statusDialog.id,
+                  id: statusDialog?.id ?? "",
                   status: newStatus,
-                  type: statusDialog.type,
+                  type: statusDialog?.type ?? "",
                 })
               }
               disabled={!newStatus || statusMutation.isPending}

@@ -70,6 +70,26 @@ const STATUS_COLORS: Record<string, string> = {
   retired: "bg-gray-200 text-gray-600",
 };
 
+interface Branch {
+  id: string;
+  name?: string;
+}
+
+interface Asset {
+  id: string;
+  internalCode?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  qrCode?: string;
+  assetType?: string;
+  status?: string;
+  branchId?: string;
+  branchName?: string;
+  notes?: string;
+  restore?: boolean;
+}
+
 const ASSET_TYPE_ICONS: Record<string, typeof Bike> = {
   bike: Bike,
   ebike: Zap,
@@ -131,7 +151,7 @@ export default function FleetPage() {
     : {};
 
   const [showCreate, setShowCreate] = useState(false);
-  const [editAsset, setEditAsset] = useState<any>(null);
+  const [editAsset, setEditAsset] = useState<Asset | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [statusChange, setStatusChange] = useState<{
     id: string;
@@ -139,13 +159,13 @@ export default function FleetPage() {
   } | null>(null);
   const [newStatus, setNewStatus] = useState("");
   const [statusReason, setStatusReason] = useState("");
-  const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
+  const [archiveConfirm, setArchiveConfirm] = useState<Asset | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () => api<any>("/branches", { headers: companyHeaders }),
+    queryFn: () => api<Branch[]>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const branches = branchesQuery.data ?? [];
@@ -154,14 +174,14 @@ export default function FleetPage() {
     queryKey: ["assets", companyId, statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api<any>(`/assets${params}`, { headers: companyHeaders });
+      return api<Asset[]>(`/assets${params}`, { headers: companyHeaders });
     },
     enabled: !!companyId,
   });
   const allItems = assetsQuery.data ?? [];
   const items = search
     ? allItems.filter(
-        (a: any) =>
+        (a) =>
           (a.internalCode?.toLowerCase() || "").includes(
             search.toLowerCase(),
           ) ||
@@ -276,7 +296,7 @@ export default function FleetPage() {
     setShowCreate(true);
   }
 
-  function openEdit(asset: any) {
+  function openEdit(asset: Asset) {
     setShowCreate(false);
     setEditAsset(asset);
     setForm({
@@ -314,7 +334,7 @@ export default function FleetPage() {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   const countByStatus = (s: string) =>
-    allItems.filter((a: any) => a.status === s).length;
+    allItems.filter((a) => a.status === s).length;
 
   const KPI_FLEET = [
     { key: "available", accent: "bg-green-500", textAccent: "text-green-500" },
@@ -457,12 +477,14 @@ export default function FleetPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((asset: any) => {
-                  const TypeIcon = ASSET_TYPE_ICONS[asset.assetType] || Bike;
+                {items.map((asset) => {
+                  const TypeIcon =
+                    ASSET_TYPE_ICONS[asset.assetType ?? ""] || Bike;
                   const typeColor =
-                    ASSET_TYPE_COLORS[asset.assetType] ||
+                    ASSET_TYPE_COLORS[asset.assetType ?? ""] ||
                     ASSET_TYPE_COLORS.bike;
-                  const rowAccent = ROW_ACCENT_STATUSES[asset.status] || "";
+                  const rowAccent =
+                    ROW_ACCENT_STATUSES[asset.status ?? ""] || "";
                   return (
                     <TableRow
                       key={asset.id}
@@ -481,7 +503,10 @@ export default function FleetPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {String(
-                          t(`assetType.${asset.assetType}`, asset.assetType),
+                          t(
+                            `assetType.${asset.assetType}`,
+                            asset.assetType ?? "",
+                          ),
                         )}
                       </TableCell>
                       <TableCell className="text-sm">
@@ -492,9 +517,11 @@ export default function FleetPage() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          className={`text-xs ${STATUS_COLORS[asset.status] || "bg-gray-100"}`}
+                          className={`text-xs ${STATUS_COLORS[asset.status ?? ""] || "bg-gray-100"}`}
                         >
-                          {String(t(`status.${asset.status}`, asset.status))}
+                          {String(
+                            t(`status.${asset.status}`, asset.status ?? ""),
+                          )}
                         </Badge>
                       </TableCell>
                       {canWriteAsset && (
@@ -516,7 +543,7 @@ export default function FleetPage() {
                               onClick={() => {
                                 setStatusChange({
                                   id: asset.id,
-                                  current: asset.status,
+                                  current: asset.status ?? "",
                                 });
                                 setNewStatus("");
                               }}
@@ -652,7 +679,7 @@ export default function FleetPage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b: any) => (
+                    {branches.map((b) => (
                       <SelectItem key={b.id} value={b.id}>
                         {b.name}
                       </SelectItem>

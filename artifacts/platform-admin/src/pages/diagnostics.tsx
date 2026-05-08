@@ -90,14 +90,16 @@ export default function DiagnosticsPage() {
   const tenantsQuery = useQuery({
     queryKey: ["health", "tenants"],
     queryFn: async () => {
-      const res = await api<any[]>("/platform/health/tenants");
+      const res = await api<Record<string, unknown>[]>(
+        "/platform/health/tenants",
+      );
       const items = res ?? [];
       return items.map(
-        (t: any): TenantHealth => ({
-          companyId: t.companyId ?? t.id,
-          companyName: t.companyName ?? t.name,
-          status: t.status ?? t.healthStatus ?? "healthy",
-          issues: t.issues ?? [],
+        (t): TenantHealth => ({
+          companyId: String(t.companyId ?? t.id ?? ""),
+          companyName: String(t.companyName ?? t.name ?? ""),
+          status: String(t.status ?? t.healthStatus ?? "healthy"),
+          issues: Array.isArray(t.issues) ? (t.issues as string[]) : [],
         }),
       );
     },

@@ -299,7 +299,11 @@ export default function SyncQueueScreen() {
       >
         <View style={styles.cardHeader}>
           <Feather
-            name={(STATUS_ICONS[item.status] ?? "circle") as any}
+            name={
+              (STATUS_ICONS[item.status] ?? "circle") as React.ComponentProps<
+                typeof Feather
+              >["name"]
+            }
             size={18}
             color={statusColor}
           />

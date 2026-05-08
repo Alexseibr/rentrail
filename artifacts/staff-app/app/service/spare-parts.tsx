@@ -27,6 +27,19 @@ import { getAccessToken } from "@/services/api";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
 
+interface SparePart {
+  id: string;
+  name?: string;
+  sku?: string;
+  qtyInStock: string;
+  minQtyAlert: string;
+  unit?: string;
+  category?: string;
+  costPrice?: string;
+  location?: string;
+  description?: string;
+}
+
 async function fetchParts(companyId: string, lowStock?: boolean) {
   const token = await getAccessToken();
   const url = `${BASE_URL}/api/spare-parts${lowStock ? "?lowStock=true" : ""}`;
@@ -34,7 +47,7 @@ async function fetchParts(companyId: string, lowStock?: boolean) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   const json = await res.json();
-  return json.data as any[];
+  return json.data as SparePart[];
 }
 
 async function createTransaction(companyId: string, data: object) {
@@ -66,7 +79,7 @@ export default function SparePartsScreen() {
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [txModal, setTxModal] = useState<{
-    part: any;
+    part: SparePart;
     type: "in" | "out" | "adjustment";
   } | null>(null);
   const [qty, setQty] = useState("1");
@@ -92,7 +105,7 @@ export default function SparePartsScreen() {
   const baseQueryKey = ["spareParts", companyId];
 
   const applyOptimisticUpdate = (
-    parts: any[] | undefined,
+    parts: SparePart[] | undefined,
     payload: { partId: string; transactionType: string; qty: number },
   ) => {
     if (!parts) return parts;
@@ -119,14 +132,15 @@ export default function SparePartsScreen() {
     }) => createTransaction(companyId!, payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: baseQueryKey });
-      const previousActive = queryClient.getQueryData<any[]>(partsQueryKey);
+      const previousActive =
+        queryClient.getQueryData<SparePart[]>(partsQueryKey);
       const altKey = ["spareParts", companyId, !lowStockOnly];
-      const previousAlt = queryClient.getQueryData<any[]>(altKey);
-      queryClient.setQueryData<any[]>(partsQueryKey, (old) =>
+      const previousAlt = queryClient.getQueryData<SparePart[]>(altKey);
+      queryClient.setQueryData<SparePart[]>(partsQueryKey, (old) =>
         applyOptimisticUpdate(old, payload),
       );
       if (previousAlt) {
-        queryClient.setQueryData<any[]>(altKey, (old) =>
+        queryClient.setQueryData<SparePart[]>(altKey, (old) =>
           applyOptimisticUpdate(old, payload),
         );
       }
@@ -182,15 +196,18 @@ export default function SparePartsScreen() {
       setQty("1");
       setTxNote("");
       showSnackbar(t("toast.transactionSuccess"), "success");
-    } catch (e: any) {
-      showSnackbar(e.message || t("toast.transactionFailed"), "error");
+    } catch (e: unknown) {
+      showSnackbar(
+        e instanceof Error ? e.message : t("toast.transactionFailed"),
+        "error",
+      );
     }
   };
 
-  const isLow = (p: any) =>
+  const isLow = (p: SparePart) =>
     parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert);
 
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }: { item: SparePart }) => (
     <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>

@@ -18,6 +18,18 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Building2, User, Users } from "lucide-react";
 
+interface Company {
+  id: string;
+  name?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  website?: string;
+  address?: string;
+  status?: string;
+  createdAt?: string;
+  members?: unknown[];
+}
+
 export default function SettingsCompanyPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -41,7 +53,7 @@ export default function SettingsCompanyPage() {
   const companyQuery = useQuery({
     queryKey: ["company-detail", companyId],
     queryFn: () =>
-      api<any>(`/companies/${companyId}`, { headers: companyHeaders }),
+      api<Company>(`/companies/${companyId}`, { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const company = companyQuery.data;
@@ -49,7 +61,7 @@ export default function SettingsCompanyPage() {
   const membersQuery = useQuery({
     queryKey: ["company-members", companyId],
     queryFn: () =>
-      api<any>(`/companies/${companyId}`, { headers: companyHeaders }),
+      api<Company>(`/companies/${companyId}`, { headers: companyHeaders }),
     enabled: !!companyId,
   });
 

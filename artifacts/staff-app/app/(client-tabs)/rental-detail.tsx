@@ -181,7 +181,11 @@ export default function RentalDetailScreen() {
         {asset && (
           <View style={styles.assetInfo}>
             <View style={styles.assetIconWrap}>
-              <Feather name={typeIcon as any} size={24} color="#F5C518" />
+              <Feather
+                name={typeIcon as React.ComponentProps<typeof Feather>["name"]}
+                size={24}
+                color="#F5C518"
+              />
             </View>
             <View style={styles.assetTextWrap}>
               <Text style={styles.assetName}>
@@ -444,7 +448,7 @@ const styles = StyleSheet.create({
   },
   telGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   telItem: {
-    width: "47%" as any,
+    width: "47%",
     alignItems: "center",
     gap: 4,
     padding: 10,

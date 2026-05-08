@@ -23,13 +23,26 @@ const RED = "#ef4444";
 const YELLOW = "#f59e0b";
 const GREEN = "#22c55e";
 
+interface Schedule {
+  id: string;
+  name?: string;
+  assetId?: string;
+  assetCode?: string;
+  scheduleType?: string;
+  nextDueAt?: string | null;
+  nextDueKm?: string;
+  intervalDays?: number;
+  intervalKm?: string;
+  lastDoneAt?: string;
+}
+
 async function fetchSchedules(companyId: string) {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/maintenance-schedules`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   const json = await res.json();
-  return json.data as any[];
+  return json.data as Schedule[];
 }
 
 async function fetchOverdue(companyId: string) {
@@ -38,7 +51,7 @@ async function fetchOverdue(companyId: string) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   const json = await res.json();
-  return json.data as any[];
+  return json.data as Schedule[];
 }
 
 function daysUntil(dateStr: string | null | undefined): number | null {
@@ -98,7 +111,7 @@ export default function SchedulesScreen() {
 
   const displayed = showOverdueOnly ? overdue : schedules;
 
-  const getUrgency = (item: any): "overdue" | "soon" | "ok" => {
+  const getUrgency = (item: Schedule): "overdue" | "soon" | "ok" => {
     const days = daysUntil(item.nextDueAt);
     if (days !== null && days < 0) return "overdue";
     if (days !== null && days <= 7) return "soon";
@@ -111,7 +124,7 @@ export default function SchedulesScreen() {
     return GREEN;
   };
 
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = ({ item }: { item: Schedule }) => {
     const urgency = getUrgency(item);
     const color = urgencyColor(urgency);
     const days = daysUntil(item.nextDueAt);

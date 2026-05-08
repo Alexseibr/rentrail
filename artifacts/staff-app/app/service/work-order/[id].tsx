@@ -31,6 +31,34 @@ import { MiniMapPreview } from "@/components/MiniMapPreview";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
 
+interface WorkOrder {
+  id: string;
+  status: string;
+  priority?: string;
+  title?: string;
+  description?: string;
+  assetId?: string;
+  assetCode?: string;
+  assetBrand?: string;
+  assetModel?: string;
+  assetType?: string;
+  branchName?: string;
+  orderType?: string;
+  estimatedCost?: string;
+  actualCost?: string;
+  resolution?: string;
+  assignedToName?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt?: string;
+  parts?: Array<{
+    id: string;
+    partName?: string;
+    partUnit?: string;
+    qtyUsed?: string;
+  }>;
+}
+
 function openMaps(lat: number, lng: number) {
   const geoUrl = `geo:${lat},${lng}?q=${lat},${lng}`;
   const webUrl = `https://maps.google.com/?q=${lat},${lng}`;
@@ -126,7 +154,7 @@ export default function WorkOrderDetailScreen() {
   const { queueItems } = useSync();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(
@@ -167,13 +195,14 @@ export default function WorkOrderDetailScreen() {
     newStatus: string,
     extra?: Record<string, unknown>,
   ) => {
+    if (!order) return;
     await enqueue({
       actionType: "change_work_order_status",
       payload: { status: newStatus, ...extra },
       endpoint: `/api/work-orders/${order.id}/status`,
       method: "POST",
     });
-    setOrder((prev: any) => (prev ? { ...prev, status: newStatus } : prev));
+    setOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showSnackbar(t("workOrder.statusQueued"), "success");
   };
@@ -529,7 +558,7 @@ export default function WorkOrderDetailScreen() {
             >
               {t("serviceModule.partsUsed")}
             </Text>
-            {order.parts.map((p: any) => (
+            {order.parts.map((p) => (
               <View key={p.id} style={styles.partRow}>
                 <Feather
                   name="package"
@@ -542,7 +571,7 @@ export default function WorkOrderDetailScreen() {
                 <Text
                   style={[styles.partQty, { color: colors.mutedForeground }]}
                 >
-                  {parseFloat(p.qtyUsed)} {p.partUnit}
+                  {parseFloat(p.qtyUsed ?? "0")} {p.partUnit}
                 </Text>
               </View>
             ))}
@@ -571,7 +600,11 @@ export default function WorkOrderDetailScreen() {
           )}
           <Row
             label={t("serviceModule.created")}
-            value={new Date(order.createdAt).toLocaleString("ru-RU")}
+            value={
+              order.createdAt
+                ? new Date(order.createdAt).toLocaleString("ru-RU")
+                : "—"
+            }
             colors={colors}
           />
         </View>
@@ -611,7 +644,7 @@ function Row({
 }: {
   label: string;
   value: string;
-  colors: any;
+  colors: ReturnType<typeof import("@/hooks/useColors").useColors>;
 }) {
   return (
     <View style={styles.row}>

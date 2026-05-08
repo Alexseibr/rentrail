@@ -26,6 +26,20 @@ import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
+interface WorkOrder {
+  id: string;
+  title?: string;
+  status: string;
+  priority?: string;
+  assetId?: string;
+  assetCode?: string;
+  orderType?: string;
+  assignedToUserId?: string;
+  assignedToName?: string;
+  estimatedCost?: string;
+  createdAt?: string;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   draft: "#94a3b8",
   assigned: "#3b82f6",
@@ -72,7 +86,7 @@ async function fetchWorkOrders(companyId: string, status?: string) {
   });
   if (!res.ok) throw new Error("Failed to fetch work orders");
   const json = await res.json();
-  return json.data as any[];
+  return json.data as WorkOrder[];
 }
 
 export default function WorkOrdersScreen() {
@@ -121,7 +135,7 @@ export default function WorkOrdersScreen() {
 
   useEffect(() => {
     const ids = items
-      .map((o: any) => o.assetId)
+      .map((o) => o.assetId)
       .filter((id: unknown): id is string => !!id);
     if (ids.length === 0) return;
     readManyCoordsFromCache(ids).then(setCoordsMap);
@@ -156,7 +170,7 @@ export default function WorkOrdersScreen() {
     "waiting_parts",
   ];
 
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = ({ item }: { item: WorkOrder }) => {
     const isActive = ACTIVE_STATUSES.includes(item.status);
     const isUrgent = item.priority === "urgent";
     const accentColor = STATUS_COLORS[item.status] ?? "#94a3b8";
@@ -171,7 +185,10 @@ export default function WorkOrdersScreen() {
         ]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(`/service/work-order/${item.id}` as any);
+          router.push({
+            pathname: "/service/work-order/[id]",
+            params: { id: item.id },
+          });
         }}
         activeOpacity={0.7}
       >
@@ -192,7 +209,7 @@ export default function WorkOrdersScreen() {
                   styles.priorityDot,
                   {
                     backgroundColor:
-                      PRIORITY_COLORS[item.priority] ?? "#94a3b8",
+                      PRIORITY_COLORS[item.priority ?? ""] ?? "#94a3b8",
                   },
                 ]}
               />
@@ -266,7 +283,7 @@ export default function WorkOrdersScreen() {
                   styles.priorityMiniDot,
                   {
                     backgroundColor:
-                      PRIORITY_COLORS[item.priority] ?? "#94a3b8",
+                      PRIORITY_COLORS[item.priority ?? ""] ?? "#94a3b8",
                   },
                 ]}
               />

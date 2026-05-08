@@ -101,7 +101,11 @@ export default function NotificationsScreen() {
       >
         <View style={[styles.iconWrap, { backgroundColor: colors.secondary }]}>
           <Feather
-            name={(TYPE_ICONS[item.type] ?? "bell") as any}
+            name={
+              (TYPE_ICONS[item.type] ?? "bell") as React.ComponentProps<
+                typeof Feather
+              >["name"]
+            }
             size={18}
             color={colors.primary}
           />

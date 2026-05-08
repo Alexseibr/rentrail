@@ -163,15 +163,20 @@ export default function AnalyticsPage() {
   const topByRentals = useQuery({
     queryKey: ["analytics", "tenants", "rentals"],
     queryFn: async () => {
-      const res = await api<any>(
+      const res = await api<unknown>(
         "/platform/analytics/tenants?metric=rentals&limit=8",
       );
-      const items = Array.isArray(res) ? res : (res?.items ?? []);
+      const raw = res as Record<string, unknown>;
+      const items: Record<string, unknown>[] = Array.isArray(res)
+        ? (res as Record<string, unknown>[])
+        : Array.isArray(raw?.items)
+          ? (raw.items as Record<string, unknown>[])
+          : [];
       return items.map(
-        (t: any): TopTenant => ({
-          companyId: t.companyId ?? t.id,
-          companyName: t.companyName ?? t.name,
-          value: t.value ?? t.count ?? 0,
+        (t): TopTenant => ({
+          companyId: String(t.companyId ?? t.id ?? ""),
+          companyName: String(t.companyName ?? t.name ?? ""),
+          value: Number(t.value ?? t.count ?? 0),
         }),
       );
     },
@@ -180,15 +185,20 @@ export default function AnalyticsPage() {
   const topByAssets = useQuery({
     queryKey: ["analytics", "tenants", "assets"],
     queryFn: async () => {
-      const res = await api<any>(
+      const res = await api<unknown>(
         "/platform/analytics/tenants?metric=assets&limit=8",
       );
-      const items = Array.isArray(res) ? res : (res?.items ?? []);
+      const raw = res as Record<string, unknown>;
+      const items: Record<string, unknown>[] = Array.isArray(res)
+        ? (res as Record<string, unknown>[])
+        : Array.isArray(raw?.items)
+          ? (raw.items as Record<string, unknown>[])
+          : [];
       return items.map(
-        (t: any): TopTenant => ({
-          companyId: t.companyId ?? t.id,
-          companyName: t.companyName ?? t.name,
-          value: t.value ?? t.count ?? 0,
+        (t): TopTenant => ({
+          companyId: String(t.companyId ?? t.id ?? ""),
+          companyName: String(t.companyName ?? t.name ?? ""),
+          value: Number(t.value ?? t.count ?? 0),
         }),
       );
     },

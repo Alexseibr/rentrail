@@ -17,6 +17,35 @@ import {
 import { Bike, Hash, Tag, MapPin, Calendar, DollarSign } from "lucide-react";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
+interface AssetDetail {
+  id: string;
+  internalCode?: string;
+  assetType?: string;
+  status?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  qrCode?: string;
+  branchId?: string;
+  branchName?: string;
+  notes?: string;
+  purchasePrice?: number;
+  currentValue?: number;
+  createdAt?: string;
+}
+
+interface StatusHistoryEntry {
+  id: string;
+  oldStatus?: string;
+  toStatus?: string;
+  newStatus?: string;
+  status?: string;
+  reason?: string;
+  notes?: string;
+  changedBy?: string;
+  createdAt?: string;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   available: "bg-green-100 text-green-800",
   rented: "bg-blue-100 text-blue-800",
@@ -43,14 +72,14 @@ export default function AssetDetailPage() {
   const assetQuery = useQuery({
     queryKey: ["asset", params.id],
     queryFn: () =>
-      api<any>(`/assets/${params.id}`, { headers: companyHeaders }),
+      api<AssetDetail>(`/assets/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
   const historyQuery = useQuery({
     queryKey: ["asset-history", params.id],
     queryFn: () =>
-      api<any>(`/assets/${params.id}/status-history`, {
+      api<StatusHistoryEntry[]>(`/assets/${params.id}/status-history`, {
         headers: companyHeaders,
       }),
     enabled: !!companyId && !!params.id,
@@ -85,7 +114,7 @@ export default function AssetDetailPage() {
     {
       icon: Bike,
       label: t("fleet.type"),
-      value: t(`assetType.${asset.assetType}`, asset.assetType),
+      value: t(`assetType.${asset.assetType}`, asset.assetType ?? ""),
     },
     {
       icon: Tag,
@@ -123,7 +152,7 @@ export default function AssetDetailPage() {
       <PageBreadcrumb
         items={[
           { label: t("nav.fleet"), href: "/fleet" },
-          { label: asset.internalCode },
+          { label: asset.internalCode ?? "" },
         ]}
       />
       <div className="flex items-center gap-4">
@@ -132,14 +161,14 @@ export default function AssetDetailPage() {
             {asset.internalCode}
           </h1>
           <p className="text-muted-foreground">
-            {String(t(`assetType.${asset.assetType}`, asset.assetType))} —{" "}
+            {String(t(`assetType.${asset.assetType}`, asset.assetType ?? ""))} —{" "}
             {asset.brand} {asset.model}
           </p>
         </div>
         <Badge
-          className={`text-sm px-3 py-1 ${STATUS_COLORS[asset.status] || "bg-gray-100"}`}
+          className={`text-sm px-3 py-1 ${STATUS_COLORS[asset.status ?? ""] || "bg-gray-100"}`}
         >
-          {String(t(`status.${asset.status}`, asset.status))}
+          {String(t(`status.${asset.status}`, asset.status ?? ""))}
         </Badge>
       </div>
 
@@ -200,7 +229,7 @@ export default function AssetDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((entry: any, i: number) => (
+                  {history.map((entry, i: number) => (
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
                         {entry.createdAt
@@ -211,7 +240,10 @@ export default function AssetDetailPage() {
                         <Badge
                           className={
                             STATUS_COLORS[
-                              entry.newStatus || entry.toStatus || entry.status
+                              entry.newStatus ||
+                                entry.toStatus ||
+                                entry.status ||
+                                ""
                             ] || "bg-gray-100"
                           }
                         >

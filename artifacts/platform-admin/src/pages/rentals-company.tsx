@@ -66,6 +66,36 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-sky-100 text-sky-800",
 };
 
+interface Rental {
+  id: string;
+  clientId?: string;
+  clientName?: string;
+  assetId?: string;
+  assetCode?: string;
+  status: string;
+  startAt?: string;
+  startDate?: string;
+  plannedEndAt?: string;
+  endDate?: string;
+  actualEndAt?: string;
+  createdAt?: string;
+}
+
+interface RentalClient {
+  id: string;
+  fullName?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+}
+
+interface RentalAsset {
+  id: string;
+  internalCode?: string;
+  brand?: string;
+  model?: string;
+}
+
 const KPI_CONFIG = [
   { key: "active", accent: "bg-green-500", icon: ClipboardList },
   { key: "overdue", accent: "bg-red-500", icon: AlertCircle },
@@ -90,7 +120,7 @@ export default function RentalsCompanyPage() {
   const [actionDialog, setActionDialog] = useState<{
     id: string;
     action: string;
-    rental: any;
+    rental: Rental;
   } | null>(null);
   const [returnNotes, setReturnNotes] = useState("");
   const [cancelReason, setCancelReason] = useState("");
@@ -104,7 +134,7 @@ export default function RentalsCompanyPage() {
 
   const clientsQuery = useQuery({
     queryKey: ["clients", companyId],
-    queryFn: () => api<any>("/clients", { headers: companyHeaders }),
+    queryFn: () => api<RentalClient[]>("/clients", { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const clients = clientsQuery.data ?? [];
@@ -112,7 +142,9 @@ export default function RentalsCompanyPage() {
   const assetsQuery = useQuery({
     queryKey: ["assets-available", companyId],
     queryFn: () =>
-      api<any>("/assets?status=available", { headers: companyHeaders }),
+      api<RentalAsset[]>("/assets?status=available", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && showCreate,
   });
   const availableAssets = assetsQuery.data ?? [];
@@ -121,14 +153,14 @@ export default function RentalsCompanyPage() {
     queryKey: ["rentals", companyId, statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api<any>(`/rentals${params}`, { headers: companyHeaders });
+      return api<Rental[]>(`/rentals${params}`, { headers: companyHeaders });
     },
     enabled: !!companyId,
   });
   const allItems = rentalsQuery.data ?? [];
   const items = search
     ? allItems.filter(
-        (r: any) =>
+        (r) =>
           (r.clientName?.toLowerCase() || "").includes(search.toLowerCase()) ||
           (r.assetCode?.toLowerCase() || "").includes(search.toLowerCase()),
       )
@@ -216,13 +248,13 @@ export default function RentalsCompanyPage() {
   }
 
   const countByStatus = (s: string) =>
-    allItems.filter((r: any) => r.status === s).length;
+    allItems.filter((r) => r.status === s).length;
 
-  const getAvailableActions = (rental: any) => {
+  const getAvailableActions = (rental: Rental) => {
     const actions: {
       key: string;
       label: string;
-      icon: any;
+      icon: React.ElementType;
       variant?: string;
     }[] = [];
     if (rental.status === "draft") {
@@ -393,7 +425,7 @@ export default function RentalsCompanyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((rental: any) => {
+                {items.map((rental) => {
                   const isOverdue = rental.status === "overdue";
                   const isActive = rental.status === "active";
                   return (
@@ -413,14 +445,14 @@ export default function RentalsCompanyPage() {
                       <TableCell className="text-sm text-muted-foreground">
                         {rental.startDate || rental.startAt
                           ? new Date(
-                              rental.startDate || rental.startAt,
+                              (rental.startDate || rental.startAt) ?? "",
                             ).toLocaleDateString("ru-RU")
                           : "—"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {rental.endDate || rental.plannedEndAt
                           ? new Date(
-                              rental.endDate || rental.plannedEndAt,
+                              (rental.endDate || rental.plannedEndAt) ?? "",
                             ).toLocaleDateString("ru-RU")
                           : "—"}
                       </TableCell>
@@ -535,8 +567,8 @@ export default function RentalsCompanyPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {clients
-                    .filter((c: any) => c.status === "active")
-                    .map((c: any) => (
+                    .filter((c) => c.status === "active")
+                    .map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.fullName} ({c.phone || c.email})
                       </SelectItem>
@@ -556,7 +588,7 @@ export default function RentalsCompanyPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAssets.map((a: any) => (
+                  {availableAssets.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.internalCode} — {a.brand} {a.model}
                     </SelectItem>

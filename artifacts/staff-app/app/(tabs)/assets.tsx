@@ -229,7 +229,10 @@ export default function AssetsScreen() {
             ]}
           >
             <Feather
-              name={(TYPE_ICONS[item.assetType] ?? "circle") as any}
+              name={
+                (TYPE_ICONS[item.assetType] ??
+                  "circle") as React.ComponentProps<typeof Feather>["name"]
+              }
               size={18}
               color={colors.primary}
             />

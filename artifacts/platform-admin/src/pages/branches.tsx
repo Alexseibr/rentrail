@@ -37,6 +37,20 @@ import {
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { toast } from "@/hooks/use-toast";
 
+interface Branch {
+  id: string;
+  name?: string;
+  city?: string;
+  country?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  timezone?: string;
+  status?: string;
+  activate?: boolean;
+  createdAt?: string;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   inactive: "bg-gray-200 text-gray-600",
@@ -63,13 +77,13 @@ export default function BranchesPage() {
     : {};
 
   const [showCreate, setShowCreate] = useState(false);
-  const [editBranch, setEditBranch] = useState<any>(null);
+  const [editBranch, setEditBranch] = useState<Branch | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [toggleConfirm, setToggleConfirm] = useState<any>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<Branch | null>(null);
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () => api<any>("/branches", { headers: companyHeaders }),
+    queryFn: () => api<Branch[]>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const items = branchesQuery.data ?? [];
@@ -148,7 +162,7 @@ export default function BranchesPage() {
     setShowCreate(true);
   }
 
-  function openEdit(branch: any) {
+  function openEdit(branch: Branch) {
     setShowCreate(false);
     setEditBranch(branch);
     setForm({
@@ -228,7 +242,7 @@ export default function BranchesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((branch: any) => (
+                {items.map((branch) => (
                   <TableRow key={branch.id}>
                     <TableCell className="font-medium">{branch.name}</TableCell>
                     <TableCell>{branch.city || "—"}</TableCell>
@@ -239,7 +253,7 @@ export default function BranchesPage() {
                     <TableCell>
                       <Badge
                         className={
-                          STATUS_COLORS[branch.status] ||
+                          STATUS_COLORS[branch.status ?? ""] ||
                           "bg-green-100 text-green-800"
                         }
                       >
