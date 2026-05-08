@@ -16,12 +16,14 @@
     "test:coverage": "vitest run --coverage",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write .",
+    "lint:eslint": "eslint .",
+    "lint:eslint:fix": "eslint . --fix",
     "format:check": "prettier --check . || (printf '\\n[Format check failed] One or more files are not formatted correctly.\\nRun: pnpm run lint:fix\\n\\n' >&2 && exit 1)",
     "seed": "pnpm --filter @workspace/scripts run seed-rbac",
     "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
     "seed:demo:reset": "pnpm --filter @workspace/scripts run seed-demo:reset",
     "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
-    "ci": "pnpm run typecheck && pnpm run check-map-cleanup && pnpm --filter @workspace/scripts run test && pnpm --filter @workspace/scripts run test-map-cleanup && pnpm run test:unit && pnpm run format:check"
+    "ci": "pnpm run typecheck && pnpm run check-map-cleanup && pnpm --filter @workspace/scripts run test && pnpm --filter @workspace/scripts run test-map-cleanup && pnpm run test:unit && pnpm run format:check && pnpm run lint:eslint"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
