@@ -21,7 +21,6 @@ import {
   AlertTriangle,
   DollarSign,
   TrendingUp,
-  ShieldAlert,
   PauseCircle,
   Clock,
   CheckCircle2,
@@ -207,7 +206,7 @@ export default function DashboardPage() {
   ].filter((d) => d.value > 0);
 
   const hasCritical = (health.data?.critical ?? 0) > 0;
-  const hasDegraded = (health.data?.degraded ?? 0) > 0;
+  const _hasDegraded = (health.data?.degraded ?? 0) > 0;
   const pastDue = billing.data?.pastDueSubscriptions ?? 0;
   const pending = overview.data?.pendingCompanies ?? 0;
   const unpaidCount = unpaidInvoices.data?.pagination?.total ?? 0;

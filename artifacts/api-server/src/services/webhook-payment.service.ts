@@ -4,7 +4,7 @@
  * We verify the call, update DB, and notify the client via push.
  */
 import { createHash, createHmac, timingSafeEqual } from "crypto";
-import { db, payments, rentals } from "@workspace/db";
+import { db, payments } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import {

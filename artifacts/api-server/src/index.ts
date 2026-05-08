@@ -4,7 +4,7 @@ import { validateEnv, getEnvProfile } from "./lib/env";
 import { startTeltonikaServer } from "./services/teltonika/server";
 
 try {
-  const env = validateEnv();
+  validateEnv();
   logger.info({ profile: getEnvProfile() }, "Environment validated");
 } catch (err) {
   logger.fatal({ err }, "Environment validation failed — aborting startup");

@@ -6,7 +6,7 @@ import {
   saasSubscriptions,
   saasPlans,
 } from "@workspace/db";
-import { eq, count, sql, and } from "drizzle-orm";
+import { eq, count, sql } from "drizzle-orm";
 
 export async function getPlatformHealthSummary() {
   const [totalTenants] = await db.select({ count: count() }).from(companies);

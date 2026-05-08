@@ -31,7 +31,7 @@ interface ClientProfile {
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
-  const colors = useColors();
+  const _colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
 

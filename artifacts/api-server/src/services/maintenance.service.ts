@@ -7,11 +7,9 @@ import {
   workOrderParts,
   workOrders,
   assets,
-  branches,
   users,
-  companies,
 } from "@workspace/db";
-import { eq, and, desc, lte, lt, sql, inArray, isNull, or } from "drizzle-orm";
+import { eq, and, desc, lte, sql, isNull, or } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 import { logger } from "../lib/logger";
 

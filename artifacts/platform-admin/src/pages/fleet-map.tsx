@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -34,15 +33,6 @@ const STATUS_COLORS: Record<string, string> = {
   lost: "#6b7280",
   stolen: "#dc2626",
   retired: "#9ca3af",
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  available: "bg-green-100 text-green-800",
-  rented: "bg-blue-100 text-blue-800",
-  maintenance: "bg-yellow-100 text-yellow-800",
-  charging: "bg-purple-100 text-purple-800",
-  reserved: "bg-cyan-100 text-cyan-800",
-  blocked: "bg-red-100 text-red-800",
 };
 
 interface FleetMapItem {

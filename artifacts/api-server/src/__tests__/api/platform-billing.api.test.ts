@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
 import { createTestUser, createTestTenant } from "../../test/helpers";
-import { db, saasPlans, platformAuditLogs } from "@workspace/db";
+import { db, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 
 let platformAdmin: { token: string; id: string };

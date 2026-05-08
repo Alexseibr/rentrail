@@ -40,7 +40,7 @@ const ingestSchema = z.object({
 
 const idParams = z.object({ id: z.string().uuid() });
 
-const queryFilters = z.object({
+const _queryFilters = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   eventType: z.string().optional(),

@@ -4,10 +4,9 @@ import {
   companyBranding,
   assets,
   stations,
-  branches,
 } from "@workspace/db";
 import { eq, and, isNull } from "drizzle-orm";
-import { NotFoundError, AppError } from "../lib/errors";
+import { NotFoundError } from "../lib/errors";
 
 const PUBLIC_VISIBLE_ASSET_STATUSES = ["available", "reserved"];
 

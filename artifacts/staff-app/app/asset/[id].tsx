@@ -235,7 +235,6 @@ export default function AssetDetailScreen() {
   const {
     data: telemetry,
     isLoading: isTelemetryLoading,
-    isSuccess: isTelemetrySuccess,
     isFetching: telemetryFetching,
   } = useQuery({
     queryKey: ["asset-telemetry", id],

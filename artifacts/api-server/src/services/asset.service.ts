@@ -6,7 +6,7 @@ import {
   stations,
   type InsertAsset,
 } from "@workspace/db";
-import { eq, and, isNull, inArray, sql } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import {
   NotFoundError,
   AppError,

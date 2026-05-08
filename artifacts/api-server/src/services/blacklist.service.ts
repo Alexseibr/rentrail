@@ -5,7 +5,7 @@ import {
   type InsertBlacklistEntry,
 } from "@workspace/db";
 import { eq, and, or, isNull, gt } from "drizzle-orm";
-import { NotFoundError, AppError } from "../lib/errors";
+import { NotFoundError } from "../lib/errors";
 
 export async function createBlacklistEntry(
   data: InsertBlacklistEntry & { clientId?: string; companyId?: string },

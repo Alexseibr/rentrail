@@ -17,10 +17,7 @@ import {
   AssetUnavailableError,
   BlacklistBlockedError,
 } from "../lib/errors";
-import {
-  checkClientBlacklist,
-  type BlacklistDecision,
-} from "./blacklist.service";
+import { checkClientBlacklist } from "./blacklist.service";
 
 type RentalStatus = typeof rentals.$inferSelect.status;
 type AssetStatus = typeof assets.$inferSelect.status;

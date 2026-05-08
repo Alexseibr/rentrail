@@ -367,7 +367,7 @@ export default function FleetPage() {
       </div>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {KPI_FLEET.map(({ key, accent, textAccent }) => {
+        {KPI_FLEET.map(({ key, accent, textAccent: _textAccent }) => {
           const count = countByStatus(key);
           const isActive = statusFilter === key;
           return (

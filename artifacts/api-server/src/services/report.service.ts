@@ -1,11 +1,4 @@
-import {
-  db,
-  assets,
-  telemetrySnapshots,
-  devices,
-  batteries,
-  batteryAssignments,
-} from "@workspace/db";
+import { db, assets, telemetrySnapshots, devices } from "@workspace/db";
 import { eq, and, desc, lt, isNull, lte } from "drizzle-orm";
 
 export async function getLiveMapData(

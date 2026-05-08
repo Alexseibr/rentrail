@@ -5,7 +5,6 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   BarChart,
   Bar,
@@ -16,7 +15,6 @@ import {
   Cell,
   PieChart,
   Pie,
-  Legend,
 } from "recharts";
 import {
   Building2,
@@ -24,7 +22,6 @@ import {
   ClipboardList,
   DollarSign,
   ShieldAlert,
-  TrendingUp,
   ArrowRight,
   RefreshCw,
 } from "lucide-react";
@@ -203,19 +200,6 @@ export default function AnalyticsPage() {
       );
     },
   });
-
-  const rentalStatusData = [
-    {
-      name: t("common.active"),
-      value: usage.data?.activeRentals ?? 0,
-      color: "#22c55e",
-    },
-    {
-      name: t("status.completed"),
-      value: usage.data?.completedRentals ?? 0,
-      color: "#9ca3af",
-    },
-  ].filter((d) => d.value > 0);
 
   const subscriptionData = [
     {

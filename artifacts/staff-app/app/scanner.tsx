@@ -25,7 +25,7 @@ const YELLOW = "#F5C518";
 
 export default function ScannerScreen() {
   const { t } = useTranslation();
-  const colors = useColors();
+  const _colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isConnected } = useNetwork();

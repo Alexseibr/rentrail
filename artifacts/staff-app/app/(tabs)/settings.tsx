@@ -24,7 +24,7 @@ import { toggleLanguage } from "../../i18n/i18n";
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const colors = useColors();
-  const { user, logout, companyId } = useAuth();
+  const { user, logout } = useAuth();
   const { pendingCount } = useSync();
   const { isConnected } = useNetwork();
   const [pushStatus, setPushStatus] = useState({

@@ -37,7 +37,7 @@ function resolveConfirmMessage(
   queueItems: QueueItem[],
   assetId: string,
   command: string,
-  commandLabel: string,
+  _commandLabel: string,
 ): { key: string; retries?: number } {
   const endpoint = `/api/assets/${assetId}/${command}`;
   const pendingItem = queueItems.find(

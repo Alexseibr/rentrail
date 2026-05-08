@@ -32,7 +32,6 @@ import {
   setMapView,
   initMapView,
   DEFAULT_ZOOM,
-  type MapViewState,
 } from "@/store/mapViewStore";
 import { readManyCoordsFromCache } from "@/services/coordsCache";
 import { getAccessToken } from "@/services/api";

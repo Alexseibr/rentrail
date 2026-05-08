@@ -39,7 +39,7 @@ const DEMO_CLIENT_PASSWORD = "client123";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
-  const colors = useColors();
+  const _colors = useColors();
   const insets = useSafeAreaInsets();
   const {
     loginWithPhone,

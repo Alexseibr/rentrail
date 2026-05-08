@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AppState, type AppStateStatus, Platform } from "react-native";
 
 type NetworkState = {

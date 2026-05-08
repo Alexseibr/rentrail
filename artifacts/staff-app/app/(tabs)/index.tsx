@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  Platform,
   ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -101,7 +100,7 @@ const STAT_CONFIG = [
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const colors = useColors();
-  const insets = useSafeAreaInsets();
+  const _insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, companyId } = useAuth();
   const { pendingCount } = useSync();

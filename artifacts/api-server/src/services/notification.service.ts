@@ -213,7 +213,6 @@ export async function onGeofenceExit(
   geofenceType: string,
   assetId?: string,
 ) {
-  const typeLabel = geofenceType === "operating_zone" ? "рабочая зона" : "зона";
   const title = `Выезд из зоны: ${geofenceName}`;
   const body =
     geofenceType === "operating_zone"

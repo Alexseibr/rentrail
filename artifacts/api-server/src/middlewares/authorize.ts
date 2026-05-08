@@ -8,7 +8,7 @@ import {
   roles,
   companies,
 } from "@workspace/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { ForbiddenError, UnauthorizedError, AppError } from "../lib/errors";
 
 export interface TenantContext {

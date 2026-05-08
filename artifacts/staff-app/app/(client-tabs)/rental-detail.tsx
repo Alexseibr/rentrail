@@ -60,7 +60,7 @@ const ASSET_TYPE_ICONS: Record<string, string> = {
 export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const colors = useColors();
+  const _colors = useColors();
   const router = useRouter();
 
   const [rental, setRental] = useState<RentalDetail | null>(null);

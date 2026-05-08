@@ -8,9 +8,8 @@ import {
   branches,
   clients,
   telemetrySnapshots,
-  locationHistory,
 } from "@workspace/db";
-import { eq, and, sql, inArray, desc } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import {
   UnauthorizedError,
   BadRequestError,

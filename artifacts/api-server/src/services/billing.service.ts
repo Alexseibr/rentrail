@@ -6,7 +6,7 @@ import {
   saasPayments,
   companies,
 } from "@workspace/db";
-import { eq, and, desc, count, sql, ilike, or, gte, lte } from "drizzle-orm";
+import { eq, and, desc, count, sql, gte, lte } from "drizzle-orm";
 import { NotFoundError, AppError } from "../lib/errors";
 
 type SubscriptionStatus = typeof saasSubscriptions.$inferSelect.status;

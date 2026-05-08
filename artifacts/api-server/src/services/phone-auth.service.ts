@@ -2,14 +2,13 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { db, users, sessions, phoneOtpCodes } from "@workspace/db";
-import { eq, and, isNull, lt, gt } from "drizzle-orm";
+import { eq, and, isNull, gt } from "drizzle-orm";
 import { signAccessToken, signRefreshToken } from "../lib/jwt";
 import { config } from "../lib/config";
 import {
   UnauthorizedError,
   NotFoundError,
   BadRequestError,
-  ConflictError,
 } from "../lib/errors";
 import { loadUserPlatformRoles } from "../lib/platform-roles";
 

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
-import { cleanDatabase } from "../../test/setup";
 
 describe("Auth API", () => {
   beforeAll(async () => {});

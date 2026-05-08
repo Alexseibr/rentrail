@@ -18,7 +18,7 @@ import {
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const WEBVIEW_IMPORT = `import WebView from "react-native-webview";`;
+const _WEBVIEW_IMPORT = `import WebView from "react-native-webview";`;
 
 /** Both layers present — should pass. */
 const COMPLIANT_SCREEN = `

@@ -8,12 +8,12 @@ import {
   userCompanyMemberships,
   roles,
 } from "@workspace/db";
-import { eq, and, desc, sql, type SQL } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 type ServiceRequestStatus = typeof serviceRequests.$inferSelect.status;
 type WorkOrderStatus = typeof workOrders.$inferSelect.status;
 
-const userFullName =
+const _userFullName =
   sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`.as(
     "assigned_to_name",
   );
@@ -242,7 +242,7 @@ export async function updateWorkOrder(
   return row;
 }
 
-export async function getMechanics(companyId: string, branchId?: string) {
+export async function getMechanics(companyId: string, _branchId?: string) {
   const mechanicRole = await db
     .select()
     .from(roles)

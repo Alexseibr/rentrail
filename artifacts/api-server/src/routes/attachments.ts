@@ -2,10 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
-import {
-  requireCompanyAccess,
-  requirePermission,
-} from "../middlewares/authorize";
+import { requireCompanyAccess } from "../middlewares/authorize";
 import * as attachmentService from "../services/attachment.service";
 
 const router: IRouter = Router();

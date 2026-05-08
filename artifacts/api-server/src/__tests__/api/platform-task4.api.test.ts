@@ -12,7 +12,6 @@ import {
   saasSubscriptions,
   blacklistEntries,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
 import { checkClientBlacklist } from "../../services/blacklist.service";
 
 let platformAdmin: { token: string; id: string };

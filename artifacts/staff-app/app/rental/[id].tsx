@@ -88,7 +88,7 @@ export default function RentalDetailScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const _router = useRouter();
   const queryClient = useQueryClient();
   const [returnNotes, setReturnNotes] = useState("");
   const [showReturn, setShowReturn] = useState(false);

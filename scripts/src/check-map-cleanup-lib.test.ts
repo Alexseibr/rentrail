@@ -24,9 +24,9 @@ import {
 // Helpers — minimal but realistic code snippets
 // ---------------------------------------------------------------------------
 
-const WEBVIEW_IMPORT = `import WebView from "react-native-webview";`;
+const _WEBVIEW_IMPORT = `import WebView from "react-native-webview";`;
 const LEAFLET_IMPORT = `import L from "leaflet";`;
-const LEAFLET_IMPORT_STAR = `import * as L from "leaflet";`;
+const _LEAFLET_IMPORT_STAR = `import * as L from "leaflet";`;
 
 /** A fully-compliant Staff App screen. */
 function compliantWebViewScreen(popupClose = `closeMapPopup()`) {

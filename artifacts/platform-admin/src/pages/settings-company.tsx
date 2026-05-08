@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, Building2, User, Users } from "lucide-react";
+import { Pencil, Building2, User } from "lucide-react";
 
 interface Company {
   id: string;
@@ -57,13 +57,6 @@ export default function SettingsCompanyPage() {
     enabled: !!companyId,
   });
   const company = companyQuery.data;
-
-  const membersQuery = useQuery({
-    queryKey: ["company-members", companyId],
-    queryFn: () =>
-      api<Company>(`/companies/${companyId}`, { headers: companyHeaders }),
-    enabled: !!companyId,
-  });
 
   const updateMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>

@@ -22,7 +22,7 @@ let platformSupport: { token: string; id: string };
 let platformFinance: { token: string; id: string };
 let regularUser: { token: string; id: string };
 let tenantA: TenantContext;
-let tenantOwnerToken: string;
+let _tenantOwnerToken: string;
 
 async function forceCompanyStatus(companyId: string, status: CompanyStatus) {
   await db.update(companies).set({ status }).where(eq(companies.id, companyId));
@@ -45,7 +45,7 @@ beforeAll(async () => {
 
   const owner = await createTestUser({});
   await assignRole(owner.id, tenantA.company.id, "owner", tenantA.branch.id);
-  tenantOwnerToken = owner.token;
+  _tenantOwnerToken = owner.token;
 });
 
 describe("Platform Moderation", () => {

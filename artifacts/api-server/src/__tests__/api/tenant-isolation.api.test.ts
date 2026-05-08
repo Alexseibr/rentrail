@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
-import { cleanDatabase } from "../../test/setup";
 import {
   createTestUser,
   createTestTenant,
@@ -25,7 +24,7 @@ describe("Multi-Tenant Isolation", () => {
   let assetA: Awaited<ReturnType<typeof createTestAsset>>;
   let assetB: Awaited<ReturnType<typeof createTestAsset>>;
   let clientA: Awaited<ReturnType<typeof createTestClient>>;
-  let clientB: Awaited<ReturnType<typeof createTestClient>>;
+  let _clientB: Awaited<ReturnType<typeof createTestClient>>;
 
   beforeAll(async () => {
     clearRolesCache();
@@ -51,7 +50,7 @@ describe("Multi-Tenant Isolation", () => {
       stationId: tenantB.station.id,
     });
     clientA = await createTestClient(tenantA.company.id);
-    clientB = await createTestClient(tenantB.company.id);
+    _clientB = await createTestClient(tenantB.company.id);
   }, 30000);
 
   describe("company-level isolation — assets", () => {

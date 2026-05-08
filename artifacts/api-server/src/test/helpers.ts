@@ -5,8 +5,6 @@ import {
   branches,
   stations,
   roles,
-  permissions,
-  rolePermissions,
   userCompanyMemberships,
   userBranchMemberships,
   clients,
@@ -14,7 +12,7 @@ import {
   platformRoles,
   platformUserRoles,
 } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { signAccessToken } from "../lib/jwt";
 import type { AccessTokenPayload } from "../lib/jwt";

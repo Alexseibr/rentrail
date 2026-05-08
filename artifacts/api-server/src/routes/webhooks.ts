@@ -4,7 +4,6 @@ import {
   processTinkoffWebhook,
   verifyTinkoffToken,
   processCloudpaymentsWebhook,
-  verifyCloudpaymentsHmac,
 } from "../services/webhook-payment.service";
 import { logger } from "../lib/logger";
 

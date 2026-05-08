@@ -24,7 +24,7 @@ export async function updateBranding(
   delete (data as Record<string, unknown>).companyId;
   delete (data as Record<string, unknown>).id;
 
-  const existing = await getOrCreateBranding(companyId);
+  await getOrCreateBranding(companyId);
 
   const [updated] = await db
     .update(companyBranding)

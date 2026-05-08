@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import app from "../../app";
-import { createTestUser, authHeaders } from "../../test/helpers";
+import { createTestUser } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, platformAuditLogs } from "@workspace/db";
 

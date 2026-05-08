@@ -79,7 +79,7 @@ function ClassicTabLayout() {
   const { t } = useTranslation();
   const colors = useColors();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const _isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   const { user, companyId } = useAuth();
