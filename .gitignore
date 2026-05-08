@@ -47,3 +47,8 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Generated API client files (always regenerate from OpenAPI spec via: pnpm --filter @workspace/api-spec run codegen)
+lib/api-client-react/src/generated/
+lib/api-zod/src/generated/
+artifacts/mockup-sandbox/src/.generated/
