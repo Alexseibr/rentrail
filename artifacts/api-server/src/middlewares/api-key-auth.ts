@@ -3,7 +3,6 @@ import { resolveApiKey } from "../services/provider-key.service";
 import { UnauthorizedError } from "../lib/errors";
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       apiKeyContext?: { companyId: string; provider: string; keyId: string };

@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from "uuid";
 const HEADER = "x-correlation-id";
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       correlationId?: string;

@@ -23,7 +23,6 @@ export interface TenantContext {
 }
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       tenant?: TenantContext;

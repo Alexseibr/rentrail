@@ -303,8 +303,7 @@ describe("Platform Diagnostics", () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toBeInstanceOf(Array);
     expect(res.body.data.length).toBe(5);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const names = res.body.data.map((s: any) => s.name);
+    const names = res.body.data.map((s: { name: string }) => s.name);
     expect(names).toContain("Email Service");
     expect(names).toContain("Object Storage");
   });

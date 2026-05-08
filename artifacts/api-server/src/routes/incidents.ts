@@ -43,12 +43,14 @@ router.get(
         statusParam,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /incidents error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -66,12 +68,14 @@ router.get(
       );
       if (!item) return res.status(404).json({ error: "Not found" });
       return res.json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /incidents/:id error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -97,12 +101,14 @@ router.post(
         reportedByUserId: req.user!.userId,
       });
       return res.status(201).json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "POST /incidents error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -123,12 +129,14 @@ router.post(
       );
       if (!item) return res.status(404).json({ error: "Not found" });
       return res.json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "POST /incidents/:id/status error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );

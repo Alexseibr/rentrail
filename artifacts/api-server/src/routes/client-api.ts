@@ -174,8 +174,7 @@ router.get("/client/vehicles", authenticate, async (req, res) => {
     });
 
     res.json({ data: result });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "GET /client/vehicles");
   }
 });
@@ -252,8 +251,7 @@ router.get("/client/rentals", authenticate, async (req, res) => {
     });
 
     res.json({ data: result });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "GET /client/rentals");
   }
 });
@@ -343,8 +341,7 @@ router.post("/client/rentals", authenticate, async (req, res) => {
       .where(eq(assets.id, assetId));
 
     res.status(201).json({ data: rental });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "POST /client/rentals");
   }
 });
@@ -389,8 +386,7 @@ router.post("/client/rentals/:id/return", authenticate, async (req, res) => {
     }
 
     res.json({ data: updated });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "POST /client/rentals/:id/return");
   }
 });
@@ -417,8 +413,7 @@ router.get("/client/profile", authenticate, async (req, res) => {
     if (!client) throw new NotFoundError("Client not found");
 
     res.json({ data: { ...client, tokenType: "client" } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "GET /client/profile");
   }
 });
@@ -464,8 +459,7 @@ router.get("/client/vehicles/lookup", authenticate, async (req, res) => {
       .limit(1);
 
     res.json({ data: { ...asset, hasActiveRental: !!activeRental } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "GET /client/vehicles/lookup");
   }
 });
@@ -519,8 +513,7 @@ router.get("/client/vehicles/:id", authenticate, async (req, res) => {
           : null,
       },
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "GET /client/vehicles/:id");
   }
 });
@@ -548,8 +541,7 @@ router.get("/client/vehicles/:id/locations", authenticate, async (req, res) => {
         recordedAt: l.recordedAt,
       })),
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "GET /client/vehicles/:id/locations");
   }
 });
@@ -567,8 +559,7 @@ router.post("/client/vehicles/:id/lock", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "POST /client/vehicles/:id/lock");
   }
 });
@@ -586,8 +577,7 @@ router.post("/client/vehicles/:id/unlock", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "POST /client/vehicles/:id/unlock");
   }
 });
@@ -605,8 +595,7 @@ router.post("/client/vehicles/:id/arm", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "POST /client/vehicles/:id/arm");
   }
 });
@@ -624,8 +613,7 @@ router.post("/client/vehicles/:id/disarm", authenticate, async (req, res) => {
       clientId,
     );
     res.json({ data: { commandId: cmd.id, status: cmd.status } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "POST /client/vehicles/:id/disarm");
   }
 });
@@ -712,8 +700,7 @@ router.get("/client/rentals/:id", authenticate, async (req, res) => {
           : null,
       },
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
+  } catch (err: unknown) {
     handleError(res, err, "GET /client/rentals/:id");
   }
 });

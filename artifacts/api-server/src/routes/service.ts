@@ -8,8 +8,22 @@ import * as serviceService from "../services/service.service";
 import * as maintenanceService from "../services/maintenance.service";
 import { logger } from "../lib/logger";
 import { maintenanceLogTypeEnum } from "@workspace/db/schema";
+import { AppError } from "../lib/errors";
 
 const router = Router();
+
+function toHttpError(err: unknown): {
+  status: number;
+  code: string;
+  message: string | undefined;
+} {
+  const appErr = err instanceof AppError ? err : null;
+  return {
+    status: appErr?.statusCode ?? 500,
+    code: appErr?.code ?? "INTERNAL",
+    message: err instanceof Error ? err.message : undefined,
+  };
+}
 
 const VALID_SERVICE_REQUEST_STATUSES = [
   "new",
@@ -47,12 +61,14 @@ router.get(
         statusParam,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /service-requests error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -200,12 +216,14 @@ router.get(
         req.query.assignedToUserId as string | undefined,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /work-orders error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -236,11 +254,11 @@ router.post(
         estimatedCost: req.body.estimatedCost,
       });
       return res.status(201).json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "POST /work-orders error");
-      return res.status(err.statusCode ?? 500).json({
-        error: { code: err.code ?? "INTERNAL_ERROR", message: err?.message },
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code ?? "INTERNAL_ERROR", message: e.message },
       });
     }
   },
@@ -311,12 +329,14 @@ router.get(
         req.query.branchId as string | undefined,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /mechanics error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -370,9 +390,9 @@ router.get(
         recordedAt: Date | null;
       }
       const snapRows: TelemetrySnapRow[] = Array.isArray(latestResult)
-        ? (latestResult as TelemetrySnapRow[])
-        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ((latestResult as any).rows ?? []);
+        ? (latestResult as unknown as TelemetrySnapRow[])
+        : (((latestResult as { rows: unknown[] }).rows ??
+            []) as TelemetrySnapRow[]);
       const latestByAsset = new Map<string, TelemetrySnapRow>();
       for (const snap of snapRows) {
         if (snap.assetId) latestByAsset.set(snap.assetId, snap);
@@ -392,12 +412,14 @@ router.get(
       });
 
       return res.json({ data: result });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /fleet-map error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -434,12 +456,14 @@ router.get(
         logTypeParam,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /maintenance-logs error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -479,11 +503,11 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "POST /maintenance-logs error");
-      return res.status(err.statusCode ?? 500).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -505,12 +529,14 @@ router.get(
           error: { code: "NOT_FOUND", message: "Maintenance log not found" },
         });
       return res.json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /maintenance-logs/:id error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -549,12 +575,14 @@ router.patch(
           error: { code: "NOT_FOUND", message: "Maintenance log not found" },
         });
       return res.json({ data: row });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "PATCH /maintenance-logs/:id error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -573,11 +601,13 @@ router.get(
         req.query.assetId as string | undefined,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -593,11 +623,13 @@ router.get(
         req.tenant!.companyId,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -632,11 +664,13 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -666,11 +700,10 @@ router.patch(
         safe,
       );
       return res.json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -688,11 +721,10 @@ router.delete(
         req.tenant!.companyId,
       );
       return res.status(204).send();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -713,11 +745,13 @@ router.get(
         req.query.lowStock === "true",
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -734,11 +768,10 @@ router.get(
         req.tenant!.companyId,
       );
       return res.json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -773,11 +806,13 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -809,11 +844,10 @@ router.patch(
         safe,
       );
       return res.json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -831,11 +865,10 @@ router.delete(
         req.tenant!.companyId,
       );
       return res.status(204).send();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -854,11 +887,13 @@ router.get(
         req.query.limit ? parseInt(req.query.limit as string) : 100,
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -892,11 +927,10 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -915,11 +949,13 @@ router.get(
         String(req.params.id),
       );
       return res.json({ data: items });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -948,11 +984,10 @@ router.post(
         },
       );
       return res.status(201).json({ data: item });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -972,11 +1007,10 @@ router.delete(
         req.user!.userId,
       );
       return res.status(204).send();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const status = err.statusCode ?? 500;
-      return res.status(status).json({
-        error: { code: err.code ?? "INTERNAL", message: err?.message },
+    } catch (err: unknown) {
+      const e = toHttpError(err);
+      return res.status(e.status).json({
+        error: { code: e.code, message: e.message },
       });
     }
   },
@@ -1000,11 +1034,13 @@ router.get(
         String(req.params.id),
       );
       return res.json({ data: { ...item, parts } });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+    } catch (err: unknown) {
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
@@ -1022,12 +1058,14 @@ router.get(
         req.tenant!.companyId,
       );
       return res.json({ data: stats });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error({ err }, "GET /service-stats error");
-      return res
-        .status(500)
-        .json({ error: { code: "INTERNAL", message: err?.message } });
+      return res.status(500).json({
+        error: {
+          code: "INTERNAL",
+          message: err instanceof Error ? err.message : undefined,
+        },
+      });
     }
   },
 );
