@@ -15,6 +15,10 @@ export default [
       "lib/api-client/**",
       "lib/api-client-react/**",
       "lib/api-zod/**",
+      // Skill templates and platform tooling — not our application code
+      ".local/**",
+      // Playwright Python runtime installed by Replit — not our application code
+      ".pythonlibs/**",
     ],
   },
   {
