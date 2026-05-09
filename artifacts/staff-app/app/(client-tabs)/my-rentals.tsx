@@ -142,7 +142,7 @@ export default function MyRentalsScreen() {
           "x-company-id": companyId || "",
         },
       });
-      const json = await res.json();
+      const json = (await res.json()) as { data?: Rental[] };
       if (json.data) setRentals(json.data);
     } catch {
     } finally {

@@ -63,7 +63,9 @@ export default function ScannerScreen() {
           return;
         }
 
-        const { data } = await res.json();
+        const { data } = (await res.json()) as {
+          data: { type: string; entity: { id: string; externalId?: string } };
+        };
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         if (data.type === "asset") {

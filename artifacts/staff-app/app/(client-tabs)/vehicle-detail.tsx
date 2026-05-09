@@ -119,7 +119,7 @@ export default function VehicleDetailScreen() {
       const res = await fetch(`${BASE_URL}/api/client/vehicles/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = await res.json();
+      const json = (await res.json()) as { data?: VehicleDetail };
       if (json.data) setVehicle(json.data);
     } catch {
     } finally {
@@ -163,7 +163,9 @@ export default function VehicleDetailScreen() {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      const json = await res.json();
+      const json = (await res.json()) as {
+        error?: { message?: string };
+      };
       if (res.ok) {
         Alert.alert(
           t("vehicleDetail.commandSent"),

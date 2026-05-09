@@ -73,7 +73,7 @@ export default function RentalDetailScreen() {
       const res = await fetch(`${BASE_URL}/api/client/rentals/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = await res.json();
+      const json = (await res.json()) as { data?: RentalDetail };
       if (json.data) setRental(json.data);
     } catch (err) {
       console.error("Failed to fetch rental detail:", err);

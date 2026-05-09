@@ -80,11 +80,13 @@ export default function CreateIncidentScreen() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+        const err = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
         throw new Error(err.error || t("incident.failedToCreate"));
       }
 
-      const { data } = await res.json();
+      const { data } = (await res.json()) as { data: { id: string } };
       setCreatedId(data.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(t("incident.success"), t("incident.successMessage"), [

@@ -79,7 +79,7 @@ async function fetchAllAssets(): Promise<AssetItem[]> {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return [];
-  const { data } = await res.json();
+  const { data } = (await res.json()) as { data: AssetItem[] };
   return Array.isArray(data) ? data : [];
 }
 
@@ -92,8 +92,8 @@ async function fetchTelemetry(id: string): Promise<TelemetryResult | null> {
       headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
     });
     if (!res.ok) return null;
-    const { data } = await res.json();
-    return data as TelemetryResult;
+    const { data } = (await res.json()) as { data: TelemetryResult };
+    return data;
   } catch {
     return null;
   }
@@ -347,10 +347,11 @@ export default function FleetMapScreen() {
     }
 
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      const qk = event.query.queryKey as readonly unknown[];
       if (
         event.type === "updated" &&
-        Array.isArray(event.query.queryKey) &&
-        event.query.queryKey[0] === "fleet-fast-poll-until"
+        Array.isArray(qk) &&
+        qk[0] === "fleet-fast-poll-until"
       ) {
         const until = queryClient.getQueryData<number>([
           "fleet-fast-poll-until",
@@ -619,7 +620,12 @@ export default function FleetMapScreen() {
   const handleWebViewMessage = useCallback(
     (event: { nativeEvent: { data: string } }) => {
       try {
-        const msg = JSON.parse(event.nativeEvent.data);
+        const msg = JSON.parse(event.nativeEvent.data) as {
+          type?: string;
+          lat?: number;
+          lng?: number;
+          zoom?: number;
+        };
         if (
           msg.type === "navigate" &&
           typeof msg.lat === "number" &&
@@ -653,8 +659,9 @@ export default function FleetMapScreen() {
       if (iframeRef.current && event.source !== iframeRef.current.contentWindow)
         return;
       try {
-        const msg =
-          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        const msg = (
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data
+        ) as { type?: string; lat?: number; lng?: number; zoom?: number };
         if (
           msg.type === "navigate" &&
           typeof msg.lat === "number" &&

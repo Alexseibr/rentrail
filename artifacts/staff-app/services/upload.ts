@@ -48,7 +48,10 @@ export async function uploadFile(media: CapturedMedia): Promise<UploadResult> {
       return { success: false, error: `Failed to get upload URL: ${errText}` };
     }
 
-    const { uploadURL, objectPath } = await urlRes.json();
+    const { uploadURL, objectPath } = (await urlRes.json()) as {
+      uploadURL: string;
+      objectPath: string;
+    };
 
     const fileResponse = await fetch(media.uri);
     const blob = await fileResponse.blob();
@@ -99,7 +102,7 @@ export async function createAttachmentRecord(params: {
       return { success: false, error: errText };
     }
 
-    const { data } = await res.json();
+    const { data } = (await res.json()) as { data: Record<string, unknown> };
     return { success: true, attachment: data };
   } catch (err: unknown) {
     return {

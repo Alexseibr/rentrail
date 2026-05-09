@@ -45,7 +45,10 @@ export default function ClientScannerScreen() {
             },
           },
         );
-        const json = await res.json();
+        const json = (await res.json()) as {
+          data?: { id: string };
+          error?: { message?: string };
+        };
 
         if (res.ok && json.data) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

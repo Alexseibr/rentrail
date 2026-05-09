@@ -70,11 +70,47 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-async function fetchWithAuth(
+interface TokenPayload {
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface MeApiResponse {
+  data: User;
+}
+
+interface LoginApiResponse {
+  data: TokenPayload;
+}
+
+interface ClientLoginApiResponse {
+  data: {
+    accessToken: string;
+    refreshToken?: string;
+    user: {
+      id: string;
+      fullName?: string;
+      phone?: string;
+      email?: string;
+      clientId?: string;
+      companyId?: string;
+    };
+  };
+}
+
+interface OtpRequestApiResponse {
+  data: { devCode?: string };
+}
+
+interface VerifyOtpApiResponse {
+  data: TokenPayload & { needsPassword: boolean };
+}
+
+async function fetchWithAuth<T>(
   url: string,
   options: RequestInit = {},
   accessToken?: string,
-) {
+): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -87,10 +123,10 @@ async function fetchWithAuth(
     },
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error || "Request failed");
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error || "Request failed");
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -115,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const branchId = await AsyncStorage.getItem(STORAGE_KEYS.BRANCH_ID);
 
       if (token && storedUser) {
-        const user = JSON.parse(storedUser);
+        const user = JSON.parse(storedUser) as User;
         setState({
           user,
           isAuthenticated: true,
@@ -134,15 +170,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const applyAuthResult = useCallback(
     async (accessToken: string, refreshToken: string) => {
       await storeTokens(accessToken, refreshToken);
-      const { data: userData } = await fetchWithAuth(
+      const { data: userData } = await fetchWithAuth<MeApiResponse>(
         `${BASE_URL}/api/auth/me`,
         {},
         accessToken,
       );
       await AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       let companyId = await getCompanyId();
-      if (!companyId && userData.memberships?.length > 0) {
-        companyId = userData.memberships[0].companyId as string;
+      if (!companyId && (userData.memberships?.length ?? 0) > 0) {
+        companyId = userData.memberships![0].companyId;
         await storeCompanyId(companyId);
       }
       setState({
@@ -158,10 +194,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/login`, {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
+      const { data } = await fetchWithAuth<LoginApiResponse>(
+        `${BASE_URL}/api/auth/login`,
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        },
+      );
       await applyAuthResult(data.accessToken, data.refreshToken);
     },
     [applyAuthResult],
@@ -169,21 +208,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithPhone = useCallback(
     async (phone: string, password: string) => {
-      const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/phone/login`, {
-        method: "POST",
-        body: JSON.stringify({ phone, password }),
-      });
+      const { data } = await fetchWithAuth<LoginApiResponse>(
+        `${BASE_URL}/api/auth/phone/login`,
+        {
+          method: "POST",
+          body: JSON.stringify({ phone, password }),
+        },
+      );
       await applyAuthResult(data.accessToken, data.refreshToken);
     },
     [applyAuthResult],
   );
 
   const loginAsClient = useCallback(async (phone: string, password: string) => {
-    const { data } = await fetchWithAuth(`${BASE_URL}/api/auth/client/login`, {
-      method: "POST",
-      body: JSON.stringify({ phone, password }),
-    });
-    await storeTokens(data.accessToken, data.refreshToken || "");
+    const { data } = await fetchWithAuth<ClientLoginApiResponse>(
+      `${BASE_URL}/api/auth/client/login`,
+      {
+        method: "POST",
+        body: JSON.stringify({ phone, password }),
+      },
+    );
+    await storeTokens(data.accessToken, data.refreshToken ?? "");
     const user: User = {
       id: data.user.id,
       firstName: data.user.fullName?.split(" ")[0] || "",
@@ -210,7 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const requestOtp = useCallback(
     async (phone: string): Promise<{ devCode?: string }> => {
-      const { data } = await fetchWithAuth(
+      const { data } = await fetchWithAuth<OtpRequestApiResponse>(
         `${BASE_URL}/api/auth/phone/request-otp`,
         {
           method: "POST",
@@ -227,7 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone: string,
       code: string,
     ): Promise<{ needsPassword: boolean }> => {
-      const { data } = await fetchWithAuth(
+      const { data } = await fetchWithAuth<VerifyOtpApiResponse>(
         `${BASE_URL}/api/auth/phone/verify-otp`,
         {
           method: "POST",
@@ -284,7 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     const token = await getAccessToken();
     if (!token) return;
-    const { data: userData } = await fetchWithAuth(
+    const { data: userData } = await fetchWithAuth<MeApiResponse>(
       `${BASE_URL}/api/auth/me`,
       {},
       token,

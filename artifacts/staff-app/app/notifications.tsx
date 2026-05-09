@@ -37,7 +37,7 @@ async function fetchNotifications(): Promise<Notification[]> {
 
   const res = await fetch(`${BASE_URL}/api/notifications`, { headers });
   if (!res.ok) return [];
-  const { data } = await res.json();
+  const { data } = (await res.json()) as { data: Notification[] };
   return data;
 }
 

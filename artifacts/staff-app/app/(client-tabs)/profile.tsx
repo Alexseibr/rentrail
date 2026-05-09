@@ -42,7 +42,7 @@ export default function ProfileScreen() {
       const res = await fetch(`${BASE_URL}/api/client/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = await res.json();
+      const json = (await res.json()) as { data?: ClientProfile };
       if (json.data) setProfile(json.data);
     } catch (err) {
       console.error("Failed to fetch profile:", err);

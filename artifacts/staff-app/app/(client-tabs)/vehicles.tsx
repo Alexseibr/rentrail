@@ -116,7 +116,10 @@ export default function VehiclesScreen() {
           },
         },
       );
-      const json = await res.json();
+      const json = (await res.json()) as {
+        data?: { id: string };
+        error?: { message?: string };
+      };
       if (res.ok && json.data) {
         setSearchCode("");
         router.push({
