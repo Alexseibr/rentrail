@@ -167,7 +167,7 @@ function handleData(chunk: Buffer, state: SessionState, socket: net.Socket) {
           "Teltonika: device authenticated",
         );
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         logger.error({ err, imei }, "Teltonika: DB error during IMEI lookup");
         socket.write(Buffer.from([0x00]));
         socket.destroy();
@@ -183,7 +183,7 @@ function handleData(chunk: Buffer, state: SessionState, socket: net.Socket) {
       const packetBuf = state.buffer.slice(0, totalLen);
       state.buffer = state.buffer.slice(totalLen);
 
-      handleCodec8(packetBuf, state, socket).catch((err) => {
+      handleCodec8(packetBuf, state, socket).catch((err: unknown) => {
         logger.error(
           { err, imei: state.imei },
           "Teltonika: error processing CODEC 8 packet",

@@ -53,7 +53,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       assignedToUserId: userA.id,
     });
     expect(resA.status).toBe(201);
-    woAssignedToA = resA.body.data.id;
+    woAssignedToA = (resA.body as { data: { id: string } }).data.id;
 
     const resB = await request(testApp).post("/api/work-orders").set(h()).send({
       title: "Work Order for UserB",
@@ -61,14 +61,14 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       assignedToUserId: userB.id,
     });
     expect(resB.status).toBe(201);
-    woAssignedToB = resB.body.data.id;
+    woAssignedToB = (resB.body as { data: { id: string } }).data.id;
 
     const resU = await request(testApp).post("/api/work-orders").set(h()).send({
       title: "Unassigned Work Order",
       orderType: "inspection",
     });
     expect(resU.status).toBe(201);
-    woUnassigned = resU.body.data.id;
+    woUnassigned = (resU.body as { data: { id: string } }).data.id;
   }, 30000);
 
   function h() {
@@ -79,7 +79,9 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
     const res = await request(testApp).get("/api/work-orders").set(h());
 
     expect(res.status).toBe(200);
-    const ids = res.body.data.map((wo: { id: string }) => wo.id);
+    const ids = (res.body as { data: { id: string }[] }).data.map(
+      (wo) => wo.id,
+    );
     expect(ids).toContain(woAssignedToA);
     expect(ids).toContain(woAssignedToB);
     expect(ids).toContain(woUnassigned);
@@ -91,7 +93,9 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = res.body.data.map((wo: { id: string }) => wo.id);
+    const ids = (res.body as { data: { id: string }[] }).data.map(
+      (wo) => wo.id,
+    );
     expect(ids).toContain(woAssignedToA);
     expect(ids).not.toContain(woAssignedToB);
     expect(ids).not.toContain(woUnassigned);
@@ -103,7 +107,9 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = res.body.data.map((wo: { id: string }) => wo.id);
+    const ids = (res.body as { data: { id: string }[] }).data.map(
+      (wo) => wo.id,
+    );
     expect(ids).toContain(woAssignedToB);
     expect(ids).not.toContain(woAssignedToA);
     expect(ids).not.toContain(woUnassigned);
@@ -117,7 +123,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(0);
+    expect((res.body as { data: unknown[] }).data).toHaveLength(0);
   });
 
   it("each filtered result has the correct assignedToUserId", async () => {
@@ -126,7 +132,8 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    for (const wo of res.body.data) {
+    for (const wo of (res.body as { data: { assignedToUserId: string }[] })
+      .data) {
       expect(wo.assignedToUserId).toBe(userA.id);
     }
   });

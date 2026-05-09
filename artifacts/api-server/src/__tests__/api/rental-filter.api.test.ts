@@ -37,7 +37,8 @@ describe("GET /api/rentals — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe("VALIDATION");
+    const errBody = res.body as { error: { code: string } };
+    expect(errBody.error.code).toBe("VALIDATION");
   });
 
   it("status=nonexistent_status — returns 400, not 500", async () => {
@@ -54,7 +55,8 @@ describe("GET /api/rentals — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
+    const body = res.body as { data: unknown[] };
+    expect(Array.isArray(body.data)).toBe(true);
   });
 
   it("status=completed — returns 200", async () => {
@@ -63,7 +65,8 @@ describe("GET /api/rentals — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
+    const body = res.body as { data: unknown[] };
+    expect(Array.isArray(body.data)).toBe(true);
   });
 
   it("status=canceled — returns 200", async () => {
@@ -72,13 +75,15 @@ describe("GET /api/rentals — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
+    const body = res.body as { data: unknown[] };
+    expect(Array.isArray(body.data)).toBe(true);
   });
 
   it("no status param — returns 200 with all records", async () => {
     const res = await request(testApp).get("/api/rentals").set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data)).toBe(true);
+    const body = res.body as { data: unknown[] };
+    expect(Array.isArray(body.data)).toBe(true);
   });
 });

@@ -80,7 +80,9 @@ describe("Multi-Tenant Isolation", () => {
         .set(authHeaders(userB.token, tenantB.company.id));
 
       expect(res.status).toBe(200);
-      const assetIds = (res.body.data || []).map((a: { id: string }) => a.id);
+      const assetIds = (
+        (res.body as { data: { id: string }[] }).data || []
+      ).map((a) => a.id);
       expect(assetIds).not.toContain(assetA.id);
       expect(assetIds).toContain(assetB.id);
     });
@@ -138,7 +140,7 @@ describe("Multi-Tenant Isolation", () => {
         });
 
       expect(res.status).toBe(201);
-      rentalIdA = res.body.data.id;
+      rentalIdA = (res.body as { data: { id: string } }).data.id;
     });
 
     it("user B cannot read company A rental by ID", async () => {
@@ -163,7 +165,9 @@ describe("Multi-Tenant Isolation", () => {
         .set(authHeaders(userB.token, tenantB.company.id));
 
       expect(res.status).toBe(200);
-      const ids = (res.body.data || []).map((r: { id: string }) => r.id);
+      const ids = ((res.body as { data: { id: string }[] }).data || []).map(
+        (r) => r.id,
+      );
       expect(ids).not.toContain(rentalIdA);
     });
   });

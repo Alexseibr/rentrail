@@ -56,12 +56,13 @@ router.patch(
   requirePermission("company:update"),
   validate({ body: updateBrandingSchema }),
   async (req, res) => {
+    const body: z.infer<typeof updateBrandingSchema> = req.body;
     const old = await brandingService.getOrCreateBranding(
       req.tenant!.companyId,
     );
     const branding = await brandingService.updateBranding(
       req.tenant!.companyId,
-      req.body as z.infer<typeof updateBrandingSchema>,
+      body,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -97,9 +98,10 @@ router.patch(
   requirePermission("settings:update"),
   validate({ body: updateModulesSchema }),
   async (req, res) => {
+    const body: z.infer<typeof updateModulesSchema> = req.body;
     const modules = await moduleService.updateCompanyModules(
       req.tenant!.companyId,
-      req.body as z.infer<typeof updateModulesSchema>,
+      body,
       req.user!.isSuperAdmin,
     );
     await createAuditLog({

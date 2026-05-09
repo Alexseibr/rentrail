@@ -414,7 +414,7 @@ describe("Platform Access Model", () => {
       const [, payloadB64] = token.split(".");
       const payload = JSON.parse(
         Buffer.from(payloadB64, "base64url").toString(),
-      );
+      ) as { isSuperAdmin: boolean; platformRoles: string[] };
       expect(payload.isSuperAdmin).toBe(true);
       expect(payload.platformRoles).toContain("superAdmin");
     });
