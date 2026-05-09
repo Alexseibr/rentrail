@@ -366,7 +366,7 @@ export default function FleetPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
         {KPI_FLEET.map(({ key, accent }) => {
           const count = countByStatus(key);
           const isActive = statusFilter === key;

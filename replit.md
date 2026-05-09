@@ -40,6 +40,8 @@ A CI script (`pnpm run check-map-cleanup`) enforces both conventions automatical
 
 **Pre-commit Hook:** A husky pre-commit hook runs `lint-staged` before every commit. It automatically runs `eslint --fix` and `prettier --write` on staged `.ts`/`.tsx` files, and `prettier --write` on all other staged source files (`.js`, `.mjs`, `.cjs`, `.jsx`, `.json`, `.css`, `.md`, `.yaml`, `.yml`). This prevents lint errors and formatting issues from reaching the repository. The hook is configured in `package.json` under the `"lint-staged"` key, and the hook script lives in `.husky/pre-commit`. If you bypass the hook intentionally use `git commit --no-verify`.
 
+**Type Coverage:** `pnpm run type-coverage` measures the percentage of TypeScript nodes that are explicitly typed (not `any`) across all three artifact packages. Baselines measured 2026-05-08: `api-server` 95.59% (threshold ≥ 95), `platform-admin` 96.24% (threshold ≥ 96), `staff-app` 97.41% (threshold ≥ 97). The check runs as part of `pnpm run ci` after `typecheck`, failing the build on regression. Thresholds are intentionally set 0-1% below baseline to tolerate rounding; raise them as `any` usages are eliminated.
+
 ### Technical Implementations
 
 - **Multi-Tenancy:** Enforced via `x-company-id` header and `companyId` filtering on all database queries.

@@ -11,7 +11,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useLocalSearchParams, useFocusEffect, useRouter } from "expo-router";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { getAccessToken } from "@/services/api";
 import WebView from "react-native-webview";

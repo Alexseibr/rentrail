@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Pencil, Building2, User } from "lucide-react";
+
 interface Company {
   id: string;
   name?: string;
