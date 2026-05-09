@@ -14,8 +14,8 @@ import {
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
-import { signAccessToken } from "../lib/jwt";
-import type { AccessTokenPayload } from "../lib/jwt";
+import { signAccessToken } from "../../lib/jwt";
+import type { AccessTokenPayload } from "../../lib/jwt";
 
 let _rolesCache: Map<string, string> | null = null;
 
