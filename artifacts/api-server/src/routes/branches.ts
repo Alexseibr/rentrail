@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as branchService from "../services/branch.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -32,8 +33,7 @@ router.post(
   validate({ body: createBranchSchema }),
   async (req, res) => {
     const branch = await branchService.createBranch({
-      // type-coverage:ignore-next-line
-      ...(req.body as z.infer<typeof createBranchSchema>),
+      ...getBody<z.infer<typeof createBranchSchema>>(req),
       companyId: req.tenant!.companyId,
     });
     await createAuditLog({
@@ -89,8 +89,7 @@ router.patch(
     const branch = await branchService.updateBranch(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateBranchSchema>,
+      getBody<z.infer<typeof updateBranchSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import { authenticateApiKey } from "../middlewares/api-key-auth";
 import * as telemetryService from "../services/telemetry.service";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -46,8 +47,7 @@ router.post(
   validate({ body: ingestSchema }),
   async (req, res) => {
     const ctx = req.apiKeyContext!;
-    // type-coverage:ignore-next-line
-    const { provider, ...rest } = req.body as z.infer<typeof ingestSchema>;
+    const { provider, ...rest } = getBody<z.infer<typeof ingestSchema>>(req);
     const result = await telemetryService.ingestTelemetry(
       { ...rest, provider: provider ?? ctx.provider },
       { companyId: ctx.companyId, provider: ctx.provider },

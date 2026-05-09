@@ -11,6 +11,7 @@ import {
   type TestTenant,
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
+import { resBody } from "../helpers/response-body";
 
 describe("GET /api/maintenance-logs — logType filter validation", () => {
   let admin: TestUser;
@@ -37,8 +38,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(400);
-    // type-coverage:ignore-next-line
-    const errBody = res.body as { error: { code: string } };
+    const errBody = resBody<{ error: { code: string } }>(res);
     expect(errBody.error.code).toBe("VALIDATION");
   });
 
@@ -56,8 +56,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    const body = res.body as { data: unknown[] };
+    const body = resBody<{ data: unknown[] }>(res);
     expect(Array.isArray(body.data)).toBe(true);
   });
 
@@ -67,8 +66,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    const body = res.body as { data: unknown[] };
+    const body = resBody<{ data: unknown[] }>(res);
     expect(Array.isArray(body.data)).toBe(true);
   });
 
@@ -78,8 +76,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    const body = res.body as { data: unknown[] };
+    const body = resBody<{ data: unknown[] }>(res);
     expect(Array.isArray(body.data)).toBe(true);
   });
 
@@ -87,8 +84,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
     const res = await request(testApp).get("/api/maintenance-logs").set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    const body = res.body as { data: unknown[] };
+    const body = resBody<{ data: unknown[] }>(res);
     expect(Array.isArray(body.data)).toBe(true);
   });
 });

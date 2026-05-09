@@ -11,6 +11,7 @@ import * as maintenanceService from "../services/maintenance.service";
 import { logger } from "../lib/logger";
 import { maintenanceLogTypeEnum } from "@workspace/db/schema";
 import { AppError } from "../lib/errors";
+import { getBody } from "../lib/request-body";
 
 const router = Router();
 
@@ -131,8 +132,7 @@ router.post(
       lat,
       lng,
       locationAddress,
-      // type-coverage:ignore-next-line
-    } = req.body as z.infer<typeof createServiceRequestSchema>;
+    } = getBody<z.infer<typeof createServiceRequestSchema>>(req);
     const item = await serviceService.createServiceRequest({
       companyId: req.tenant!.companyId,
       branchId: branchId as string,
@@ -165,8 +165,7 @@ router.patch(
   requirePermission("asset:update"),
   validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const body = req.body as z.infer<typeof updateServiceRequestSchema>;
+    const body = getBody<z.infer<typeof updateServiceRequestSchema>>(req);
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_SR_PATCH_FIELDS) {
       if (body[key] !== undefined) safeData[key] = body[key];
@@ -190,10 +189,8 @@ router.post(
   requirePermission("asset:update"),
   validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { assignedToUserId } = req.body as z.infer<
-      typeof updateServiceRequestSchema
-    >;
+    const { assignedToUserId } =
+      getBody<z.infer<typeof updateServiceRequestSchema>>(req);
     const item = await serviceService.updateServiceRequest(
       req.params.id as string,
       req.tenant!.companyId,
@@ -214,8 +211,7 @@ router.post(
   requirePermission("asset:update"),
   validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { status } = req.body as z.infer<typeof updateServiceRequestSchema>;
+    const { status } = getBody<z.infer<typeof updateServiceRequestSchema>>(req);
     const update: Record<string, unknown> = { status };
     if (status === "completed") update.resolvedAt = new Date();
     const item = await serviceService.updateServiceRequest(
@@ -319,8 +315,7 @@ router.post(
         description,
         assignedToUserId,
         estimatedCost,
-        // type-coverage:ignore-next-line
-      } = req.body as z.infer<typeof createWorkOrderSchema>;
+      } = getBody<z.infer<typeof createWorkOrderSchema>>(req);
       if (!title || !orderType) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "title, orderType required" },
@@ -364,8 +359,7 @@ router.patch(
   requirePermission("asset:update"),
   validate({ body: updateWorkOrderSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const body = req.body as z.infer<typeof updateWorkOrderSchema>;
+    const body = getBody<z.infer<typeof updateWorkOrderSchema>>(req);
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_WO_PATCH_FIELDS) {
       if (body[key] !== undefined) safeData[key] = body[key];
@@ -389,10 +383,8 @@ router.post(
   requirePermission("asset:update"),
   validate({ body: updateWorkOrderSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { status, resolution, actualCost, partsUsed } = req.body as z.infer<
-      typeof updateWorkOrderSchema
-    >;
+    const { status, resolution, actualCost, partsUsed } =
+      getBody<z.infer<typeof updateWorkOrderSchema>>(req);
     const update: Record<string, unknown> = { status };
     if (status === "in_progress") update.startedAt = new Date();
     if (status === "completed") {
@@ -585,8 +577,7 @@ router.post(
   validate({ body: createMaintenanceLogSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const body = req.body as z.infer<typeof createMaintenanceLogSchema>;
+      const body = getBody<z.infer<typeof createMaintenanceLogSchema>>(req);
       if (!body.assetId || !body.logType) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "assetId, logType required" },
@@ -666,10 +657,8 @@ router.patch(
   validate({ body: updateMaintenanceLogSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const { notes, cost, odometerKm } = req.body as z.infer<
-        typeof updateMaintenanceLogSchema
-      >;
+      const { notes, cost, odometerKm } =
+        getBody<z.infer<typeof updateMaintenanceLogSchema>>(req);
       const hasFields =
         notes !== undefined || cost !== undefined || odometerKm !== undefined;
       if (!hasFields) {
@@ -778,8 +767,8 @@ router.post(
   validate({ body: createMaintenanceScheduleSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const body = req.body as z.infer<typeof createMaintenanceScheduleSchema>;
+      const body =
+        getBody<z.infer<typeof createMaintenanceScheduleSchema>>(req);
       if (!body.scheduleType || !body.name) {
         return res.status(400).json({
           error: {
@@ -829,8 +818,8 @@ router.patch(
         "nextDueAt",
         "enabled",
       ] as const;
-      // type-coverage:ignore-next-line
-      const body = req.body as z.infer<typeof updateMaintenanceScheduleSchema>;
+      const body =
+        getBody<z.infer<typeof updateMaintenanceScheduleSchema>>(req);
       const safe: Record<string, unknown> = {};
       for (const k of ALLOWED) {
         if (body[k] !== undefined) safe[k] = body[k];
@@ -965,8 +954,7 @@ router.post(
   validate({ body: createSparePartSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const body = req.body as z.infer<typeof createSparePartSchema>;
+      const body = getBody<z.infer<typeof createSparePartSchema>>(req);
       if (!body.name || !body.category) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "name, category required" },
@@ -1017,8 +1005,7 @@ router.patch(
         "location",
         "notes",
       ] as const;
-      // type-coverage:ignore-next-line
-      const body = req.body as z.infer<typeof updateSparePartSchema>;
+      const body = getBody<z.infer<typeof updateSparePartSchema>>(req);
       const safe: Record<string, unknown> = {};
       for (const k of ALLOWED) {
         if (body[k] !== undefined) safe[k] = body[k];
@@ -1091,8 +1078,8 @@ router.post(
   validate({ body: createSparePartTransactionSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const body = req.body as z.infer<typeof createSparePartTransactionSchema>;
+      const body =
+        getBody<z.infer<typeof createSparePartTransactionSchema>>(req);
       if (!body.partId || !body.transactionType || body.qty == null) {
         return res.status(400).json({
           error: {
@@ -1155,8 +1142,7 @@ router.post(
   validate({ body: addWorkOrderPartSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const body = req.body as z.infer<typeof addWorkOrderPartSchema>;
+      const body = getBody<z.infer<typeof addWorkOrderPartSchema>>(req);
       if (!body.partId || body.qtyUsed == null) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "partId, qtyUsed required" },

@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as commandService from "../services/command.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -41,8 +42,7 @@ router.post(
       req.tenant!.companyId,
       req.params.id as string,
       {
-        // type-coverage:ignore-next-line
-        ...(req.body as z.infer<typeof enqueueSchema>),
+        ...getBody<z.infer<typeof enqueueSchema>>(req),
         requestedByUserId: req.user!.userId,
       },
     );

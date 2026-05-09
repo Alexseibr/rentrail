@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as batteryService from "../services/battery.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -52,8 +53,7 @@ router.post(
   async (req, res) => {
     const battery = await batteryService.createBattery(
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof createBatterySchema>,
+      getBody<z.infer<typeof createBatterySchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -107,8 +107,7 @@ router.patch(
     const battery = await batteryService.updateBattery(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateBatterySchema>,
+      getBody<z.infer<typeof updateBatterySchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -152,8 +151,7 @@ router.post(
   requirePermission("battery:update"),
   validate({ params: idParams, body: assignSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { batteryId, notes } = req.body as z.infer<typeof assignSchema>;
+    const { batteryId, notes } = getBody<z.infer<typeof assignSchema>>(req);
     const assignment = await batteryService.assignBattery(
       req.tenant!.companyId,
       req.params.id as string,

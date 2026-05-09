@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as blacklistService from "../services/blacklist.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -51,10 +52,8 @@ router.post(
   requirePermission("blacklist:create"),
   validate({ body: createBlacklistSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { startsAt, endsAt, ...rest } = req.body as z.infer<
-      typeof createBlacklistSchema
-    >;
+    const { startsAt, endsAt, ...rest } =
+      getBody<z.infer<typeof createBlacklistSchema>>(req);
     const entry = await blacklistService.createBlacklistEntry({
       ...rest,
       companyId: req.tenant!.companyId,
@@ -140,10 +139,8 @@ router.post(
   requirePermission("blacklist:check"),
   validate({ body: checkBlacklistSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { clientId, branchId } = req.body as z.infer<
-      typeof checkBlacklistSchema
-    >;
+    const { clientId, branchId } =
+      getBody<z.infer<typeof checkBlacklistSchema>>(req);
     const result = await blacklistService.checkClientBlacklist(
       clientId,
       req.tenant!.companyId,

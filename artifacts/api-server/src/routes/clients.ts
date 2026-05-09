@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as clientService from "../services/client.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -32,8 +33,7 @@ router.post(
   validate({ body: createClientSchema }),
   async (req, res) => {
     const client = await clientService.createClient({
-      // type-coverage:ignore-next-line
-      ...(req.body as z.infer<typeof createClientSchema>),
+      ...getBody<z.infer<typeof createClientSchema>>(req),
       companyId: req.tenant!.companyId,
     });
     await createAuditLog({
@@ -89,8 +89,7 @@ router.patch(
     const client = await clientService.updateClient(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateClientSchema>,
+      getBody<z.infer<typeof updateClientSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

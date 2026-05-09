@@ -4,6 +4,7 @@ import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess } from "../middlewares/authorize";
 import * as scanService from "../services/scan.service";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -17,8 +18,7 @@ router.post(
   requireCompanyAccess,
   validate({ body: resolveSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { code } = req.body as z.infer<typeof resolveSchema>;
+    const { code } = getBody<z.infer<typeof resolveSchema>>(req);
     const result = await scanService.resolveScannedCode(
       code,
       req.tenant!.companyId,

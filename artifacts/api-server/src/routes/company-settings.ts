@@ -9,6 +9,7 @@ import {
 import * as brandingService from "../services/branding.service";
 import * as moduleService from "../services/module.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -56,8 +57,7 @@ router.patch(
   requirePermission("company:update"),
   validate({ body: updateBrandingSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const body = req.body as z.infer<typeof updateBrandingSchema>;
+    const body = getBody<z.infer<typeof updateBrandingSchema>>(req);
     const old = await brandingService.getOrCreateBranding(
       req.tenant!.companyId,
     );
@@ -99,8 +99,7 @@ router.patch(
   requirePermission("settings:update"),
   validate({ body: updateModulesSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const body = req.body as z.infer<typeof updateModulesSchema>;
+    const body = getBody<z.infer<typeof updateModulesSchema>>(req);
     const modules = await moduleService.updateCompanyModules(
       req.tenant!.companyId,
       body,

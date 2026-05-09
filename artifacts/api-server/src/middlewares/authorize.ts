@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { ForbiddenError, UnauthorizedError, AppError } from "../lib/errors";
+import { getBody } from "../lib/request-body";
 
 export interface TenantContext {
   companyId: string;
@@ -240,8 +241,9 @@ export function requireBranchAccess() {
       return;
     }
 
-    const reqBodyBranchId = // type-coverage:ignore-next-line
-      (req.body as Record<string, string | undefined> | undefined)?.branchId;
+    const reqBodyBranchId = getBody<
+      Record<string, string | undefined> | undefined
+    >(req)?.branchId;
     const branchId: string | undefined =
       req.tenant.branchId ||
       (req.headers["x-branch-id"] as string) ||

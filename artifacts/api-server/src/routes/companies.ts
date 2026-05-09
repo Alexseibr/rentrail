@@ -14,6 +14,7 @@ import * as companyService from "../services/company.service";
 import * as platformCompanyService from "../services/platform-company.service";
 import { createAuditLog } from "../lib/audit";
 import { createPlatformAuditLog } from "../lib/platform-audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -64,8 +65,7 @@ router.post(
   validate({ body: createCompanySchema }),
   async (req, res) => {
     const company = await companyService.createCompany(
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof createCompanySchema>,
+      getBody<z.infer<typeof createCompanySchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "company.create",
@@ -135,8 +135,7 @@ router.patch(
     const old = await companyService.getCompany(req.params.id as string);
     const company = await companyService.updateCompany(
       req.params.id as string,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateCompanySchema>,
+      getBody<z.infer<typeof updateCompanySchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "company.update",
@@ -156,10 +155,8 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reasonCode, reasonText } = req.body as z.infer<
-      typeof moderationActionSchema
-    >;
+    const { reasonCode, reasonText } =
+      getBody<z.infer<typeof moderationActionSchema>>(req);
     const { updated, previousStatus } =
       await platformCompanyService.approveCompany(req.params.id as string, {
         reasonCode,
@@ -186,10 +183,8 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reasonCode, reasonText } = req.body as z.infer<
-      typeof moderationActionSchema
-    >;
+    const { reasonCode, reasonText } =
+      getBody<z.infer<typeof moderationActionSchema>>(req);
     const { updated, previousStatus } =
       await platformCompanyService.blockCompany(req.params.id as string, {
         reasonCode,
@@ -216,10 +211,8 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reasonCode, reasonText } = req.body as z.infer<
-      typeof moderationActionSchema
-    >;
+    const { reasonCode, reasonText } =
+      getBody<z.infer<typeof moderationActionSchema>>(req);
     const { updated, previousStatus } =
       await platformCompanyService.unblockCompany(req.params.id as string, {
         reasonCode,
@@ -246,10 +239,8 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reasonCode, reasonText } = req.body as z.infer<
-      typeof moderationActionSchema
-    >;
+    const { reasonCode, reasonText } =
+      getBody<z.infer<typeof moderationActionSchema>>(req);
     const { updated, previousStatus } =
       await platformCompanyService.suspendCompany(req.params.id as string, {
         reasonCode,
@@ -276,10 +267,8 @@ router.post(
   requirePlatformRole("superAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reasonCode, reasonText } = req.body as z.infer<
-      typeof moderationActionSchema
-    >;
+    const { reasonCode, reasonText } =
+      getBody<z.infer<typeof moderationActionSchema>>(req);
     const { updated, previousStatus } =
       await platformCompanyService.cancelCompany(req.params.id as string, {
         reasonCode,
@@ -377,8 +366,7 @@ router.patch(
     const old = await companyService.getCompany(req.params.id as string);
     const company = await companyService.updateCompany(
       req.params.id as string,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateCompanySchema>,
+      getBody<z.infer<typeof updateCompanySchema>>(req),
     );
     await createAuditLog({
       companyId: company.id,

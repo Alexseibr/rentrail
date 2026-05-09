@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as geofenceService from "../services/geofence.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -55,8 +56,7 @@ router.post(
   async (req, res) => {
     const geo = await geofenceService.createGeofence(
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof createGeofenceSchema>,
+      getBody<z.infer<typeof createGeofenceSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -111,8 +111,7 @@ router.patch(
     const geo = await geofenceService.updateGeofence(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateGeofenceSchema>,
+      getBody<z.infer<typeof updateGeofenceSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

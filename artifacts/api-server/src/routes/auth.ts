@@ -11,6 +11,7 @@ import { config } from "../lib/config";
 import { signAccessToken } from "../lib/jwt";
 import { db, clients } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -54,8 +55,7 @@ router.post(
   validate({ body: registerSchema }),
   async (req, res) => {
     const user = await authService.register(
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof registerSchema>,
+      getBody<z.infer<typeof registerSchema>>(req),
     );
     res.status(201).json({ data: user });
   },
@@ -66,8 +66,7 @@ router.post(
   validate({ body: loginSchema }),
   async (req, res) => {
     const result = await authService.login(
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof loginSchema>,
+      getBody<z.infer<typeof loginSchema>>(req),
       req.headers["user-agent"],
       req.ip,
     );
@@ -79,8 +78,7 @@ router.post(
   "/auth/phone/request-otp",
   validate({ body: phoneRequestOtpSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { phone } = req.body as z.infer<typeof phoneRequestOtpSchema>;
+    const { phone } = getBody<z.infer<typeof phoneRequestOtpSchema>>(req);
     const result = await phoneAuthService.requestOtp(phone);
     res.json({ data: result });
   },
@@ -90,8 +88,7 @@ router.post(
   "/auth/phone/verify-otp",
   validate({ body: phoneVerifyOtpSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { phone, code } = req.body as z.infer<typeof phoneVerifyOtpSchema>;
+    const { phone, code } = getBody<z.infer<typeof phoneVerifyOtpSchema>>(req);
     const result = await phoneAuthService.verifyOtp(
       phone,
       code,
@@ -106,8 +103,7 @@ router.post(
   "/auth/phone/login",
   validate({ body: phoneLoginSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { phone, password } = req.body as z.infer<typeof phoneLoginSchema>;
+    const { phone, password } = getBody<z.infer<typeof phoneLoginSchema>>(req);
     const result = await phoneAuthService.loginWithPassword(
       phone,
       password,
@@ -123,8 +119,7 @@ router.post(
   authenticate,
   validate({ body: setPasswordSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { password } = req.body as z.infer<typeof setPasswordSchema>;
+    const { password } = getBody<z.infer<typeof setPasswordSchema>>(req);
     await phoneAuthService.setPassword(req.user!.userId, password);
     res.json({ data: { message: "Password set successfully" } });
   },
@@ -134,8 +129,7 @@ router.post(
   "/auth/refresh",
   validate({ body: refreshSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { refreshToken } = req.body as z.infer<typeof refreshSchema>;
+    const { refreshToken } = getBody<z.infer<typeof refreshSchema>>(req);
     const tokens = await authService.refreshTokens(refreshToken);
     res.json({ data: tokens });
   },
@@ -166,10 +160,8 @@ router.post(
   "/auth/client/login",
   validate({ body: clientLoginSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { phone, password, companyId } = req.body as z.infer<
-      typeof clientLoginSchema
-    >;
+    const { phone, password, companyId } =
+      getBody<z.infer<typeof clientLoginSchema>>(req);
     const result = await clientAuthService.clientLoginWithPassword(
       phone,
       password,
@@ -186,8 +178,8 @@ router.post(
   validate({ body: clientRefreshSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const { refreshToken } = req.body as z.infer<typeof clientRefreshSchema>;
+      const { refreshToken } =
+        getBody<z.infer<typeof clientRefreshSchema>>(req);
       const payload = jwt.verify(refreshToken, config.jwt.refreshSecret) as {
         clientId: string;
         companyId: string;

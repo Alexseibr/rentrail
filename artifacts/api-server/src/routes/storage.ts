@@ -6,6 +6,7 @@ import {
   ObjectNotFoundError,
 } from "../lib/objectStorage";
 import { authenticate } from "../middlewares/authenticate";
+import { getBody } from "../lib/request-body";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -26,8 +27,7 @@ router.post(
   "/storage/uploads/request-url",
   authenticate,
   async (req: Request, res: Response) => {
-    // type-coverage:ignore-next-line
-    const parsed = uploadBodySchema.safeParse(req.body);
+    const parsed = uploadBodySchema.safeParse(getBody<unknown>(req));
     if (!parsed.success) {
       res.status(400).json({ error: "Missing or invalid required fields" });
       return;

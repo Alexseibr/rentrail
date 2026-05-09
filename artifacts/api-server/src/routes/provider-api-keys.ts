@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as keyService from "../services/provider-key.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -27,8 +28,7 @@ router.post(
   async (req, res) => {
     const result = await keyService.generateApiKey(
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof createKeySchema>,
+      getBody<z.infer<typeof createKeySchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

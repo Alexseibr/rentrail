@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as b2bService from "../services/b2b-request.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -58,8 +59,7 @@ router.patch(
     const request = await b2bService.updateB2BRequest(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateB2BSchema>,
+      getBody<z.infer<typeof updateB2BSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

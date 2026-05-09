@@ -9,6 +9,7 @@ import {
 import * as deviceService from "../services/device.service";
 import { createAuditLog } from "../lib/audit";
 import { deviceStatusEnum, deviceTypeEnum } from "@workspace/db/schema";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -70,8 +71,7 @@ router.post(
   async (req, res) => {
     const device = await deviceService.createDevice(
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof createDeviceSchema>,
+      getBody<z.infer<typeof createDeviceSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -156,8 +156,7 @@ router.patch(
     const device = await deviceService.updateDevice(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateDeviceSchema>,
+      getBody<z.infer<typeof updateDeviceSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -178,8 +177,7 @@ router.post(
   requirePermission("device:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { status } = req.body as z.infer<typeof changeStatusSchema>;
+    const { status } = getBody<z.infer<typeof changeStatusSchema>>(req);
     const device = await deviceService.changeDeviceStatus(
       req.params.id as string,
       req.tenant!.companyId,

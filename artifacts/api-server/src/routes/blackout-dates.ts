@@ -10,6 +10,7 @@ import { db, rentalBlackoutDates } from "@workspace/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { createAuditLog } from "../lib/audit";
 import { NotFoundError } from "../lib/errors";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -76,8 +77,7 @@ router.post(
           startDate,
           endDate,
           reason: reason ?? null,
-          // type-coverage:ignore-next-line
-        }))(req.body as z.infer<typeof createSchema>),
+        }))(getBody<z.infer<typeof createSchema>>(req)),
         createdByUserId: req.user!.userId,
       })
       .returning();

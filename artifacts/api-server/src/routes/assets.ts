@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as assetService from "../services/asset.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -73,8 +74,7 @@ router.post(
   validate({ body: createAssetSchema }),
   async (req, res) => {
     const asset = await assetService.createAsset({
-      // type-coverage:ignore-next-line
-      ...(req.body as z.infer<typeof createAssetSchema>),
+      ...getBody<z.infer<typeof createAssetSchema>>(req),
       companyId: req.tenant!.companyId,
     });
     await createAuditLog({
@@ -149,8 +149,7 @@ router.patch(
     const asset = await assetService.updateAsset(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateAssetSchema>,
+      getBody<z.infer<typeof updateAssetSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -173,8 +172,7 @@ router.post(
   requirePermission("asset:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { status, reason } = req.body as z.infer<typeof changeStatusSchema>;
+    const { status, reason } = getBody<z.infer<typeof changeStatusSchema>>(req);
     const before = await assetService.getAsset(
       req.params.id as string,
       req.tenant!.companyId,

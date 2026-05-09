@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as rentalService from "../services/rental.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -62,10 +63,8 @@ router.post(
   requirePermission("rental:create"),
   validate({ body: createRentalSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { startAt, plannedEndAt, ...rest } = req.body as z.infer<
-      typeof createRentalSchema
-    >;
+    const { startAt, plannedEndAt, ...rest } =
+      getBody<z.infer<typeof createRentalSchema>>(req);
     const rental = await rentalService.createRental(
       {
         ...rest,
@@ -206,8 +205,7 @@ router.post(
   requirePermission("rental:extend"),
   validate({ params: idParams, body: extendSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { newEndDate, reason } = req.body as z.infer<typeof extendSchema>;
+    const { newEndDate, reason } = getBody<z.infer<typeof extendSchema>>(req);
     const { updated, previousStatus } = await rentalService.extendRental(
       req.params.id as string,
       req.tenant!.companyId,
@@ -239,8 +237,7 @@ router.post(
     const { updated, previousStatus } = await rentalService.returnRental(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof returnSchema>,
+      getBody<z.infer<typeof returnSchema>>(req),
       req.user!.userId,
     );
     await createAuditLog({
@@ -264,8 +261,7 @@ router.post(
   requirePermission("rental:cancel"),
   validate({ params: idParams, body: cancelSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reason } = req.body as z.infer<typeof cancelSchema>;
+    const { reason } = getBody<z.infer<typeof cancelSchema>>(req);
     const { updated, previousStatus } = await rentalService.cancelRental(
       req.params.id as string,
       req.tenant!.companyId,

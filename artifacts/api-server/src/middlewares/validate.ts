@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod/v4";
+import { getBody, setBody } from "../lib/request-body";
 
 interface ValidationSchemas {
   body?: z.ZodType;
@@ -10,8 +11,7 @@ interface ValidationSchemas {
 export function validate(schemas: ValidationSchemas) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (schemas.body) {
-      // type-coverage:ignore-next-line
-      req.body = schemas.body.parse(req.body);
+      setBody(req, schemas.body.parse(getBody<unknown>(req)));
     }
     if (schemas.params) {
       req.params = schemas.params.parse(req.params) as Record<string, string>;

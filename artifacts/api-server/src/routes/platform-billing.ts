@@ -5,6 +5,7 @@ import { requirePlatformRole } from "../middlewares/platform-authorize";
 import { validate } from "../middlewares/validate";
 import { createPlatformAuditLog } from "../lib/platform-audit";
 import * as billingService from "../services/billing.service";
+import { getBody } from "../lib/request-body";
 
 const router = Router();
 
@@ -124,8 +125,7 @@ router.post(
   validate({ body: createPlanSchema }),
   async (req, res) => {
     const plan = await billingService.createPlan(
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof createPlanSchema>,
+      getBody<z.infer<typeof createPlanSchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "billing.plan.create",
@@ -145,8 +145,7 @@ router.patch(
   async (req, res) => {
     const { updated, previous } = await billingService.updatePlan(
       req.params.id as string,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updatePlanSchema>,
+      getBody<z.infer<typeof updatePlanSchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "billing.plan.update",
@@ -206,8 +205,7 @@ router.patch(
   async (req, res) => {
     const updated = await billingService.updateSubscription(
       req.params.id as string,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateSubscriptionSchema>,
+      getBody<z.infer<typeof updateSubscriptionSchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.update",
@@ -226,8 +224,7 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
+    const { reason } = getBody<z.infer<typeof subscriptionActionSchema>>(req);
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
         req.params.id as string,
@@ -253,8 +250,7 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
+    const { reason } = getBody<z.infer<typeof subscriptionActionSchema>>(req);
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
         req.params.id as string,
@@ -280,8 +276,7 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
+    const { reason } = getBody<z.infer<typeof subscriptionActionSchema>>(req);
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
         req.params.id as string,
@@ -350,8 +345,7 @@ router.post(
   validate({ body: createInvoiceSchema }),
   async (req, res) => {
     const invoice = await billingService.createInvoice(
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof createInvoiceSchema>,
+      getBody<z.infer<typeof createInvoiceSchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.create",
@@ -393,8 +387,7 @@ router.post(
   async (req, res) => {
     const { updated, previousStatus } = await billingService.markInvoicePaid(
       req.params.id as string,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof markPaidSchema>,
+      getBody<z.infer<typeof markPaidSchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.paid",
@@ -456,8 +449,7 @@ router.post(
   validate({ params: idParams, body: setPlanSchema }),
   async (req, res) => {
     const { planId, trialEndsAt, currentPeriodStart, currentPeriodEnd } =
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof setPlanSchema>;
+      getBody<z.infer<typeof setPlanSchema>>(req);
     const subscription = await billingService.createSubscriptionForCompany(
       req.params.id as string,
       planId,

@@ -7,6 +7,7 @@ import * as b2bRequestService from "../services/b2b-request.service";
 import * as notificationService from "../services/notification.service";
 import { resolvePublicCompany } from "../services/public.service";
 import { AppError } from "../lib/errors";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -92,10 +93,8 @@ router.post(
       );
     }
 
-    // type-coverage:ignore-next-line
-    const { requestedStartAt, requestedEndAt, ...rest } = req.body as z.infer<
-      typeof publicInquirySchema
-    >;
+    const { requestedStartAt, requestedEndAt, ...rest } =
+      getBody<z.infer<typeof publicInquirySchema>>(req);
     const inquiry = await inquiryService.createPublicInquiry(company.id, {
       ...rest,
       requestedStartAt: requestedStartAt
@@ -136,8 +135,7 @@ router.post(
 
     const request = await b2bRequestService.createPublicB2BRequest(
       company.id,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof publicB2BSchema>,
+      getBody<z.infer<typeof publicB2BSchema>>(req),
     );
 
     await notificationService

@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
 import * as pushTokenService from "../services/push-token.service";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -24,8 +25,7 @@ router.post(
   validate({ body: registerSchema }),
   async (req, res) => {
     const { companyId, token, platform, appVersion, deviceId } =
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof registerSchema>;
+      getBody<z.infer<typeof registerSchema>>(req);
     const result = await pushTokenService.registerToken({
       userId: req.user!.userId,
       companyId,
@@ -43,8 +43,7 @@ router.post(
   authenticate,
   validate({ body: unregisterSchema }),
   async (req, res) => {
-    // type-coverage:ignore-next-line
-    const { token } = req.body as z.infer<typeof unregisterSchema>;
+    const { token } = getBody<z.infer<typeof unregisterSchema>>(req);
     const result = await pushTokenService.unregisterToken(
       token,
       req.user!.userId,

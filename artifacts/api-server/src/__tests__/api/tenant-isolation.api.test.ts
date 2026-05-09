@@ -13,6 +13,7 @@ import {
   type TestTenant,
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
+import { resBody } from "../helpers/response-body";
 
 describe("Multi-Tenant Isolation", () => {
   let userA: TestUser;
@@ -80,8 +81,9 @@ describe("Multi-Tenant Isolation", () => {
         .set(authHeaders(userB.token, tenantB.company.id));
 
       expect(res.status).toBe(200);
-      const assetIds = // type-coverage:ignore-next-line
-        ((res.body as { data: { id: string }[] }).data || []).map((a) => a.id);
+      const assetIds = (
+        resBody<{ data: { id: string }[] }>(res).data || []
+      ).map((a) => a.id);
       expect(assetIds).not.toContain(assetA.id);
       expect(assetIds).toContain(assetB.id);
     });
@@ -139,8 +141,7 @@ describe("Multi-Tenant Isolation", () => {
         });
 
       expect(res.status).toBe(201);
-      // type-coverage:ignore-next-line
-      rentalIdA = (res.body as { data: { id: string } }).data.id;
+      rentalIdA = resBody<{ data: { id: string } }>(res).data.id;
     });
 
     it("user B cannot read company A rental by ID", async () => {
@@ -165,8 +166,7 @@ describe("Multi-Tenant Isolation", () => {
         .set(authHeaders(userB.token, tenantB.company.id));
 
       expect(res.status).toBe(200);
-      // type-coverage:ignore-next-line
-      const ids = ((res.body as { data: { id: string }[] }).data || []).map(
+      const ids = (resBody<{ data: { id: string }[] }>(res).data || []).map(
         (r) => r.id,
       );
       expect(ids).not.toContain(rentalIdA);

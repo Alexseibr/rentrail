@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as rentalPaymentService from "../services/rental-payment.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -53,8 +54,7 @@ router.post(
     const result = await rentalPaymentService.holdDeposit(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof holdSchema>,
+      getBody<z.infer<typeof holdSchema>>(req),
       req.user!.userId,
     );
     await createAuditLog({
@@ -79,8 +79,7 @@ router.post(
     const payment = await rentalPaymentService.capturePayment(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof captureSchema>,
+      getBody<z.infer<typeof captureSchema>>(req),
       req.user!.userId,
     );
     await createAuditLog({

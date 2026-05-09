@@ -5,6 +5,7 @@ import { requirePlatformRole } from "../middlewares/platform-authorize";
 import { validate } from "../middlewares/validate";
 import { createPlatformAuditLog } from "../lib/platform-audit";
 import * as wlService from "../services/platform-white-label.service";
+import { getBody } from "../lib/request-body";
 
 const router = Router();
 
@@ -49,8 +50,7 @@ router.patch(
   async (req, res) => {
     const { settings, previous } = await wlService.upsertWhiteLabelSettings(
       req.params.id as string,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateSchema>,
+      getBody<z.infer<typeof updateSchema>>(req),
     );
     await createPlatformAuditLog(req, {
       action: "platform.white_label.update",

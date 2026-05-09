@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as stationService from "../services/station.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -38,8 +39,7 @@ router.post(
   validate({ body: createStationSchema }),
   async (req, res) => {
     const station = await stationService.createStation({
-      // type-coverage:ignore-next-line
-      ...(req.body as z.infer<typeof createStationSchema>),
+      ...getBody<z.infer<typeof createStationSchema>>(req),
       companyId: req.tenant!.companyId,
     });
     await createAuditLog({
@@ -99,8 +99,7 @@ router.patch(
     const station = await stationService.updateStation(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateStationSchema>,
+      getBody<z.infer<typeof updateStationSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

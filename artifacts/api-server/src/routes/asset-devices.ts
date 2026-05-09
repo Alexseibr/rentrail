@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as adService from "../services/asset-device.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -41,8 +42,7 @@ router.post(
     const binding = await adService.bindDeviceToAsset(
       req.tenant!.companyId,
       req.params.id as string,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof bindSchema>,
+      getBody<z.infer<typeof bindSchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

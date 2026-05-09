@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as inquiryService from "../services/inquiry.service";
 import { createAuditLog } from "../lib/audit";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -61,8 +62,7 @@ router.patch(
     const inquiry = await inquiryService.updateInquiry(
       req.params.id as string,
       req.tenant!.companyId,
-      // type-coverage:ignore-next-line
-      req.body as z.infer<typeof updateInquirySchema>,
+      getBody<z.infer<typeof updateInquirySchema>>(req),
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

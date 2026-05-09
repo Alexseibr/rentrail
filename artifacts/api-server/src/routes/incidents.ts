@@ -8,6 +8,7 @@ import {
 } from "../middlewares/authorize";
 import * as incidentService from "../services/incident.service";
 import { logger } from "../lib/logger";
+import { getBody } from "../lib/request-body";
 
 const createIncidentSchema = z.object({
   branchId: z.string().uuid().optional(),
@@ -95,10 +96,8 @@ router.post(
   validate({ body: createIncidentSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const { branchId, title, description, severity } = req.body as z.infer<
-        typeof createIncidentSchema
-      >;
+      const { branchId, title, description, severity } =
+        getBody<z.infer<typeof createIncidentSchema>>(req);
       if (!title) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "title is required" },
@@ -130,8 +129,7 @@ router.post(
   validate({ body: statusIncidentSchema }),
   async (req, res) => {
     try {
-      // type-coverage:ignore-next-line
-      const { status } = req.body as z.infer<typeof statusIncidentSchema>;
+      const { status } = getBody<z.infer<typeof statusIncidentSchema>>(req);
       const update: Record<string, unknown> = { status };
       if (status === "resolved") update.resolvedAt = new Date();
       const item = await incidentService.updateIncident(

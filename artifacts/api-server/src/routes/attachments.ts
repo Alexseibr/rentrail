@@ -4,6 +4,7 @@ import { validate } from "../middlewares/validate";
 import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess } from "../middlewares/authorize";
 import * as attachmentService from "../services/attachment.service";
+import { getBody } from "../lib/request-body";
 
 const router: IRouter = Router();
 
@@ -40,8 +41,7 @@ router.post(
       tag,
       notes,
       capturedAt,
-      // type-coverage:ignore-next-line
-    } = req.body as z.infer<typeof createSchema>;
+    } = getBody<z.infer<typeof createSchema>>(req);
     const attachment = await attachmentService.createAttachment({
       companyId: req.tenant!.companyId,
       entityType,

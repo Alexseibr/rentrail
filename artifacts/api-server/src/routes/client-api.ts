@@ -18,6 +18,7 @@ import {
 import * as commandService from "../services/command.service";
 import * as telemetryService from "../services/telemetry.service";
 import { logger } from "../lib/logger";
+import { getBody } from "../lib/request-body";
 
 const router = Router();
 
@@ -260,11 +261,10 @@ router.post("/client/rentals", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
 
-    // type-coverage:ignore-next-line
-    const { assetId, rentalPlanId } = req.body as {
+    const { assetId, rentalPlanId } = getBody<{
       assetId?: string;
       rentalPlanId?: string;
-    };
+    }>(req);
     if (!assetId) throw new BadRequestError("assetId is required");
 
     const [asset] = await db

@@ -5,6 +5,7 @@ import { requirePlatformRole } from "../middlewares/platform-authorize";
 import { validate } from "../middlewares/validate";
 import { createPlatformAuditLog } from "../lib/platform-audit";
 import * as platformBlacklistService from "../services/platform-blacklist.service";
+import { getBody } from "../lib/request-body";
 
 const router = Router();
 
@@ -105,8 +106,7 @@ router.post(
   validate({ body: createSchema }),
   async (req, res) => {
     const entry = await platformBlacklistService.createGlobalBlacklistEntry({
-      // type-coverage:ignore-next-line
-      ...(req.body as z.infer<typeof createSchema>),
+      ...getBody<z.infer<typeof createSchema>>(req),
       createdByUserId: req.user!.userId,
     });
     await createPlatformAuditLog(req, {
@@ -146,8 +146,7 @@ router.patch(
     const { updated, previous } =
       await platformBlacklistService.updateGlobalBlacklistEntry(
         req.params.id as string,
-        // type-coverage:ignore-next-line
-        req.body as z.infer<typeof updateSchema>,
+        getBody<z.infer<typeof updateSchema>>(req),
       );
     await createPlatformAuditLog(req, {
       action: "platform.blacklist.update",

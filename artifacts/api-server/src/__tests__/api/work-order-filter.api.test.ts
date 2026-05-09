@@ -11,6 +11,7 @@ import {
   type TestTenant,
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
+import { resBody } from "../helpers/response-body";
 
 describe("GET /api/work-orders — assignedToUserId filter", () => {
   let admin: TestUser;
@@ -53,8 +54,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       assignedToUserId: userA.id,
     });
     expect(resA.status).toBe(201);
-    // type-coverage:ignore-next-line
-    woAssignedToA = (resA.body as { data: { id: string } }).data.id;
+    woAssignedToA = resBody<{ data: { id: string } }>(resA).data.id;
 
     const resB = await request(testApp).post("/api/work-orders").set(h()).send({
       title: "Work Order for UserB",
@@ -62,16 +62,14 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       assignedToUserId: userB.id,
     });
     expect(resB.status).toBe(201);
-    // type-coverage:ignore-next-line
-    woAssignedToB = (resB.body as { data: { id: string } }).data.id;
+    woAssignedToB = resBody<{ data: { id: string } }>(resB).data.id;
 
     const resU = await request(testApp).post("/api/work-orders").set(h()).send({
       title: "Unassigned Work Order",
       orderType: "inspection",
     });
     expect(resU.status).toBe(201);
-    // type-coverage:ignore-next-line
-    woUnassigned = (resU.body as { data: { id: string } }).data.id;
+    woUnassigned = resBody<{ data: { id: string } }>(resU).data.id;
   }, 30000);
 
   function h() {
@@ -82,8 +80,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
     const res = await request(testApp).get("/api/work-orders").set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    const ids = (res.body as { data: { id: string }[] }).data.map(
+    const ids = resBody<{ data: { id: string }[] }>(res).data.map(
       (wo) => wo.id,
     );
     expect(ids).toContain(woAssignedToA);
@@ -97,8 +94,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    const ids = (res.body as { data: { id: string }[] }).data.map(
+    const ids = resBody<{ data: { id: string }[] }>(res).data.map(
       (wo) => wo.id,
     );
     expect(ids).toContain(woAssignedToA);
@@ -112,8 +108,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    const ids = (res.body as { data: { id: string }[] }).data.map(
+    const ids = resBody<{ data: { id: string }[] }>(res).data.map(
       (wo) => wo.id,
     );
     expect(ids).toContain(woAssignedToB);
@@ -129,8 +124,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    expect((res.body as { data: unknown[] }).data).toHaveLength(0);
+    expect(resBody<{ data: unknown[] }>(res).data).toHaveLength(0);
   });
 
   it("each filtered result has the correct assignedToUserId", async () => {
@@ -139,8 +133,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    // type-coverage:ignore-next-line
-    for (const wo of (res.body as { data: { assignedToUserId: string }[] })
+    for (const wo of resBody<{ data: { assignedToUserId: string }[] }>(res)
       .data) {
       expect(wo.assignedToUserId).toBe(userA.id);
     }
