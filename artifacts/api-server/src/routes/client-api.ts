@@ -260,7 +260,10 @@ router.post("/client/rentals", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
 
-    const { assetId, rentalPlanId } = req.body;
+    const { assetId, rentalPlanId } = req.body as {
+      assetId?: string;
+      rentalPlanId?: string;
+    };
     if (!assetId) throw new BadRequestError("assetId is required");
 
     const [asset] = await db

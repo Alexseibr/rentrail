@@ -73,7 +73,7 @@ router.post(
   validate({ body: createAssetSchema }),
   async (req, res) => {
     const asset = await assetService.createAsset({
-      ...req.body,
+      ...(req.body as z.infer<typeof createAssetSchema>),
       companyId: req.tenant!.companyId,
     });
     await createAuditLog({
@@ -148,7 +148,7 @@ router.patch(
     const asset = await assetService.updateAsset(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof updateAssetSchema>,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -171,6 +171,7 @@ router.post(
   requirePermission("asset:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
+    const { status, reason } = req.body as z.infer<typeof changeStatusSchema>;
     const before = await assetService.getAsset(
       req.params.id as string,
       req.tenant!.companyId,
@@ -178,9 +179,9 @@ router.post(
     const asset = await assetService.changeAssetStatus(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body.status,
+      status,
       req.user!.userId,
-      req.body.reason,
+      reason,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -189,8 +190,8 @@ router.post(
       entityType: "asset",
       entityId: asset.id,
       before: { status: before.status },
-      after: { status: req.body.status },
-      metadata: req.body.reason ? { reason: req.body.reason } : undefined,
+      after: { status },
+      metadata: reason ? { reason } : undefined,
       req,
     });
     res.json({ data: asset });

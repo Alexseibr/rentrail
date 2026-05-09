@@ -14,6 +14,14 @@ import {
 } from "@workspace/db";
 import { checkClientBlacklist } from "../../services/blacklist.service";
 
+type _RB = {
+  data: Record<string, unknown>;
+  error: { code: string; message: string };
+};
+function rb(r: { body: unknown }): _RB {
+  return r.body as _RB;
+}
+
 let platformAdmin: { token: string; id: string };
 let platformRisk: { token: string; id: string };
 let platformFinance: { token: string; id: string };
@@ -57,8 +65,10 @@ describe("Platform Global Blacklist", () => {
       .get("/api/platform/blacklist")
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.items).toBeInstanceOf(Array);
-    expect(typeof res.body.data.pagination.total).toBe("number");
+    expect(rb(res).data.items).toBeInstanceOf(Array);
+    expect(
+      typeof (rb(res).data.pagination as Record<string, unknown>).total,
+    ).toBe("number");
   });
 
   it("creates a global blacklist entry", async () => {
@@ -76,10 +86,10 @@ describe("Platform Global Blacklist", () => {
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.data.scopeType).toBe("global");
-    expect(res.body.data.actionType).toBe("blocked_global");
-    expect(res.body.data.fullNameSnapshot).toBe("John Doe");
-    entryId = res.body.data.id;
+    expect(rb(res).data.scopeType).toBe("global");
+    expect(rb(res).data.actionType).toBe("blocked_global");
+    expect(rb(res).data.fullNameSnapshot).toBe("John Doe");
+    entryId = rb(res).data.id as string;
   });
 
   it("lists entries with search filter", async () => {
@@ -87,7 +97,9 @@ describe("Platform Global Blacklist", () => {
       .get("/api/platform/blacklist?search=John")
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      (rb(res).data.items as unknown as Array<Record<string, unknown>>).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("lists entries with active filter", async () => {
@@ -95,7 +107,9 @@ describe("Platform Global Blacklist", () => {
       .get("/api/platform/blacklist?active=true")
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      (rb(res).data.items as unknown as Array<Record<string, unknown>>).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("gets a single entry by ID", async () => {
@@ -103,7 +117,7 @@ describe("Platform Global Blacklist", () => {
       .get(`/api/platform/blacklist/${entryId}`)
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.id).toBe(entryId);
+    expect(rb(res).data.id).toBe(entryId);
   });
 
   it("updates a blacklist entry", async () => {
@@ -112,7 +126,7 @@ describe("Platform Global Blacklist", () => {
       .set("Authorization", `Bearer ${platformRisk.token}`)
       .send({ reasonText: "Updated reason" });
     expect(res.status).toBe(200);
-    expect(res.body.data.reasonText).toBe("Updated reason");
+    expect(rb(res).data.reasonText).toBe("Updated reason");
   });
 
   it("disables a blacklist entry", async () => {
@@ -120,7 +134,7 @@ describe("Platform Global Blacklist", () => {
       .post(`/api/platform/blacklist/${entryId}/disable`)
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.endsAt).not.toBeNull();
+    expect(rb(res).data.endsAt).not.toBeNull();
   });
 
   it("re-enables a blacklist entry", async () => {
@@ -128,7 +142,7 @@ describe("Platform Global Blacklist", () => {
       .post(`/api/platform/blacklist/${entryId}/enable`)
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.endsAt).toBeNull();
+    expect(rb(res).data.endsAt).toBeNull();
   });
 
   it("returns 404 for non-existent entry", async () => {
@@ -157,7 +171,9 @@ describe("Platform Global Blacklist", () => {
       .get("/api/platform/blacklist?phone=1234567890")
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      (rb(res).data.items as unknown as Array<Record<string, unknown>>).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("filters by email field", async () => {
@@ -165,7 +181,9 @@ describe("Platform Global Blacklist", () => {
       .get("/api/platform/blacklist?email=john@fraud")
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
+    expect(
+      (rb(res).data.items as unknown as Array<Record<string, unknown>>).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -182,7 +200,7 @@ describe("Platform White-Label", () => {
       .get(`/api/platform/companies/${companyId}/white-label`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data).toBeNull();
+    expect(rb(res).data).toBeNull();
   });
 
   it("creates settings via PATCH (upsert)", async () => {
@@ -195,9 +213,9 @@ describe("Platform White-Label", () => {
         customSupportEmail: "support@task4.test",
       });
     expect(res.status).toBe(200);
-    expect(res.body.data.brandNameOverride).toBe("Task4 Brand");
-    expect(res.body.data.primaryColor).toBe("#FF5500");
-    expect(res.body.data.status).toBe("disabled");
+    expect(rb(res).data.brandNameOverride).toBe("Task4 Brand");
+    expect(rb(res).data.primaryColor).toBe("#FF5500");
+    expect(rb(res).data.status).toBe("disabled");
   });
 
   it("updates existing settings via PATCH", async () => {
@@ -206,8 +224,8 @@ describe("Platform White-Label", () => {
       .set("Authorization", `Bearer ${platformAdmin.token}`)
       .send({ secondaryColor: "#00AAFF" });
     expect(res.status).toBe(200);
-    expect(res.body.data.secondaryColor).toBe("#00AAFF");
-    expect(res.body.data.primaryColor).toBe("#FF5500");
+    expect(rb(res).data.secondaryColor).toBe("#00AAFF");
+    expect(rb(res).data.primaryColor).toBe("#FF5500");
   });
 
   it("rejects enable when plan is not eligible", async () => {
@@ -215,7 +233,7 @@ describe("Platform White-Label", () => {
       .post(`/api/platform/companies/${companyId}/white-label/enable`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(422);
-    expect(res.body.error.code).toBe("PLAN_NOT_ELIGIBLE");
+    expect(rb(res).error.code).toBe("PLAN_NOT_ELIGIBLE");
   });
 
   it("allows enable when plan has whiteLabelAvailable", async () => {
@@ -242,8 +260,8 @@ describe("Platform White-Label", () => {
       .post(`/api/platform/companies/${companyId}/white-label/enable`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.status).toBe("enabled");
-    expect(res.body.data.enabledAt).not.toBeNull();
+    expect(rb(res).data.status).toBe("enabled");
+    expect(rb(res).data.enabledAt).not.toBeNull();
   });
 
   it("disables white-label", async () => {
@@ -251,7 +269,7 @@ describe("Platform White-Label", () => {
       .post(`/api/platform/companies/${companyId}/white-label/disable`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.status).toBe("disabled");
+    expect(rb(res).data.status).toBe("disabled");
   });
 
   it("returns 404 for non-existent company", async () => {
@@ -286,14 +304,21 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/health/summary")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.tenants).toBeDefined();
-    expect(res.body.data.tenants.total).toBeGreaterThanOrEqual(0);
-    expect(res.body.data.assets).toBeDefined();
-    expect(res.body.data.devices).toBeDefined();
-    expect(res.body.data.build).toBeDefined();
-    expect(typeof res.body.data.build.uptime).toBe("number");
-    expect(res.body.data.services).toBeInstanceOf(Array);
-    expect(res.body.data.services.length).toBe(5);
+    expect(rb(res).data.tenants).toBeDefined();
+    expect(
+      (rb(res).data.tenants as Record<string, unknown>).total,
+    ).toBeGreaterThanOrEqual(0);
+    expect(rb(res).data.assets).toBeDefined();
+    expect(rb(res).data.devices).toBeDefined();
+    expect(rb(res).data.build).toBeDefined();
+    expect(typeof (rb(res).data.build as Record<string, unknown>).uptime).toBe(
+      "number",
+    );
+    expect(rb(res).data.services).toBeInstanceOf(Array);
+    expect(
+      (rb(res).data.services as unknown as Array<Record<string, unknown>>)
+        .length,
+    ).toBe(5);
   });
 
   it("returns all service statuses", async () => {
@@ -301,9 +326,13 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/health/services")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data).toBeInstanceOf(Array);
-    expect(res.body.data.length).toBe(5);
-    const names = res.body.data.map((s: { name: string }) => s.name);
+    expect(rb(res).data).toBeInstanceOf(Array);
+    expect(
+      (rb(res).data as unknown as Array<Record<string, unknown>>).length,
+    ).toBe(5);
+    const names = (
+      rb(res).data as unknown as Array<Record<string, unknown>>
+    ).map((s: { name: string }) => s.name);
     expect(names).toContain("Email Service");
     expect(names).toContain("Object Storage");
   });
@@ -313,8 +342,8 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/diagnostics/storage")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.name).toBe("Object Storage");
-    expect(res.body.data.status).toBe("ok");
+    expect(rb(res).data.name).toBe("Object Storage");
+    expect(rb(res).data.status).toBe("ok");
   });
 
   it("returns 422 for invalid service name", async () => {
@@ -329,11 +358,13 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/health/tenants")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data).toBeInstanceOf(Array);
-    if (res.body.data.length > 0) {
-      expect(res.body.data[0]).toHaveProperty("healthStatus");
-      expect(res.body.data[0]).toHaveProperty("assets");
-      expect(res.body.data[0]).toHaveProperty("devices");
+    expect(rb(res).data).toBeInstanceOf(Array);
+    if (
+      (rb(res).data as unknown as Array<Record<string, unknown>>).length > 0
+    ) {
+      expect(rb(res).data[0]).toHaveProperty("healthStatus");
+      expect(rb(res).data[0]).toHaveProperty("assets");
+      expect(rb(res).data[0]).toHaveProperty("devices");
     }
   });
 
@@ -358,9 +389,9 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/overview")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.tenants).toBeDefined();
-    expect(typeof res.body.data.mrrEstimate).toBe("number");
-    expect(res.body.data.planDistribution).toBeInstanceOf(Array);
+    expect(rb(res).data.tenants).toBeDefined();
+    expect(typeof rb(res).data.mrrEstimate).toBe("number");
+    expect(rb(res).data.planDistribution).toBeInstanceOf(Array);
   });
 
   it("returns top tenants by rentals", async () => {
@@ -368,8 +399,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/tenants?metric=rentals&limit=5")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.metric).toBe("rentals");
-    expect(res.body.data.items).toBeInstanceOf(Array);
+    expect(rb(res).data.metric).toBe("rentals");
+    expect(rb(res).data.items).toBeInstanceOf(Array);
   });
 
   it("returns top tenants by assets", async () => {
@@ -377,7 +408,7 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/tenants?metric=assets")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.metric).toBe("assets");
+    expect(rb(res).data.metric).toBe("assets");
   });
 
   it("returns billing metrics", async () => {
@@ -385,8 +416,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/billing")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.invoices).toBeDefined();
-    expect(res.body.data.revenue).toBeDefined();
+    expect(rb(res).data.invoices).toBeDefined();
+    expect(rb(res).data.revenue).toBeDefined();
   });
 
   it("returns usage metrics", async () => {
@@ -394,8 +425,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/usage")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(typeof res.body.data.totalCompanies).toBe("number");
-    expect(res.body.data.averages).toBeDefined();
+    expect(typeof rb(res).data.totalCompanies).toBe("number");
+    expect(rb(res).data.averages).toBeDefined();
   });
 
   it("returns risk metrics", async () => {
@@ -403,8 +434,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/risks")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.blacklist).toBeDefined();
-    expect(res.body.data.incidents).toBeDefined();
+    expect(rb(res).data.blacklist).toBeDefined();
+    expect(rb(res).data.incidents).toBeDefined();
   });
 
   it("platformFinance can access analytics", async () => {

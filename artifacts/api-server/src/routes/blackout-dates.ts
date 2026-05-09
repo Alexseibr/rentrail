@@ -70,11 +70,13 @@ router.post(
       .insert(rentalBlackoutDates)
       .values({
         companyId: req.tenant!.companyId,
-        branchId: req.body.branchId ?? null,
-        assetId: req.body.assetId ?? null,
-        startDate: req.body.startDate,
-        endDate: req.body.endDate,
-        reason: req.body.reason ?? null,
+        ...(({ branchId, assetId, startDate, endDate, reason }) => ({
+          branchId: branchId ?? null,
+          assetId: assetId ?? null,
+          startDate,
+          endDate,
+          reason: reason ?? null,
+        }))(req.body as z.infer<typeof createSchema>),
         createdByUserId: req.user!.userId,
       })
       .returning();

@@ -53,7 +53,9 @@ router.post(
   "/auth/register",
   validate({ body: registerSchema }),
   async (req, res) => {
-    const user = await authService.register(req.body);
+    const user = await authService.register(
+      req.body as z.infer<typeof registerSchema>,
+    );
     res.status(201).json({ data: user });
   },
 );
@@ -63,7 +65,7 @@ router.post(
   validate({ body: loginSchema }),
   async (req, res) => {
     const result = await authService.login(
-      req.body,
+      req.body as z.infer<typeof loginSchema>,
       req.headers["user-agent"],
       req.ip,
     );
@@ -75,7 +77,8 @@ router.post(
   "/auth/phone/request-otp",
   validate({ body: phoneRequestOtpSchema }),
   async (req, res) => {
-    const result = await phoneAuthService.requestOtp(req.body.phone);
+    const { phone } = req.body as z.infer<typeof phoneRequestOtpSchema>;
+    const result = await phoneAuthService.requestOtp(phone);
     res.json({ data: result });
   },
 );
@@ -84,9 +87,10 @@ router.post(
   "/auth/phone/verify-otp",
   validate({ body: phoneVerifyOtpSchema }),
   async (req, res) => {
+    const { phone, code } = req.body as z.infer<typeof phoneVerifyOtpSchema>;
     const result = await phoneAuthService.verifyOtp(
-      req.body.phone,
-      req.body.code,
+      phone,
+      code,
       req.headers["user-agent"],
       req.ip,
     );
@@ -98,9 +102,10 @@ router.post(
   "/auth/phone/login",
   validate({ body: phoneLoginSchema }),
   async (req, res) => {
+    const { phone, password } = req.body as z.infer<typeof phoneLoginSchema>;
     const result = await phoneAuthService.loginWithPassword(
-      req.body.phone,
-      req.body.password,
+      phone,
+      password,
       req.headers["user-agent"],
       req.ip,
     );
@@ -113,7 +118,8 @@ router.post(
   authenticate,
   validate({ body: setPasswordSchema }),
   async (req, res) => {
-    await phoneAuthService.setPassword(req.user!.userId, req.body.password);
+    const { password } = req.body as z.infer<typeof setPasswordSchema>;
+    await phoneAuthService.setPassword(req.user!.userId, password);
     res.json({ data: { message: "Password set successfully" } });
   },
 );
@@ -122,7 +128,8 @@ router.post(
   "/auth/refresh",
   validate({ body: refreshSchema }),
   async (req, res) => {
-    const tokens = await authService.refreshTokens(req.body.refreshToken);
+    const { refreshToken } = req.body as z.infer<typeof refreshSchema>;
+    const tokens = await authService.refreshTokens(refreshToken);
     res.json({ data: tokens });
   },
 );
@@ -152,10 +159,13 @@ router.post(
   "/auth/client/login",
   validate({ body: clientLoginSchema }),
   async (req, res) => {
+    const { phone, password, companyId } = req.body as z.infer<
+      typeof clientLoginSchema
+    >;
     const result = await clientAuthService.clientLoginWithPassword(
-      req.body.phone,
-      req.body.password,
-      req.body.companyId,
+      phone,
+      password,
+      companyId,
     );
     res.json({ data: result });
   },
@@ -168,10 +178,8 @@ router.post(
   validate({ body: clientRefreshSchema }),
   async (req, res) => {
     try {
-      const payload = jwt.verify(
-        req.body.refreshToken,
-        config.jwt.refreshSecret,
-      ) as {
+      const { refreshToken } = req.body as z.infer<typeof clientRefreshSchema>;
+      const payload = jwt.verify(refreshToken, config.jwt.refreshSecret) as {
         clientId: string;
         companyId: string;
         tokenType: string;

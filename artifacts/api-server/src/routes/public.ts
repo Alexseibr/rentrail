@@ -92,14 +92,15 @@ router.post(
       );
     }
 
+    const { requestedStartAt, requestedEndAt, ...rest } = req.body as z.infer<
+      typeof publicInquirySchema
+    >;
     const inquiry = await inquiryService.createPublicInquiry(company.id, {
-      ...req.body,
-      requestedStartAt: req.body.requestedStartAt
-        ? new Date(req.body.requestedStartAt)
+      ...rest,
+      requestedStartAt: requestedStartAt
+        ? new Date(requestedStartAt)
         : undefined,
-      requestedEndAt: req.body.requestedEndAt
-        ? new Date(req.body.requestedEndAt)
-        : undefined,
+      requestedEndAt: requestedEndAt ? new Date(requestedEndAt) : undefined,
     });
 
     await notificationService
@@ -134,7 +135,7 @@ router.post(
 
     const request = await b2bRequestService.createPublicB2BRequest(
       company.id,
-      req.body,
+      req.body as z.infer<typeof publicB2BSchema>,
     );
 
     await notificationService

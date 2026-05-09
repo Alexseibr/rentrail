@@ -58,7 +58,7 @@ router.patch(
     const request = await b2bService.updateB2BRequest(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof updateB2BSchema>,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

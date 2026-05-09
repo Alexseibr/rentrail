@@ -52,7 +52,7 @@ router.post(
   async (req, res) => {
     const battery = await batteryService.createBattery(
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof createBatterySchema>,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -106,7 +106,7 @@ router.patch(
     const battery = await batteryService.updateBattery(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof updateBatterySchema>,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -150,13 +150,14 @@ router.post(
   requirePermission("battery:update"),
   validate({ params: idParams, body: assignSchema }),
   async (req, res) => {
+    const { batteryId, notes } = req.body as z.infer<typeof assignSchema>;
     const assignment = await batteryService.assignBattery(
       req.tenant!.companyId,
       req.params.id as string,
       {
-        batteryId: req.body.batteryId,
+        batteryId,
         userId: req.user!.userId,
-        notes: req.body.notes,
+        notes,
       },
     );
     await createAuditLog({
@@ -202,11 +203,11 @@ router.get(
   requirePermission("battery:read"),
   validate({ params: idParams }),
   async (req, res) => {
-    const assignments = await batteryService.getAssetBatteries(
+    const history = await batteryService.getAssetBatteries(
       req.params.id as string,
       req.tenant!.companyId,
     );
-    res.json({ data: assignments });
+    res.json({ data: history });
   },
 );
 

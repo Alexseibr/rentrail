@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { validate } from "../middlewares/validate";
+import { z } from "zod/v4";
 import { authenticate } from "../middlewares/authenticate";
 import {
   requireCompanyAccess,
@@ -88,25 +90,61 @@ router.get(
   },
 );
 
+const createServiceRequestSchema = z.object({
+  branchId: z.string().uuid().optional(),
+  assetId: z.string().uuid().optional(),
+  clientId: z.string().uuid().optional(),
+  requestType: z.string().optional(),
+  priority: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  locationAddress: z.string().optional(),
+});
+
+const updateServiceRequestSchema = z.object({
+  priority: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  locationAddress: z.string().optional(),
+  assignedToUserId: z.string().uuid().optional(),
+  status: z.string().optional(),
+  resolution: z.string().optional(),
+});
+
 router.post(
   "/service-requests",
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: createServiceRequestSchema }),
   async (req, res) => {
+    const {
+      branchId,
+      assetId,
+      clientId,
+      requestType,
+      priority,
+      title,
+      description,
+      lat,
+      lng,
+      locationAddress,
+    } = req.body as z.infer<typeof createServiceRequestSchema>;
     const item = await serviceService.createServiceRequest({
       companyId: req.tenant!.companyId,
-      branchId: req.body.branchId,
-      assetId: req.body.assetId,
-      clientId: req.body.clientId,
-      requestType: req.body.requestType,
-      priority: req.body.priority,
-      title: req.body.title,
-      description: req.body.description,
+      branchId: branchId as string,
+      assetId: assetId as string,
+      clientId: clientId as string,
+      requestType: requestType as string,
+      priority: priority as string,
+      title: title as string,
+      description,
       reportedByUserId: req.user!.userId,
-      lat: req.body.lat,
-      lng: req.body.lng,
-      locationAddress: req.body.locationAddress,
+      lat,
+      lng,
+      locationAddress,
     });
     return res.status(201).json({ data: item });
   },
@@ -124,10 +162,12 @@ router.patch(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
+    const body = req.body as z.infer<typeof updateServiceRequestSchema>;
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_SR_PATCH_FIELDS) {
-      if (req.body[key] !== undefined) safeData[key] = req.body[key];
+      if (body[key] !== undefined) safeData[key] = body[key];
     }
     if (Object.keys(safeData).length === 0)
       return res.status(400).json({ error: "No valid fields to update" });
@@ -146,12 +186,16 @@ router.post(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
+    const { assignedToUserId } = req.body as z.infer<
+      typeof updateServiceRequestSchema
+    >;
     const item = await serviceService.updateServiceRequest(
       req.params.id as string,
       req.tenant!.companyId,
       {
-        assignedToUserId: req.body.assignedToUserId,
+        assignedToUserId,
         status: "assigned",
       },
     );
@@ -165,9 +209,11 @@ router.post(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
-    const update: Record<string, unknown> = { status: req.body.status };
-    if (req.body.status === "completed") update.resolvedAt = new Date();
+    const { status } = req.body as z.infer<typeof updateServiceRequestSchema>;
+    const update: Record<string, unknown> = { status };
+    if (status === "completed") update.resolvedAt = new Date();
     const item = await serviceService.updateServiceRequest(
       req.params.id as string,
       req.tenant!.companyId,
@@ -228,30 +274,65 @@ router.get(
   },
 );
 
+const createWorkOrderSchema = z.object({
+  branchId: z.string().uuid().optional(),
+  serviceRequestId: z.string().uuid().optional(),
+  assetId: z.string().uuid().optional(),
+  orderType: z.string().optional(),
+  priority: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  assignedToUserId: z.string().uuid().optional(),
+  estimatedCost: z.string().optional(),
+});
+
+const updateWorkOrderSchema = z.object({
+  priority: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  estimatedCost: z.string().optional(),
+  status: z.string().optional(),
+  resolution: z.string().optional(),
+  actualCost: z.string().optional(),
+  partsUsed: z.unknown().optional(),
+});
+
 router.post(
   "/work-orders",
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: createWorkOrderSchema }),
   async (req, res) => {
     try {
-      if (!req.body.title || !req.body.orderType) {
+      const {
+        branchId,
+        serviceRequestId,
+        assetId,
+        orderType,
+        priority,
+        title,
+        description,
+        assignedToUserId,
+        estimatedCost,
+      } = req.body as z.infer<typeof createWorkOrderSchema>;
+      if (!title || !orderType) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "title, orderType required" },
         });
       }
       const item = await serviceService.createWorkOrder({
         companyId: req.tenant!.companyId,
-        branchId: req.body.branchId,
-        serviceRequestId: req.body.serviceRequestId,
-        assetId: req.body.assetId,
-        orderType: req.body.orderType,
-        priority: req.body.priority,
-        title: req.body.title,
-        description: req.body.description,
-        assignedToUserId: req.body.assignedToUserId,
+        branchId,
+        serviceRequestId,
+        assetId,
+        orderType,
+        priority,
+        title,
+        description,
+        assignedToUserId,
         createdByUserId: req.user!.userId,
-        estimatedCost: req.body.estimatedCost,
+        estimatedCost,
       });
       return res.status(201).json({ data: item });
     } catch (err: unknown) {
@@ -276,10 +357,12 @@ router.patch(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateWorkOrderSchema }),
   async (req, res) => {
+    const body = req.body as z.infer<typeof updateWorkOrderSchema>;
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_WO_PATCH_FIELDS) {
-      if (req.body[key] !== undefined) safeData[key] = req.body[key];
+      if (body[key] !== undefined) safeData[key] = body[key];
     }
     if (Object.keys(safeData).length === 0)
       return res.status(400).json({ error: "No valid fields to update" });
@@ -298,14 +381,18 @@ router.post(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateWorkOrderSchema }),
   async (req, res) => {
-    const update: Record<string, unknown> = { status: req.body.status };
-    if (req.body.status === "in_progress") update.startedAt = new Date();
-    if (req.body.status === "completed") {
+    const { status, resolution, actualCost, partsUsed } = req.body as z.infer<
+      typeof updateWorkOrderSchema
+    >;
+    const update: Record<string, unknown> = { status };
+    if (status === "in_progress") update.startedAt = new Date();
+    if (status === "completed") {
       update.completedAt = new Date();
-      if (req.body.resolution) update.resolution = req.body.resolution;
-      if (req.body.actualCost) update.actualCost = req.body.actualCost;
-      if (req.body.partsUsed) update.partsUsed = req.body.partsUsed;
+      if (resolution) update.resolution = resolution;
+      if (actualCost) update.actualCost = actualCost;
+      if (partsUsed) update.partsUsed = partsUsed;
     }
     const item = await serviceService.updateWorkOrder(
       req.params.id as string,
@@ -468,14 +555,30 @@ router.get(
   },
 );
 
+const createMaintenanceLogSchema = z.object({
+  assetId: z.string().uuid().optional(),
+  branchId: z.string().uuid().optional(),
+  workOrderId: z.string().uuid().optional(),
+  logType: z.string().optional(),
+  performedAt: z.string().optional(),
+  performedByUserId: z.string().uuid().optional(),
+  odometerKm: z.number().optional(),
+  cost: z.number().optional(),
+  partsUsed: z.string().optional(),
+  notes: z.string().optional(),
+  nextServiceKm: z.number().optional(),
+  nextServiceDate: z.string().optional(),
+});
+
 router.post(
   "/maintenance-logs",
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: createMaintenanceLogSchema }),
   async (req, res) => {
     try {
-      const body = req.body;
+      const body = req.body as z.infer<typeof createMaintenanceLogSchema>;
       if (!body.assetId || !body.logType) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "assetId, logType required" },
@@ -541,17 +644,25 @@ router.get(
   },
 );
 
+const updateMaintenanceLogSchema = z.object({
+  notes: z.string().optional(),
+  cost: z.union([z.string(), z.number()]).optional(),
+  odometerKm: z.union([z.string(), z.number()]).optional(),
+});
+
 router.patch(
   "/maintenance-logs/:id",
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateMaintenanceLogSchema }),
   async (req, res) => {
     try {
+      const { notes, cost, odometerKm } = req.body as z.infer<
+        typeof updateMaintenanceLogSchema
+      >;
       const hasFields =
-        req.body.notes !== undefined ||
-        req.body.cost !== undefined ||
-        req.body.odometerKm !== undefined;
+        notes !== undefined || cost !== undefined || odometerKm !== undefined;
       if (!hasFields) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "No valid fields to update" },
@@ -561,13 +672,9 @@ router.patch(
         req.params.id as string,
         req.tenant!.companyId,
         {
-          notes:
-            req.body.notes !== undefined ? String(req.body.notes) : undefined,
-          cost: req.body.cost !== undefined ? String(req.body.cost) : undefined,
-          odometerKm:
-            req.body.odometerKm !== undefined
-              ? String(req.body.odometerKm)
-              : undefined,
+          notes: notes !== undefined ? String(notes) : undefined,
+          cost: cost !== undefined ? String(cost) : undefined,
+          odometerKm: odometerKm !== undefined ? String(odometerKm) : undefined,
         },
       );
       if (!row)
@@ -634,14 +741,35 @@ router.get(
   },
 );
 
+const createMaintenanceScheduleSchema = z.object({
+  assetId: z.string().uuid().optional(),
+  assetType: z.string().optional(),
+  scheduleType: z.string().optional(),
+  name: z.string().optional(),
+  intervalKm: z.number().optional(),
+  intervalDays: z.number().optional(),
+  lastDoneKm: z.number().optional(),
+  lastDoneAt: z.string().optional(),
+});
+
+const updateMaintenanceScheduleSchema = z.object({
+  name: z.string().optional(),
+  intervalKm: z.number().optional(),
+  intervalDays: z.number().optional(),
+  nextDueKm: z.number().optional(),
+  nextDueAt: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+
 router.post(
   "/maintenance-schedules",
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: createMaintenanceScheduleSchema }),
   async (req, res) => {
     try {
-      const body = req.body;
+      const body = req.body as z.infer<typeof createMaintenanceScheduleSchema>;
       if (!body.scheduleType || !body.name) {
         return res.status(400).json({
           error: {
@@ -680,6 +808,7 @@ router.patch(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateMaintenanceScheduleSchema }),
   async (req, res) => {
     try {
       const ALLOWED = [
@@ -690,9 +819,10 @@ router.patch(
         "nextDueAt",
         "enabled",
       ] as const;
+      const body = req.body as z.infer<typeof updateMaintenanceScheduleSchema>;
       const safe: Record<string, unknown> = {};
       for (const k of ALLOWED) {
-        if (req.body[k] !== undefined) safe[k] = req.body[k];
+        if (body[k] !== undefined) safe[k] = body[k];
       }
       const item = await maintenanceService.updateMaintenanceSchedule(
         String(req.params.id),
@@ -777,14 +907,54 @@ router.get(
   },
 );
 
+const createSparePartSchema = z.object({
+  branchId: z.string().uuid().optional(),
+  name: z.string().optional(),
+  sku: z.string().optional(),
+  category: z.string().optional(),
+  unit: z.string().optional(),
+  qtyInStock: z.number().optional(),
+  minQtyAlert: z.number().optional(),
+  costPrice: z.number().optional(),
+  location: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const updateSparePartSchema = z.object({
+  name: z.string().optional(),
+  sku: z.string().optional(),
+  category: z.string().optional(),
+  unit: z.string().optional(),
+  minQtyAlert: z.number().optional(),
+  costPrice: z.string().optional(),
+  location: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const createSparePartTransactionSchema = z.object({
+  partId: z.string().uuid().optional(),
+  workOrderId: z.string().uuid().optional(),
+  transactionType: z.string().optional(),
+  qty: z.union([z.string(), z.number()]).optional(),
+  unitCost: z.number().optional(),
+  notes: z.string().optional(),
+});
+
+const addWorkOrderPartSchema = z.object({
+  partId: z.string().uuid().optional(),
+  qtyUsed: z.union([z.string(), z.number()]).optional(),
+  unitCost: z.number().optional(),
+});
+
 router.post(
   "/spare-parts",
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: createSparePartSchema }),
   async (req, res) => {
     try {
-      const body = req.body;
+      const body = req.body as z.infer<typeof createSparePartSchema>;
       if (!body.name || !body.category) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "name, category required" },
@@ -822,6 +992,7 @@ router.patch(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: updateSparePartSchema }),
   async (req, res) => {
     try {
       const ALLOWED = [
@@ -834,9 +1005,10 @@ router.patch(
         "location",
         "notes",
       ] as const;
+      const body = req.body as z.infer<typeof updateSparePartSchema>;
       const safe: Record<string, unknown> = {};
       for (const k of ALLOWED) {
-        if (req.body[k] !== undefined) safe[k] = req.body[k];
+        if (body[k] !== undefined) safe[k] = body[k];
       }
       const item = await maintenanceService.updateSparePart(
         String(req.params.id),
@@ -903,9 +1075,10 @@ router.post(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: createSparePartTransactionSchema }),
   async (req, res) => {
     try {
-      const body = req.body;
+      const body = req.body as z.infer<typeof createSparePartTransactionSchema>;
       if (!body.partId || !body.transactionType || body.qty == null) {
         return res.status(400).json({
           error: {
@@ -921,7 +1094,7 @@ router.post(
           partId: body.partId,
           workOrderId: body.workOrderId,
           transactionType: body.transactionType,
-          qty: parseFloat(body.qty),
+          qty: parseFloat(String(body.qty)),
           unitCost: body.unitCost,
           notes: body.notes,
         },
@@ -965,9 +1138,10 @@ router.post(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: addWorkOrderPartSchema }),
   async (req, res) => {
     try {
-      const body = req.body;
+      const body = req.body as z.infer<typeof addWorkOrderPartSchema>;
       if (!body.partId || body.qtyUsed == null) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "partId, qtyUsed required" },
@@ -979,7 +1153,7 @@ router.post(
         req.user!.userId,
         {
           partId: body.partId,
-          qtyUsed: parseFloat(body.qtyUsed),
+          qtyUsed: parseFloat(String(body.qtyUsed)),
           unitCost: body.unitCost,
         },
       );

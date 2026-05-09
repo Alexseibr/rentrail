@@ -51,12 +51,15 @@ router.post(
   requirePermission("blacklist:create"),
   validate({ body: createBlacklistSchema }),
   async (req, res) => {
+    const { startsAt, endsAt, ...rest } = req.body as z.infer<
+      typeof createBlacklistSchema
+    >;
     const entry = await blacklistService.createBlacklistEntry({
-      ...req.body,
+      ...rest,
       companyId: req.tenant!.companyId,
       createdByUserId: req.user!.userId,
-      startsAt: req.body.startsAt ? new Date(req.body.startsAt) : new Date(),
-      endsAt: req.body.endsAt ? new Date(req.body.endsAt) : null,
+      startsAt: startsAt ? new Date(startsAt) : new Date(),
+      endsAt: endsAt ? new Date(endsAt) : null,
     });
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -136,10 +139,13 @@ router.post(
   requirePermission("blacklist:check"),
   validate({ body: checkBlacklistSchema }),
   async (req, res) => {
+    const { clientId, branchId } = req.body as z.infer<
+      typeof checkBlacklistSchema
+    >;
     const result = await blacklistService.checkClientBlacklist(
-      req.body.clientId,
+      clientId,
       req.tenant!.companyId,
-      req.body.branchId,
+      branchId,
     );
     res.json({
       data: {

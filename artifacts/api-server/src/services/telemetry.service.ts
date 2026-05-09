@@ -110,7 +110,7 @@ async function evaluateGeofences(
   speed: number | undefined,
   recordedAt: Date,
 ) {
-  let geoList;
+  let geoList: Awaited<ReturnType<typeof getActiveGeofencesForCompany>>;
   try {
     geoList = await getActiveGeofencesForCompany(companyId);
   } catch {

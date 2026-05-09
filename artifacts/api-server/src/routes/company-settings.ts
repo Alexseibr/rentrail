@@ -61,7 +61,7 @@ router.patch(
     );
     const branding = await brandingService.updateBranding(
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof updateBrandingSchema>,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -99,7 +99,7 @@ router.patch(
   async (req, res) => {
     const modules = await moduleService.updateCompanyModules(
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof updateModulesSchema>,
       req.user!.isSuperAdmin,
     );
     await createAuditLog({

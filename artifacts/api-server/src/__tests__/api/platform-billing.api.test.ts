@@ -5,6 +5,14 @@ import { createTestUser, createTestTenant } from "../../test/helpers";
 import { db, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 
+type _RB = {
+  data: Record<string, unknown>;
+  error: { code: string; message: string };
+};
+function rb(r: { body: unknown }): _RB {
+  return r.body as _RB;
+}
+
 let platformAdmin: { token: string; id: string };
 let platformFinance: { token: string; id: string };
 let platformSupport: { token: string; id: string };
@@ -50,11 +58,11 @@ describe("Platform Billing", () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.name).toBe("Test Plan");
-      expect(res.body.data.price).toBe(9900);
-      expect(res.body.data.maxBranches).toBe(5);
-      expect(res.body.data.enabledModules).toContain("organization");
-      createdPlanId = res.body.data.id;
+      expect(rb(res).data.name).toBe("Test Plan");
+      expect(rb(res).data.price).toBe(9900);
+      expect(rb(res).data.maxBranches).toBe(5);
+      expect(rb(res).data.enabledModules).toContain("organization");
+      createdPlanId = rb(res).data.id as string;
     });
 
     it("rejects duplicate plan code", async () => {
@@ -78,9 +86,13 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      for (const plan of res.body.data) {
+      expect(Array.isArray(rb(res).data)).toBe(true);
+      expect(
+        (rb(res).data as unknown as Array<Record<string, unknown>>).length,
+      ).toBeGreaterThanOrEqual(1);
+      for (const plan of rb(res).data as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(plan.isActive).toBe(true);
       }
     });
@@ -92,8 +104,8 @@ describe("Platform Billing", () => {
         .send({ name: "Updated Plan", price: 12900 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.name).toBe("Updated Plan");
-      expect(res.body.data.price).toBe(12900);
+      expect(rb(res).data.name).toBe("Updated Plan");
+      expect(rb(res).data.price).toBe(12900);
     });
 
     it("deactivates a plan", async () => {
@@ -103,7 +115,7 @@ describe("Platform Billing", () => {
         .send({ isActive: false });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.isActive).toBe(false);
+      expect(rb(res).data.isActive).toBe(false);
     });
 
     it("includes inactive plans when requested", async () => {
@@ -112,11 +124,11 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      const deactivated = res.body.data.find(
-        (p: { id: string }) => p.id === createdPlanId,
-      );
+      const deactivated = (
+        rb(res).data as unknown as Array<Record<string, unknown>>
+      ).find((p: Record<string, unknown>) => p.id === createdPlanId);
       expect(deactivated).toBeDefined();
-      expect(deactivated.isActive).toBe(false);
+      expect(deactivated!.isActive).toBe(false);
     });
 
     it("creates audit log for plan creation", async () => {
@@ -151,7 +163,7 @@ describe("Platform Billing", () => {
           maxBranches: 3,
           maxAssets: 30,
         });
-      activePlanId = planRes.body.data.id;
+      activePlanId = rb(planRes).data.id as string;
     });
 
     it("assigns a plan to a company via set-plan", async () => {
@@ -161,9 +173,9 @@ describe("Platform Billing", () => {
         .send({ planId: activePlanId });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.companyId).toBe(tenantA.company.id);
-      expect(res.body.data.planId).toBe(activePlanId);
-      expect(res.body.data.status).toBe("trial");
+      expect(rb(res).data.companyId).toBe(tenantA.company.id);
+      expect(rb(res).data.planId).toBe(activePlanId);
+      expect(rb(res).data.status).toBe("trial");
     });
 
     it("set-plan requires superAdmin or platformAdmin", async () => {
@@ -198,7 +210,7 @@ describe("Platform Billing", () => {
           code: `sub-lc-${Date.now()}`,
           price: 7900,
         });
-      subPlanId = planRes.body.data.id;
+      subPlanId = rb(planRes).data.id as string;
 
       const tenant = await createTestTenant({
         companyName: "Sub Lifecycle Co",
@@ -207,7 +219,7 @@ describe("Platform Billing", () => {
         .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
         .send({ planId: subPlanId });
-      subscriptionId = setRes.body.data.id;
+      subscriptionId = rb(setRes).data.id as string;
     });
 
     it("lists subscriptions", async () => {
@@ -216,9 +228,12 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items).toBeDefined();
-      expect(res.body.data.pagination).toBeDefined();
-      expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
+      expect(rb(res).data.items).toBeDefined();
+      expect(rb(res).data.pagination).toBeDefined();
+      expect(
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThanOrEqual(1);
     });
 
     it("filters subscriptions by status", async () => {
@@ -227,7 +242,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(item.status).toBe("trial");
       }
     });
@@ -238,10 +255,12 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.id).toBe(subscriptionId);
-      expect(res.body.data.plan).toBeDefined();
-      expect(res.body.data.plan.name).toBe("Sub Lifecycle");
-      expect(res.body.data.companyName).toBeDefined();
+      expect(rb(res).data.id).toBe(subscriptionId);
+      expect(rb(res).data.plan).toBeDefined();
+      expect((rb(res).data.plan as Record<string, unknown>).name).toBe(
+        "Sub Lifecycle",
+      );
+      expect(rb(res).data.companyName).toBeDefined();
     });
 
     it("updates subscription periods", async () => {
@@ -253,8 +272,8 @@ describe("Platform Billing", () => {
         .send({ currentPeriodStart: start, currentPeriodEnd: end });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.currentPeriodStart).toBeDefined();
-      expect(res.body.data.currentPeriodEnd).toBeDefined();
+      expect(rb(res).data.currentPeriodStart).toBeDefined();
+      expect(rb(res).data.currentPeriodEnd).toBeDefined();
     });
 
     it("activates a trial subscription", async () => {
@@ -264,7 +283,7 @@ describe("Platform Billing", () => {
         .send({});
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("active");
+      expect(rb(res).data.status).toBe("active");
     });
 
     it("cannot activate an already active subscription again", async () => {
@@ -283,7 +302,7 @@ describe("Platform Billing", () => {
         .send({ reason: "Payment failed" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("past_due");
+      expect(rb(res).data.status).toBe("past_due");
     });
 
     it("reactivates a past_due subscription", async () => {
@@ -293,7 +312,7 @@ describe("Platform Billing", () => {
         .send({});
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("active");
+      expect(rb(res).data.status).toBe("active");
     });
 
     it("cancels subscription", async () => {
@@ -303,8 +322,8 @@ describe("Platform Billing", () => {
         .send({ reason: "Customer requested" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("canceled");
-      expect(res.body.data.canceledAt).toBeDefined();
+      expect(rb(res).data.status).toBe("canceled");
+      expect(rb(res).data.canceledAt).toBeDefined();
     });
 
     it("canceled subscription cannot transition further", async () => {
@@ -335,9 +354,9 @@ describe("Platform Billing", () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.amount).toBe(9900);
-      expect(res.body.data.status).toBe("draft");
-      invoiceId = res.body.data.id;
+      expect(rb(res).data.amount).toBe(9900);
+      expect(rb(res).data.status).toBe("draft");
+      invoiceId = rb(res).data.id as string;
     });
 
     it("lists invoices", async () => {
@@ -346,8 +365,11 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.pagination).toBeDefined();
+      expect(
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThanOrEqual(1);
+      expect(rb(res).data.pagination).toBeDefined();
     });
 
     it("filters invoices by companyId", async () => {
@@ -356,7 +378,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(item.companyId).toBe(tenantA.company.id);
       }
     });
@@ -367,9 +391,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.id).toBe(invoiceId);
-      expect(res.body.data.companyName).toBe("Billing Test Co");
-      expect(res.body.data.payments).toBeDefined();
+      expect(rb(res).data.id).toBe(invoiceId);
+      expect(rb(res).data.companyName).toBe("Billing Test Co");
+      expect(rb(res).data.payments).toBeDefined();
     });
 
     it("issues a draft invoice", async () => {
@@ -378,8 +402,8 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("issued");
-      expect(res.body.data.issuedAt).toBeDefined();
+      expect(rb(res).data.status).toBe("issued");
+      expect(rb(res).data.issuedAt).toBeDefined();
     });
 
     it("cannot re-issue an already issued invoice", async () => {
@@ -397,8 +421,8 @@ describe("Platform Billing", () => {
         .send({ amount: 9900, method: "card", reference: "ch_test123" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("paid");
-      expect(res.body.data.paidAt).toBeDefined();
+      expect(rb(res).data.status).toBe("paid");
+      expect(rb(res).data.paidAt).toBeDefined();
     });
 
     it("cannot pay an already paid invoice", async () => {
@@ -416,9 +440,18 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.payments.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.payments[0].method).toBe("card");
-      expect(res.body.data.payments[0].reference).toBe("ch_test123");
+      expect(
+        (rb(res).data.payments as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        (rb(res).data.payments as unknown as Array<Record<string, unknown>>)[0]
+          .method,
+      ).toBe("card");
+      expect(
+        (rb(res).data.payments as unknown as Array<Record<string, unknown>>)[0]
+          .reference,
+      ).toBe("ch_test123");
     });
   });
 
@@ -430,10 +463,12 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
-        expect(new Date(item.createdAt).getTime()).toBeGreaterThanOrEqual(
-          new Date(from).getTime(),
-        );
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
+        expect(
+          new Date(item.createdAt as string).getTime(),
+        ).toBeGreaterThanOrEqual(new Date(from).getTime());
       }
     });
 
@@ -444,10 +479,12 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
-        expect(new Date(item.createdAt).getTime()).toBeLessThanOrEqual(
-          new Date(to).getTime(),
-        );
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
+        expect(
+          new Date(item.createdAt as string).getTime(),
+        ).toBeLessThanOrEqual(new Date(to).getTime());
       }
     });
 
@@ -461,8 +498,10 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
-        const ts = new Date(item.createdAt).getTime();
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
+        const ts = new Date(item.createdAt as string).getTime();
         expect(ts).toBeGreaterThanOrEqual(new Date(from).getTime());
         expect(ts).toBeLessThanOrEqual(new Date(to).getTime());
       }
@@ -475,7 +514,10 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.length).toBe(0);
+      expect(
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBe(0);
     });
 
     it("combines date range with status and company filters", async () => {
@@ -487,7 +529,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(item.companyId).toBe(tenantA.company.id);
       }
     });
@@ -501,12 +545,12 @@ describe("Platform Billing", () => {
         .send({ companyId: tenantA.company.id, amount: 5000 });
 
       const res = await request(testApp)
-        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/void`)
+        .post(`/api/platform/billing/invoices/${rb(createRes).data.id}/void`)
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("void");
-      expect(res.body.data.voidedAt).toBeDefined();
+      expect(rb(res).data.status).toBe("void");
+      expect(rb(res).data.voidedAt).toBeDefined();
     });
 
     it("cannot void a paid invoice", async () => {
@@ -516,18 +560,18 @@ describe("Platform Billing", () => {
         .send({ companyId: tenantA.company.id, amount: 3000 });
 
       await request(testApp)
-        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/issue`)
+        .post(`/api/platform/billing/invoices/${rb(createRes).data.id}/issue`)
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       await request(testApp)
         .post(
-          `/api/platform/billing/invoices/${createRes.body.data.id}/mark-paid`,
+          `/api/platform/billing/invoices/${rb(createRes).data.id}/mark-paid`,
         )
         .set("Authorization", `Bearer ${platformFinance.token}`)
         .send({ amount: 3000, method: "wire" });
 
       const res = await request(testApp)
-        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/void`)
+        .post(`/api/platform/billing/invoices/${rb(createRes).data.id}/void`)
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(422);
@@ -541,8 +585,8 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items).toBeDefined();
-      expect(res.body.data.pagination).toBeDefined();
+      expect(rb(res).data.items).toBeDefined();
+      expect(rb(res).data.pagination).toBeDefined();
     });
 
     it("filters payments by companyId", async () => {
@@ -551,7 +595,9 @@ describe("Platform Billing", () => {
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(item.companyId).toBe(tenantA.company.id);
       }
     });
@@ -572,11 +618,11 @@ describe("Platform Billing", () => {
       const setRes = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ planId: planRes.body.data.id });
+        .send({ planId: rb(planRes).data.id });
 
       await request(testApp)
         .post(
-          `/api/platform/billing/subscriptions/${setRes.body.data.id}/activate`,
+          `/api/platform/billing/subscriptions/${rb(setRes).data.id}/activate`,
         )
         .set("Authorization", `Bearer ${platformFinance.token}`)
         .send({ reason: "Trial completed" });
@@ -587,7 +633,7 @@ describe("Platform Billing", () => {
         .where(
           and(
             eq(platformAuditLogs.action, "billing.subscription.activate"),
-            eq(platformAuditLogs.entityId, setRes.body.data.id),
+            eq(platformAuditLogs.entityId, rb(setRes).data.id as string),
           ),
         )
         .orderBy(desc(platformAuditLogs.createdAt))
@@ -618,16 +664,16 @@ describe("Platform Billing", () => {
       await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ planId: planRes.body.data.id });
+        .send({ planId: rb(planRes).data.id });
 
       const usageRes = await request(testApp)
         .get(`/api/platform/companies/${tenant.company.id}/usage`)
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(usageRes.status).toBe(200);
-      expect(usageRes.body.data.plan).toBeDefined();
-      expect(typeof usageRes.body.data.plan).toBe("string");
-      expect(usageRes.body.data.plan).not.toBe("none");
+      expect(rb(usageRes).data.plan).toBeDefined();
+      expect(typeof rb(usageRes).data.plan).toBe("string");
+      expect(rb(usageRes).data.plan).not.toBe("none");
     });
   });
 
@@ -643,7 +689,7 @@ describe("Platform Billing", () => {
         });
 
       await request(testApp)
-        .patch(`/api/platform/billing/plans/${planRes.body.data.id}`)
+        .patch(`/api/platform/billing/plans/${rb(planRes).data.id}`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
         .send({ isActive: false });
 
@@ -653,10 +699,10 @@ describe("Platform Billing", () => {
       const res = await request(testApp)
         .post(`/api/platform/companies/${tenant.company.id}/set-plan`)
         .set("Authorization", `Bearer ${platformAdmin.token}`)
-        .send({ planId: planRes.body.data.id });
+        .send({ planId: rb(planRes).data.id });
 
       expect(res.status).toBe(422);
-      expect(res.body.error.code).toBe("PLAN_INACTIVE");
+      expect(rb(res).error.code).toBe("PLAN_INACTIVE");
     });
   });
 
@@ -668,18 +714,18 @@ describe("Platform Billing", () => {
         .send({ companyId: tenantA.company.id, amount: 5000 });
 
       await request(testApp)
-        .post(`/api/platform/billing/invoices/${createRes.body.data.id}/issue`)
+        .post(`/api/platform/billing/invoices/${rb(createRes).data.id}/issue`)
         .set("Authorization", `Bearer ${platformFinance.token}`);
 
       const res = await request(testApp)
         .post(
-          `/api/platform/billing/invoices/${createRes.body.data.id}/mark-paid`,
+          `/api/platform/billing/invoices/${rb(createRes).data.id}/mark-paid`,
         )
         .set("Authorization", `Bearer ${platformFinance.token}`)
         .send({ amount: 3000, method: "card" });
 
       expect(res.status).toBe(422);
-      expect(res.body.error.code).toBe("PAYMENT_AMOUNT_MISMATCH");
+      expect(rb(res).error.code).toBe("PAYMENT_AMOUNT_MISMATCH");
     });
   });
 

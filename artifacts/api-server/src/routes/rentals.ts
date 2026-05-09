@@ -62,15 +62,16 @@ router.post(
   requirePermission("rental:create"),
   validate({ body: createRentalSchema }),
   async (req, res) => {
+    const { startAt, plannedEndAt, ...rest } = req.body as z.infer<
+      typeof createRentalSchema
+    >;
     const rental = await rentalService.createRental(
       {
-        ...req.body,
+        ...rest,
         companyId: req.tenant!.companyId,
         issuedByUserId: req.user!.userId,
-        startAt: req.body.startAt ? new Date(req.body.startAt) : null,
-        plannedEndAt: req.body.plannedEndAt
-          ? new Date(req.body.plannedEndAt)
-          : null,
+        startAt: startAt ? new Date(startAt) : null,
+        plannedEndAt: plannedEndAt ? new Date(plannedEndAt) : null,
       },
       req.user!.userId,
     );
@@ -204,12 +205,13 @@ router.post(
   requirePermission("rental:extend"),
   validate({ params: idParams, body: extendSchema }),
   async (req, res) => {
+    const { newEndDate, reason } = req.body as z.infer<typeof extendSchema>;
     const { updated, previousStatus } = await rentalService.extendRental(
       req.params.id as string,
       req.tenant!.companyId,
-      new Date(req.body.newEndDate),
+      new Date(newEndDate),
       req.user!.userId,
-      req.body.reason,
+      reason,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -235,7 +237,7 @@ router.post(
     const { updated, previousStatus } = await rentalService.returnRental(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof returnSchema>,
       req.user!.userId,
     );
     await createAuditLog({
@@ -259,11 +261,12 @@ router.post(
   requirePermission("rental:cancel"),
   validate({ params: idParams, body: cancelSchema }),
   async (req, res) => {
+    const { reason } = req.body as z.infer<typeof cancelSchema>;
     const { updated, previousStatus } = await rentalService.cancelRental(
       req.params.id as string,
       req.tenant!.companyId,
       req.user!.userId,
-      req.body.reason,
+      reason,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,
@@ -273,7 +276,7 @@ router.post(
       entityId: updated.id,
       before: { status: previousStatus },
       after: { status: updated.status },
-      metadata: req.body.reason ? { reason: req.body.reason } : undefined,
+      metadata: reason ? { reason } : undefined,
       req,
     });
     res.json({ data: updated });

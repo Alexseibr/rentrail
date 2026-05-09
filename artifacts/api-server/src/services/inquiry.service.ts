@@ -94,7 +94,10 @@ export async function createPublicInquiry(
 ) {
   await validateForeignKeys(companyId, data);
 
-  let blacklistCheckResult = null;
+  let blacklistCheckResult: {
+    isBlacklisted: boolean;
+    entries: Array<{ actionType: string; reasonCode: string }>;
+  } | null = null;
 
   const existingClients = await db
     .select({ id: clients.id })

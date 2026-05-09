@@ -10,6 +10,14 @@ import {
 import { db } from "@workspace/db";
 import { rentals } from "@workspace/db/schema";
 
+type _RB = {
+  data: Record<string, unknown>;
+  error: { code: string; message: string };
+};
+function rb(r: { body: unknown }): _RB {
+  return r.body as _RB;
+}
+
 interface TenantContext {
   company: { id: string };
   branch: { id: string };
@@ -49,8 +57,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ name: "Downtown Branch", city: "Madrid", country: "ES" });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.name).toBe("Downtown Branch");
-      branchId = res.body.data.id;
+      expect(rb(res).data.name).toBe("Downtown Branch");
+      branchId = rb(res).data.id as string;
     });
 
     it("lists branches (tenant-scoped)", async () => {
@@ -60,8 +68,12 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      for (const b of res.body.data) {
+      expect(
+        (rb(res).data as unknown as Array<Record<string, unknown>>).length,
+      ).toBeGreaterThanOrEqual(1);
+      for (const b of rb(res).data as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(b.companyId).toBe(tenantA.company.id);
       }
     });
@@ -82,7 +94,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("inactive");
+      expect(rb(res).data.status).toBe("inactive");
     });
 
     it("rejects double deactivation", async () => {
@@ -101,7 +113,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("active");
+      expect(rb(res).data.status).toBe("active");
     });
   });
 
@@ -120,7 +132,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       expect(res.status).toBe(201);
-      clientId = res.body.data.id;
+      clientId = rb(res).data.id as string;
     });
 
     it("archives a client", async () => {
@@ -130,8 +142,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("archived");
-      expect(res.body.data.archivedAt).toBeTruthy();
+      expect(rb(res).data.status).toBe("archived");
+      expect(rb(res).data.archivedAt).toBeTruthy();
     });
 
     it("cannot update archived client", async () => {
@@ -151,8 +163,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("active");
-      expect(res.body.data.archivedAt).toBeNull();
+      expect(rb(res).data.status).toBe("active");
+      expect(rb(res).data.archivedAt).toBeNull();
     });
 
     it("other tenant cannot see this client", async () => {
@@ -182,8 +194,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.assetType).toBe("ebike");
-      assetId = res.body.data.id;
+      expect(rb(res).data.assetType).toBe("ebike");
+      assetId = rb(res).data.id as string;
     });
 
     it("changes status draft → available", async () => {
@@ -194,7 +206,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ status: "available", reason: "Ready for fleet" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("available");
+      expect(rb(res).data.status).toBe("available");
     });
 
     it("rejects invalid transition available → draft", async () => {
@@ -215,7 +227,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ status: "maintenance", reason: "Scheduled check" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("maintenance");
+      expect(rb(res).data.status).toBe("maintenance");
     });
 
     it("records status history", async () => {
@@ -225,7 +237,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(3);
+      expect(
+        (rb(res).data as unknown as Array<Record<string, unknown>>).length,
+      ).toBeGreaterThanOrEqual(3);
     });
 
     it("archives and restores asset", async () => {
@@ -235,7 +249,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(archiveRes.status).toBe(200);
-      expect(archiveRes.body.data.archivedAt).toBeTruthy();
+      expect(rb(archiveRes).data.archivedAt).toBeTruthy();
 
       const restoreRes = await request(testApp)
         .post(`/api/assets/${assetId}/restore`)
@@ -243,7 +257,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(restoreRes.status).toBe(200);
-      expect(restoreRes.body.data.archivedAt).toBeNull();
+      expect(rb(restoreRes).data.archivedAt).toBeNull();
     });
 
     it("other tenant cannot change status of this asset", async () => {
@@ -279,7 +293,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
           assetType: "scooter",
           serialNumber: `RW-${Date.now()}`,
         });
-      assetId = assetRes.body.data.id;
+      assetId = rb(assetRes).data.id as string;
 
       await request(testApp)
         .post(`/api/assets/${assetId}/status`)
@@ -292,7 +306,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Rental Client" });
-      clientId = clientRes.body.data.id;
+      clientId = rb(clientRes).data.id as string;
     });
 
     it("creates a rental", async () => {
@@ -303,8 +317,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId, assetId, branchId: tenantA.branch.id });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.status).toBe("draft");
-      rentalId = res.body.data.id;
+      expect(rb(res).data.status).toBe("draft");
+      rentalId = rb(res).data.id as string;
     });
 
     it("approves the rental (draft → awaiting_payment)", async () => {
@@ -314,7 +328,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("awaiting_payment");
+      expect(rb(res).data.status).toBe("awaiting_payment");
     });
 
     it("starts the rental (awaiting_pickup → active)", async () => {
@@ -326,7 +340,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("active");
+      expect(rb(res).data.status).toBe("active");
     });
 
     it("extends the rental (active → extended)", async () => {
@@ -340,7 +354,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ newEndDate: nextWeek, reason: "Customer requested extension" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("extended");
+      expect(rb(res).data.status).toBe("extended");
     });
 
     it("returns the rental (extended → completed)", async () => {
@@ -351,8 +365,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ assetReturnStatus: "available" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("completed");
-      expect(res.body.data.actualEndAt).toBeTruthy();
+      expect(rb(res).data.status).toBe("completed");
+      expect(rb(res).data.actualEndAt).toBeTruthy();
     });
 
     it("records rental status history", async () => {
@@ -362,7 +376,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(3);
+      expect(
+        (rb(res).data as unknown as Array<Record<string, unknown>>).length,
+      ).toBeGreaterThanOrEqual(3);
     });
 
     it("other tenant cannot access this rental", async () => {
@@ -389,7 +405,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
           assetType: "bike",
           serialNumber: `CAN-${Date.now()}`,
         });
-      assetId = assetRes.body.data.id;
+      assetId = rb(assetRes).data.id as string;
 
       await request(testApp)
         .post(`/api/assets/${assetId}/status`)
@@ -402,7 +418,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Cancel Test Client" });
-      clientId = clientRes.body.data.id;
+      clientId = rb(clientRes).data.id as string;
     });
 
     it("creates and cancels a draft rental", async () => {
@@ -415,13 +431,13 @@ describe("Phase 4 — Core Tenant CRUD", () => {
       expect(createRes.status).toBe(201);
 
       const cancelRes = await request(testApp)
-        .post(`/api/rentals/${createRes.body.data.id}/cancel`)
+        .post(`/api/rentals/${rb(createRes).data.id}/cancel`)
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ reason: "Customer changed mind" });
 
       expect(cancelRes.status).toBe(200);
-      expect(cancelRes.body.data.status).toBe("canceled");
+      expect(rb(cancelRes).data.status).toBe("canceled");
     });
   });
 
@@ -434,7 +450,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Blacklist Test Client" });
-      clientId = clientRes.body.data.id;
+      clientId = rb(clientRes).data.id as string;
     });
 
     it("creates a warning-level blacklist entry", async () => {
@@ -460,9 +476,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.isBlacklisted).toBe(true);
-      expect(res.body.data.isBlocked).toBe(false);
-      expect(res.body.data.strongestAction).toBe("warning");
+      expect(rb(res).data.isBlacklisted).toBe(true);
+      expect(rb(res).data.isBlocked).toBe(false);
+      expect(rb(res).data.strongestAction).toBe("warning");
     });
 
     it("adds a blocking-level entry", async () => {
@@ -488,9 +504,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.isBlocked).toBe(true);
-      expect(res.body.data.strongestAction).toBe("blocked_company");
-      expect(res.body.data.strongestSeverity).toBe(6);
+      expect(rb(res).data.isBlocked).toBe(true);
+      expect(rb(res).data.strongestAction).toBe("blocked_company");
+      expect(rb(res).data.strongestSeverity).toBe(6);
     });
 
     it("blocked client cannot create rental", async () => {
@@ -503,7 +519,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
           assetType: "scooter",
           serialNumber: `BL-${Date.now()}`,
         });
-      const assetId = assetRes.body.data.id;
+      const assetId = rb(assetRes).data.id as string;
 
       await request(testApp)
         .post(`/api/assets/${assetId}/status`)
@@ -530,7 +546,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Revoke Test Client" });
-      clientId = clientRes.body.data.id;
+      clientId = rb(clientRes).data.id as string;
     });
 
     it("creates and revokes a blacklist entry", async () => {
@@ -546,12 +562,12 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       const revokeRes = await request(testApp)
-        .post(`/api/blacklist/${createRes.body.data.id}/revoke`)
+        .post(`/api/blacklist/${rb(createRes).data.id}/revoke`)
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id);
 
       expect(revokeRes.status).toBe(200);
-      expect(revokeRes.body.data.endsAt).toBeTruthy();
+      expect(rb(revokeRes).data.endsAt).toBeTruthy();
     });
 
     it("revoked entry no longer blocks", async () => {
@@ -562,7 +578,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId });
 
       expect(checkRes.status).toBe(200);
-      expect(checkRes.body.data.isBlocked).toBe(false);
+      expect(rb(checkRes).data.isBlocked).toBe(false);
     });
 
     it("other tenant cannot revoke this entry", async () => {
@@ -578,7 +594,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       const res = await request(testApp)
-        .post(`/api/blacklist/${newEntry.body.data.id}/revoke`)
+        .post(`/api/blacklist/${rb(newEntry).data.id}/revoke`)
         .set("Authorization", `Bearer ${tenantB.ownerToken}`)
         .set("x-company-id", tenantB.company.id);
 
@@ -594,10 +610,13 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items).toBeDefined();
-      expect(res.body.data.pagination).toBeDefined();
-      expect(res.body.data.pagination.page).toBe(1);
-      expect(res.body.data.items.length).toBeGreaterThan(0);
+      expect(rb(res).data.items).toBeDefined();
+      expect(rb(res).data.pagination).toBeDefined();
+      expect((rb(res).data.pagination as Record<string, unknown>).page).toBe(1);
+      expect(
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThan(0);
     });
 
     it("can filter audit logs by entityType", async () => {
@@ -607,7 +626,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(item.entityType).toBe("rental");
       }
     });
@@ -619,7 +640,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      for (const item of res.body.data.items) {
+      for (const item of rb(res).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
         expect(item.action).toBe("create");
       }
     });
@@ -631,12 +654,17 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.length).toBeGreaterThanOrEqual(1);
-      const item = res.body.data.items[0];
+      expect(
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThanOrEqual(1);
+      const item = (
+        rb(res).data.items as unknown as Array<Record<string, unknown>>
+      )[0];
       expect(item.before).toBeDefined();
       expect(item.after).toBeDefined();
-      expect(item.before.status).toBeDefined();
-      expect(item.after.status).toBeDefined();
+      expect((item.before as Record<string, unknown>).status).toBeDefined();
+      expect((item.after as Record<string, unknown>).status).toBeDefined();
     });
 
     it("other tenant cannot see these logs", async () => {
@@ -650,10 +678,17 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantB.ownerToken}`)
         .set("x-company-id", tenantB.company.id);
 
-      expect(resA.body.data.items.length).toBeGreaterThan(0);
+      expect(
+        (rb(resA).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThan(0);
 
-      for (const item of resB.body.data.items) {
-        for (const itemA of resA.body.data.items) {
+      for (const item of rb(resB).data.items as unknown as Array<
+        Record<string, unknown>
+      >) {
+        for (const itemA of rb(resA).data.items as unknown as Array<
+          Record<string, unknown>
+        >) {
           expect(item.id).not.toBe(itemA.id);
         }
       }

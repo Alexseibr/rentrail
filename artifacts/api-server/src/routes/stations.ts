@@ -38,7 +38,7 @@ router.post(
   validate({ body: createStationSchema }),
   async (req, res) => {
     const station = await stationService.createStation({
-      ...req.body,
+      ...(req.body as z.infer<typeof createStationSchema>),
       companyId: req.tenant!.companyId,
     });
     await createAuditLog({
@@ -98,7 +98,7 @@ router.patch(
     const station = await stationService.updateStation(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof updateStationSchema>,
     );
     await createAuditLog({
       companyId: req.tenant!.companyId,

@@ -5,20 +5,12 @@ import { createTestUser } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, platformAuditLogs } from "@workspace/db";
 
-interface AuditLogItem {
-  id: string;
-  actorUserId: string;
-  actorEmail: string;
-  actorFirstName: string;
-  actorLastName: string;
-  platformRole: string;
-  action: string;
-  entityType: string;
-  entityId: string | null;
-  targetCompanyId: string | null;
-  reasonCode: string | null;
-  reasonText: string | null;
-  createdAt: string;
+type _RB = {
+  data: Record<string, unknown>;
+  error: { code: string; message: string };
+};
+function rb(r: { body: unknown }): _RB {
+  return r.body as _RB;
 }
 
 const testApp = app;
@@ -70,10 +62,10 @@ describe("Platform Access Model", () => {
 
       const meRes = await request(testApp)
         .get("/api/auth/me")
-        .set("Authorization", `Bearer ${loginRes.body.data.accessToken}`);
+        .set("Authorization", `Bearer ${rb(loginRes).data.accessToken}`);
 
       expect(meRes.status).toBe(200);
-      expect(meRes.body.data.platformRoles).toContain("superAdmin");
+      expect(rb(meRes).data.platformRoles).toContain("superAdmin");
     });
 
     it("login returns empty platformRoles for regular user", async () => {
@@ -85,10 +77,10 @@ describe("Platform Access Model", () => {
 
       const meRes = await request(testApp)
         .get("/api/auth/me")
-        .set("Authorization", `Bearer ${loginRes.body.data.accessToken}`);
+        .set("Authorization", `Bearer ${rb(loginRes).data.accessToken}`);
 
       expect(meRes.status).toBe(200);
-      expect(meRes.body.data.platformRoles).toEqual([]);
+      expect(rb(meRes).data.platformRoles).toEqual([]);
     });
 
     it("platform user gets platformRoles in /me response", async () => {
@@ -100,10 +92,10 @@ describe("Platform Access Model", () => {
 
       const meRes = await request(testApp)
         .get("/api/auth/me")
-        .set("Authorization", `Bearer ${loginRes.body.data.accessToken}`);
+        .set("Authorization", `Bearer ${rb(loginRes).data.accessToken}`);
 
       expect(meRes.status).toBe(200);
-      expect(meRes.body.data.platformRoles).toContain("platformAdmin");
+      expect(rb(meRes).data.platformRoles).toContain("platformAdmin");
     });
   });
 
@@ -114,8 +106,8 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data).toHaveProperty("items");
-      expect(res.body.data).toHaveProperty("pagination");
+      expect(rb(res).data).toHaveProperty("items");
+      expect(rb(res).data).toHaveProperty("pagination");
     });
 
     it("allows platformAdmin to access platform audit logs", async () => {
@@ -194,9 +186,14 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items.length).toBeGreaterThanOrEqual(3);
-      expect(res.body.data.pagination.page).toBe(1);
-      expect(res.body.data.pagination.limit).toBe(10);
+      expect(
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThanOrEqual(3);
+      expect((rb(res).data.pagination as Record<string, unknown>).page).toBe(1);
+      expect((rb(res).data.pagination as Record<string, unknown>).limit).toBe(
+        10,
+      );
     });
 
     it("filters by action", async () => {
@@ -206,8 +203,9 @@ describe("Platform Access Model", () => {
 
       expect(res.status).toBe(200);
       expect(
-        res.body.data.items.every(
-          (l: AuditLogItem) => l.action === "company.block",
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>).every(
+          (action: Record<string, unknown>) =>
+            action.action === "company.block",
         ),
       ).toBe(true);
     });
@@ -219,8 +217,9 @@ describe("Platform Access Model", () => {
 
       expect(res.status).toBe(200);
       expect(
-        res.body.data.items.every(
-          (l: AuditLogItem) => l.entityType === "subscription",
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>).every(
+          (entityType: Record<string, unknown>) =>
+            entityType.entityType === "subscription",
         ),
       ).toBe(true);
     });
@@ -232,8 +231,9 @@ describe("Platform Access Model", () => {
 
       expect(res.status).toBe(200);
       expect(
-        res.body.data.items.every(
-          (l: AuditLogItem) => l.actorUserId === platformAdminUser.id,
+        (rb(res).data.items as unknown as Array<Record<string, unknown>>).every(
+          (actorUserId: Record<string, unknown>) =>
+            actorUserId.actorUserId === platformAdminUser.id,
         ),
       ).toBe(true);
     });
@@ -244,7 +244,9 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(res.status).toBe(200);
-      const item = res.body.data.items[0];
+      const item = (
+        rb(res).data.items as unknown as Array<Record<string, unknown>>
+      )[0];
       expect(item).toHaveProperty("actorEmail");
       expect(item).toHaveProperty("actorFirstName");
       expect(item).toHaveProperty("platformRole");
@@ -260,7 +262,7 @@ describe("Platform Access Model", () => {
         .send({ name: `Test Co ${ts}`, slug: `test-co-${ts}` });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.name).toBe(`Test Co ${ts}`);
+      expect(rb(res).data.name).toBe(`Test Co ${ts}`);
     });
 
     it("platformAdmin can create a company", async () => {
@@ -297,9 +299,9 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${platformSupportUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.items).toBeDefined();
-      expect(Array.isArray(res.body.data.items)).toBe(true);
-      expect(res.body.data.pagination).toBeDefined();
+      expect(rb(res).data.items).toBeDefined();
+      expect(Array.isArray(rb(res).data.items)).toBe(true);
+      expect(rb(res).data.pagination).toBeDefined();
     });
 
     it("regular user cannot access platform company listing", async () => {
@@ -316,7 +318,7 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${regularUser.token}`);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(Array.isArray(rb(res).data)).toBe(true);
     });
 
     it("company creation is logged to platform audit log", async () => {
@@ -331,8 +333,14 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(logsRes.status).toBe(200);
-      expect(logsRes.body.data.items.length).toBeGreaterThanOrEqual(1);
-      expect(logsRes.body.data.items[0].action).toBe("company.create");
+      expect(
+        (rb(logsRes).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        (rb(logsRes).data.items as unknown as Array<Record<string, unknown>>)[0]
+          .action,
+      ).toBe("company.create");
     });
 
     it("platform company listing is audited", async () => {
@@ -345,8 +353,14 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${superAdminUser.token}`);
 
       expect(logsRes.status).toBe(200);
-      expect(logsRes.body.data.items.length).toBeGreaterThanOrEqual(1);
-      expect(logsRes.body.data.items[0].action).toBe("company.list_all");
+      expect(
+        (rb(logsRes).data.items as unknown as Array<Record<string, unknown>>)
+          .length,
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        (rb(logsRes).data.items as unknown as Array<Record<string, unknown>>)[0]
+          .action,
+      ).toBe("company.list_all");
     });
   });
 
@@ -396,7 +410,7 @@ describe("Platform Access Model", () => {
 
       expect(loginRes.status).toBe(200);
 
-      const token = loginRes.body.data.accessToken;
+      const token = rb(loginRes).data.accessToken as string;
       const [, payloadB64] = token.split(".");
       const payload = JSON.parse(
         Buffer.from(payloadB64, "base64url").toString(),
@@ -427,7 +441,7 @@ describe("Platform Access Model", () => {
         .set("Authorization", `Bearer ${legacyAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.isSuperAdmin).toBe(true);
+      expect(rb(res).data.isSuperAdmin).toBe(true);
     });
 
     it("isSuperAdmin=true user CAN access tenant assets without membership", async () => {

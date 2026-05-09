@@ -41,7 +41,7 @@ router.post(
       req.tenant!.companyId,
       req.params.id as string,
       {
-        ...req.body,
+        ...(req.body as z.infer<typeof enqueueSchema>),
         requestedByUserId: req.user!.userId,
       },
     );

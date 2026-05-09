@@ -17,8 +17,9 @@ router.post(
   requireCompanyAccess,
   validate({ body: resolveSchema }),
   async (req, res) => {
+    const { code } = req.body as z.infer<typeof resolveSchema>;
     const result = await scanService.resolveScannedCode(
-      req.body.code,
+      code,
       req.tenant!.companyId,
     );
     res.json({ data: result });

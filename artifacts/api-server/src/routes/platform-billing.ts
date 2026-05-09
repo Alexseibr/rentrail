@@ -123,7 +123,9 @@ router.post(
   billingRoles,
   validate({ body: createPlanSchema }),
   async (req, res) => {
-    const plan = await billingService.createPlan(req.body);
+    const plan = await billingService.createPlan(
+      req.body as z.infer<typeof createPlanSchema>,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.plan.create",
       entityType: "saas_plan",
@@ -142,7 +144,7 @@ router.patch(
   async (req, res) => {
     const { updated, previous } = await billingService.updatePlan(
       req.params.id as string,
-      req.body,
+      req.body as z.infer<typeof updatePlanSchema>,
     );
     await createPlatformAuditLog(req, {
       action: "billing.plan.update",
@@ -202,7 +204,7 @@ router.patch(
   async (req, res) => {
     const updated = await billingService.updateSubscription(
       req.params.id as string,
-      req.body,
+      req.body as z.infer<typeof updateSubscriptionSchema>,
     );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.update",
@@ -221,11 +223,12 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
+    const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
         req.params.id as string,
         "activate",
-        req.body.reason,
+        reason,
       );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.activate",
@@ -234,7 +237,7 @@ router.post(
       targetCompanyId: updated.companyId,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonText: req.body.reason ?? null,
+      reasonText: reason ?? null,
     });
     res.json({ data: updated });
   },
@@ -246,11 +249,12 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
+    const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
         req.params.id as string,
         "mark_past_due",
-        req.body.reason,
+        reason,
       );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.past_due",
@@ -259,7 +263,7 @@ router.post(
       targetCompanyId: updated.companyId,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonText: req.body.reason ?? null,
+      reasonText: reason ?? null,
     });
     res.json({ data: updated });
   },
@@ -271,11 +275,12 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
+    const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
         req.params.id as string,
         "cancel",
-        req.body.reason,
+        reason,
       );
     await createPlatformAuditLog(req, {
       action: "billing.subscription.cancel",
@@ -284,7 +289,7 @@ router.post(
       targetCompanyId: updated.companyId,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonText: req.body.reason ?? null,
+      reasonText: reason ?? null,
     });
     res.json({ data: updated });
   },
@@ -338,7 +343,9 @@ router.post(
   billingRoles,
   validate({ body: createInvoiceSchema }),
   async (req, res) => {
-    const invoice = await billingService.createInvoice(req.body);
+    const invoice = await billingService.createInvoice(
+      req.body as z.infer<typeof createInvoiceSchema>,
+    );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.create",
       entityType: "saas_invoice",
@@ -379,7 +386,7 @@ router.post(
   async (req, res) => {
     const { updated, previousStatus } = await billingService.markInvoicePaid(
       req.params.id as string,
-      req.body,
+      req.body as z.infer<typeof markPaidSchema>,
     );
     await createPlatformAuditLog(req, {
       action: "billing.invoice.paid",
@@ -440,13 +447,15 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: setPlanSchema }),
   async (req, res) => {
+    const { planId, trialEndsAt, currentPeriodStart, currentPeriodEnd } =
+      req.body as z.infer<typeof setPlanSchema>;
     const subscription = await billingService.createSubscriptionForCompany(
       req.params.id as string,
-      req.body.planId,
+      planId,
       {
-        trialEndsAt: req.body.trialEndsAt,
-        currentPeriodStart: req.body.currentPeriodStart,
-        currentPeriodEnd: req.body.currentPeriodEnd,
+        trialEndsAt,
+        currentPeriodStart,
+        currentPeriodEnd,
       },
     );
     await createPlatformAuditLog(req, {

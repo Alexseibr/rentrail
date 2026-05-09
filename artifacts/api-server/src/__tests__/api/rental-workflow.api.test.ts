@@ -16,6 +16,14 @@ import {
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 
+type _RB = {
+  data: Record<string, unknown>;
+  error: { code: string; message: string };
+};
+function rb(r: { body: unknown }): _RB {
+  return r.body as _RB;
+}
+
 describe("Rental Workflow API", () => {
   let admin: TestUser;
   let tenant: TestTenant;
@@ -51,7 +59,7 @@ describe("Rental Workflow API", () => {
       branchId: tenant.branch.id,
     });
     expect(res.status).toBe(201);
-    return res.body.data;
+    return rb(res).data;
   }
 
   async function forceRentalStatus(rentalId: string, status: string) {
@@ -76,8 +84,8 @@ describe("Rental Workflow API", () => {
       });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.status).toBe("draft");
-      rentalId = res.body.data.id;
+      expect(rb(res).data.status).toBe("draft");
+      rentalId = rb(res).data.id as string;
     });
 
     it("approve rental (draft → awaiting_payment)", async () => {
@@ -86,7 +94,7 @@ describe("Rental Workflow API", () => {
         .set(h());
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("awaiting_payment");
+      expect(rb(res).data.status).toBe("awaiting_payment");
     });
 
     it("start rental (awaiting_pickup → active)", async () => {
@@ -97,14 +105,14 @@ describe("Rental Workflow API", () => {
         .set(h());
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("active");
+      expect(rb(res).data.status).toBe("active");
     });
 
     it("asset becomes rented after start", async () => {
       const res = await request(testApp).get(`/api/assets/${assetId}`).set(h());
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("rented");
+      expect(rb(res).data.status).toBe("rented");
     });
 
     it("extend rental (active → extended)", async () => {
@@ -117,7 +125,7 @@ describe("Rental Workflow API", () => {
         .send({ newEndDate: futureDate, reason: "Customer requested" });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("extended");
+      expect(rb(res).data.status).toBe("extended");
     });
 
     it("return rental (extended → completed)", async () => {
@@ -130,14 +138,14 @@ describe("Rental Workflow API", () => {
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("completed");
+      expect(rb(res).data.status).toBe("completed");
     });
 
     it("asset reverts to available after return", async () => {
       const res = await request(testApp).get(`/api/assets/${assetId}`).set(h());
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe("available");
+      expect(rb(res).data.status).toBe("available");
     });
 
     it("rental status history is complete", async () => {
@@ -146,9 +154,9 @@ describe("Rental Workflow API", () => {
         .set(h());
 
       expect(res.status).toBe(200);
-      const statuses = res.body.data.map(
-        (e: { toStatus: string }) => e.toStatus,
-      );
+      const statuses = (
+        rb(res).data as unknown as Array<Record<string, unknown>>
+      ).map((e: { toStatus: string }) => e.toStatus);
       expect(statuses).toContain("draft");
       expect(statuses).toContain("active");
       expect(statuses).toContain("completed");
@@ -165,20 +173,20 @@ describe("Rental Workflow API", () => {
         .send({ reason: "Customer changed mind" });
 
       expect(cancel.status).toBe(200);
-      expect(cancel.body.data.status).toBe("canceled");
+      expect(rb(cancel).data.status).toBe("canceled");
     });
 
     it("cancel active rental rolls back asset to available", async () => {
       const asset = await freshAsset();
       const rental = await createRental(asset.id);
 
-      await forceRentalStatus(rental.id, "awaiting_pickup");
+      await forceRentalStatus(rental.id as string, "awaiting_pickup");
       await request(testApp).post(`/api/rentals/${rental.id}/start`).set(h());
 
       const assetCheck = await request(testApp)
         .get(`/api/assets/${asset.id}`)
         .set(h());
-      expect(assetCheck.body.data.status).toBe("rented");
+      expect(rb(assetCheck).data.status).toBe("rented");
 
       const cancel = await request(testApp)
         .post(`/api/rentals/${rental.id}/cancel`)
@@ -186,12 +194,12 @@ describe("Rental Workflow API", () => {
         .send({ reason: "Emergency" });
 
       expect(cancel.status).toBe(200);
-      expect(cancel.body.data.status).toBe("canceled");
+      expect(rb(cancel).data.status).toBe("canceled");
 
       const assetAfter = await request(testApp)
         .get(`/api/assets/${asset.id}`)
         .set(h());
-      expect(assetAfter.body.data.status).toBe("available");
+      expect(rb(assetAfter).data.status).toBe("available");
     });
 
     it("cancel awaiting_payment rental", async () => {
@@ -205,7 +213,7 @@ describe("Rental Workflow API", () => {
         .send({});
 
       expect(cancel.status).toBe(200);
-      expect(cancel.body.data.status).toBe("canceled");
+      expect(rb(cancel).data.status).toBe("canceled");
     });
   });
 
@@ -235,7 +243,7 @@ describe("Rental Workflow API", () => {
       const asset = await freshAsset();
       const rental = await createRental(asset.id);
 
-      await forceRentalStatus(rental.id, "awaiting_pickup");
+      await forceRentalStatus(rental.id as string, "awaiting_pickup");
       await request(testApp).post(`/api/rentals/${rental.id}/start`).set(h());
       await request(testApp)
         .post(`/api/rentals/${rental.id}/return`)
@@ -253,7 +261,7 @@ describe("Rental Workflow API", () => {
       const asset = await freshAsset();
       const rental = await createRental(asset.id);
 
-      await forceRentalStatus(rental.id, "awaiting_pickup");
+      await forceRentalStatus(rental.id as string, "awaiting_pickup");
       await request(testApp).post(`/api/rentals/${rental.id}/start`).set(h());
       await request(testApp)
         .post(`/api/rentals/${rental.id}/return`)
@@ -329,14 +337,14 @@ describe("Rental Workflow API", () => {
         .set(h())
         .send({ status: "maintenance", reason: "Scheduled check" });
       expect(toMaint.status).toBe(200);
-      expect(toMaint.body.data.status).toBe("maintenance");
+      expect(rb(toMaint).data.status).toBe("maintenance");
 
       const toAvail = await request(testApp)
         .post(`/api/assets/${asset.id}/status`)
         .set(h())
         .send({ status: "available", reason: "Repair done" });
       expect(toAvail.status).toBe(200);
-      expect(toAvail.body.data.status).toBe("available");
+      expect(rb(toAvail).data.status).toBe("available");
     });
 
     it("cannot transition retired asset to available", async () => {
@@ -384,7 +392,9 @@ describe("Rental Workflow API", () => {
         .set(h());
 
       expect(history.status).toBe(200);
-      expect(history.body.data.length).toBeGreaterThanOrEqual(2);
+      expect(
+        (rb(history).data as unknown as Array<Record<string, unknown>>).length,
+      ).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -436,7 +446,7 @@ describe("Rental Workflow API", () => {
       const asset = await freshAsset();
       const rental = await createRental(asset.id);
 
-      await forceRentalStatus(rental.id, "awaiting_pickup");
+      await forceRentalStatus(rental.id as string, "awaiting_pickup");
       await request(testApp).post(`/api/rentals/${rental.id}/start`).set(h());
 
       const res = await request(testApp)

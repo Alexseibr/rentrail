@@ -46,8 +46,9 @@ router.post(
   validate({ body: ingestSchema }),
   async (req, res) => {
     const ctx = req.apiKeyContext!;
+    const { provider, ...rest } = req.body as z.infer<typeof ingestSchema>;
     const result = await telemetryService.ingestTelemetry(
-      { ...req.body, provider: req.body.provider ?? ctx.provider },
+      { ...rest, provider: provider ?? ctx.provider },
       { companyId: ctx.companyId, provider: ctx.provider },
     );
     res.json({ data: result });
@@ -86,8 +87,8 @@ router.get(
         to,
         eventType,
         severity,
-        limit: limit ? parseInt(limit) : undefined,
-        offset: offset ? parseInt(offset) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
       },
     );
     res.json({ data: events });
@@ -108,8 +109,8 @@ router.get(
       {
         from,
         to,
-        limit: limit ? parseInt(limit) : undefined,
-        offset: offset ? parseInt(offset) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
       },
     );
     res.json({ data: locations });
@@ -148,8 +149,8 @@ router.get(
         to,
         eventType,
         severity,
-        limit: limit ? parseInt(limit) : undefined,
-        offset: offset ? parseInt(offset) : undefined,
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
       },
     );
     res.json({ data: events });

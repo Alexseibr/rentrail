@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { validate } from "../middlewares/validate";
+import { z } from "zod/v4";
 import { authenticate } from "../middlewares/authenticate";
 import {
   requireCompanyAccess,
@@ -6,6 +8,17 @@ import {
 } from "../middlewares/authorize";
 import * as incidentService from "../services/incident.service";
 import { logger } from "../lib/logger";
+
+const createIncidentSchema = z.object({
+  branchId: z.string().uuid().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  severity: z.string().optional(),
+});
+
+const statusIncidentSchema = z.object({
+  status: z.string().optional(),
+});
 
 const router = Router();
 
@@ -79,19 +92,23 @@ router.post(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: createIncidentSchema }),
   async (req, res) => {
     try {
-      if (!req.body.title) {
+      const { branchId, title, description, severity } = req.body as z.infer<
+        typeof createIncidentSchema
+      >;
+      if (!title) {
         return res.status(400).json({
           error: { code: "VALIDATION", message: "title is required" },
         });
       }
       const item = await incidentService.createIncident({
         companyId: req.tenant!.companyId,
-        branchId: req.body.branchId,
-        title: req.body.title,
-        description: req.body.description,
-        severity: req.body.severity,
+        branchId,
+        title,
+        description,
+        severity,
         reportedByUserId: req.user!.userId,
       });
       return res.status(201).json({ data: item });
@@ -109,10 +126,12 @@ router.post(
   authenticate,
   requireCompanyAccess,
   requirePermission("asset:update"),
+  validate({ body: statusIncidentSchema }),
   async (req, res) => {
     try {
-      const update: Record<string, unknown> = { status: req.body.status };
-      if (req.body.status === "resolved") update.resolvedAt = new Date();
+      const { status } = req.body as z.infer<typeof statusIncidentSchema>;
+      const update: Record<string, unknown> = { status };
+      if (status === "resolved") update.resolvedAt = new Date();
       const item = await incidentService.updateIncident(
         String(req.params.id),
         req.tenant!.companyId,

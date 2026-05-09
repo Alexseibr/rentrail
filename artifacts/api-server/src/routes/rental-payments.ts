@@ -53,7 +53,7 @@ router.post(
     const result = await rentalPaymentService.holdDeposit(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof holdSchema>,
       req.user!.userId,
     );
     await createAuditLog({
@@ -78,7 +78,7 @@ router.post(
     const payment = await rentalPaymentService.capturePayment(
       req.params.id as string,
       req.tenant!.companyId,
-      req.body,
+      req.body as z.infer<typeof captureSchema>,
       req.user!.userId,
     );
     await createAuditLog({

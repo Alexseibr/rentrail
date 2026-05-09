@@ -23,13 +23,15 @@ router.post(
   authenticate,
   validate({ body: registerSchema }),
   async (req, res) => {
+    const { companyId, token, platform, appVersion, deviceId } =
+      req.body as z.infer<typeof registerSchema>;
     const result = await pushTokenService.registerToken({
       userId: req.user!.userId,
-      companyId: req.body.companyId,
-      token: req.body.token,
-      platform: req.body.platform,
-      appVersion: req.body.appVersion,
-      deviceId: req.body.deviceId,
+      companyId,
+      token,
+      platform,
+      appVersion,
+      deviceId,
     });
     res.json({ data: result });
   },
@@ -40,8 +42,9 @@ router.post(
   authenticate,
   validate({ body: unregisterSchema }),
   async (req, res) => {
+    const { token } = req.body as z.infer<typeof unregisterSchema>;
     const result = await pushTokenService.unregisterToken(
-      req.body.token,
+      token,
       req.user!.userId,
     );
     if (!result) {

@@ -63,7 +63,9 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ body: createCompanySchema }),
   async (req, res) => {
-    const company = await companyService.createCompany(req.body);
+    const company = await companyService.createCompany(
+      req.body as z.infer<typeof createCompanySchema>,
+    );
     await createPlatformAuditLog(req, {
       action: "company.create",
       entityType: "company",
@@ -132,7 +134,7 @@ router.patch(
     const old = await companyService.getCompany(req.params.id as string);
     const company = await companyService.updateCompany(
       req.params.id as string,
-      req.body,
+      req.body as z.infer<typeof updateCompanySchema>,
     );
     await createPlatformAuditLog(req, {
       action: "company.update",
@@ -152,9 +154,13 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
+    const { reasonCode, reasonText } = req.body as z.infer<
+      typeof moderationActionSchema
+    >;
     const { updated, previousStatus } =
       await platformCompanyService.approveCompany(req.params.id as string, {
-        ...req.body,
+        reasonCode,
+        reasonText,
         performedBy: req.user!.userId,
       });
     await createPlatformAuditLog(req, {
@@ -164,8 +170,8 @@ router.post(
       targetCompanyId: updated.id,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonCode: req.body.reasonCode,
-      reasonText: req.body.reasonText,
+      reasonCode,
+      reasonText,
     });
     res.json({ data: updated });
   },
@@ -177,9 +183,13 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
+    const { reasonCode, reasonText } = req.body as z.infer<
+      typeof moderationActionSchema
+    >;
     const { updated, previousStatus } =
       await platformCompanyService.blockCompany(req.params.id as string, {
-        ...req.body,
+        reasonCode,
+        reasonText,
         performedBy: req.user!.userId,
       });
     await createPlatformAuditLog(req, {
@@ -189,8 +199,8 @@ router.post(
       targetCompanyId: updated.id,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonCode: req.body.reasonCode,
-      reasonText: req.body.reasonText,
+      reasonCode,
+      reasonText,
     });
     res.json({ data: updated });
   },
@@ -202,9 +212,13 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
+    const { reasonCode, reasonText } = req.body as z.infer<
+      typeof moderationActionSchema
+    >;
     const { updated, previousStatus } =
       await platformCompanyService.unblockCompany(req.params.id as string, {
-        ...req.body,
+        reasonCode,
+        reasonText,
         performedBy: req.user!.userId,
       });
     await createPlatformAuditLog(req, {
@@ -214,8 +228,8 @@ router.post(
       targetCompanyId: updated.id,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonCode: req.body.reasonCode,
-      reasonText: req.body.reasonText,
+      reasonCode,
+      reasonText,
     });
     res.json({ data: updated });
   },
@@ -227,9 +241,13 @@ router.post(
   requirePlatformRole("superAdmin", "platformAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
+    const { reasonCode, reasonText } = req.body as z.infer<
+      typeof moderationActionSchema
+    >;
     const { updated, previousStatus } =
       await platformCompanyService.suspendCompany(req.params.id as string, {
-        ...req.body,
+        reasonCode,
+        reasonText,
         performedBy: req.user!.userId,
       });
     await createPlatformAuditLog(req, {
@@ -239,8 +257,8 @@ router.post(
       targetCompanyId: updated.id,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonCode: req.body.reasonCode,
-      reasonText: req.body.reasonText,
+      reasonCode,
+      reasonText,
     });
     res.json({ data: updated });
   },
@@ -252,9 +270,13 @@ router.post(
   requirePlatformRole("superAdmin"),
   validate({ params: idParams, body: moderationActionSchema }),
   async (req, res) => {
+    const { reasonCode, reasonText } = req.body as z.infer<
+      typeof moderationActionSchema
+    >;
     const { updated, previousStatus } =
       await platformCompanyService.cancelCompany(req.params.id as string, {
-        ...req.body,
+        reasonCode,
+        reasonText,
         performedBy: req.user!.userId,
       });
     await createPlatformAuditLog(req, {
@@ -264,8 +286,8 @@ router.post(
       targetCompanyId: updated.id,
       before: { status: previousStatus },
       after: { status: updated.status },
-      reasonCode: req.body.reasonCode,
-      reasonText: req.body.reasonText,
+      reasonCode,
+      reasonText,
     });
     res.json({ data: updated });
   },
@@ -348,7 +370,7 @@ router.patch(
     const old = await companyService.getCompany(req.params.id as string);
     const company = await companyService.updateCompany(
       req.params.id as string,
-      req.body,
+      req.body as z.infer<typeof updateCompanySchema>,
     );
     await createAuditLog({
       companyId: company.id,

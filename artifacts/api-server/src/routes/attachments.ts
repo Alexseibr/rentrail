@@ -30,20 +30,29 @@ router.post(
   requireCompanyAccess,
   validate({ body: createSchema }),
   async (req, res) => {
+    const {
+      entityType,
+      entityId,
+      fileName,
+      mimeType,
+      fileSize,
+      objectPath,
+      tag,
+      notes,
+      capturedAt,
+    } = req.body as z.infer<typeof createSchema>;
     const attachment = await attachmentService.createAttachment({
       companyId: req.tenant!.companyId,
-      entityType: req.body.entityType,
-      entityId: req.body.entityId,
-      fileName: req.body.fileName,
-      mimeType: req.body.mimeType,
-      fileSize: req.body.fileSize,
-      objectPath: req.body.objectPath,
-      tag: req.body.tag,
-      notes: req.body.notes,
+      entityType,
+      entityId,
+      fileName,
+      mimeType,
+      fileSize,
+      objectPath,
+      tag,
+      notes,
       uploadedBy: req.user!.userId,
-      capturedAt: req.body.capturedAt
-        ? new Date(req.body.capturedAt)
-        : undefined,
+      capturedAt: capturedAt ? new Date(capturedAt) : undefined,
     });
     res.status(201).json({ data: attachment });
   },
@@ -94,7 +103,7 @@ router.delete(
       res.status(404).json({ error: "Attachment not found" });
       return;
     }
-    res.json({ data: { message: "Attachment deleted" } });
+    res.json({ data: deleted });
   },
 );
 
