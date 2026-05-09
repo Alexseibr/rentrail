@@ -31,7 +31,7 @@ import { MiniMapPreview } from "@/components/MiniMapPreview";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
 
-interface _WorkOrder {
+interface WorkOrder {
   id: string;
   status: string;
   priority?: string;

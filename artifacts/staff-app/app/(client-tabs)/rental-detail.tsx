@@ -10,7 +10,6 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { useColors } from "@/hooks/useColors";
 import { getAccessToken } from "@/services/api";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;

@@ -57,12 +57,12 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-sky-100 text-sky-800",
 };
 
-interface _DashboardAsset {
+interface DashboardAsset {
   id: string;
   status: string;
 }
 
-interface _DashboardRental {
+interface DashboardRental {
   id: string;
   status: string;
   clientId?: string;

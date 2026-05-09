@@ -15,6 +15,14 @@ const envSchema = z.object({
   DEFAULT_OBJECT_STORAGE_BUCKET_ID: z.string().optional(),
   PRIVATE_OBJECT_DIR: z.string().optional(),
   PUBLIC_OBJECT_SEARCH_PATHS: z.string().optional(),
+  PUBLIC_OBJECT_CACHE_TTL_SEC: z.preprocess(
+    (val) => (val === undefined ? "3600" : val),
+    z
+      .string()
+      .regex(/^\d+$/, "Must be a whole number (digits only)")
+      .transform(Number)
+      .pipe(z.number().int().positive()),
+  ),
 
   TELEMETRY_API_KEY: z.string().optional(),
 

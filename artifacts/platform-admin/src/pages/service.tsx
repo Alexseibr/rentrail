@@ -59,7 +59,7 @@ import {
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { toast } from "@/hooks/use-toast";
 
-interface _ServiceRequest {
+interface ServiceRequest {
   id: string;
   title?: string;
   requestType?: string;
@@ -71,7 +71,7 @@ interface _ServiceRequest {
   assignedToName?: string;
 }
 
-interface _ServiceWorkOrder {
+interface ServiceWorkOrder {
   id: string;
   title?: string;
   orderType?: string;
@@ -85,7 +85,7 @@ interface _ServiceWorkOrder {
   estimatedCost?: string;
 }
 
-interface _ServiceSparePart {
+interface ServiceSparePart {
   id: string;
   name?: string;
   sku?: string;
@@ -98,7 +98,7 @@ interface _ServiceSparePart {
   location?: string;
 }
 
-interface _ServiceMaintenanceLog {
+interface ServiceMaintenanceLog {
   id: string;
   logType?: string;
   assetCode?: string;
@@ -109,7 +109,7 @@ interface _ServiceMaintenanceLog {
   notes?: string;
 }
 
-interface _ServiceSchedule {
+interface ServiceSchedule {
   id: string;
   name?: string;
   assetCode?: string;
@@ -119,26 +119,26 @@ interface _ServiceSchedule {
   nextDueAt?: string | null;
 }
 
-interface _ServiceMechanic {
+interface ServiceMechanic {
   userId: string;
   fullName?: string;
   phone?: string;
 }
 
-interface _ServiceBranch {
+interface ServiceBranch {
   id: string;
   name?: string;
   city?: string;
 }
 
-interface _ServiceAsset {
+interface ServiceAsset {
   id: string;
   internalCode?: string;
   brand?: string;
   model?: string;
 }
 
-interface _ServiceStats {
+interface ServiceStats {
   monthCost?: number;
   lowStockCount?: number;
   overdueSchedules?: number;

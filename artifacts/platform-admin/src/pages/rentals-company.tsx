@@ -81,7 +81,7 @@ interface Rental {
   createdAt?: string;
 }
 
-interface _RentalClient {
+interface RentalClient {
   id: string;
   fullName?: string;
   phone?: string;
@@ -89,7 +89,7 @@ interface _RentalClient {
   status?: string;
 }
 
-interface _RentalAsset {
+interface RentalAsset {
   id: string;
   internalCode?: string;
   brand?: string;

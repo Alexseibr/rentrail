@@ -11,6 +11,11 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
+const publicObjectCacheTtlSec = parseInt(
+  process.env.PUBLIC_OBJECT_CACHE_TTL_SEC ?? "3600",
+  10,
+);
+
 const uploadBodySchema = z.object({
   name: z.string().min(1),
   size: z.number().int().nonnegative(),
@@ -59,7 +64,7 @@ router.get(
 
       const response = await objectStorageService.downloadObject(
         file,
-        3600,
+        publicObjectCacheTtlSec,
         true,
       );
       res.status(response.status);
