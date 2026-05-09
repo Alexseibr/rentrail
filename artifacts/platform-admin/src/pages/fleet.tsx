@@ -70,12 +70,12 @@ const STATUS_COLORS: Record<string, string> = {
   retired: "bg-gray-200 text-gray-600",
 };
 
-interface Branch {
+interface _Branch {
   id: string;
   name?: string;
 }
 
-interface Asset {
+interface _Asset {
   id: string;
   internalCode?: string;
   brand?: string;
@@ -150,6 +150,7 @@ export default function FleetPage() {
     ? { "x-company-id": companyId }
     : {};
 
+  const [showCreate, setShowCreate] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editAsset, setEditAsset] = useState<any>(null);
   const [form, setForm] = useState({ ...emptyForm });
@@ -157,11 +158,15 @@ export default function FleetPage() {
     id: string;
     current: string;
   } | null>(null);
+  const [newStatus, setNewStatus] = useState("");
+  const [statusReason, setStatusReason] = useState("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
+  const branchesQuery = useQuery({
+    queryKey: ["branches", companyId],
     queryFn: () => api("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
@@ -169,10 +174,15 @@ export default function FleetPage() {
 
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId, statusFilter],
-      return api(`/assets${params}`, { headers: companyHeaders });
+    queryFn: () => {
+      const p = statusFilter !== "all" ? `?status=${statusFilter}` : "";
+      return api(`/assets${p}`, { headers: companyHeaders });
     },
     enabled: !!companyId,
   });
+  const allItems = assetsQuery.data ?? [];
+  const items = search
+    ? allItems.filter(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (a: any) =>
           (a.internalCode?.toLowerCase() || "").includes(
@@ -327,13 +337,18 @@ export default function FleetPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-    allItems.filter((a: any) => a.status === s).length;  // eslint-disable-line @typescript-eslint/no-explicit-any
+  const countByStatus = (s: string) =>
+    allItems.filter((a: any) => a.status === s).length; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const KPI_FLEET = [
-    { key: "available", accent: "bg-green-500" },
-    { key: "rented", accent: "bg-blue-500" },
-    { key: "maintenance", accent: "bg-yellow-500" },
-    { key: "overdue", accent: "bg-red-500" },
+    { key: "available", accent: "bg-green-500", textAccent: "text-green-500" },
+    { key: "rented", accent: "bg-blue-500", textAccent: "text-blue-500" },
+    {
+      key: "maintenance",
+      accent: "bg-yellow-500",
+      textAccent: "text-yellow-500",
+    },
+    { key: "overdue", accent: "bg-red-500", textAccent: "text-red-500" },
   ];
 
   return (
@@ -355,6 +370,7 @@ export default function FleetPage() {
         )}
       </div>
 
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {KPI_FLEET.map(({ key, accent, textAccent: _textAccent }) => {
           const count = countByStatus(key);
           const isActive = statusFilter === key;
@@ -464,7 +480,9 @@ export default function FleetPage() {
                   )}
                 </TableRow>
               </TableHeader>
-                {items.map((asset: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
+              <TableBody>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {items.map((asset: any) => {
                   const TypeIcon = ASSET_TYPE_ICONS[asset.assetType] || Bike;
                   const typeColor =
                     ASSET_TYPE_COLORS[asset.assetType ?? ""] ||
@@ -665,11 +683,15 @@ export default function FleetPage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b: any) => (  // eslint-disable-line @typescript-eslint/no-explicit-any
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
+                    {branches.map(
+                      (
+                        b: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                      ) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ),
+                    )}
                   </SelectContent>
                 </Select>
               </div>

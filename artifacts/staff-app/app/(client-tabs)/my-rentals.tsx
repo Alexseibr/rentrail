@@ -257,7 +257,8 @@ export default function MyRentalsScreen() {
               <View
                 style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}
               >
-                <Feather name={typeIcon as any} size={18} color="#F5C518" /> // eslint-disable-line @typescript-eslint/no-explicit-any
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <Feather name={typeIcon as any} size={18} color="#F5C518" />
               </View>
             )}
             <View style={styles.vehicleInfo}>

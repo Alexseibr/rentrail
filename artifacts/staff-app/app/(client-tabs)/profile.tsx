@@ -182,7 +182,8 @@ function InfoRow({
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoLeft}>
-        <Feather name={icon as any} size={18} color="#8c8c8c" /> // eslint-disable-line @typescript-eslint/no-explicit-any
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Feather name={icon as any} size={18} color="#8c8c8c" />
         <Text style={styles.infoLabel}>{label}</Text>
       </View>
       <Text style={styles.infoValue}>{value}</Text>

@@ -17,7 +17,7 @@ import {
 import { User, Bike, Calendar, Clock, FileText } from "lucide-react";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
-interface RentalDetail {
+interface _RentalDetail {
   id: string;
   clientId?: string;
   clientName?: string;
@@ -37,7 +37,7 @@ interface RentalDetail {
   createdAt?: string;
 }
 
-interface StatusHistoryEntry {
+interface _StatusHistoryEntry {
   id: string;
   oldStatus?: string;
   toStatus?: string;
@@ -68,10 +68,15 @@ export default function RentalDetailPage() {
     ? { "x-company-id": companyId }
     : {};
 
-      api(`/rentals/${params.id}`, { headers: companyHeaders }),
+  const rentalQuery = useQuery({
+    queryKey: ["rental", params.id],
+    queryFn: () => api(`/rentals/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
+  const historyQuery = useQuery({
+    queryKey: ["rental-history", params.id],
+    queryFn: () =>
       api(`/rentals/${params.id}/status-history`, {
         headers: companyHeaders,
       }),
@@ -236,7 +241,9 @@ export default function RentalDetailPage() {
                     <TableHead>{t("fleet.reason")}</TableHead>
                   </TableRow>
                 </TableHeader>
-                  {history.map((entry: any, i: number) => (  // eslint-disable-line @typescript-eslint/no-explicit-any
+                <TableBody>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {history.map((entry: any, i: number) => (
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
                         {entry.createdAt

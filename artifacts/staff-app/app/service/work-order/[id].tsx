@@ -31,7 +31,7 @@ import { MiniMapPreview } from "@/components/MiniMapPreview";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
 
-interface WorkOrder {
+interface _WorkOrder {
   id: string;
   status: string;
   priority?: string;
@@ -203,7 +203,7 @@ export default function WorkOrderDetailScreen() {
       endpoint: `/api/work-orders/${order.id}/status`,
       method: "POST",
     });
-    setOrder((prev: any) => (prev ? { ...prev, status: newStatus } : prev));  // eslint-disable-line @typescript-eslint/no-explicit-any
+    setOrder((prev: any) => (prev ? { ...prev, status: newStatus } : prev)); // eslint-disable-line @typescript-eslint/no-explicit-any
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showSnackbar(t("workOrder.statusQueued"), "success");
   };
@@ -559,23 +559,27 @@ export default function WorkOrderDetailScreen() {
             >
               {t("serviceModule.partsUsed")}
             </Text>
-            {order.parts.map((p: any) => (  // eslint-disable-line @typescript-eslint/no-explicit-any
-              <View key={p.id} style={styles.partRow}>
-                <Feather
-                  name="package"
-                  size={14}
-                  color={colors.mutedForeground}
-                />
-                <Text style={[styles.partName, { color: colors.foreground }]}>
-                  {p.partName}
-                </Text>
-                <Text
-                  style={[styles.partQty, { color: colors.mutedForeground }]}
-                >
-                  {parseFloat(p.qtyUsed ?? "0")} {p.partUnit}
-                </Text>
-              </View>
-            ))}
+            {order.parts.map(
+              (
+                p: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+              ) => (
+                <View key={p.id} style={styles.partRow}>
+                  <Feather
+                    name="package"
+                    size={14}
+                    color={colors.mutedForeground}
+                  />
+                  <Text style={[styles.partName, { color: colors.foreground }]}>
+                    {p.partName}
+                  </Text>
+                  <Text
+                    style={[styles.partQty, { color: colors.mutedForeground }]}
+                  >
+                    {parseFloat(p.qtyUsed ?? "0")} {p.partUnit}
+                  </Text>
+                </View>
+              ),
+            )}
           </View>
         ) : null}
 

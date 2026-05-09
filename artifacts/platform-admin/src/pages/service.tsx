@@ -59,7 +59,7 @@ import {
 import { useRolePermissions } from "@/hooks/use-role-permissions";
 import { toast } from "@/hooks/use-toast";
 
-interface ServiceRequest {
+interface _ServiceRequest {
   id: string;
   title?: string;
   requestType?: string;
@@ -71,7 +71,7 @@ interface ServiceRequest {
   assignedToName?: string;
 }
 
-interface ServiceWorkOrder {
+interface _ServiceWorkOrder {
   id: string;
   title?: string;
   orderType?: string;
@@ -85,7 +85,7 @@ interface ServiceWorkOrder {
   estimatedCost?: string;
 }
 
-interface ServiceSparePart {
+interface _ServiceSparePart {
   id: string;
   name?: string;
   sku?: string;
@@ -98,7 +98,7 @@ interface ServiceSparePart {
   location?: string;
 }
 
-interface ServiceMaintenanceLog {
+interface _ServiceMaintenanceLog {
   id: string;
   logType?: string;
   assetCode?: string;
@@ -109,7 +109,7 @@ interface ServiceMaintenanceLog {
   notes?: string;
 }
 
-interface ServiceSchedule {
+interface _ServiceSchedule {
   id: string;
   name?: string;
   assetCode?: string;
@@ -119,26 +119,26 @@ interface ServiceSchedule {
   nextDueAt?: string | null;
 }
 
-interface ServiceMechanic {
+interface _ServiceMechanic {
   userId: string;
   fullName?: string;
   phone?: string;
 }
 
-interface ServiceBranch {
+interface _ServiceBranch {
   id: string;
   name?: string;
   city?: string;
 }
 
-interface ServiceAsset {
+interface _ServiceAsset {
   id: string;
   internalCode?: string;
   brand?: string;
   model?: string;
 }
 
-interface ServiceStats {
+interface _ServiceStats {
   monthCost?: number;
   lowStockCount?: number;
   overdueSchedules?: number;
@@ -315,8 +315,7 @@ export default function ServicePage() {
 
   const schedulesQuery = useQuery({
     queryKey: ["maintenance-schedules", companyId],
-    queryFn: () =>
-      api("/maintenance-schedules", { headers: companyHeaders }),
+    queryFn: () => api("/maintenance-schedules", { headers: companyHeaders }),
     enabled: !!companyId && tab === "schedules",
   });
 
@@ -351,9 +350,7 @@ export default function ServicePage() {
   const schedules = Array.isArray(schedulesQuery.data)
     ? schedulesQuery.data
     : [];
-  const overdue = Array.isArray(overdueQuery.data)
-    ? overdueQuery.data
-    : [];
+  const overdue = Array.isArray(overdueQuery.data) ? overdueQuery.data : [];
   const stats = serviceStatsQuery.data;
 
   const lowStockParts = spareParts.filter(
@@ -1582,7 +1579,8 @@ export default function ServicePage() {
                     <SelectValue placeholder={t("rentals.selectAsset")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allAssets.map((a) => (
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {allAssets.map((a: any) => (
                       <SelectItem key={a.id} value={a.id}>
                         {a.internalCode} — {a.brand} {a.model}
                       </SelectItem>

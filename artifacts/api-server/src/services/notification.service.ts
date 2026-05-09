@@ -183,7 +183,8 @@ export async function onGeofenceEnter(
   geofenceType: string,
   assetId?: string,
 ) {
-  const _typeLabel = geofenceType === "no_ride_zone" ? "запретная зона" : "зона";
+  const _typeLabel =
+    geofenceType === "no_ride_zone" ? "запретная зона" : "зона";
   const title = `Въезд в ${_typeLabel}: ${geofenceName}`;
   if (notifyUserIds.length === 0) {
     await notifyCompanyUsers(companyId, "geofence_enter", title, undefined, {
@@ -213,7 +214,8 @@ export async function onGeofenceExit(
   geofenceType: string,
   assetId?: string,
 ) {
-  const _typeLabel = geofenceType === "operating_zone" ? "рабочая зона" : "зона";
+  const _typeLabel =
+    geofenceType === "operating_zone" ? "рабочая зона" : "зона";
   const title = `Выезд из зоны: ${geofenceName}`;
   const body =
     geofenceType === "operating_zone"

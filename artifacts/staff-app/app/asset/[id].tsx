@@ -927,7 +927,7 @@ export default function AssetDetailScreen() {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Feather
-                    name={lockIcon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
+                    name={lockIcon as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                     size={20}
                     color={isLocked ? "#C62828" : colors.foreground}
                   />
@@ -968,7 +968,7 @@ export default function AssetDetailScreen() {
                         />
                       ) : (
                         <Feather
-                          name={btn.icon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
+                          name={btn.icon as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                           size={20}
                           color={colors.foreground}
                         />
@@ -1004,7 +1004,7 @@ export default function AssetDetailScreen() {
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Feather
-                    name={alarmIcon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
+                    name={alarmIcon as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                     size={20}
                     color={isArmed ? "#E65100" : "#2E7D32"}
                   />
@@ -1045,7 +1045,7 @@ export default function AssetDetailScreen() {
                         />
                       ) : (
                         <Feather
-                          name={btn.icon as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
+                          name={btn.icon as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                           size={20}
                           color={colors.foreground}
                         />
@@ -1172,7 +1172,7 @@ export default function AssetDetailScreen() {
                       ]}
                     >
                       <Feather
-                        name={iconMeta.name as any}  // eslint-disable-line @typescript-eslint/no-explicit-any
+                        name={iconMeta.name as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                         size={16}
                         color={iconMeta.color}
                       />

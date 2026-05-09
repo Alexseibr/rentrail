@@ -38,13 +38,7 @@ import {
   EmptyContent,
 } from "@/components/ui/empty";
 import { useRolePermissions } from "@/hooks/use-role-permissions";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
   available: "bg-green-100 text-green-800",
@@ -63,12 +57,12 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "bg-sky-100 text-sky-800",
 };
 
-interface DashboardAsset {
+interface _DashboardAsset {
   id: string;
   status: string;
 }
 
-interface DashboardRental {
+interface _DashboardRental {
   id: string;
   status: string;
   clientId?: string;
@@ -194,7 +188,7 @@ export default function CompanyDashboardPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (r: any) => r.status === "active" || r.status === "overdue",
   );
-  const overdueRentals = rentals.filter((r: any) => r.status === "overdue");  // eslint-disable-line @typescript-eslint/no-explicit-any
+  const overdueRentals = rentals.filter((r: any) => r.status === "overdue"); // eslint-disable-line @typescript-eslint/no-explicit-any
   const recentRentals = [...rentals]
     .sort(
       (a, b) =>
@@ -203,6 +197,7 @@ export default function CompanyDashboardPage() {
     )
     .slice(0, 6);
 
+  const assetStatusCounts: Record<string, number> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   assets.forEach((a: any) => {
     assetStatusCounts[a.status] = (assetStatusCounts[a.status] || 0) + 1;
@@ -218,7 +213,7 @@ export default function CompanyDashboardPage() {
       value: count,
       color: PIE_COLORS[status] || "#9ca3af",
     }))
-    .sort((a: any, b: any) => b.value - a.value);  // eslint-disable-line @typescript-eslint/no-explicit-any
+    .sort((a: any, b: any) => b.value - a.value); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const utilizationRate =
     assets.length > 0 ? Math.round((rentedCount / assets.length) * 100) : 0;

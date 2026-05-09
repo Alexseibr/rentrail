@@ -47,7 +47,7 @@ async function fetchParts(companyId: string, lowStock?: boolean) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   const json = await res.json();
-  return json.data as any[];  // eslint-disable-line @typescript-eslint/no-explicit-any
+  return json.data as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 async function createTransaction(companyId: string, data: object) {
@@ -199,12 +199,16 @@ export default function SparePartsScreen() {
       setTxNote("");
       showSnackbar(t("toast.transactionSuccess"), "success");
     } catch (e: unknown) {
-      showSnackbar((e as Error)?.message || t("toast.transactionFailed"), "error");
+      showSnackbar(
+        (e as Error)?.message || t("toast.transactionFailed"),
+        "error",
+      );
     }
   };
 
-  const isLow = (p: any) =>  // eslint-disable-line @typescript-eslint/no-explicit-any
-    parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert);
+  const isLow = (
+    p: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  ) => parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderItem = ({ item }: { item: any }) => (

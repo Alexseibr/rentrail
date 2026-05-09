@@ -26,7 +26,7 @@ import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-interface WorkOrder {
+interface _WorkOrder {
   id: string;
   title?: string;
   status: string;
@@ -86,7 +86,7 @@ async function fetchWorkOrders(companyId: string, status?: string) {
   });
   if (!res.ok) throw new Error("Failed to fetch work orders");
   const json = await res.json();
-  return json.data as any[];  // eslint-disable-line @typescript-eslint/no-explicit-any
+  return json.data as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export default function WorkOrdersScreen() {
@@ -186,7 +186,7 @@ export default function WorkOrdersScreen() {
         ]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(`/service/work-order/${item.id}` as any);  // eslint-disable-line @typescript-eslint/no-explicit-any
+          router.push(`/service/work-order/${item.id}` as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         }}
         activeOpacity={0.7}
       >

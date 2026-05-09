@@ -81,7 +81,7 @@ interface Rental {
   createdAt?: string;
 }
 
-interface RentalClient {
+interface _RentalClient {
   id: string;
   fullName?: string;
   phone?: string;
@@ -89,7 +89,7 @@ interface RentalClient {
   status?: string;
 }
 
-interface RentalAsset {
+interface _RentalAsset {
   id: string;
   internalCode?: string;
   brand?: string;
@@ -141,8 +141,7 @@ export default function RentalsCompanyPage() {
 
   const assetsQuery = useQuery({
     queryKey: ["assets-available", companyId],
-    queryFn: () =>
-      api("/assets?status=available", { headers: companyHeaders }),
+    queryFn: () => api("/assets?status=available", { headers: companyHeaders }),
     enabled: !!companyId && showCreate,
   });
   const availableAssets = assetsQuery.data ?? [];
@@ -247,7 +246,7 @@ export default function RentalsCompanyPage() {
   }
 
   const countByStatus = (s: string) =>
-    allItems.filter((r: any) => r.status === s).length;  // eslint-disable-line @typescript-eslint/no-explicit-any
+    allItems.filter((r: any) => r.status === s).length; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getAvailableActions = (rental: any) => {
@@ -425,7 +424,8 @@ export default function RentalsCompanyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((rental: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {items.map((rental: any) => {
                   const isOverdue = rental.status === "overdue";
                   const isActive = rental.status === "active";
                   return (
@@ -567,12 +567,16 @@ export default function RentalsCompanyPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {clients
-                    .filter((c: any) => c.status === "active")  // eslint-disable-line @typescript-eslint/no-explicit-any
-                    .map((c: any) => (  // eslint-disable-line @typescript-eslint/no-explicit-any
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.fullName} ({c.phone || c.email})
-                      </SelectItem>
-                    ))}
+                    .filter((c: any) => c.status === "active") // eslint-disable-line @typescript-eslint/no-explicit-any
+                    .map(
+                      (
+                        c: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                      ) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.fullName} ({c.phone || c.email})
+                        </SelectItem>
+                      ),
+                    )}
                 </SelectContent>
               </Select>
             </div>
@@ -588,11 +592,15 @@ export default function RentalsCompanyPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAssets.map((a: any) => (  // eslint-disable-line @typescript-eslint/no-explicit-any
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.internalCode} — {a.brand} {a.model}
-                    </SelectItem>
-                  ))}
+                  {availableAssets.map(
+                    (
+                      a: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                    ) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.internalCode} — {a.brand} {a.model}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>

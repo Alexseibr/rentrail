@@ -32,8 +32,6 @@ import {
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-
-
 const DEMO_SLUG = "velocity-rides";
 
 async function hash(pw: string): Promise<string> {

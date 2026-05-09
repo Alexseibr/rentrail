@@ -121,7 +121,6 @@ function _allPermsFor(resources: string[]): string[] {
   );
 }
 
-
 function permsFor(resource: string, actions: string[]): string[] {
   return actions.map((a) => `${resource}:${a}`);
 }

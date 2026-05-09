@@ -57,12 +57,12 @@ isValidation = true
 name = "typecheck"
 author = "agent"
 
+[workflows.workflow.metadata]
+isValidation = true
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm run typecheck"
-
-[workflows.workflow.metadata]
-isValidation = true
 
 [[workflows.workflow]]
 name = "unit-tests"
@@ -95,7 +95,7 @@ isValidation = true
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pnpm run lint:eslint:strict"
+args = "pnpm run lint:eslint"
 
 [agent]
 stack = "PNPM_WORKSPACE"

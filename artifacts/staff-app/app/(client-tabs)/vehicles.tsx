@@ -185,7 +185,8 @@ export default function VehiclesScreen() {
           <View
             style={[styles.typeBadge, { backgroundColor: typeColor + "20" }]}
           >
-            <Feather name={typeIcon as any} size={15} color={typeColor} /> // eslint-disable-line @typescript-eslint/no-explicit-any
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <Feather name={typeIcon as any} size={15} color={typeColor} />
             <Text style={[styles.typeText, { color: typeColor }]}>
               {item.assetType.toUpperCase()}
             </Text>
