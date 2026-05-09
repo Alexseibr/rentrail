@@ -35,7 +35,10 @@ interface Vehicle {
   batteryPercent: number | null;
 }
 
-const ASSET_TYPE_ICONS: Record<string, string> = {
+const ASSET_TYPE_ICONS: Record<
+  string,
+  React.ComponentProps<typeof Feather>["name"]
+> = {
   bike: "activity",
   ebike: "zap",
   scooter: "wind",
@@ -185,8 +188,7 @@ export default function VehiclesScreen() {
           <View
             style={[styles.typeBadge, { backgroundColor: typeColor + "20" }]}
           >
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <Feather name={typeIcon as any} size={15} color={typeColor} />
+            <Feather name={typeIcon} size={15} color={typeColor} />
             <Text style={[styles.typeText, { color: typeColor }]}>
               {item.assetType.toUpperCase()}
             </Text>

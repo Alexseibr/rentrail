@@ -1579,12 +1579,18 @@ export default function ServicePage() {
                     <SelectValue placeholder={t("rentals.selectAsset")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {allAssets.map((a: any) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.internalCode} — {a.brand} {a.model}
-                      </SelectItem>
-                    ))}
+                    {allAssets.map(
+                      (a: {
+                        id: string;
+                        internalCode?: string;
+                        brand?: string;
+                        model?: string;
+                      }) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.internalCode} — {a.brand} {a.model}
+                        </SelectItem>
+                      ),
+                    )}
                   </SelectContent>
                 </Select>
               </div>

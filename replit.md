@@ -38,6 +38,8 @@ A platform admin web UI, built with React + Vite + shadcn/UI, provides SaaS owne
 
 A CI script (`pnpm run check-map-cleanup`) enforces both conventions automatically, scanning `artifacts/staff-app/app/` (WebView contract) and `artifacts/platform-admin/src/` (Leaflet contract).
 
+**Pre-commit Hook:** A husky pre-commit hook runs `lint-staged` before every commit. It automatically runs `eslint --fix` and `prettier --write` on staged `.ts`/`.tsx` files, and `prettier --write` on all other staged source files (`.js`, `.mjs`, `.cjs`, `.jsx`, `.json`, `.css`, `.md`, `.yaml`, `.yml`). This prevents lint errors and formatting issues from reaching the repository. The hook is configured in `package.json` under the `"lint-staged"` key, and the hook script lives in `.husky/pre-commit`. If you bypass the hook intentionally use `git commit --no-verify`.
+
 ### Technical Implementations
 
 - **Multi-Tenancy:** Enforced via `x-company-id` header and `companyId` filtering on all database queries.

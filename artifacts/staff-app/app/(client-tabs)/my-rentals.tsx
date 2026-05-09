@@ -43,7 +43,10 @@ const STATUS_COLORS: Record<
   canceled: { bg: "#FAFAFA", text: "#757575", accent: "#9E9E9E" },
 };
 
-const ASSET_TYPE_ICONS: Record<string, string> = {
+const ASSET_TYPE_ICONS: Record<
+  string,
+  React.ComponentProps<typeof Feather>["name"]
+> = {
   bike: "activity",
   ebike: "zap",
   scooter: "wind",
@@ -257,8 +260,7 @@ export default function MyRentalsScreen() {
               <View
                 style={[styles.vehicleIcon, { backgroundColor: "#F5C51815" }]}
               >
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <Feather name={typeIcon as any} size={18} color="#F5C518" />
+                <Feather name={typeIcon} size={18} color="#F5C518" />
               </View>
             )}
             <View style={styles.vehicleInfo}>

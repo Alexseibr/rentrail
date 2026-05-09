@@ -424,8 +424,7 @@ export default function RentalsCompanyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {items.map((rental: any) => {
+                {items.map((rental: Rental) => {
                   const isOverdue = rental.status === "overdue";
                   const isActive = rental.status === "active";
                   return (

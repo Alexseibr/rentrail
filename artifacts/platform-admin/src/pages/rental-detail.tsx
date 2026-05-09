@@ -69,13 +69,13 @@ export default function RentalDetailPage() {
     : {};
 
   const rentalQuery = useQuery({
-    queryKey: ["rental", params.id],
+    queryKey: ["rental", params.id, companyId],
     queryFn: () => api(`/rentals/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
   const historyQuery = useQuery({
-    queryKey: ["rental-history", params.id],
+    queryKey: ["rental-history", params.id, companyId],
     queryFn: () =>
       api(`/rentals/${params.id}/status-history`, {
         headers: companyHeaders,
@@ -242,8 +242,7 @@ export default function RentalDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {history.map((entry: any, i: number) => (
+                  {history.map((entry: StatusHistoryEntry, i: number) => (
                     <TableRow key={entry.id || i}>
                       <TableCell className="text-sm">
                         {entry.createdAt

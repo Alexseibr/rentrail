@@ -49,7 +49,7 @@ export default function SettingsCompanyPage() {
     address: "",
   });
 
-  const companyQuery = useQuery({
+  const companyQuery = useQuery<Company>({
     queryKey: ["company-detail", companyId],
     queryFn: () => api(`/companies/${companyId}`, { headers: companyHeaders }),
     enabled: !!companyId,

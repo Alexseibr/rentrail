@@ -150,20 +150,18 @@ export default function FleetPage() {
     ? { "x-company-id": companyId }
     : {};
 
-  const [showCreate, setShowCreate] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editAsset, setEditAsset] = useState<any>(null);
+  const [editAsset, setEditAsset] = useState<Asset | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [statusChange, setStatusChange] = useState<{
     id: string;
     current: string;
   } | null>(null);
-  const [newStatus, setNewStatus] = useState("");
-  const [statusReason, setStatusReason] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
+  const [archiveConfirm, setArchiveConfirm] = useState<Asset | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
+  const [statusReason, setStatusReason] = useState("");
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
@@ -175,16 +173,15 @@ export default function FleetPage() {
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId, statusFilter],
     queryFn: () => {
-      const p = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api(`/assets${p}`, { headers: companyHeaders });
+      const qs = statusFilter !== "all" ? `?status=${statusFilter}` : "";
+      return api(`/assets${qs}`, { headers: companyHeaders });
     },
     enabled: !!companyId,
   });
-  const allItems = assetsQuery.data ?? [];
+  const allItems: Asset[] = (assetsQuery.data as Asset[]) ?? [];
   const items = search
     ? allItems.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (a: any) =>
+        (a: Asset) =>
           (a.internalCode?.toLowerCase() || "").includes(
             search.toLowerCase(),
           ) ||
@@ -299,8 +296,7 @@ export default function FleetPage() {
     setShowCreate(true);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function openEdit(asset: any) {
+  function openEdit(asset: Asset) {
     setShowCreate(false);
     setEditAsset(asset);
     setForm({
@@ -338,7 +334,7 @@ export default function FleetPage() {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   const countByStatus = (s: string) =>
-    allItems.filter((a: any) => a.status === s).length; // eslint-disable-line @typescript-eslint/no-explicit-any
+    allItems.filter((a: Asset) => a.status === s).length;
 
   const KPI_FLEET = [
     { key: "available", accent: "bg-green-500", textAccent: "text-green-500" },
@@ -370,8 +366,8 @@ export default function FleetPage() {
         )}
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {KPI_FLEET.map(({ key, accent, textAccent: _textAccent }) => {
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {KPI_FLEET.map(({ key, accent }) => {
           const count = countByStatus(key);
           const isActive = statusFilter === key;
           return (
@@ -481,9 +477,9 @@ export default function FleetPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {items.map((asset: any) => {
-                  const TypeIcon = ASSET_TYPE_ICONS[asset.assetType] || Bike;
+                {items.map((asset: Asset) => {
+                  const TypeIcon =
+                    ASSET_TYPE_ICONS[asset.assetType ?? ""] || Bike;
                   const typeColor =
                     ASSET_TYPE_COLORS[asset.assetType ?? ""] ||
                     ASSET_TYPE_COLORS.bike;
