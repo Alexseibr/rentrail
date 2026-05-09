@@ -12,7 +12,7 @@ import {
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, branches } from "@workspace/db";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 describe("GET /api/work-orders — status filter", () => {
   let admin: TestUser;

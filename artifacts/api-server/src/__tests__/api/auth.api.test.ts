@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 describe("Auth API", () => {
   beforeAll(async () => {});

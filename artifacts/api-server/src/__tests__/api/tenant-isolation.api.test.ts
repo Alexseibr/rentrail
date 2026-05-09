@@ -13,7 +13,7 @@ import {
   type TestTenant,
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
-import { resBody } from "../helpers/response-body";
+import { resBody } from "../helpers";
 
 describe("Multi-Tenant Isolation", () => {
   let userA: TestUser;

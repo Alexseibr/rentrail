@@ -13,7 +13,7 @@ import {
   blacklistEntries,
 } from "@workspace/db";
 import { checkClientBlacklist } from "../../services/blacklist.service";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 let platformAdmin: { token: string; id: string };
 let platformRisk: { token: string; id: string };

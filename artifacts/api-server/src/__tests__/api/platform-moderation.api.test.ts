@@ -8,7 +8,7 @@ import {
 } from "../../test/helpers";
 import { db, companies, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 type CompanyStatus = typeof companies.$inferSelect.status;
 

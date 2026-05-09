@@ -11,7 +11,7 @@ import {
   type TestTenant,
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
-import { resBody } from "../helpers/response-body";
+import { resBody } from "../helpers";
 
 describe("GET /api/maintenance-logs — logType filter validation", () => {
   let admin: TestUser;

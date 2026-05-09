@@ -15,7 +15,7 @@ import {
   type TestTenant,
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 describe("Rental Workflow API", () => {
   let admin: TestUser;

@@ -4,7 +4,7 @@ import app from "../../app";
 import { createTestUser } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, platformAuditLogs } from "@workspace/db";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 const testApp = app;
 

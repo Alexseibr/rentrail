@@ -9,7 +9,7 @@ import {
 } from "../../test/helpers";
 import { db } from "@workspace/db";
 import { rentals } from "@workspace/db/schema";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 interface TenantContext {
   company: { id: string };

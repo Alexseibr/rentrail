@@ -4,7 +4,7 @@ import { testApp } from "../../test/app";
 import { createTestUser, createTestTenant } from "../../test/helpers";
 import { db, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { resBody, type ApiResponse } from "../helpers/response-body";
+import { resBody, type ApiResponse } from "../helpers";
 
 let platformAdmin: { token: string; id: string };
 let platformFinance: { token: string; id: string };
