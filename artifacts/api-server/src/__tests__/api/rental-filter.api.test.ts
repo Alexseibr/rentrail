@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
-import { testApp } from "../../test/app";
+import { testApp } from "../helpers";
 import {
   createTestUser,
   createTestTenant,

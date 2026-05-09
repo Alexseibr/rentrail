@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
-import { testApp } from "../../test/app";
+import { testApp } from "../helpers";
 import {
   createTestUser,
   createTestTenant,

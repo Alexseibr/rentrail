@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { testApp } from "../../test/app";
+import { testApp } from "../helpers";
 import { resBody, type ApiResponse } from "../helpers";
 
 describe("Auth API", () => {
