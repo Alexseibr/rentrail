@@ -134,14 +134,17 @@ export default function RentalsCompanyPage() {
 
   const clientsQuery = useQuery({
     queryKey: ["clients", companyId],
-    queryFn: () => api("/clients", { headers: companyHeaders }),
+    queryFn: () => api<RentalClient[]>("/clients", { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const clients = clientsQuery.data ?? [];
 
   const assetsQuery = useQuery({
     queryKey: ["assets-available", companyId],
-    queryFn: () => api("/assets?status=available", { headers: companyHeaders }),
+    queryFn: () =>
+      api<RentalAsset[]>("/assets?status=available", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && showCreate,
   });
   const availableAssets = assetsQuery.data ?? [];
@@ -150,15 +153,14 @@ export default function RentalsCompanyPage() {
     queryKey: ["rentals", companyId, statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api(`/rentals${params}`, { headers: companyHeaders });
+      return api<Rental[]>(`/rentals${params}`, { headers: companyHeaders });
     },
     enabled: !!companyId,
   });
   const allItems = rentalsQuery.data ?? [];
   const items = search
     ? allItems.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (r: any) =>
+        (r: Rental) =>
           (r.clientName?.toLowerCase() || "").includes(search.toLowerCase()) ||
           (r.assetCode?.toLowerCase() || "").includes(search.toLowerCase()),
       )
@@ -246,10 +248,9 @@ export default function RentalsCompanyPage() {
   }
 
   const countByStatus = (s: string) =>
-    allItems.filter((r: any) => r.status === s).length; // eslint-disable-line @typescript-eslint/no-explicit-any
+    allItems.filter((r: Rental) => r.status === s).length;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getAvailableActions = (rental: any) => {
+  const getAvailableActions = (rental: Rental) => {
     const actions: {
       key: string;
       label: string;
@@ -566,16 +567,12 @@ export default function RentalsCompanyPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {clients
-                    .filter((c: any) => c.status === "active") // eslint-disable-line @typescript-eslint/no-explicit-any
-                    .map(
-                      (
-                        c: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-                      ) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.fullName} ({c.phone || c.email})
-                        </SelectItem>
-                      ),
-                    )}
+                    .filter((c: RentalClient) => c.status === "active")
+                    .map((c: RentalClient) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.fullName} ({c.phone || c.email})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -591,15 +588,11 @@ export default function RentalsCompanyPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAssets.map(
-                    (
-                      a: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-                    ) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.internalCode} — {a.brand} {a.model}
-                      </SelectItem>
-                    ),
-                  )}
+                  {availableAssets.map((a: RentalAsset) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.internalCode} — {a.brand} {a.model}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

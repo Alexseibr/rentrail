@@ -182,7 +182,11 @@ function InfoRow({
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoLeft}>
-        <Feather name={icon} size={18} color="#8c8c8c" />
+        <Feather
+          name={icon as React.ComponentProps<typeof Feather>["name"]}
+          size={18}
+          color="#8c8c8c"
+        />
         <Text style={styles.infoLabel}>{label}</Text>
       </View>
       <Text style={styles.infoValue}>{value}</Text>

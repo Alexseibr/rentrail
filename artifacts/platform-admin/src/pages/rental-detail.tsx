@@ -17,7 +17,7 @@ import {
 import { User, Bike, Calendar, Clock, FileText } from "lucide-react";
 import { PageBreadcrumb } from "@/components/page-breadcrumb";
 
-interface _RentalDetail {
+interface RentalDetail {
   id: string;
   clientId?: string;
   clientName?: string;
@@ -37,7 +37,7 @@ interface _RentalDetail {
   createdAt?: string;
 }
 
-interface _StatusHistoryEntry {
+interface StatusHistoryEntry {
   id: string;
   oldStatus?: string;
   toStatus?: string;
@@ -69,15 +69,16 @@ export default function RentalDetailPage() {
     : {};
 
   const rentalQuery = useQuery({
-    queryKey: ["rental", params.id, companyId],
-    queryFn: () => api(`/rentals/${params.id}`, { headers: companyHeaders }),
+    queryKey: ["rental", params.id],
+    queryFn: () =>
+      api<RentalDetail>(`/rentals/${params.id}`, { headers: companyHeaders }),
     enabled: !!companyId && !!params.id,
   });
 
   const historyQuery = useQuery({
     queryKey: ["rental-history", params.id, companyId],
     queryFn: () =>
-      api(`/rentals/${params.id}/status-history`, {
+      api<StatusHistoryEntry[]>(`/rentals/${params.id}/status-history`, {
         headers: companyHeaders,
       }),
     enabled: !!companyId && !!params.id,

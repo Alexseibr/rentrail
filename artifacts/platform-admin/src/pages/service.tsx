@@ -269,7 +269,7 @@ export default function ServicePage() {
     queryKey: ["service-requests", companyId, statusFilter],
     queryFn: () => {
       const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api(`/service-requests${params}`, {
+      return api<ServiceRequest[]>(`/service-requests${params}`, {
         headers: companyHeaders,
       });
     },
@@ -278,57 +278,69 @@ export default function ServicePage() {
 
   const workOrdersQuery = useQuery({
     queryKey: ["work-orders", companyId],
-    queryFn: () => api("/work-orders", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceWorkOrder[]>("/work-orders", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () => api("/branches", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceBranch[]>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const assetsQuery = useQuery({
     queryKey: ["assets-all", companyId],
-    queryFn: () => api("/assets", { headers: companyHeaders }),
+    queryFn: () => api<ServiceAsset[]>("/assets", { headers: companyHeaders }),
     enabled: !!companyId && (showCreate || showCreateWO),
   });
 
   const mechanicsQuery = useQuery({
     queryKey: ["mechanics", companyId],
-    queryFn: () => api("/mechanics", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceMechanic[]>("/mechanics", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const sparePartsQuery = useQuery({
     queryKey: ["spare-parts", companyId],
-    queryFn: () => api("/spare-parts", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceSparePart[]>("/spare-parts", { headers: companyHeaders }),
     enabled: !!companyId && tab === "spareParts",
   });
 
   const maintenanceLogsQuery = useQuery({
     queryKey: ["maintenance-logs", companyId],
     queryFn: () =>
-      api("/maintenance-logs?limit=100", { headers: companyHeaders }),
+      api<ServiceMaintenanceLog[]>("/maintenance-logs?limit=100", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && tab === "logs",
   });
 
   const schedulesQuery = useQuery({
     queryKey: ["maintenance-schedules", companyId],
-    queryFn: () => api("/maintenance-schedules", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceSchedule[]>("/maintenance-schedules", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId && tab === "schedules",
   });
 
   const overdueQuery = useQuery({
     queryKey: ["maintenance-schedules-overdue", companyId],
     queryFn: () =>
-      api("/maintenance-schedules/overdue", { headers: companyHeaders }),
+      api<ServiceSchedule[]>("/maintenance-schedules/overdue", {
+        headers: companyHeaders,
+      }),
     enabled: !!companyId,
   });
 
   const serviceStatsQuery = useQuery({
     queryKey: ["service-stats", companyId],
-    queryFn: () => api("/service-stats", { headers: companyHeaders }),
+    queryFn: () =>
+      api<ServiceStats>("/service-stats", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 

@@ -75,6 +75,14 @@ interface _DashboardRental {
   actualEndAt?: string;
 }
 
+interface DashboardClient {
+  id: string;
+}
+
+interface DashboardBranch {
+  id: string;
+}
+
 const PIE_COLORS: Record<string, string> = {
   available: "#22c55e",
   rented: "#3b82f6",
@@ -151,25 +159,29 @@ export default function CompanyDashboardPage() {
 
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId],
-    queryFn: () => api("/assets", { headers: companyHeaders }),
+    queryFn: () =>
+      api<DashboardAsset[]>("/assets", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const rentalsQuery = useQuery({
     queryKey: ["rentals", companyId],
-    queryFn: () => api("/rentals", { headers: companyHeaders }),
+    queryFn: () =>
+      api<DashboardRental[]>("/rentals", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const clientsQuery = useQuery({
     queryKey: ["clients", companyId],
-    queryFn: () => api("/clients", { headers: companyHeaders }),
+    queryFn: () =>
+      api<DashboardClient[]>("/clients", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () => api("/branches", { headers: companyHeaders }),
+    queryFn: () =>
+      api<DashboardBranch[]>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
 
@@ -185,10 +197,11 @@ export default function CompanyDashboardPage() {
     branchesQuery.isLoading;
 
   const activeRentals = rentals.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (r: any) => r.status === "active" || r.status === "overdue",
+    (r: DashboardRental) => r.status === "active" || r.status === "overdue",
   );
-  const overdueRentals = rentals.filter((r: any) => r.status === "overdue"); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const overdueRentals = rentals.filter(
+    (r: DashboardRental) => r.status === "overdue",
+  );
   const recentRentals = [...rentals]
     .sort(
       (a, b) =>
@@ -198,8 +211,7 @@ export default function CompanyDashboardPage() {
     .slice(0, 6);
 
   const assetStatusCounts: Record<string, number> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  assets.forEach((a: any) => {
+  assets.forEach((a: DashboardAsset) => {
     assetStatusCounts[a.status] = (assetStatusCounts[a.status] || 0) + 1;
   });
 
@@ -213,7 +225,7 @@ export default function CompanyDashboardPage() {
       value: count,
       color: PIE_COLORS[status] || "#9ca3af",
     }))
-    .sort((a: any, b: any) => b.value - a.value); // eslint-disable-line @typescript-eslint/no-explicit-any
+    .sort((a, b) => b.value - a.value);
 
   const utilizationRate =
     assets.length > 0 ? Math.round((rentedCount / assets.length) * 100) : 0;

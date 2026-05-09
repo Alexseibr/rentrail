@@ -100,13 +100,16 @@ const STATUS_FLOW: Record<string, string | null> = {
   canceled: null,
 };
 
-async function fetchWorkOrder(companyId: string, id: string) {
+async function fetchWorkOrder(
+  companyId: string,
+  id: string,
+): Promise<WorkOrder> {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/work-orders/${id}`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) throw new Error("Not found");
-  return (await res.json()).data;
+  return (await res.json()).data as WorkOrder;
 }
 
 async function updateStatus(
@@ -154,8 +157,7 @@ export default function WorkOrderDetailScreen() {
   const { queueItems } = useSync();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(
@@ -203,7 +205,7 @@ export default function WorkOrderDetailScreen() {
       endpoint: `/api/work-orders/${order.id}/status`,
       method: "POST",
     });
-    setOrder((prev: any) => (prev ? { ...prev, status: newStatus } : prev)); // eslint-disable-line @typescript-eslint/no-explicit-any
+    setOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showSnackbar(t("workOrder.statusQueued"), "success");
   };
@@ -559,27 +561,23 @@ export default function WorkOrderDetailScreen() {
             >
               {t("serviceModule.partsUsed")}
             </Text>
-            {order.parts.map(
-              (
-                p: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-              ) => (
-                <View key={p.id} style={styles.partRow}>
-                  <Feather
-                    name="package"
-                    size={14}
-                    color={colors.mutedForeground}
-                  />
-                  <Text style={[styles.partName, { color: colors.foreground }]}>
-                    {p.partName}
-                  </Text>
-                  <Text
-                    style={[styles.partQty, { color: colors.mutedForeground }]}
-                  >
-                    {parseFloat(p.qtyUsed ?? "0")} {p.partUnit}
-                  </Text>
-                </View>
-              ),
-            )}
+            {order.parts.map((p) => (
+              <View key={p.id} style={styles.partRow}>
+                <Feather
+                  name="package"
+                  size={14}
+                  color={colors.mutedForeground}
+                />
+                <Text style={[styles.partName, { color: colors.foreground }]}>
+                  {p.partName}
+                </Text>
+                <Text
+                  style={[styles.partQty, { color: colors.mutedForeground }]}
+                >
+                  {parseFloat(p.qtyUsed ?? "0")} {p.partUnit}
+                </Text>
+              </View>
+            ))}
           </View>
         ) : null}
 
@@ -649,8 +647,7 @@ function Row({
 }: {
   label: string;
   value: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  colors: any;
+  colors: ReturnType<typeof useColors>;
 }) {
   return (
     <View style={styles.row}>

@@ -56,8 +56,7 @@ export class ApiError extends Error {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function api<T = any>(
+export async function api<T = unknown>(
   path: string,
   options: Omit<RequestInit, "headers"> & {
     headers?: Record<string, string>;

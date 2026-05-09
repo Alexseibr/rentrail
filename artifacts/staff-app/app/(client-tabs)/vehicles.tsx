@@ -188,7 +188,11 @@ export default function VehiclesScreen() {
           <View
             style={[styles.typeBadge, { backgroundColor: typeColor + "20" }]}
           >
-            <Feather name={typeIcon} size={15} color={typeColor} />
+            <Feather
+              name={typeIcon as React.ComponentProps<typeof Feather>["name"]}
+              size={15}
+              color={typeColor}
+            />
             <Text style={[styles.typeText, { color: typeColor }]}>
               {item.assetType.toUpperCase()}
             </Text>

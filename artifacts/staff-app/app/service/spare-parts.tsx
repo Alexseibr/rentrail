@@ -47,7 +47,7 @@ async function fetchParts(companyId: string, lowStock?: boolean) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   const json = await res.json();
-  return json.data as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return json.data as SparePart[];
 }
 
 async function createTransaction(companyId: string, data: object) {
@@ -79,8 +79,7 @@ export default function SparePartsScreen() {
   const [search, setSearch] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [txModal, setTxModal] = useState<{
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    part: any;
+    part: SparePart;
     type: "in" | "out" | "adjustment";
   } | null>(null);
   const [qty, setQty] = useState("1");
@@ -106,8 +105,7 @@ export default function SparePartsScreen() {
   const baseQueryKey = ["spareParts", companyId];
 
   const applyOptimisticUpdate = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parts: any[] | undefined,
+    parts: SparePart[] | undefined,
     payload: { partId: string; transactionType: string; qty: number },
   ) => {
     if (!parts) return parts;
@@ -206,12 +204,10 @@ export default function SparePartsScreen() {
     }
   };
 
-  const isLow = (
-    p: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-  ) => parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert);
+  const isLow = (p: SparePart) =>
+    parseFloat(p.qtyInStock) <= parseFloat(p.minQtyAlert);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderItem = ({ item }: { item: any }) => (
+  const renderItem = ({ item }: { item: SparePart }) => (
     <View style={[styles.card, { backgroundColor: colors.card }]}>
       <View style={styles.cardTop}>
         <View style={{ flex: 1 }}>

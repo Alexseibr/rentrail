@@ -26,7 +26,7 @@ import { CachedCoordinates } from "@/hooks/useCachedCoordinates";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-interface _WorkOrder {
+interface WorkOrder {
   id: string;
   title?: string;
   status: string;
@@ -86,7 +86,7 @@ async function fetchWorkOrders(companyId: string, status?: string) {
   });
   if (!res.ok) throw new Error("Failed to fetch work orders");
   const json = await res.json();
-  return json.data as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  return json.data as WorkOrder[];
 }
 
 export default function WorkOrdersScreen() {
@@ -170,8 +170,7 @@ export default function WorkOrdersScreen() {
     "waiting_parts",
   ];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = ({ item }: { item: WorkOrder }) => {
     const isActive = ACTIVE_STATUSES.includes(item.status);
     const isUrgent = item.priority === "urgent";
     const accentColor = STATUS_COLORS[item.status] ?? "#94a3b8";
@@ -186,7 +185,11 @@ export default function WorkOrdersScreen() {
         ]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push(`/service/work-order/${item.id}` as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+          router.push(
+            `/service/work-order/${item.id}` as Parameters<
+              typeof router.push
+            >[0],
+          );
         }}
         activeOpacity={0.7}
       >

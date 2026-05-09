@@ -29,7 +29,7 @@ import { MiniMapPreview } from "@/components/MiniMapPreview";
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 const YELLOW = "#F5C518";
 
-interface _WorkOrder {
+interface WorkOrder {
   id: string;
   status: string;
   priority?: string;
@@ -77,13 +77,16 @@ const STATUS_FLOW: Record<string, string | null> = {
   canceled: null,
 };
 
-async function fetchWorkOrder(companyId: string, id: string) {
+async function fetchWorkOrder(
+  companyId: string,
+  id: string,
+): Promise<WorkOrder> {
   const token = await getAccessToken();
   const res = await fetch(`${BASE_URL}/api/work-orders/${id}`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) throw new Error("Not found");
-  return (await res.json()).data;
+  return (await res.json()).data as WorkOrder;
 }
 
 async function updateStatus(
@@ -116,8 +119,7 @@ export default function MaintenanceTaskDetailScreen() {
   const { isConnected } = useNetwork();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<WorkOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [cachedCoords, setCachedCoords] = useState<CachedCoordinates | null>(
@@ -165,7 +167,7 @@ export default function MaintenanceTaskDetailScreen() {
       endpoint: `/api/work-orders/${order.id}/status`,
       method: "POST",
     });
-    setOrder((prev: any) => (prev ? { ...prev, status: newStatus } : prev)); // eslint-disable-line @typescript-eslint/no-explicit-any
+    setOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     showSnackbar(t("maintenance.statusQueued"), "success");
   };
@@ -543,8 +545,7 @@ function Row({
 }: {
   label: string;
   value: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  colors: any;
+  colors: ReturnType<typeof useColors>;
 }) {
   return (
     <View style={styles.row}>

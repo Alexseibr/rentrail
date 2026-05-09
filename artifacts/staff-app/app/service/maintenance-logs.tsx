@@ -101,9 +101,8 @@ export default function MaintenanceLogsScreen() {
       )
     : logs;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderItem = ({ item }: { item: any }) => {
-    const iconName = (LOG_TYPE_ICONS[item.logType] ??
+  const renderItem = ({ item }: { item: MaintenanceLog }) => {
+    const iconName = (LOG_TYPE_ICONS[item.logType ?? ""] ??
       "tool") as React.ComponentProps<typeof Feather>["name"];
     return (
       <View style={[styles.card, { backgroundColor: colors.card }]}>

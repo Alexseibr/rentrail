@@ -70,12 +70,12 @@ const STATUS_COLORS: Record<string, string> = {
   retired: "bg-gray-200 text-gray-600",
 };
 
-interface _Branch {
+interface Branch {
   id: string;
   name?: string;
 }
 
-interface _Asset {
+interface Asset {
   id: string;
   internalCode?: string;
   brand?: string;
@@ -165,16 +165,16 @@ export default function FleetPage() {
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
-    queryFn: () => api("/branches", { headers: companyHeaders }),
+    queryFn: () => api<Branch[]>("/branches", { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const branches = branchesQuery.data ?? [];
 
   const assetsQuery = useQuery({
     queryKey: ["assets", companyId, statusFilter],
-    queryFn: () => {
-      const qs = statusFilter !== "all" ? `?status=${statusFilter}` : "";
-      return api(`/assets${qs}`, { headers: companyHeaders });
+    queryFn: async () => {
+      const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
+      return api<Asset[]>(`/assets${params}`, { headers: companyHeaders });
     },
     enabled: !!companyId,
   });
@@ -366,7 +366,7 @@ export default function FleetPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {KPI_FLEET.map(({ key, accent }) => {
           const count = countByStatus(key);
           const isActive = statusFilter === key;

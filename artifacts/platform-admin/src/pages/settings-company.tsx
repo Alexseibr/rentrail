@@ -17,7 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Pencil, Building2, User } from "lucide-react";
-interface _Company {
+interface Company {
   id: string;
   name?: string;
   contactEmail?: string;
@@ -51,7 +51,8 @@ export default function SettingsCompanyPage() {
 
   const companyQuery = useQuery<Company>({
     queryKey: ["company-detail", companyId],
-    queryFn: () => api(`/companies/${companyId}`, { headers: companyHeaders }),
+    queryFn: () =>
+      api<Company>(`/companies/${companyId}`, { headers: companyHeaders }),
     enabled: !!companyId,
   });
   const company = companyQuery.data;
