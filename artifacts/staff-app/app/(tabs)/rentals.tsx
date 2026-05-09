@@ -40,8 +40,8 @@ async function fetchRentals(): Promise<Rental[]> {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return [];
-  const { data } = await res.json();
-  return data;
+  const body = (await res.json()) as { data: Rental[] };
+  return body.data;
 }
 
 function formatRelativeTime(

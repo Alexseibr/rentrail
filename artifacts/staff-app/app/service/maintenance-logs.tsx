@@ -56,8 +56,8 @@ async function fetchLogs(companyId: string, assetId?: string, limit = 50) {
   const res = await fetch(`${BASE_URL}/api/maintenance-logs?${params}`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
-  const json = await res.json();
-  return json.data as MaintenanceLog[];
+  const json = (await res.json()) as { data: MaintenanceLog[] };
+  return json.data;
 }
 
 export default function MaintenanceLogsScreen() {

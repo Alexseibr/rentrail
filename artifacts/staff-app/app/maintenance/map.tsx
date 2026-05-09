@@ -63,8 +63,10 @@ async function fetchAllAssetIds(companyId: string): Promise<
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return [];
-  const { data } = await res.json();
-  return Array.isArray(data) ? data : [];
+  const body = (await res.json()) as { data: unknown };
+  return Array.isArray(body.data)
+    ? (body.data as Awaited<ReturnType<typeof fetchAllAssetIds>>)
+    : [];
 }
 
 function haversineDistance(
@@ -577,7 +579,10 @@ export default function MaintenanceMapModal() {
   const handleWebViewMessage = useCallback(
     (event: { nativeEvent: { data: string } }) => {
       try {
-        const msg = JSON.parse(event.nativeEvent.data);
+        const msg = JSON.parse(event.nativeEvent.data) as Record<
+          string,
+          unknown
+        >;
         handleMapMessage(msg);
       } catch {}
     },
@@ -590,8 +595,11 @@ export default function MaintenanceMapModal() {
       if (iframeRef.current && event.source !== iframeRef.current.contentWindow)
         return;
       try {
-        const msg =
-          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        const rawData = (event as MessageEvent<unknown>).data;
+        const msg: Record<string, unknown> =
+          typeof rawData === "string"
+            ? (JSON.parse(rawData) as Record<string, unknown>)
+            : (rawData as Record<string, unknown>);
         handleMapMessage(msg);
       } catch {}
     };

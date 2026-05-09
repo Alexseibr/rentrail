@@ -82,7 +82,7 @@ export default function VehiclesScreen() {
           "x-company-id": companyId || "",
         },
       });
-      const json = await res.json();
+      const json = (await res.json()) as { data?: Vehicle[] };
       if (json.data) setVehicles(json.data);
     } catch {
     } finally {
@@ -153,7 +153,7 @@ export default function VehiclesScreen() {
         },
         body: JSON.stringify({ assetId: vehicleId }),
       });
-      const json = await res.json();
+      const json = (await res.json()) as { error?: { message?: string } };
       if (res.ok) {
         Alert.alert(
           t("clientVehicles.success"),
@@ -161,7 +161,7 @@ export default function VehiclesScreen() {
         );
         fetchVehicles();
       } else {
-        Alert.alert(t("common.error"), json.error?.message || "Failed");
+        Alert.alert(t("common.error"), json.error?.message ?? "Failed");
       }
     } catch {
       Alert.alert(t("common.error"), t("clientVehicles.rentFailed"));

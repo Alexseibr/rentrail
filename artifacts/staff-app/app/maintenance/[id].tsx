@@ -86,7 +86,8 @@ async function fetchWorkOrder(
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) throw new Error("Not found");
-  return (await res.json()).data as WorkOrder;
+  const body = (await res.json()) as { data: WorkOrder };
+  return body.data;
 }
 
 async function updateStatus(
@@ -106,7 +107,8 @@ async function updateStatus(
     body: JSON.stringify({ status, ...extra }),
   });
   if (!res.ok) throw new Error("Failed to update status");
-  return (await res.json()).data;
+  const body = (await res.json()) as { data: WorkOrder };
+  return body.data;
 }
 
 export default function MaintenanceTaskDetailScreen() {

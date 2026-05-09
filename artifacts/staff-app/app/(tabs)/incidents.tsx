@@ -84,7 +84,7 @@ async function fetchServiceRequests(
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) throw new Error("Failed to fetch incidents");
-  const json = await res.json();
+  const json = (await res.json()) as { data: ServiceRequest[] };
   return json.data;
 }
 

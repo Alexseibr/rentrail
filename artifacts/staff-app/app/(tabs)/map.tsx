@@ -41,8 +41,8 @@ async function fetchFleetMap(): Promise<FleetMapItem[]> {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return [];
-  const { data } = await res.json();
-  return Array.isArray(data) ? data : [];
+  const body = (await res.json()) as { data: FleetMapItem[] };
+  return Array.isArray(body.data) ? body.data : [];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -94,10 +94,11 @@ export default function MapScreen() {
     }
 
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      const qk = (event.query as { queryKey: readonly unknown[] }).queryKey;
       if (
         event.type === "updated" &&
-        Array.isArray(event.query.queryKey) &&
-        event.query.queryKey[0] === "fleet-fast-poll-until"
+        Array.isArray(qk) &&
+        qk[0] === "fleet-fast-poll-until"
       ) {
         const until = queryClient.getQueryData<number>([
           "fleet-fast-poll-until",

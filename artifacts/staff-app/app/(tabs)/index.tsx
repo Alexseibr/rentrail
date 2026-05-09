@@ -39,17 +39,21 @@ async function fetchDashboard() {
     fetch(`${BASE_URL}/api/notifications`, { headers }),
   ]);
 
-  const assets =
+  const assets: { status: string }[] =
     assetsRes.status === "fulfilled" && assetsRes.value.ok
-      ? (await assetsRes.value.json()).data
+      ? ((await assetsRes.value.json()) as { data: { status: string }[] }).data
       : [];
-  const rentals =
+  const rentals: { status: string }[] =
     rentalsRes.status === "fulfilled" && rentalsRes.value.ok
-      ? (await rentalsRes.value.json()).data
+      ? ((await rentalsRes.value.json()) as { data: { status: string }[] }).data
       : [];
-  const notifications =
+  const notifications: { readAt: string | null }[] =
     notifRes.status === "fulfilled" && notifRes.value.ok
-      ? (await notifRes.value.json()).data
+      ? (
+          (await notifRes.value.json()) as {
+            data: { readAt: string | null }[];
+          }
+        ).data
       : [];
 
   const activeRentals = Array.isArray(rentals)

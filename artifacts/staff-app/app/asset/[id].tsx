@@ -30,7 +30,18 @@ import { MiniMapPreview } from "@/components/MiniMapPreview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-async function fetchAsset(id: string) {
+interface Asset {
+  id: string;
+  status: string;
+  assetType?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  internalCode?: string;
+  qrCode?: string;
+}
+
+async function fetchAsset(id: string): Promise<Asset | null> {
   const token = await getAccessToken();
   const companyId = await getCompanyId();
   if (!token || !companyId) return null;
@@ -39,8 +50,8 @@ async function fetchAsset(id: string) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return null;
-  const { data } = await res.json();
-  return data;
+  const body = (await res.json()) as { data: Asset };
+  return body.data;
 }
 
 interface TelemetrySnapshot {
@@ -64,8 +75,8 @@ async function fetchTelemetry(id: string): Promise<TelemetrySnapshot | null> {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return null;
-  const { data } = await res.json();
-  return data;
+  const body = (await res.json()) as { data: TelemetrySnapshot };
+  return body.data;
 }
 
 async function fetchAssetCommands(id: string) {
@@ -77,17 +88,19 @@ async function fetchAssetCommands(id: string) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return [];
-  const { data } = await res.json();
-  return data as Array<{
-    id: string;
-    commandType: string;
-    status: string;
-    queuedAt: string;
-    sentAt: string | null;
-    acknowledgedAt: string | null;
-    failedAt: string | null;
-    errorMessage: string | null;
-  }>;
+  const body = (await res.json()) as {
+    data: Array<{
+      id: string;
+      commandType: string;
+      status: string;
+      queuedAt: string;
+      sentAt: string | null;
+      acknowledgedAt: string | null;
+      failedAt: string | null;
+      errorMessage: string | null;
+    }>;
+  };
+  return body.data;
 }
 
 type VehicleCommand = "lock" | "unlock" | "arm" | "disarm";
@@ -415,7 +428,9 @@ export default function AssetDetailScreen() {
                 });
               }, 3000);
             } else {
-              const json = await res.json().catch(() => ({}));
+              const json = (await res.json().catch(() => ({}))) as {
+                error?: { message?: string };
+              };
               queryClient.setQueryData<typeof commands>(
                 ["asset-commands", id],
                 (prev = []) => prev.filter((c) => c.id !== optimisticId),

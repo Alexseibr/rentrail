@@ -108,7 +108,7 @@ async function fetchMyWorkOrders(
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) throw new Error("Failed to fetch work orders");
-  const json = await res.json();
+  const json = (await res.json()) as { data: WorkOrder[] };
   return json.data;
 }
 

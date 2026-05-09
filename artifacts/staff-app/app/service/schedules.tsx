@@ -41,8 +41,8 @@ async function fetchSchedules(companyId: string) {
   const res = await fetch(`${BASE_URL}/api/maintenance-schedules`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
-  const json = await res.json();
-  return json.data as Schedule[];
+  const json = (await res.json()) as { data: Schedule[] };
+  return json.data;
 }
 
 async function fetchOverdue(companyId: string) {
@@ -50,8 +50,8 @@ async function fetchOverdue(companyId: string) {
   const res = await fetch(`${BASE_URL}/api/maintenance-schedules/overdue`, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
-  const json = await res.json();
-  return json.data as Schedule[];
+  const json = (await res.json()) as { data: Schedule[] };
+  return json.data;
 }
 
 function daysUntil(dateStr: string | null | undefined): number | null {

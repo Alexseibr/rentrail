@@ -24,7 +24,7 @@ import { MiniMapPreview } from "@/components/MiniMapPreview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
-async function fetchRental(id: string) {
+async function fetchRental(id: string): Promise<Rental | null> {
   const token = await getAccessToken();
   const companyId = await getCompanyId();
   if (!token || !companyId) return null;
@@ -33,8 +33,15 @@ async function fetchRental(id: string) {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return null;
-  const { data } = await res.json();
-  return data;
+  const body = (await res.json()) as { data: Rental };
+  return body.data;
+}
+
+interface Rental {
+  status: string;
+  rentalType: string;
+  createdAt: string;
+  assetId?: string;
 }
 
 interface TelemetrySnapshot {
@@ -60,8 +67,8 @@ async function fetchTelemetry(
     },
   );
   if (!res.ok) return null;
-  const { data } = await res.json();
-  return data;
+  const body = (await res.json()) as { data: TelemetrySnapshot };
+  return body.data;
 }
 
 type VehicleCommand = "lock" | "unlock";
@@ -113,7 +120,9 @@ export default function RentalDetailScreen() {
     queryKey: ["rental-telemetry", assetId],
     queryFn: () => fetchTelemetry(assetId!),
     enabled: !!assetId,
-    refetchInterval: ["active", "overdue", "extended"].includes(rental?.status)
+    refetchInterval: ["active", "overdue", "extended"].includes(
+      rental?.status ?? "",
+    )
       ? 15000
       : false,
   });
@@ -189,7 +198,9 @@ export default function RentalDetailScreen() {
                   }, 3000);
                 }
               } else {
-                const json = await res.json().catch(() => ({}));
+                const json = (await res.json().catch(() => ({}))) as {
+                  error?: { message?: string };
+                };
                 Alert.alert(
                   t("common.error"),
                   json?.error?.message ?? t("rentalDetail.commandFailed"),
@@ -222,8 +233,8 @@ export default function RentalDetailScreen() {
         body: JSON.stringify({ status: "completed", notes: returnNotes }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || t("rentalDetail.failedReturn"));
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(err.error ?? t("rentalDetail.failedReturn"));
       }
     },
     onSuccess: () => {

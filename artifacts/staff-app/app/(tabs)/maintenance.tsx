@@ -70,10 +70,8 @@ async function fetchWorkOrders(companyId: string): Promise<WorkOrder[]> {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) throw new Error("Failed to fetch work orders");
-  const json = await res.json();
-  return (json.data as WorkOrder[]).filter((wo) =>
-    MAINTENANCE_ORDER_TYPES.has(wo.orderType),
-  );
+  const json = (await res.json()) as { data: WorkOrder[] };
+  return json.data.filter((wo) => MAINTENANCE_ORDER_TYPES.has(wo.orderType));
 }
 
 export default function MaintenanceScreen() {

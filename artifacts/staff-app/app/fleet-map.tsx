@@ -347,7 +347,7 @@ export default function FleetMapScreen() {
     }
 
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      const qk = event.query.queryKey as readonly unknown[];
+      const qk = (event.query as { queryKey: readonly unknown[] }).queryKey;
       if (
         event.type === "updated" &&
         Array.isArray(qk) &&
@@ -659,8 +659,9 @@ export default function FleetMapScreen() {
       if (iframeRef.current && event.source !== iframeRef.current.contentWindow)
         return;
       try {
+        const rawData = (event as MessageEvent<unknown>).data;
         const msg = (
-          typeof event.data === "string" ? JSON.parse(event.data) : event.data
+          typeof rawData === "string" ? JSON.parse(rawData) : rawData
         ) as { type?: string; lat?: number; lng?: number; zoom?: number };
         if (
           msg.type === "navigate" &&

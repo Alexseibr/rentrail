@@ -46,8 +46,8 @@ async function fetchParts(companyId: string, lowStock?: boolean) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
-  const json = await res.json();
-  return json.data as SparePart[];
+  const json = (await res.json()) as { data: SparePart[] };
+  return json.data;
 }
 
 async function createTransaction(companyId: string, data: object) {
@@ -62,10 +62,11 @@ async function createTransaction(companyId: string, data: object) {
     body: JSON.stringify(data),
   });
   if (!res.ok) {
-    const j = await res.json();
+    const j = (await res.json()) as { error?: { message?: string } };
     throw new Error(j.error?.message ?? "Failed");
   }
-  return (await res.json()).data;
+  const body = (await res.json()) as { data: SparePart };
+  return body.data;
 }
 
 export default function SparePartsScreen() {

@@ -109,7 +109,8 @@ async function fetchIncident(
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) throw new Error("Not found");
-  return (await res.json()).data as IncidentDetail;
+  const body = (await res.json()) as { data: IncidentDetail };
+  return body.data;
 }
 
 async function fetchAttachments(
@@ -124,8 +125,8 @@ async function fetchAttachments(
     },
   );
   if (!res.ok) return [];
-  const json = await res.json();
-  return (json.data ?? []) as ExistingAttachment[];
+  const json = (await res.json()) as { data?: ExistingAttachment[] };
+  return json.data ?? [];
 }
 
 async function updateStatus(
@@ -144,7 +145,8 @@ async function updateStatus(
     body: JSON.stringify({ status }),
   });
   if (!res.ok) throw new Error("Failed to update status");
-  return (await res.json()).data as IncidentDetail;
+  const statusBody = (await res.json()) as { data: IncidentDetail };
+  return statusBody.data;
 }
 
 async function patchIncident(
@@ -163,7 +165,8 @@ async function patchIncident(
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Failed to save changes");
-  return (await res.json()).data as IncidentDetail;
+  const patchBody = (await res.json()) as { data: IncidentDetail };
+  return patchBody.data;
 }
 
 export default function IncidentDetailScreen() {

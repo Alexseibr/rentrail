@@ -108,8 +108,8 @@ async function fetchAssets(): Promise<Asset[]> {
     headers: { Authorization: `Bearer ${token}`, "x-company-id": companyId },
   });
   if (!res.ok) return [];
-  const { data } = await res.json();
-  return data;
+  const body = (await res.json()) as { data: Asset[] };
+  return body.data;
 }
 
 function formatRelativeTime(
