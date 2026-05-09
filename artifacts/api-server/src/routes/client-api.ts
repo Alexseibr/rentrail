@@ -654,7 +654,9 @@ router.get("/client/rentals/:id", authenticate, async (req, res) => {
           .limit(1)
       : [null];
 
-    let telemetry = null;
+    let telemetry: Awaited<
+      ReturnType<typeof telemetryService.getLatestSnapshotForAsset>
+    > | null = null;
     if (
       rental.assetId &&
       (rental.status === "active" || rental.status === "overdue")

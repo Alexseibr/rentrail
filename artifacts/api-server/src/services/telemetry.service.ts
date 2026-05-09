@@ -161,12 +161,14 @@ async function evaluateGeofences(
         if (geo.type === "no_ride_zone" && assetId) {
           const alreadyLocked = await hasPendingCommand(deviceId, "lock");
           if (!alreadyLocked) {
-            enqueueAssetCommand(companyId, assetId, "lock").catch((err) => {
-              logger.error(
-                { err, assetId },
-                "Failed to enqueue lock command for no_ride_zone",
-              );
-            });
+            enqueueAssetCommand(companyId, assetId, "lock").catch(
+              (err: unknown) => {
+                logger.error(
+                  { err, assetId },
+                  "Failed to enqueue lock command for no_ride_zone",
+                );
+              },
+            );
           }
         }
 
@@ -184,7 +186,7 @@ async function evaluateGeofences(
           );
           if (!alreadySpeedLimited) {
             enqueueAssetCommand(companyId, assetId, "set_speed_limit").catch(
-              (err) => {
+              (err: unknown) => {
                 logger.error(
                   { err, assetId },
                   "Failed to enqueue set_speed_limit command",
@@ -336,7 +338,7 @@ export async function ingestTelemetry(input: IngestInput, ctx: IngestContext) {
       input.lng,
       input.speed,
       recordedAt,
-    ).catch((err) => {
+    ).catch((err: unknown) => {
       logger.error({ err, deviceId: device!.id }, "Geofence evaluation error");
     });
   }
