@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { db, platformRoles, platformUserRoles, users } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { loadUserPlatformRoles } from "../../lib/platform-roles";
-import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
+import { seedRolesAndPermissions } from "../helpers";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 

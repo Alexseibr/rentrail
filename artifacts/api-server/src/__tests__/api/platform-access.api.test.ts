@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import app from "../../app";
-import { createTestUser } from "../../test/helpers";
-import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
+import {
+  createTestUser,
+  createTestTenant,
+  seedRolesAndPermissions,
+  resBody,
+  type ApiResponse,
+} from "../helpers";
 import { db, platformAuditLogs } from "@workspace/db";
-import { resBody, type ApiResponse } from "../helpers";
 
 const testApp = app;
 
@@ -405,7 +409,6 @@ describe("Platform Access Model", () => {
 
   describe("non-superAdmin platform roles do NOT grant tenant bypass", () => {
     it("platformAdmin cannot access tenant assets without company membership", async () => {
-      const { createTestTenant } = await import("../../test/helpers");
       const tenant = await createTestTenant();
 
       const res = await request(testApp)
@@ -417,7 +420,6 @@ describe("Platform Access Model", () => {
     });
 
     it("platformSupport cannot access tenant data without company membership", async () => {
-      const { createTestTenant } = await import("../../test/helpers");
       const tenant = await createTestTenant();
 
       const res = await request(testApp)
@@ -429,7 +431,6 @@ describe("Platform Access Model", () => {
     });
 
     it("platformFinance cannot access tenant data without company membership", async () => {
-      const { createTestTenant } = await import("../../test/helpers");
       const tenant = await createTestTenant();
 
       const res = await request(testApp)
@@ -459,7 +460,6 @@ describe("Platform Access Model", () => {
     });
 
     it("superAdmin platform role can access tenant assets via isSuperAdmin bypass", async () => {
-      const { createTestTenant } = await import("../../test/helpers");
       const tenant = await createTestTenant();
 
       const res = await request(testApp)
@@ -484,7 +484,6 @@ describe("Platform Access Model", () => {
     });
 
     it("isSuperAdmin=true user CAN access tenant assets without membership", async () => {
-      const { createTestTenant } = await import("../../test/helpers");
       const legacyAdmin = await createTestUser({ isSuperAdmin: true });
       const tenant = await createTestTenant();
 

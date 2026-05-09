@@ -7,12 +7,13 @@ import {
   assignRole,
   authHeaders,
   clearRolesCache,
+  seedRolesAndPermissions,
+  resBody,
   type TestUser,
   type TestTenant,
-} from "../../test/helpers";
-import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
+  type ApiResponse,
+} from "../helpers";
 import { db, branches } from "@workspace/db";
-import { resBody, type ApiResponse } from "../helpers";
 
 describe("GET /api/work-orders — status filter", () => {
   let admin: TestUser;

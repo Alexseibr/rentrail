@@ -6,10 +6,11 @@ import {
   createTestUser,
   createTestTenant,
   assignRole,
-} from "../../test/helpers";
+  resBody,
+  type ApiResponse,
+} from "../helpers";
 import { db } from "@workspace/db";
 import { rentals } from "@workspace/db/schema";
-import { resBody, type ApiResponse } from "../helpers";
 
 interface TenantContext {
   company: { id: string };

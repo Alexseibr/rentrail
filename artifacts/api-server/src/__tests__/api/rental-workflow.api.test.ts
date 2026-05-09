@@ -11,11 +11,12 @@ import {
   assignRole,
   authHeaders,
   clearRolesCache,
+  seedRolesAndPermissions,
+  resBody,
   type TestUser,
   type TestTenant,
-} from "../../test/helpers";
-import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
-import { resBody, type ApiResponse } from "../helpers";
+  type ApiResponse,
+} from "../helpers";
 
 describe("Rental Workflow API", () => {
   let admin: TestUser;

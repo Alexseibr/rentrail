@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
-import { createTestUser, createTestTenant } from "../../test/helpers";
+import {
+  createTestUser,
+  createTestTenant,
+  resBody,
+  type ApiResponse,
+} from "../helpers";
 import { db, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { resBody, type ApiResponse } from "../helpers";
 
 let platformAdmin: { token: string; id: string };
 let platformFinance: { token: string; id: string };

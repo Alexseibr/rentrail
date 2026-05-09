@@ -9,11 +9,11 @@ import {
   assignRole,
   authHeaders,
   clearRolesCache,
+  seedRolesAndPermissions,
+  resBody,
   type TestUser,
   type TestTenant,
-} from "../../test/helpers";
-import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
-import { resBody } from "../helpers";
+} from "../helpers";
 
 describe("Multi-Tenant Isolation", () => {
   let userA: TestUser;

@@ -5,7 +5,9 @@ import {
   createTestUser,
   createTestTenant,
   createTestClient,
-} from "../../test/helpers";
+  resBody,
+  type ApiResponse,
+} from "../helpers";
 import {
   db,
   saasPlans,
@@ -13,7 +15,6 @@ import {
   blacklistEntries,
 } from "@workspace/db";
 import { checkClientBlacklist } from "../../services/blacklist.service";
-import { resBody, type ApiResponse } from "../helpers";
 
 let platformAdmin: { token: string; id: string };
 let platformRisk: { token: string; id: string };

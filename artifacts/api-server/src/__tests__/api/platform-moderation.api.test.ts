@@ -5,10 +5,11 @@ import {
   createTestUser,
   createTestTenant,
   assignRole,
-} from "../../test/helpers";
+  resBody,
+  type ApiResponse,
+} from "../helpers";
 import { db, companies, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { resBody, type ApiResponse } from "../helpers";
 
 type CompanyStatus = typeof companies.$inferSelect.status;
 
