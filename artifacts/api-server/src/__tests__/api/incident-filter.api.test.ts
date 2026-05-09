@@ -12,14 +12,12 @@ import {
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, branches } from "@workspace/db";
+import { resBody } from "../helpers/response-body";
 
 type _RB = {
   data: Record<string, unknown>;
   error: { code: string; message: string };
 };
-function rb(r: { body: unknown }): _RB {
-  return r.body as _RB;
-}
 
 describe("GET /api/incidents — status filter", () => {
   let admin: TestUser;
@@ -50,14 +48,14 @@ describe("GET /api/incidents — status filter", () => {
       .set(h())
       .send({ title: "Open Incident", severity: "medium" });
     expect(resOpen.status).toBe(201);
-    incidentOpen = rb(resOpen).data.id as string;
+    incidentOpen = resBody<_RB>(resOpen).data.id as string;
 
     const resInProgress = await request(testApp)
       .post("/api/incidents")
       .set(h())
       .send({ title: "In-Progress Incident", severity: "high" });
     expect(resInProgress.status).toBe(201);
-    incidentInProgress = rb(resInProgress).data.id as string;
+    incidentInProgress = resBody<_RB>(resInProgress).data.id as string;
 
     await request(testApp)
       .post(`/api/incidents/${incidentInProgress}/status`)
@@ -69,7 +67,7 @@ describe("GET /api/incidents — status filter", () => {
       .set(h())
       .send({ title: "Resolved Incident", severity: "low" });
     expect(resResolved.status).toBe(201);
-    incidentResolved = rb(resResolved).data.id as string;
+    incidentResolved = resBody<_RB>(resResolved).data.id as string;
 
     await request(testApp)
       .post(`/api/incidents/${incidentResolved}/status`)
@@ -85,9 +83,9 @@ describe("GET /api/incidents — status filter", () => {
     const res = await request(testApp).get("/api/incidents").set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentOpen);
     expect(ids).toContain(incidentInProgress);
     expect(ids).toContain(incidentResolved);
@@ -99,9 +97,9 @@ describe("GET /api/incidents — status filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentOpen);
     expect(ids).not.toContain(incidentInProgress);
     expect(ids).not.toContain(incidentResolved);
@@ -113,9 +111,9 @@ describe("GET /api/incidents — status filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentInProgress);
     expect(ids).not.toContain(incidentOpen);
     expect(ids).not.toContain(incidentResolved);
@@ -127,9 +125,9 @@ describe("GET /api/incidents — status filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentResolved);
     expect(ids).not.toContain(incidentOpen);
     expect(ids).not.toContain(incidentInProgress);
@@ -141,7 +139,7 @@ describe("GET /api/incidents — status filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    for (const incident of rb(res).data as unknown as Array<
+    for (const incident of resBody<_RB>(res).data as unknown as Array<
       Record<string, unknown>
     >) {
       expect(incident.status).toBe("in_progress");
@@ -194,7 +192,7 @@ describe("GET /api/incidents — branchId filter", () => {
       severity: "medium",
     });
     expect(resA.status).toBe(201);
-    incidentBranchA = rb(resA).data.id as string;
+    incidentBranchA = resBody<_RB>(resA).data.id as string;
 
     const resB = await request(testApp).post("/api/incidents").set(h()).send({
       title: "Incident for Branch B",
@@ -202,14 +200,14 @@ describe("GET /api/incidents — branchId filter", () => {
       severity: "high",
     });
     expect(resB.status).toBe(201);
-    incidentBranchB = rb(resB).data.id as string;
+    incidentBranchB = resBody<_RB>(resB).data.id as string;
 
     const resNone = await request(testApp)
       .post("/api/incidents")
       .set(h())
       .send({ title: "Incident without Branch", severity: "low" });
     expect(resNone.status).toBe(201);
-    incidentNoBranch = rb(resNone).data.id as string;
+    incidentNoBranch = resBody<_RB>(resNone).data.id as string;
   }, 30000);
 
   function h() {
@@ -222,9 +220,9 @@ describe("GET /api/incidents — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentBranchA);
     expect(ids).not.toContain(incidentBranchB);
     expect(ids).not.toContain(incidentNoBranch);
@@ -236,9 +234,9 @@ describe("GET /api/incidents — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentBranchB);
     expect(ids).not.toContain(incidentBranchA);
     expect(ids).not.toContain(incidentNoBranch);
@@ -250,7 +248,7 @@ describe("GET /api/incidents — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    for (const incident of rb(res).data as unknown as Array<
+    for (const incident of resBody<_RB>(res).data as unknown as Array<
       Record<string, unknown>
     >) {
       expect(incident.branchId).toBe(branchBId);
@@ -263,7 +261,7 @@ describe("GET /api/incidents — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(rb(res).data).toHaveLength(0);
+    expect(resBody<_RB>(res).data).toHaveLength(0);
   });
 });
 
@@ -310,7 +308,7 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
         severity: "medium",
       });
     expect(resAOpen.status).toBe(201);
-    incidentBranchAOpen = rb(resAOpen).data.id as string;
+    incidentBranchAOpen = resBody<_RB>(resAOpen).data.id as string;
 
     const resAResolved = await request(testApp)
       .post("/api/incidents")
@@ -321,7 +319,7 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
         severity: "low",
       });
     expect(resAResolved.status).toBe(201);
-    incidentBranchAResolved = rb(resAResolved).data.id as string;
+    incidentBranchAResolved = resBody<_RB>(resAResolved).data.id as string;
 
     await request(testApp)
       .post(`/api/incidents/${incidentBranchAResolved}/status`)
@@ -333,7 +331,7 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
       .set(h())
       .send({ title: "Branch B Open", branchId: branchBId, severity: "high" });
     expect(resBOpen.status).toBe(201);
-    incidentBranchBOpen = rb(resBOpen).data.id as string;
+    incidentBranchBOpen = resBody<_RB>(resBOpen).data.id as string;
   }, 30000);
 
   function h() {
@@ -346,9 +344,9 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentBranchAOpen);
     expect(ids).not.toContain(incidentBranchAResolved);
     expect(ids).not.toContain(incidentBranchBOpen);
@@ -360,9 +358,9 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentBranchAResolved);
     expect(ids).not.toContain(incidentBranchAOpen);
     expect(ids).not.toContain(incidentBranchBOpen);
@@ -374,9 +372,9 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).toContain(incidentBranchBOpen);
     expect(ids).not.toContain(incidentBranchAOpen);
     expect(ids).not.toContain(incidentBranchAResolved);
@@ -388,9 +386,9 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (i: Record<string, unknown>) => i.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((i: Record<string, unknown>) => i.id as string);
     expect(ids).not.toContain(incidentBranchAOpen);
     expect(ids).not.toContain(incidentBranchAResolved);
     expect(ids).not.toContain(incidentBranchBOpen);

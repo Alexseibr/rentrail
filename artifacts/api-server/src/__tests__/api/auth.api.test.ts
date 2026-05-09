@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../../test/app";
+import { resBody } from "../helpers/response-body";
 
 type _RB = {
   data: Record<string, unknown>;
   error: { code: string; message: string };
 };
-function rb(r: { body: unknown }): _RB {
-  return r.body as _RB;
-}
 
 describe("Auth API", () => {
   beforeAll(async () => {});
@@ -28,8 +26,8 @@ describe("Auth API", () => {
       });
 
       expect(res.status).toBe(201);
-      expect(rb(res).data).toHaveProperty("id");
-      expect(rb(res).data.email).toBe(testEmail);
+      expect(resBody<_RB>(res).data).toHaveProperty("id");
+      expect(resBody<_RB>(res).data.email).toBe(testEmail);
     });
 
     it("rejects duplicate email", async () => {
@@ -70,10 +68,10 @@ describe("Auth API", () => {
         .send({ email: testEmail, password: testPassword });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data).toHaveProperty("accessToken");
-      expect(rb(res).data).toHaveProperty("refreshToken");
-      expect(typeof rb(res).data.accessToken).toBe("string");
-      expect(typeof rb(res).data.refreshToken).toBe("string");
+      expect(resBody<_RB>(res).data).toHaveProperty("accessToken");
+      expect(resBody<_RB>(res).data).toHaveProperty("refreshToken");
+      expect(typeof resBody<_RB>(res).data.accessToken).toBe("string");
+      expect(typeof resBody<_RB>(res).data.refreshToken).toBe("string");
     });
 
     it("rejects wrong password", async () => {
@@ -106,7 +104,7 @@ describe("Auth API", () => {
       const res = await request(testApp)
         .post("/api/auth/login")
         .send({ email: testEmail, password: testPassword });
-      freshToken = rb(res).data.accessToken as string;
+      freshToken = resBody<_RB>(res).data.accessToken as string;
     });
 
     it("returns current user with valid token", async () => {
@@ -115,7 +113,7 @@ describe("Auth API", () => {
         .set("Authorization", `Bearer ${freshToken}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.email).toBe(testEmail);
+      expect(resBody<_RB>(res).data.email).toBe(testEmail);
     });
 
     it("rejects missing token", async () => {
@@ -158,7 +156,7 @@ describe("Auth API", () => {
       const res = await request(testApp)
         .post("/api/auth/login")
         .send({ email: testEmail, password: testPassword });
-      loginRefreshToken = rb(res).data.refreshToken as string;
+      loginRefreshToken = resBody<_RB>(res).data.refreshToken as string;
     });
 
     it("returns new tokens with valid refresh token", async () => {
@@ -167,8 +165,8 @@ describe("Auth API", () => {
         .send({ refreshToken: loginRefreshToken });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data).toHaveProperty("accessToken");
-      expect(rb(res).data).toHaveProperty("refreshToken");
+      expect(resBody<_RB>(res).data).toHaveProperty("accessToken");
+      expect(resBody<_RB>(res).data).toHaveProperty("refreshToken");
     });
 
     it("rejects invalid refresh token", async () => {
@@ -189,7 +187,7 @@ describe("Auth API", () => {
       const login = await request(testApp)
         .post("/api/auth/login")
         .send({ email: testEmail, password: testPassword });
-      const rt1 = rb(login).data.refreshToken as string;
+      const rt1 = resBody<_RB>(login).data.refreshToken as string;
 
       const refresh1 = await request(testApp)
         .post("/api/auth/refresh")
@@ -209,7 +207,7 @@ describe("Auth API", () => {
         .post("/api/auth/login")
         .send({ email: testEmail, password: testPassword });
 
-      const token = rb(loginRes).data.accessToken as string;
+      const token = resBody<_RB>(loginRes).data.accessToken as string;
 
       const res = await request(testApp)
         .post("/api/auth/logout")
@@ -231,7 +229,7 @@ describe("Auth API", () => {
         .post("/api/auth/login")
         .send({ email: testEmail, password: testPassword });
 
-      const { accessToken: at, refreshToken: rt } = rb(loginRes).data;
+      const { accessToken: at, refreshToken: rt } = resBody<_RB>(loginRes).data;
 
       await request(testApp)
         .post("/api/auth/logout")
@@ -249,7 +247,7 @@ describe("Auth API", () => {
         .post("/api/auth/login")
         .send({ email: testEmail, password: testPassword });
 
-      const { accessToken: at } = rb(loginRes).data;
+      const { accessToken: at } = resBody<_RB>(loginRes).data;
 
       await request(testApp)
         .post("/api/auth/logout")

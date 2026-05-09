@@ -12,14 +12,12 @@ import {
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, branches } from "@workspace/db";
+import { resBody } from "../helpers/response-body";
 
 type _RB = {
   data: Record<string, unknown>;
   error: { code: string; message: string };
 };
-function rb(r: { body: unknown }): _RB {
-  return r.body as _RB;
-}
 
 describe("GET /api/service-requests — status filter validation", () => {
   let admin: TestUser;
@@ -46,7 +44,7 @@ describe("GET /api/service-requests — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(400);
-    expect(rb(res).error.code).toBe("VALIDATION");
+    expect(resBody<_RB>(res).error.code).toBe("VALIDATION");
   });
 
   it("status=nonexistent_status — returns 400, not 500", async () => {
@@ -63,7 +61,7 @@ describe("GET /api/service-requests — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(rb(res).data)).toBe(true);
+    expect(Array.isArray(resBody<_RB>(res).data)).toBe(true);
   });
 
   it("status=in_progress — returns 200 with valid status", async () => {
@@ -72,7 +70,7 @@ describe("GET /api/service-requests — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(rb(res).data)).toBe(true);
+    expect(Array.isArray(resBody<_RB>(res).data)).toBe(true);
   });
 
   it("status=completed — returns 200 with valid status", async () => {
@@ -81,14 +79,14 @@ describe("GET /api/service-requests — status filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(rb(res).data)).toBe(true);
+    expect(Array.isArray(resBody<_RB>(res).data)).toBe(true);
   });
 
   it("no status param — returns 200 with all records", async () => {
     const res = await request(testApp).get("/api/service-requests").set(h());
 
     expect(res.status).toBe(200);
-    expect(Array.isArray(rb(res).data)).toBe(true);
+    expect(Array.isArray(resBody<_RB>(res).data)).toBe(true);
   });
 });
 
@@ -125,7 +123,7 @@ describe("GET /api/service-requests — status filter correctness", () => {
         title: "New SR",
       });
     expect(resNew.status).toBe(201);
-    srNew = rb(resNew).data.id as string;
+    srNew = resBody<_RB>(resNew).data.id as string;
 
     const resInProgress = await request(testApp)
       .post("/api/service-requests")
@@ -136,7 +134,7 @@ describe("GET /api/service-requests — status filter correctness", () => {
         title: "In-Progress SR",
       });
     expect(resInProgress.status).toBe(201);
-    srInProgress = rb(resInProgress).data.id as string;
+    srInProgress = resBody<_RB>(resInProgress).data.id as string;
 
     await request(testApp)
       .post(`/api/service-requests/${srInProgress}/status`)
@@ -152,7 +150,7 @@ describe("GET /api/service-requests — status filter correctness", () => {
         title: "Completed SR",
       });
     expect(resCompleted.status).toBe(201);
-    srCompleted = rb(resCompleted).data.id as string;
+    srCompleted = resBody<_RB>(resCompleted).data.id as string;
 
     await request(testApp)
       .post(`/api/service-requests/${srCompleted}/status`)
@@ -168,9 +166,9 @@ describe("GET /api/service-requests — status filter correctness", () => {
     const res = await request(testApp).get("/api/service-requests").set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srNew);
     expect(ids).toContain(srInProgress);
     expect(ids).toContain(srCompleted);
@@ -182,9 +180,9 @@ describe("GET /api/service-requests — status filter correctness", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srNew);
     expect(ids).not.toContain(srInProgress);
     expect(ids).not.toContain(srCompleted);
@@ -196,9 +194,9 @@ describe("GET /api/service-requests — status filter correctness", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srInProgress);
     expect(ids).not.toContain(srNew);
     expect(ids).not.toContain(srCompleted);
@@ -210,9 +208,9 @@ describe("GET /api/service-requests — status filter correctness", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srCompleted);
     expect(ids).not.toContain(srNew);
     expect(ids).not.toContain(srInProgress);
@@ -224,7 +222,7 @@ describe("GET /api/service-requests — status filter correctness", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    for (const sr of rb(res).data as unknown as Array<
+    for (const sr of resBody<_RB>(res).data as unknown as Array<
       Record<string, unknown>
     >) {
       expect(sr.status).toBe("in_progress");
@@ -269,7 +267,7 @@ describe("GET /api/service-requests — branchId filter", () => {
         title: "SR for Branch A",
       });
     expect(resA.status).toBe(201);
-    srBranchA = rb(resA).data.id as string;
+    srBranchA = resBody<_RB>(resA).data.id as string;
 
     const resB = await request(testApp)
       .post("/api/service-requests")
@@ -280,7 +278,7 @@ describe("GET /api/service-requests — branchId filter", () => {
         title: "SR for Branch B",
       });
     expect(resB.status).toBe(201);
-    srBranchB = rb(resB).data.id as string;
+    srBranchB = resBody<_RB>(resB).data.id as string;
   }, 30000);
 
   function h() {
@@ -293,9 +291,9 @@ describe("GET /api/service-requests — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srBranchA);
     expect(ids).not.toContain(srBranchB);
   });
@@ -306,9 +304,9 @@ describe("GET /api/service-requests — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srBranchB);
     expect(ids).not.toContain(srBranchA);
   });
@@ -319,7 +317,7 @@ describe("GET /api/service-requests — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    for (const sr of rb(res).data as unknown as Array<
+    for (const sr of resBody<_RB>(res).data as unknown as Array<
       Record<string, unknown>
     >) {
       expect(sr.branchId).toBe(branchBId);
@@ -334,7 +332,7 @@ describe("GET /api/service-requests — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(rb(res).data).toHaveLength(0);
+    expect(resBody<_RB>(res).data).toHaveLength(0);
   });
 });
 
@@ -376,7 +374,7 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
         title: "Branch A New SR",
       });
     expect(resANew.status).toBe(201);
-    srBranchANew = rb(resANew).data.id as string;
+    srBranchANew = resBody<_RB>(resANew).data.id as string;
 
     const resACompleted = await request(testApp)
       .post("/api/service-requests")
@@ -387,7 +385,7 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
         title: "Branch A Completed SR",
       });
     expect(resACompleted.status).toBe(201);
-    srBranchACompleted = rb(resACompleted).data.id as string;
+    srBranchACompleted = resBody<_RB>(resACompleted).data.id as string;
 
     await request(testApp)
       .post(`/api/service-requests/${srBranchACompleted}/status`)
@@ -403,7 +401,7 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
         title: "Branch B New SR",
       });
     expect(resBNew.status).toBe(201);
-    srBranchBNew = rb(resBNew).data.id as string;
+    srBranchBNew = resBody<_RB>(resBNew).data.id as string;
   }, 30000);
 
   function h() {
@@ -416,9 +414,9 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srBranchANew);
     expect(ids).not.toContain(srBranchACompleted);
     expect(ids).not.toContain(srBranchBNew);
@@ -432,9 +430,9 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srBranchACompleted);
     expect(ids).not.toContain(srBranchANew);
     expect(ids).not.toContain(srBranchBNew);
@@ -446,9 +444,9 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).toContain(srBranchBNew);
     expect(ids).not.toContain(srBranchANew);
     expect(ids).not.toContain(srBranchACompleted);
@@ -460,9 +458,9 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
       .set(h());
 
     expect(res.status).toBe(200);
-    const ids = (rb(res).data as unknown as Array<Record<string, unknown>>).map(
-      (sr: Record<string, unknown>) => sr.id as string,
-    );
+    const ids = (
+      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+    ).map((sr: Record<string, unknown>) => sr.id as string);
     expect(ids).not.toContain(srBranchANew);
     expect(ids).not.toContain(srBranchACompleted);
     expect(ids).not.toContain(srBranchBNew);

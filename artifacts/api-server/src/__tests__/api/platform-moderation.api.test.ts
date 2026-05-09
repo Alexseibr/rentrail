@@ -8,14 +8,12 @@ import {
 } from "../../test/helpers";
 import { db, companies, platformAuditLogs } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
+import { resBody } from "../helpers/response-body";
 
 type _RB = {
   data: Record<string, unknown>;
   error: { code: string; message: string };
 };
-function rb(r: { body: unknown }): _RB {
-  return r.body as _RB;
-}
 
 type CompanyStatus = typeof companies.$inferSelect.status;
 
@@ -62,12 +60,17 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.items).toBeDefined();
-      expect(rb(res).data.pagination).toBeDefined();
-      expect((rb(res).data.pagination as Record<string, unknown>).page).toBe(1);
+      expect(resBody<_RB>(res).data.items).toBeDefined();
+      expect(resBody<_RB>(res).data.pagination).toBeDefined();
       expect(
-        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
-          .length,
+        (resBody<_RB>(res).data.pagination as Record<string, unknown>).page,
+      ).toBe(1);
+      expect(
+        (
+          resBody<_RB>(res).data.items as unknown as Array<
+            Record<string, unknown>
+          >
+        ).length,
       ).toBeGreaterThanOrEqual(1);
     });
 
@@ -77,7 +80,9 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       const company = (
-        rb(res).data.items as unknown as Array<Record<string, unknown>>
+        resBody<_RB>(res).data.items as unknown as Array<
+          Record<string, unknown>
+        >
       ).find((c: Record<string, unknown>) => c.id === tenantA.company.id);
       expect(company).toBeDefined();
       expect(company!.counts).toBeDefined();
@@ -95,7 +100,7 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      for (const item of rb(res).data.items as unknown as Array<
+      for (const item of resBody<_RB>(res).data.items as unknown as Array<
         Record<string, unknown>
       >) {
         expect(item.status).toBe("pending");
@@ -109,9 +114,11 @@ describe("Platform Moderation", () => {
 
       expect(res.status).toBe(200);
       expect(
-        (rb(res).data.items as unknown as Array<Record<string, unknown>>).some(
-          (c: { id: string }) => c.id === tenantA.company.id,
-        ),
+        (
+          resBody<_RB>(res).data.items as unknown as Array<
+            Record<string, unknown>
+          >
+        ).some((c: { id: string }) => c.id === tenantA.company.id),
       ).toBe(true);
     });
 
@@ -121,12 +128,15 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect((rb(res).data.pagination as Record<string, unknown>).limit).toBe(
-        2,
-      );
       expect(
-        (rb(res).data.items as unknown as Array<Record<string, unknown>>)
-          .length,
+        (resBody<_RB>(res).data.pagination as Record<string, unknown>).limit,
+      ).toBe(2);
+      expect(
+        (
+          resBody<_RB>(res).data.items as unknown as Array<
+            Record<string, unknown>
+          >
+        ).length,
       ).toBeLessThanOrEqual(2);
     });
 
@@ -136,7 +146,7 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.items).toBeDefined();
+      expect(resBody<_RB>(res).data.items).toBeDefined();
     });
 
     it("regular user cannot list platform companies", async () => {
@@ -155,21 +165,22 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.name).toBe("Moderation Test Co");
-      expect(rb(res).data.counts).toBeDefined();
+      expect(resBody<_RB>(res).data.name).toBe("Moderation Test Co");
+      expect(resBody<_RB>(res).data.counts).toBeDefined();
       expect(
-        typeof (rb(res).data.counts as Record<string, unknown>).clients,
+        typeof (resBody<_RB>(res).data.counts as Record<string, unknown>)
+          .clients,
       ).toBe("number");
       expect(
-        typeof (rb(res).data.counts as Record<string, unknown>)
+        typeof (resBody<_RB>(res).data.counts as Record<string, unknown>)
           .blacklistEntries,
       ).toBe("number");
-      expect(rb(res).data.owners).toBeDefined();
-      expect(Array.isArray(rb(res).data.owners)).toBe(true);
-      expect(rb(res).data.moderationHistory).toBeDefined();
-      expect(Array.isArray(rb(res).data.recentActivity)).toBe(true);
-      expect(Array.isArray(rb(res).data.modules)).toBe(true);
-      expect(rb(res).data).toHaveProperty("subscription");
+      expect(resBody<_RB>(res).data.owners).toBeDefined();
+      expect(Array.isArray(resBody<_RB>(res).data.owners)).toBe(true);
+      expect(resBody<_RB>(res).data.moderationHistory).toBeDefined();
+      expect(Array.isArray(resBody<_RB>(res).data.recentActivity)).toBe(true);
+      expect(Array.isArray(resBody<_RB>(res).data.modules)).toBe(true);
+      expect(resBody<_RB>(res).data).toHaveProperty("subscription");
     });
 
     it("returns correct owner contact shape", async () => {
@@ -178,7 +189,7 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      for (const owner of rb(res).data.owners as unknown as Array<
+      for (const owner of resBody<_RB>(res).data.owners as unknown as Array<
         Record<string, unknown>
       >) {
         expect(owner).toHaveProperty("userId");
@@ -193,9 +204,8 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      for (const event of rb(res).data.recentActivity as unknown as Array<
-        Record<string, unknown>
-      >) {
+      for (const event of resBody<_RB>(res).data
+        .recentActivity as unknown as Array<Record<string, unknown>>) {
         expect(event).toHaveProperty("action");
         expect(event).toHaveProperty("entityType");
         expect(event).toHaveProperty("createdAt");
@@ -228,8 +238,8 @@ describe("Platform Moderation", () => {
         .send({ reasonCode: "verified", reasonText: "Documents verified" });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.status).toBe("active");
-      expect(rb(res).data.moderationReasonCode).toBe("verified");
+      expect(resBody<_RB>(res).data.status).toBe("active");
+      expect(resBody<_RB>(res).data.moderationReasonCode).toBe("verified");
     });
 
     it("cannot approve an already active company", async () => {
@@ -261,7 +271,7 @@ describe("Platform Moderation", () => {
         });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.status).toBe("blocked");
+      expect(resBody<_RB>(res).data.status).toBe("blocked");
     });
 
     it("creates platform audit log for moderation action", async () => {
@@ -289,7 +299,7 @@ describe("Platform Moderation", () => {
         .send({ reasonCode: "resolved", reasonText: "Investigation complete" });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.status).toBe("active");
+      expect(resBody<_RB>(res).data.status).toBe("active");
     });
 
     it("moderation history is recorded", async () => {
@@ -299,7 +309,7 @@ describe("Platform Moderation", () => {
 
       expect(
         (
-          rb(detail).data.moderationHistory as unknown as Array<
+          resBody<_RB>(detail).data.moderationHistory as unknown as Array<
             Record<string, unknown>
           >
         ).length,
@@ -326,7 +336,7 @@ describe("Platform Moderation", () => {
         });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.status).toBe("suspended");
+      expect(resBody<_RB>(res).data.status).toBe("suspended");
     });
 
     it("cannot suspend a pending company", async () => {
@@ -371,7 +381,7 @@ describe("Platform Moderation", () => {
         });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.status).toBe("canceled");
+      expect(resBody<_RB>(res).data.status).toBe("canceled");
     });
 
     it("canceled company cannot be modified further", async () => {
@@ -479,7 +489,7 @@ describe("Platform Moderation", () => {
         .set("x-company-id", blockedCompanyId);
 
       expect(res.status).toBe(403);
-      expect(rb(res).error.code).toBe("COMPANY_BLOCKED");
+      expect(resBody<_RB>(res).error.code).toBe("COMPANY_BLOCKED");
     });
 
     it("blocked tenant user gets 403 on writes", async () => {
@@ -490,7 +500,7 @@ describe("Platform Moderation", () => {
         .send({ fullName: "Test" });
 
       expect(res.status).toBe(403);
-      expect(rb(res).error.code).toBe("COMPANY_BLOCKED");
+      expect(resBody<_RB>(res).error.code).toBe("COMPANY_BLOCKED");
     });
   });
 
@@ -517,7 +527,7 @@ describe("Platform Moderation", () => {
         .set("x-company-id", canceledCompanyId);
 
       expect(res.status).toBe(403);
-      expect(rb(res).error.code).toBe("COMPANY_BLOCKED");
+      expect(resBody<_RB>(res).error.code).toBe("COMPANY_BLOCKED");
     });
   });
 
@@ -558,7 +568,7 @@ describe("Platform Moderation", () => {
         });
 
       expect(res.status).toBe(403);
-      expect(rb(res).error.code).toBe("COMPANY_SUSPENDED");
+      expect(resBody<_RB>(res).error.code).toBe("COMPANY_SUSPENDED");
     });
 
     it("suspended tenant user cannot create clients", async () => {
@@ -569,7 +579,7 @@ describe("Platform Moderation", () => {
         .send({ fullName: "Test Client" });
 
       expect(res.status).toBe(403);
-      expect(rb(res).error.code).toBe("COMPANY_SUSPENDED");
+      expect(resBody<_RB>(res).error.code).toBe("COMPANY_SUSPENDED");
     });
 
     it("suspended tenant user cannot create branches", async () => {
@@ -580,7 +590,7 @@ describe("Platform Moderation", () => {
         .send({ name: "Test Branch" });
 
       expect(res.status).toBe(403);
-      expect(rb(res).error.code).toBe("COMPANY_SUSPENDED");
+      expect(resBody<_RB>(res).error.code).toBe("COMPANY_SUSPENDED");
     });
   });
 
@@ -627,24 +637,24 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.companyId).toBe(tenantA.company.id);
-      expect(rb(res).data.plan).toBeDefined();
-      expect(rb(res).data.resources).toBeDefined();
+      expect(resBody<_RB>(res).data.companyId).toBe(tenantA.company.id);
+      expect(resBody<_RB>(res).data.plan).toBeDefined();
+      expect(resBody<_RB>(res).data.resources).toBeDefined();
       expect(
-        (rb(res).data.resources as Record<string, unknown>).branches,
+        (resBody<_RB>(res).data.resources as Record<string, unknown>).branches,
       ).toHaveProperty("current");
       expect(
-        (rb(res).data.resources as Record<string, unknown>).branches,
+        (resBody<_RB>(res).data.resources as Record<string, unknown>).branches,
       ).toHaveProperty("limit");
       expect(
         typeof (
-          (rb(res).data.resources as Record<string, unknown>)
+          (resBody<_RB>(res).data.resources as Record<string, unknown>)
             .branches as Record<string, unknown>
         ).current,
       ).toBe("number");
       expect(
         typeof (
-          (rb(res).data.resources as Record<string, unknown>)
+          (resBody<_RB>(res).data.resources as Record<string, unknown>)
             .branches as Record<string, unknown>
         ).limit,
       ).toBe("number");
@@ -658,35 +668,33 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformAdmin.token}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.companyId).toBe(tenantA.company.id);
-      expect(rb(res).data.assets).toBeDefined();
+      expect(resBody<_RB>(res).data.companyId).toBe(tenantA.company.id);
+      expect(resBody<_RB>(res).data.assets).toBeDefined();
       expect(
-        (rb(res).data.assets as Record<string, unknown>).issues,
+        (resBody<_RB>(res).data.assets as Record<string, unknown>).issues,
       ).toBeDefined();
       expect(
         typeof (
-          (rb(res).data.assets as Record<string, unknown>).issues as Record<
-            string,
-            unknown
-          >
+          (resBody<_RB>(res).data.assets as Record<string, unknown>)
+            .issues as Record<string, unknown>
         ).blocked,
       ).toBe("number");
-      expect(rb(res).data.rentals).toBeDefined();
-      expect(rb(res).data.incidents).toBeDefined();
+      expect(resBody<_RB>(res).data.rentals).toBeDefined();
+      expect(resBody<_RB>(res).data.incidents).toBeDefined();
       expect(
-        typeof (rb(res).data.incidents as Record<string, unknown>)
+        typeof (resBody<_RB>(res).data.incidents as Record<string, unknown>)
           .activeBlacklistEntries,
       ).toBe("number");
       expect(
-        typeof (rb(res).data.incidents as Record<string, unknown>)
+        typeof (resBody<_RB>(res).data.incidents as Record<string, unknown>)
           .lostOrStolenAssets,
       ).toBe("number");
       expect(
-        typeof (rb(res).data.incidents as Record<string, unknown>)
+        typeof (resBody<_RB>(res).data.incidents as Record<string, unknown>)
           .overdueRentals,
       ).toBe("number");
       expect(
-        typeof (rb(res).data.incidents as Record<string, unknown>)
+        typeof (resBody<_RB>(res).data.incidents as Record<string, unknown>)
           .disputedRentals,
       ).toBe("number");
     });
@@ -699,11 +707,11 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformSupport.token}`);
 
       expect(res.status).toBe(200);
-      expect((rb(res).data.company as Record<string, unknown>).id).toBe(
-        tenantA.company.id,
-      );
-      expect(rb(res).data.counts).toBeDefined();
-      expect(rb(res).data.recentActivity).toBeDefined();
+      expect(
+        (resBody<_RB>(res).data.company as Record<string, unknown>).id,
+      ).toBe(tenantA.company.id);
+      expect(resBody<_RB>(res).data.counts).toBeDefined();
+      expect(resBody<_RB>(res).data.recentActivity).toBeDefined();
     });
 
     it("returns tenant audit log", async () => {
@@ -712,8 +720,8 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformSupport.token}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.items).toBeDefined();
-      expect(rb(res).data.pagination).toBeDefined();
+      expect(resBody<_RB>(res).data.items).toBeDefined();
+      expect(resBody<_RB>(res).data.pagination).toBeDefined();
     });
 
     it("returns tenant health", async () => {
@@ -722,7 +730,7 @@ describe("Platform Moderation", () => {
         .set("Authorization", `Bearer ${platformSupport.token}`);
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.companyId).toBe(tenantA.company.id);
+      expect(resBody<_RB>(res).data.companyId).toBe(tenantA.company.id);
     });
 
     it("regular user cannot access support endpoints", async () => {
@@ -750,7 +758,7 @@ describe("Platform Moderation", () => {
         .send({ legalName: "Moderation Test Co Ltd." });
 
       expect(res.status).toBe(200);
-      expect(rb(res).data.legalName).toBe("Moderation Test Co Ltd.");
+      expect(resBody<_RB>(res).data.legalName).toBe("Moderation Test Co Ltd.");
     });
 
     it("platformSupport cannot update company", async () => {
