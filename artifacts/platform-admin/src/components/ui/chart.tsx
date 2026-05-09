@@ -100,15 +100,24 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+type TooltipFormatterPayload = NonNullable<
+  Parameters<
+    NonNullable<
+      React.ComponentProps<typeof RechartsPrimitive.Tooltip>["formatter"]
+    >
+  >[4]
+>;
+
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+  Omit<React.ComponentProps<typeof RechartsPrimitive.Tooltip>, "label"> &
     React.ComponentProps<"div"> & {
       hideLabel?: boolean;
       hideIndicator?: boolean;
       indicator?: "line" | "dot" | "dashed";
       nameKey?: string;
       labelKey?: string;
+      label?: string | number;
     }
 >(
   (
@@ -188,10 +197,15 @@ const ChartTooltipContent = React.forwardRef<
             .map((item, index) => {
               const key = `${nameKey || item.name || item.dataKey || "value"}`;
               const itemConfig = getPayloadConfigFromPayload(config, item, key);
+              const itemPayload:
+                | Record<string, string | undefined>
+                | undefined = (
+                item as {
+                  payload: Record<string, string | undefined> | undefined;
+                }
+              ).payload;
               const indicatorColor: string | undefined =
-                color ||
-                (item.payload as Record<string, string | undefined>)?.fill ||
-                item.color;
+                color || itemPayload?.fill || item.color;
 
               return (
                 <div
@@ -202,7 +216,13 @@ const ChartTooltipContent = React.forwardRef<
                   )}
                 >
                   {formatter && item?.value !== undefined && item.name ? (
-                    formatter(item.value, item.name, item, index, item.payload)
+                    formatter(
+                      item.value,
+                      item.name,
+                      item,
+                      index,
+                      (item as { payload: TooltipFormatterPayload }).payload,
+                    )
                   ) : (
                     <>
                       {itemConfig?.icon ? (
@@ -296,7 +316,7 @@ const ChartLegendContent = React.forwardRef<
 
             return (
               <div
-                key={item.value}
+                key={(item as { value: string | number }).value}
                 className={cn(
                   "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
                 )}
