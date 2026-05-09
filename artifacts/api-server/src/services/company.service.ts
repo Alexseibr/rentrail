@@ -1,6 +1,7 @@
 import {
   db,
   companies,
+  companyWhiteLabelSettings,
   userCompanyMemberships,
   type InsertCompany,
 } from "@workspace/db";
@@ -82,4 +83,33 @@ export async function userHasCompanyAccess(
     .limit(1);
 
   return !!membership;
+}
+
+export async function resolveCompanyBySlug(slug: string) {
+  const [row] = await db
+    .select({
+      id: companies.id,
+      name: companies.name,
+      slug: companies.slug,
+      logoUrl: companies.logoUrl,
+      wlLogoUrl: companyWhiteLabelSettings.logoUrl,
+      primaryColor: companyWhiteLabelSettings.primaryColor,
+    })
+    .from(companies)
+    .leftJoin(
+      companyWhiteLabelSettings,
+      eq(companyWhiteLabelSettings.companyId, companies.id),
+    )
+    .where(eq(companies.slug, slug))
+    .limit(1);
+
+  if (!row) throw new NotFoundError("Company not found");
+
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    logoUrl: row.wlLogoUrl ?? row.logoUrl ?? null,
+    primaryColor: row.primaryColor ?? "#F5C518",
+  };
 }

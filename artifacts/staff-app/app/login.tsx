@@ -8,12 +8,15 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  Image,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCompany } from "@/contexts/CompanyContext";
 
 type Step = "phone" | "password" | "otp" | "set-password";
 type LoginMode = "staff" | "client";
@@ -39,6 +42,8 @@ const DEMO_CLIENT_PASSWORD = "client123";
 export default function LoginScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { company } = useCompany();
   const {
     loginWithPhone,
     loginAsClient,
@@ -197,14 +202,47 @@ export default function LoginScreen() {
       style={{ backgroundColor: "#1a1a1a" }}
     >
       <View style={styles.logoWrap}>
-        <View style={styles.logoCircle}>
-          <Feather
-            name={mode === "client" ? "smartphone" : "truck"}
-            size={32}
-            color="#1a1a1a"
-          />
-        </View>
-        <Text style={styles.brandName}>RideFlow</Text>
+        {mode === "staff" && company ? (
+          company.logoUrl ? (
+            <Image
+              source={{ uri: company.logoUrl }}
+              style={styles.companyLogoImg}
+              resizeMode="contain"
+            />
+          ) : (
+            <View
+              style={[
+                styles.logoCircle,
+                { backgroundColor: company.primaryColor },
+              ]}
+            >
+              <Text style={styles.companyInitial}>
+                {company.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )
+        ) : (
+          <View style={styles.logoCircle}>
+            <Feather
+              name={mode === "client" ? "smartphone" : "truck"}
+              size={32}
+              color="#1a1a1a"
+            />
+          </View>
+        )}
+        <Text style={styles.brandName}>
+          {mode === "staff" && company ? company.name : "RideFlow"}
+        </Text>
+        {mode === "staff" && company && (
+          <TouchableOpacity
+            onPress={() => router.replace("/company-select" as never)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.changeCompanyLink}>
+              {t("login.changeCompany", "Сменить компанию")}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.modeToggle}>
           <TouchableOpacity
@@ -499,11 +537,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  companyLogoImg: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  companyInitial: {
+    fontSize: 32,
+    fontFamily: "Inter_700Bold",
+    color: "#1a1a1a",
+  },
+  changeCompanyLink: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#F5C518",
+    marginBottom: 10,
+    textDecorationLine: "underline",
+  },
   brandName: {
     fontSize: 28,
     fontFamily: "Inter_700Bold",
     color: "#ffffff",
-    marginBottom: 12,
+    marginBottom: 6,
   },
   modeToggle: {
     flexDirection: "row",

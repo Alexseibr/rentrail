@@ -58,6 +58,12 @@ const platformListQuery = z.object({
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 
+router.get("/companies/resolve/:slug", async (req, res) => {
+  const { slug } = req.params as { slug: string };
+  const data = await companyService.resolveCompanyBySlug(slug);
+  res.json({ data });
+});
+
 router.post(
   "/companies",
   authenticate,

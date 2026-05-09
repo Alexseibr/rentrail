@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth";
@@ -16,11 +16,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, Building2, User } from "lucide-react";
+import { Pencil, Building2, User, QrCode, Copy, Check } from "lucide-react";
 
 interface Company {
   id: string;
   name?: string;
+  slug?: string;
   contactEmail?: string;
   contactPhone?: string;
   website?: string;
@@ -35,6 +36,7 @@ export default function SettingsCompanyPage() {
   const { user } = useAuth();
   const { canWriteSettings } = useRolePermissions();
   const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
   const membership = user?.memberships?.[0];
   const companyId = membership?.companyId;
   const companyHeaders: Record<string, string> = companyId
@@ -42,6 +44,7 @@ export default function SettingsCompanyPage() {
     : {};
 
   const [editCompany, setEditCompany] = useState(false);
+
   const [companyForm, setCompanyForm] = useState({
     name: "",
     contactEmail: "",
@@ -57,6 +60,14 @@ export default function SettingsCompanyPage() {
     enabled: !!companyId,
   });
   const company = companyQuery.data;
+
+  const handleCopyLink = useCallback(() => {
+    const slug = company?.slug;
+    if (!slug) return;
+    void navigator.clipboard.writeText(`staff-app://company/${slug}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [company?.slug]);
 
   const updateMutation = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
@@ -207,6 +218,59 @@ export default function SettingsCompanyPage() {
           </CardContent>
         </Card>
       </div>
+
+      {company?.slug && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">
+                {t("settings.inviteStaff", "Пригласить сотрудников")}
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-6 items-start">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`staff-app://company/${company.slug}`)}&format=png&margin=4`}
+              alt="QR-код приглашения"
+              width={160}
+              height={160}
+              className="rounded-lg border"
+            />
+            <div className="flex flex-col gap-3 flex-1">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {t("settings.companyCode", "Код компании")}
+                </p>
+                <p className="text-2xl font-mono font-bold tracking-widest">
+                  {company.slug}
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {t(
+                  "settings.inviteHint",
+                  "Сотрудник вводит код или сканирует QR при первом запуске приложения.",
+                )}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                onClick={handleCopyLink}
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 mr-2 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                {copied
+                  ? t("settings.copied", "Скопировано!")
+                  : t("settings.copyLink", "Скопировать ссылку")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={editCompany} onOpenChange={setEditCompany}>
         <DialogContent>

@@ -10,7 +10,8 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { Redirect, Stack, useSegments } from "expo-router";
+import * as Linking from "expo-linking";
+import { Redirect, Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,8 +22,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { SyncProvider } from "@/contexts/SyncContext";
+import { CompanyProvider, useCompany } from "@/contexts/CompanyContext";
 import { SnackbarProvider } from "@/contexts/SnackbarContext";
+import { SyncProvider } from "@/contexts/SyncContext";
 import { setupNotificationHandler } from "@/services/push";
 import "../i18n/i18n";
 
@@ -41,9 +43,28 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   const { t } = useTranslation();
   const { isAuthenticated, isLoading, isClient } = useAuth();
+  const {
+    company,
+    isLoading: companyLoading,
+    resolveAndSelectCompany,
+  } = useCompany();
   const segments = useSegments();
+  const router = useRouter();
+  const url = Linking.useURL();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!url) return;
+    const match = url.match(/company\/([^/?#\s]+)/);
+    if (!match) return;
+    const slug = match[1];
+    resolveAndSelectCompany(slug)
+      .then(() => {
+        router.replace("/login");
+      })
+      .catch(() => {});
+  }, [url, resolveAndSelectCompany, router]);
+
+  if (isLoading || companyLoading) {
     return (
       <View
         style={{
@@ -58,11 +79,18 @@ function RootLayoutNav() {
     );
   }
 
-  const inAuthGroup = segments[0] === "login";
-  const inStaffTabs = segments[0] === "(tabs)";
-  const inClientTabs = segments[0] === "(client-tabs)";
+  const seg0 = segments[0] as string | undefined;
+  const inCompanySelect = seg0 === "company-select";
+  const inAuthGroup = seg0 === "login";
+  const inStaffTabs = seg0 === "(tabs)";
+  const inClientTabs = seg0 === "(client-tabs)";
 
-  if (!isAuthenticated && !inAuthGroup) {
+  if (!company && !inCompanySelect) {
+    // type-coverage:ignore-next-line
+    return <Redirect href={"/company-select" as never} />;
+  }
+
+  if (!isAuthenticated && !inAuthGroup && !inCompanySelect) {
     return <Redirect href="/login" />;
   }
 
@@ -91,6 +119,7 @@ function RootLayoutNav() {
         headerShadowVisible: false,
       }}
     >
+      <Stack.Screen name="company-select" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(client-tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
@@ -156,13 +185,15 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <AuthProvider>
-                <SyncProvider>
-                  <SnackbarProvider>
-                    <RootLayoutNav />
-                  </SnackbarProvider>
-                </SyncProvider>
-              </AuthProvider>
+              <CompanyProvider>
+                <AuthProvider>
+                  <SyncProvider>
+                    <SnackbarProvider>
+                      <RootLayoutNav />
+                    </SnackbarProvider>
+                  </SyncProvider>
+                </AuthProvider>
+              </CompanyProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
