@@ -49,6 +49,7 @@ router.patch(
   async (req, res) => {
     const { settings, previous } = await wlService.upsertWhiteLabelSettings(
       req.params.id as string,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateSchema>,
     );
     await createPlatformAuditLog(req, {

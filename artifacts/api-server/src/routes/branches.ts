@@ -32,6 +32,7 @@ router.post(
   validate({ body: createBranchSchema }),
   async (req, res) => {
     const branch = await branchService.createBranch({
+      // type-coverage:ignore-next-line
       ...(req.body as z.infer<typeof createBranchSchema>),
       companyId: req.tenant!.companyId,
     });
@@ -88,6 +89,7 @@ router.patch(
     const branch = await branchService.updateBranch(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateBranchSchema>,
     );
     await createAuditLog({

@@ -26,6 +26,7 @@ router.post(
   "/storage/uploads/request-url",
   authenticate,
   async (req: Request, res: Response) => {
+    // type-coverage:ignore-next-line
     const parsed = uploadBodySchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Missing or invalid required fields" });

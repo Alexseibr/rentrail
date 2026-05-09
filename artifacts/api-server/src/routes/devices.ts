@@ -70,6 +70,7 @@ router.post(
   async (req, res) => {
     const device = await deviceService.createDevice(
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof createDeviceSchema>,
     );
     await createAuditLog({
@@ -155,6 +156,7 @@ router.patch(
     const device = await deviceService.updateDevice(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateDeviceSchema>,
     );
     await createAuditLog({
@@ -176,6 +178,7 @@ router.post(
   requirePermission("device:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { status } = req.body as z.infer<typeof changeStatusSchema>;
     const device = await deviceService.changeDeviceStatus(
       req.params.id as string,

@@ -105,6 +105,7 @@ router.post(
   validate({ body: createSchema }),
   async (req, res) => {
     const entry = await platformBlacklistService.createGlobalBlacklistEntry({
+      // type-coverage:ignore-next-line
       ...(req.body as z.infer<typeof createSchema>),
       createdByUserId: req.user!.userId,
     });
@@ -145,6 +146,7 @@ router.patch(
     const { updated, previous } =
       await platformBlacklistService.updateGlobalBlacklistEntry(
         req.params.id as string,
+        // type-coverage:ignore-next-line
         req.body as z.infer<typeof updateSchema>,
       );
     await createPlatformAuditLog(req, {

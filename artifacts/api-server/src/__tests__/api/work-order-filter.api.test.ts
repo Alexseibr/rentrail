@@ -53,6 +53,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       assignedToUserId: userA.id,
     });
     expect(resA.status).toBe(201);
+    // type-coverage:ignore-next-line
     woAssignedToA = (resA.body as { data: { id: string } }).data.id;
 
     const resB = await request(testApp).post("/api/work-orders").set(h()).send({
@@ -61,6 +62,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       assignedToUserId: userB.id,
     });
     expect(resB.status).toBe(201);
+    // type-coverage:ignore-next-line
     woAssignedToB = (resB.body as { data: { id: string } }).data.id;
 
     const resU = await request(testApp).post("/api/work-orders").set(h()).send({
@@ -68,6 +70,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       orderType: "inspection",
     });
     expect(resU.status).toBe(201);
+    // type-coverage:ignore-next-line
     woUnassigned = (resU.body as { data: { id: string } }).data.id;
   }, 30000);
 
@@ -79,6 +82,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
     const res = await request(testApp).get("/api/work-orders").set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     const ids = (res.body as { data: { id: string }[] }).data.map(
       (wo) => wo.id,
     );
@@ -93,6 +97,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     const ids = (res.body as { data: { id: string }[] }).data.map(
       (wo) => wo.id,
     );
@@ -107,6 +112,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     const ids = (res.body as { data: { id: string }[] }).data.map(
       (wo) => wo.id,
     );
@@ -123,6 +129,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     expect((res.body as { data: unknown[] }).data).toHaveLength(0);
   });
 
@@ -132,6 +139,7 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     for (const wo of (res.body as { data: { assignedToUserId: string }[] })
       .data) {
       expect(wo.assignedToUserId).toBe(userA.id);

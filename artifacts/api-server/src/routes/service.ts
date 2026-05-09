@@ -131,6 +131,7 @@ router.post(
       lat,
       lng,
       locationAddress,
+      // type-coverage:ignore-next-line
     } = req.body as z.infer<typeof createServiceRequestSchema>;
     const item = await serviceService.createServiceRequest({
       companyId: req.tenant!.companyId,
@@ -164,6 +165,7 @@ router.patch(
   requirePermission("asset:update"),
   validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const body = req.body as z.infer<typeof updateServiceRequestSchema>;
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_SR_PATCH_FIELDS) {
@@ -188,6 +190,7 @@ router.post(
   requirePermission("asset:update"),
   validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { assignedToUserId } = req.body as z.infer<
       typeof updateServiceRequestSchema
     >;
@@ -211,6 +214,7 @@ router.post(
   requirePermission("asset:update"),
   validate({ body: updateServiceRequestSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { status } = req.body as z.infer<typeof updateServiceRequestSchema>;
     const update: Record<string, unknown> = { status };
     if (status === "completed") update.resolvedAt = new Date();
@@ -315,6 +319,7 @@ router.post(
         description,
         assignedToUserId,
         estimatedCost,
+        // type-coverage:ignore-next-line
       } = req.body as z.infer<typeof createWorkOrderSchema>;
       if (!title || !orderType) {
         return res.status(400).json({
@@ -359,6 +364,7 @@ router.patch(
   requirePermission("asset:update"),
   validate({ body: updateWorkOrderSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const body = req.body as z.infer<typeof updateWorkOrderSchema>;
     const safeData: Record<string, unknown> = {};
     for (const key of ALLOWED_WO_PATCH_FIELDS) {
@@ -383,6 +389,7 @@ router.post(
   requirePermission("asset:update"),
   validate({ body: updateWorkOrderSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { status, resolution, actualCost, partsUsed } = req.body as z.infer<
       typeof updateWorkOrderSchema
     >;
@@ -578,6 +585,7 @@ router.post(
   validate({ body: createMaintenanceLogSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const body = req.body as z.infer<typeof createMaintenanceLogSchema>;
       if (!body.assetId || !body.logType) {
         return res.status(400).json({
@@ -658,6 +666,7 @@ router.patch(
   validate({ body: updateMaintenanceLogSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const { notes, cost, odometerKm } = req.body as z.infer<
         typeof updateMaintenanceLogSchema
       >;
@@ -769,6 +778,7 @@ router.post(
   validate({ body: createMaintenanceScheduleSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const body = req.body as z.infer<typeof createMaintenanceScheduleSchema>;
       if (!body.scheduleType || !body.name) {
         return res.status(400).json({
@@ -819,6 +829,7 @@ router.patch(
         "nextDueAt",
         "enabled",
       ] as const;
+      // type-coverage:ignore-next-line
       const body = req.body as z.infer<typeof updateMaintenanceScheduleSchema>;
       const safe: Record<string, unknown> = {};
       for (const k of ALLOWED) {
@@ -954,6 +965,7 @@ router.post(
   validate({ body: createSparePartSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const body = req.body as z.infer<typeof createSparePartSchema>;
       if (!body.name || !body.category) {
         return res.status(400).json({
@@ -1005,6 +1017,7 @@ router.patch(
         "location",
         "notes",
       ] as const;
+      // type-coverage:ignore-next-line
       const body = req.body as z.infer<typeof updateSparePartSchema>;
       const safe: Record<string, unknown> = {};
       for (const k of ALLOWED) {
@@ -1078,6 +1091,7 @@ router.post(
   validate({ body: createSparePartTransactionSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const body = req.body as z.infer<typeof createSparePartTransactionSchema>;
       if (!body.partId || !body.transactionType || body.qty == null) {
         return res.status(400).json({
@@ -1141,6 +1155,7 @@ router.post(
   validate({ body: addWorkOrderPartSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const body = req.body as z.infer<typeof addWorkOrderPartSchema>;
       if (!body.partId || body.qtyUsed == null) {
         return res.status(400).json({

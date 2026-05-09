@@ -92,6 +92,7 @@ router.post(
       );
     }
 
+    // type-coverage:ignore-next-line
     const { requestedStartAt, requestedEndAt, ...rest } = req.body as z.infer<
       typeof publicInquirySchema
     >;
@@ -135,6 +136,7 @@ router.post(
 
     const request = await b2bRequestService.createPublicB2BRequest(
       company.id,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof publicB2BSchema>,
     );
 

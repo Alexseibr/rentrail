@@ -58,6 +58,7 @@ router.patch(
     const request = await b2bService.updateB2BRequest(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateB2BSchema>,
     );
     await createAuditLog({

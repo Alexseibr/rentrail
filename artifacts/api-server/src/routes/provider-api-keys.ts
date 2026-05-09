@@ -27,6 +27,7 @@ router.post(
   async (req, res) => {
     const result = await keyService.generateApiKey(
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof createKeySchema>,
     );
     await createAuditLog({

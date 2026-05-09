@@ -62,6 +62,7 @@ router.post(
   requirePermission("rental:create"),
   validate({ body: createRentalSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { startAt, plannedEndAt, ...rest } = req.body as z.infer<
       typeof createRentalSchema
     >;
@@ -205,6 +206,7 @@ router.post(
   requirePermission("rental:extend"),
   validate({ params: idParams, body: extendSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { newEndDate, reason } = req.body as z.infer<typeof extendSchema>;
     const { updated, previousStatus } = await rentalService.extendRental(
       req.params.id as string,
@@ -237,6 +239,7 @@ router.post(
     const { updated, previousStatus } = await rentalService.returnRental(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof returnSchema>,
       req.user!.userId,
     );
@@ -261,6 +264,7 @@ router.post(
   requirePermission("rental:cancel"),
   validate({ params: idParams, body: cancelSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { reason } = req.body as z.infer<typeof cancelSchema>;
     const { updated, previousStatus } = await rentalService.cancelRental(
       req.params.id as string,

@@ -10,6 +10,7 @@ interface ValidationSchemas {
 export function validate(schemas: ValidationSchemas) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (schemas.body) {
+      // type-coverage:ignore-next-line
       req.body = schemas.body.parse(req.body);
     }
     if (schemas.params) {

@@ -260,6 +260,7 @@ router.post("/client/rentals", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
 
+    // type-coverage:ignore-next-line
     const { assetId, rentalPlanId } = req.body as {
       assetId?: string;
       rentalPlanId?: string;

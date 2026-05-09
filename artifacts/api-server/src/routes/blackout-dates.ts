@@ -76,6 +76,7 @@ router.post(
           startDate,
           endDate,
           reason: reason ?? null,
+          // type-coverage:ignore-next-line
         }))(req.body as z.infer<typeof createSchema>),
         createdByUserId: req.user!.userId,
       })

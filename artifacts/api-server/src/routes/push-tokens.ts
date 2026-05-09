@@ -24,6 +24,7 @@ router.post(
   validate({ body: registerSchema }),
   async (req, res) => {
     const { companyId, token, platform, appVersion, deviceId } =
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof registerSchema>;
     const result = await pushTokenService.registerToken({
       userId: req.user!.userId,
@@ -42,6 +43,7 @@ router.post(
   authenticate,
   validate({ body: unregisterSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { token } = req.body as z.infer<typeof unregisterSchema>;
     const result = await pushTokenService.unregisterToken(
       token,

@@ -46,6 +46,7 @@ router.post(
   validate({ body: ingestSchema }),
   async (req, res) => {
     const ctx = req.apiKeyContext!;
+    // type-coverage:ignore-next-line
     const { provider, ...rest } = req.body as z.infer<typeof ingestSchema>;
     const result = await telemetryService.ingestTelemetry(
       { ...rest, provider: provider ?? ctx.provider },

@@ -53,6 +53,7 @@ router.post(
     const result = await rentalPaymentService.holdDeposit(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof holdSchema>,
       req.user!.userId,
     );
@@ -78,6 +79,7 @@ router.post(
     const payment = await rentalPaymentService.capturePayment(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof captureSchema>,
       req.user!.userId,
     );

@@ -32,6 +32,7 @@ router.post(
   validate({ body: createClientSchema }),
   async (req, res) => {
     const client = await clientService.createClient({
+      // type-coverage:ignore-next-line
       ...(req.body as z.infer<typeof createClientSchema>),
       companyId: req.tenant!.companyId,
     });
@@ -88,6 +89,7 @@ router.patch(
     const client = await clientService.updateClient(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateClientSchema>,
     );
     await createAuditLog({

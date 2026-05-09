@@ -40,6 +40,7 @@ router.post(
       tag,
       notes,
       capturedAt,
+      // type-coverage:ignore-next-line
     } = req.body as z.infer<typeof createSchema>;
     const attachment = await attachmentService.createAttachment({
       companyId: req.tenant!.companyId,

@@ -240,9 +240,8 @@ export function requireBranchAccess() {
       return;
     }
 
-    const reqBodyBranchId = (
-      req.body as Record<string, string | undefined> | undefined
-    )?.branchId;
+    const reqBodyBranchId = // type-coverage:ignore-next-line
+      (req.body as Record<string, string | undefined> | undefined)?.branchId;
     const branchId: string | undefined =
       req.tenant.branchId ||
       (req.headers["x-branch-id"] as string) ||

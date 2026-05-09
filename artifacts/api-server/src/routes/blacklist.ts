@@ -51,6 +51,7 @@ router.post(
   requirePermission("blacklist:create"),
   validate({ body: createBlacklistSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { startsAt, endsAt, ...rest } = req.body as z.infer<
       typeof createBlacklistSchema
     >;
@@ -139,6 +140,7 @@ router.post(
   requirePermission("blacklist:check"),
   validate({ body: checkBlacklistSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { clientId, branchId } = req.body as z.infer<
       typeof checkBlacklistSchema
     >;

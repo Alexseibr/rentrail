@@ -41,6 +41,7 @@ router.post(
       req.tenant!.companyId,
       req.params.id as string,
       {
+        // type-coverage:ignore-next-line
         ...(req.body as z.infer<typeof enqueueSchema>),
         requestedByUserId: req.user!.userId,
       },

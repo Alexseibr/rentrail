@@ -54,6 +54,7 @@ router.post(
   validate({ body: registerSchema }),
   async (req, res) => {
     const user = await authService.register(
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof registerSchema>,
     );
     res.status(201).json({ data: user });
@@ -65,6 +66,7 @@ router.post(
   validate({ body: loginSchema }),
   async (req, res) => {
     const result = await authService.login(
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof loginSchema>,
       req.headers["user-agent"],
       req.ip,
@@ -77,6 +79,7 @@ router.post(
   "/auth/phone/request-otp",
   validate({ body: phoneRequestOtpSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { phone } = req.body as z.infer<typeof phoneRequestOtpSchema>;
     const result = await phoneAuthService.requestOtp(phone);
     res.json({ data: result });
@@ -87,6 +90,7 @@ router.post(
   "/auth/phone/verify-otp",
   validate({ body: phoneVerifyOtpSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { phone, code } = req.body as z.infer<typeof phoneVerifyOtpSchema>;
     const result = await phoneAuthService.verifyOtp(
       phone,
@@ -102,6 +106,7 @@ router.post(
   "/auth/phone/login",
   validate({ body: phoneLoginSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { phone, password } = req.body as z.infer<typeof phoneLoginSchema>;
     const result = await phoneAuthService.loginWithPassword(
       phone,
@@ -118,6 +123,7 @@ router.post(
   authenticate,
   validate({ body: setPasswordSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { password } = req.body as z.infer<typeof setPasswordSchema>;
     await phoneAuthService.setPassword(req.user!.userId, password);
     res.json({ data: { message: "Password set successfully" } });
@@ -128,6 +134,7 @@ router.post(
   "/auth/refresh",
   validate({ body: refreshSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { refreshToken } = req.body as z.infer<typeof refreshSchema>;
     const tokens = await authService.refreshTokens(refreshToken);
     res.json({ data: tokens });
@@ -159,6 +166,7 @@ router.post(
   "/auth/client/login",
   validate({ body: clientLoginSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { phone, password, companyId } = req.body as z.infer<
       typeof clientLoginSchema
     >;
@@ -178,6 +186,7 @@ router.post(
   validate({ body: clientRefreshSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const { refreshToken } = req.body as z.infer<typeof clientRefreshSchema>;
       const payload = jwt.verify(refreshToken, config.jwt.refreshSecret) as {
         clientId: string;

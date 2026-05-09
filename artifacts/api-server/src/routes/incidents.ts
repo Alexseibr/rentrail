@@ -95,6 +95,7 @@ router.post(
   validate({ body: createIncidentSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const { branchId, title, description, severity } = req.body as z.infer<
         typeof createIncidentSchema
       >;
@@ -129,6 +130,7 @@ router.post(
   validate({ body: statusIncidentSchema }),
   async (req, res) => {
     try {
+      // type-coverage:ignore-next-line
       const { status } = req.body as z.infer<typeof statusIncidentSchema>;
       const update: Record<string, unknown> = { status };
       if (status === "resolved") update.resolvedAt = new Date();

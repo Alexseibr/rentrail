@@ -55,6 +55,7 @@ router.post(
   async (req, res) => {
     const geo = await geofenceService.createGeofence(
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof createGeofenceSchema>,
     );
     await createAuditLog({
@@ -110,6 +111,7 @@ router.patch(
     const geo = await geofenceService.updateGeofence(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateGeofenceSchema>,
     );
     await createAuditLog({

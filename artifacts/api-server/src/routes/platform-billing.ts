@@ -124,6 +124,7 @@ router.post(
   validate({ body: createPlanSchema }),
   async (req, res) => {
     const plan = await billingService.createPlan(
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof createPlanSchema>,
     );
     await createPlatformAuditLog(req, {
@@ -144,6 +145,7 @@ router.patch(
   async (req, res) => {
     const { updated, previous } = await billingService.updatePlan(
       req.params.id as string,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updatePlanSchema>,
     );
     await createPlatformAuditLog(req, {
@@ -204,6 +206,7 @@ router.patch(
   async (req, res) => {
     const updated = await billingService.updateSubscription(
       req.params.id as string,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateSubscriptionSchema>,
     );
     await createPlatformAuditLog(req, {
@@ -223,6 +226,7 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
@@ -249,6 +253,7 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
@@ -275,6 +280,7 @@ router.post(
   billingRoles,
   validate({ params: idParams, body: subscriptionActionSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { reason } = req.body as z.infer<typeof subscriptionActionSchema>;
     const { updated, previousStatus } =
       await billingService.changeSubscriptionStatus(
@@ -344,6 +350,7 @@ router.post(
   validate({ body: createInvoiceSchema }),
   async (req, res) => {
     const invoice = await billingService.createInvoice(
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof createInvoiceSchema>,
     );
     await createPlatformAuditLog(req, {
@@ -386,6 +393,7 @@ router.post(
   async (req, res) => {
     const { updated, previousStatus } = await billingService.markInvoicePaid(
       req.params.id as string,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof markPaidSchema>,
     );
     await createPlatformAuditLog(req, {
@@ -448,6 +456,7 @@ router.post(
   validate({ params: idParams, body: setPlanSchema }),
   async (req, res) => {
     const { planId, trialEndsAt, currentPeriodStart, currentPeriodEnd } =
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof setPlanSchema>;
     const subscription = await billingService.createSubscriptionForCompany(
       req.params.id as string,

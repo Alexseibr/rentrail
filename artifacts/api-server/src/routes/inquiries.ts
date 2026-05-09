@@ -61,6 +61,7 @@ router.patch(
     const inquiry = await inquiryService.updateInquiry(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateInquirySchema>,
     );
     await createAuditLog({

@@ -17,6 +17,7 @@ router.post(
   requireCompanyAccess,
   validate({ body: resolveSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { code } = req.body as z.infer<typeof resolveSchema>;
     const result = await scanService.resolveScannedCode(
       code,

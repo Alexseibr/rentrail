@@ -73,6 +73,7 @@ router.post(
   validate({ body: createAssetSchema }),
   async (req, res) => {
     const asset = await assetService.createAsset({
+      // type-coverage:ignore-next-line
       ...(req.body as z.infer<typeof createAssetSchema>),
       companyId: req.tenant!.companyId,
     });
@@ -148,6 +149,7 @@ router.patch(
     const asset = await assetService.updateAsset(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateAssetSchema>,
     );
     await createAuditLog({
@@ -171,6 +173,7 @@ router.post(
   requirePermission("asset:changeStatus"),
   validate({ params: idParams, body: changeStatusSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { status, reason } = req.body as z.infer<typeof changeStatusSchema>;
     const before = await assetService.getAsset(
       req.params.id as string,

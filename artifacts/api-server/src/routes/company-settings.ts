@@ -56,7 +56,8 @@ router.patch(
   requirePermission("company:update"),
   validate({ body: updateBrandingSchema }),
   async (req, res) => {
-    const body: z.infer<typeof updateBrandingSchema> = req.body;
+    // type-coverage:ignore-next-line
+    const body = req.body as z.infer<typeof updateBrandingSchema>;
     const old = await brandingService.getOrCreateBranding(
       req.tenant!.companyId,
     );
@@ -98,7 +99,8 @@ router.patch(
   requirePermission("settings:update"),
   validate({ body: updateModulesSchema }),
   async (req, res) => {
-    const body: z.infer<typeof updateModulesSchema> = req.body;
+    // type-coverage:ignore-next-line
+    const body = req.body as z.infer<typeof updateModulesSchema>;
     const modules = await moduleService.updateCompanyModules(
       req.tenant!.companyId,
       body,

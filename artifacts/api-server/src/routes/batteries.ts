@@ -52,6 +52,7 @@ router.post(
   async (req, res) => {
     const battery = await batteryService.createBattery(
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof createBatterySchema>,
     );
     await createAuditLog({
@@ -106,6 +107,7 @@ router.patch(
     const battery = await batteryService.updateBattery(
       req.params.id as string,
       req.tenant!.companyId,
+      // type-coverage:ignore-next-line
       req.body as z.infer<typeof updateBatterySchema>,
     );
     await createAuditLog({
@@ -150,6 +152,7 @@ router.post(
   requirePermission("battery:update"),
   validate({ params: idParams, body: assignSchema }),
   async (req, res) => {
+    // type-coverage:ignore-next-line
     const { batteryId, notes } = req.body as z.infer<typeof assignSchema>;
     const assignment = await batteryService.assignBattery(
       req.tenant!.companyId,

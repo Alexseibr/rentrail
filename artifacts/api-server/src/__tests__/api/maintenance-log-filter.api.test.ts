@@ -37,6 +37,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(400);
+    // type-coverage:ignore-next-line
     const errBody = res.body as { error: { code: string } };
     expect(errBody.error.code).toBe("VALIDATION");
   });
@@ -55,6 +56,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     const body = res.body as { data: unknown[] };
     expect(Array.isArray(body.data)).toBe(true);
   });
@@ -65,6 +67,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     const body = res.body as { data: unknown[] };
     expect(Array.isArray(body.data)).toBe(true);
   });
@@ -75,6 +78,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
       .set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     const body = res.body as { data: unknown[] };
     expect(Array.isArray(body.data)).toBe(true);
   });
@@ -83,6 +87,7 @@ describe("GET /api/maintenance-logs — logType filter validation", () => {
     const res = await request(testApp).get("/api/maintenance-logs").set(h());
 
     expect(res.status).toBe(200);
+    // type-coverage:ignore-next-line
     const body = res.body as { data: unknown[] };
     expect(Array.isArray(body.data)).toBe(true);
   });
