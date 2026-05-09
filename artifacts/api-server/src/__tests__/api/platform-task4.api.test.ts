@@ -13,12 +13,7 @@ import {
   blacklistEntries,
 } from "@workspace/db";
 import { checkClientBlacklist } from "../../services/blacklist.service";
-import { resBody } from "../helpers/response-body";
-
-type _RB = {
-  data: Record<string, unknown>;
-  error: { code: string; message: string };
-};
+import { resBody, type ApiResponse } from "../helpers/response-body";
 
 let platformAdmin: { token: string; id: string };
 let platformRisk: { token: string; id: string };
@@ -63,10 +58,11 @@ describe("Platform Global Blacklist", () => {
       .get("/api/platform/blacklist")
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.items).toBeInstanceOf(Array);
+    expect(resBody<ApiResponse>(res).data.items).toBeInstanceOf(Array);
     expect(
-      typeof (resBody<_RB>(res).data.pagination as Record<string, unknown>)
-        .total,
+      typeof (
+        resBody<ApiResponse>(res).data.pagination as Record<string, unknown>
+      ).total,
     ).toBe("number");
   });
 
@@ -85,10 +81,10 @@ describe("Platform Global Blacklist", () => {
       });
 
     expect(res.status).toBe(201);
-    expect(resBody<_RB>(res).data.scopeType).toBe("global");
-    expect(resBody<_RB>(res).data.actionType).toBe("blocked_global");
-    expect(resBody<_RB>(res).data.fullNameSnapshot).toBe("John Doe");
-    entryId = resBody<_RB>(res).data.id as string;
+    expect(resBody<ApiResponse>(res).data.scopeType).toBe("global");
+    expect(resBody<ApiResponse>(res).data.actionType).toBe("blocked_global");
+    expect(resBody<ApiResponse>(res).data.fullNameSnapshot).toBe("John Doe");
+    entryId = resBody<ApiResponse>(res).data.id as string;
   });
 
   it("lists entries with search filter", async () => {
@@ -98,7 +94,7 @@ describe("Platform Global Blacklist", () => {
     expect(res.status).toBe(200);
     expect(
       (
-        resBody<_RB>(res).data.items as unknown as Array<
+        resBody<ApiResponse>(res).data.items as unknown as Array<
           Record<string, unknown>
         >
       ).length,
@@ -112,7 +108,7 @@ describe("Platform Global Blacklist", () => {
     expect(res.status).toBe(200);
     expect(
       (
-        resBody<_RB>(res).data.items as unknown as Array<
+        resBody<ApiResponse>(res).data.items as unknown as Array<
           Record<string, unknown>
         >
       ).length,
@@ -124,7 +120,7 @@ describe("Platform Global Blacklist", () => {
       .get(`/api/platform/blacklist/${entryId}`)
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.id).toBe(entryId);
+    expect(resBody<ApiResponse>(res).data.id).toBe(entryId);
   });
 
   it("updates a blacklist entry", async () => {
@@ -133,7 +129,7 @@ describe("Platform Global Blacklist", () => {
       .set("Authorization", `Bearer ${platformRisk.token}`)
       .send({ reasonText: "Updated reason" });
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.reasonText).toBe("Updated reason");
+    expect(resBody<ApiResponse>(res).data.reasonText).toBe("Updated reason");
   });
 
   it("disables a blacklist entry", async () => {
@@ -141,7 +137,7 @@ describe("Platform Global Blacklist", () => {
       .post(`/api/platform/blacklist/${entryId}/disable`)
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.endsAt).not.toBeNull();
+    expect(resBody<ApiResponse>(res).data.endsAt).not.toBeNull();
   });
 
   it("re-enables a blacklist entry", async () => {
@@ -149,7 +145,7 @@ describe("Platform Global Blacklist", () => {
       .post(`/api/platform/blacklist/${entryId}/enable`)
       .set("Authorization", `Bearer ${platformRisk.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.endsAt).toBeNull();
+    expect(resBody<ApiResponse>(res).data.endsAt).toBeNull();
   });
 
   it("returns 404 for non-existent entry", async () => {
@@ -180,7 +176,7 @@ describe("Platform Global Blacklist", () => {
     expect(res.status).toBe(200);
     expect(
       (
-        resBody<_RB>(res).data.items as unknown as Array<
+        resBody<ApiResponse>(res).data.items as unknown as Array<
           Record<string, unknown>
         >
       ).length,
@@ -194,7 +190,7 @@ describe("Platform Global Blacklist", () => {
     expect(res.status).toBe(200);
     expect(
       (
-        resBody<_RB>(res).data.items as unknown as Array<
+        resBody<ApiResponse>(res).data.items as unknown as Array<
           Record<string, unknown>
         >
       ).length,
@@ -215,7 +211,7 @@ describe("Platform White-Label", () => {
       .get(`/api/platform/companies/${companyId}/white-label`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data).toBeNull();
+    expect(resBody<ApiResponse>(res).data).toBeNull();
   });
 
   it("creates settings via PATCH (upsert)", async () => {
@@ -228,9 +224,11 @@ describe("Platform White-Label", () => {
         customSupportEmail: "support@task4.test",
       });
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.brandNameOverride).toBe("Task4 Brand");
-    expect(resBody<_RB>(res).data.primaryColor).toBe("#FF5500");
-    expect(resBody<_RB>(res).data.status).toBe("disabled");
+    expect(resBody<ApiResponse>(res).data.brandNameOverride).toBe(
+      "Task4 Brand",
+    );
+    expect(resBody<ApiResponse>(res).data.primaryColor).toBe("#FF5500");
+    expect(resBody<ApiResponse>(res).data.status).toBe("disabled");
   });
 
   it("updates existing settings via PATCH", async () => {
@@ -239,8 +237,8 @@ describe("Platform White-Label", () => {
       .set("Authorization", `Bearer ${platformAdmin.token}`)
       .send({ secondaryColor: "#00AAFF" });
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.secondaryColor).toBe("#00AAFF");
-    expect(resBody<_RB>(res).data.primaryColor).toBe("#FF5500");
+    expect(resBody<ApiResponse>(res).data.secondaryColor).toBe("#00AAFF");
+    expect(resBody<ApiResponse>(res).data.primaryColor).toBe("#FF5500");
   });
 
   it("rejects enable when plan is not eligible", async () => {
@@ -248,7 +246,7 @@ describe("Platform White-Label", () => {
       .post(`/api/platform/companies/${companyId}/white-label/enable`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(422);
-    expect(resBody<_RB>(res).error.code).toBe("PLAN_NOT_ELIGIBLE");
+    expect(resBody<ApiResponse>(res).error.code).toBe("PLAN_NOT_ELIGIBLE");
   });
 
   it("allows enable when plan has whiteLabelAvailable", async () => {
@@ -275,8 +273,8 @@ describe("Platform White-Label", () => {
       .post(`/api/platform/companies/${companyId}/white-label/enable`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.status).toBe("enabled");
-    expect(resBody<_RB>(res).data.enabledAt).not.toBeNull();
+    expect(resBody<ApiResponse>(res).data.status).toBe("enabled");
+    expect(resBody<ApiResponse>(res).data.enabledAt).not.toBeNull();
   });
 
   it("disables white-label", async () => {
@@ -284,7 +282,7 @@ describe("Platform White-Label", () => {
       .post(`/api/platform/companies/${companyId}/white-label/disable`)
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.status).toBe("disabled");
+    expect(resBody<ApiResponse>(res).data.status).toBe("disabled");
   });
 
   it("returns 404 for non-existent company", async () => {
@@ -319,20 +317,21 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/health/summary")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.tenants).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.tenants).toBeDefined();
     expect(
-      (resBody<_RB>(res).data.tenants as Record<string, unknown>).total,
+      (resBody<ApiResponse>(res).data.tenants as Record<string, unknown>).total,
     ).toBeGreaterThanOrEqual(0);
-    expect(resBody<_RB>(res).data.assets).toBeDefined();
-    expect(resBody<_RB>(res).data.devices).toBeDefined();
-    expect(resBody<_RB>(res).data.build).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.assets).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.devices).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.build).toBeDefined();
     expect(
-      typeof (resBody<_RB>(res).data.build as Record<string, unknown>).uptime,
+      typeof (resBody<ApiResponse>(res).data.build as Record<string, unknown>)
+        .uptime,
     ).toBe("number");
-    expect(resBody<_RB>(res).data.services).toBeInstanceOf(Array);
+    expect(resBody<ApiResponse>(res).data.services).toBeInstanceOf(Array);
     expect(
       (
-        resBody<_RB>(res).data.services as unknown as Array<
+        resBody<ApiResponse>(res).data.services as unknown as Array<
           Record<string, unknown>
         >
       ).length,
@@ -344,13 +343,18 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/health/services")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data).toBeInstanceOf(Array);
+    expect(resBody<ApiResponse>(res).data).toBeInstanceOf(Array);
     expect(
-      (resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>)
-        .length,
+      (
+        resBody<ApiResponse>(res).data as unknown as Array<
+          Record<string, unknown>
+        >
+      ).length,
     ).toBe(5);
     const names = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((s: { name: string }) => s.name);
     expect(names).toContain("Email Service");
     expect(names).toContain("Object Storage");
@@ -361,8 +365,8 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/diagnostics/storage")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.name).toBe("Object Storage");
-    expect(resBody<_RB>(res).data.status).toBe("ok");
+    expect(resBody<ApiResponse>(res).data.name).toBe("Object Storage");
+    expect(resBody<ApiResponse>(res).data.status).toBe("ok");
   });
 
   it("returns 422 for invalid service name", async () => {
@@ -377,14 +381,17 @@ describe("Platform Diagnostics", () => {
       .get("/api/platform/health/tenants")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data).toBeInstanceOf(Array);
+    expect(resBody<ApiResponse>(res).data).toBeInstanceOf(Array);
     if (
-      (resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>)
-        .length > 0
+      (
+        resBody<ApiResponse>(res).data as unknown as Array<
+          Record<string, unknown>
+        >
+      ).length > 0
     ) {
-      expect(resBody<_RB>(res).data[0]).toHaveProperty("healthStatus");
-      expect(resBody<_RB>(res).data[0]).toHaveProperty("assets");
-      expect(resBody<_RB>(res).data[0]).toHaveProperty("devices");
+      expect(resBody<ApiResponse>(res).data[0]).toHaveProperty("healthStatus");
+      expect(resBody<ApiResponse>(res).data[0]).toHaveProperty("assets");
+      expect(resBody<ApiResponse>(res).data[0]).toHaveProperty("devices");
     }
   });
 
@@ -409,9 +416,11 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/overview")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.tenants).toBeDefined();
-    expect(typeof resBody<_RB>(res).data.mrrEstimate).toBe("number");
-    expect(resBody<_RB>(res).data.planDistribution).toBeInstanceOf(Array);
+    expect(resBody<ApiResponse>(res).data.tenants).toBeDefined();
+    expect(typeof resBody<ApiResponse>(res).data.mrrEstimate).toBe("number");
+    expect(resBody<ApiResponse>(res).data.planDistribution).toBeInstanceOf(
+      Array,
+    );
   });
 
   it("returns top tenants by rentals", async () => {
@@ -419,8 +428,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/tenants?metric=rentals&limit=5")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.metric).toBe("rentals");
-    expect(resBody<_RB>(res).data.items).toBeInstanceOf(Array);
+    expect(resBody<ApiResponse>(res).data.metric).toBe("rentals");
+    expect(resBody<ApiResponse>(res).data.items).toBeInstanceOf(Array);
   });
 
   it("returns top tenants by assets", async () => {
@@ -428,7 +437,7 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/tenants?metric=assets")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.metric).toBe("assets");
+    expect(resBody<ApiResponse>(res).data.metric).toBe("assets");
   });
 
   it("returns billing metrics", async () => {
@@ -436,8 +445,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/billing")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.invoices).toBeDefined();
-    expect(resBody<_RB>(res).data.revenue).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.invoices).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.revenue).toBeDefined();
   });
 
   it("returns usage metrics", async () => {
@@ -445,8 +454,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/usage")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(typeof resBody<_RB>(res).data.totalCompanies).toBe("number");
-    expect(resBody<_RB>(res).data.averages).toBeDefined();
+    expect(typeof resBody<ApiResponse>(res).data.totalCompanies).toBe("number");
+    expect(resBody<ApiResponse>(res).data.averages).toBeDefined();
   });
 
   it("returns risk metrics", async () => {
@@ -454,8 +463,8 @@ describe("Platform Analytics", () => {
       .get("/api/platform/analytics/risks")
       .set("Authorization", `Bearer ${platformAdmin.token}`);
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data.blacklist).toBeDefined();
-    expect(resBody<_RB>(res).data.incidents).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.blacklist).toBeDefined();
+    expect(resBody<ApiResponse>(res).data.incidents).toBeDefined();
   });
 
   it("platformFinance can access analytics", async () => {

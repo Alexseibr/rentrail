@@ -9,12 +9,7 @@ import {
 } from "../../test/helpers";
 import { db } from "@workspace/db";
 import { rentals } from "@workspace/db/schema";
-import { resBody } from "../helpers/response-body";
-
-type _RB = {
-  data: Record<string, unknown>;
-  error: { code: string; message: string };
-};
+import { resBody, type ApiResponse } from "../helpers/response-body";
 
 interface TenantContext {
   company: { id: string };
@@ -55,8 +50,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ name: "Downtown Branch", city: "Madrid", country: "ES" });
 
       expect(res.status).toBe(201);
-      expect(resBody<_RB>(res).data.name).toBe("Downtown Branch");
-      branchId = resBody<_RB>(res).data.id as string;
+      expect(resBody<ApiResponse>(res).data.name).toBe("Downtown Branch");
+      branchId = resBody<ApiResponse>(res).data.id as string;
     });
 
     it("lists branches (tenant-scoped)", async () => {
@@ -67,10 +62,13 @@ describe("Phase 4 — Core Tenant CRUD", () => {
 
       expect(res.status).toBe(200);
       expect(
-        (resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>)
-          .length,
+        (
+          resBody<ApiResponse>(res).data as unknown as Array<
+            Record<string, unknown>
+          >
+        ).length,
       ).toBeGreaterThanOrEqual(1);
-      for (const b of resBody<_RB>(res).data as unknown as Array<
+      for (const b of resBody<ApiResponse>(res).data as unknown as Array<
         Record<string, unknown>
       >) {
         expect(b.companyId).toBe(tenantA.company.id);
@@ -93,7 +91,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("inactive");
+      expect(resBody<ApiResponse>(res).data.status).toBe("inactive");
     });
 
     it("rejects double deactivation", async () => {
@@ -112,7 +110,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("active");
+      expect(resBody<ApiResponse>(res).data.status).toBe("active");
     });
   });
 
@@ -131,7 +129,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       expect(res.status).toBe(201);
-      clientId = resBody<_RB>(res).data.id as string;
+      clientId = resBody<ApiResponse>(res).data.id as string;
     });
 
     it("archives a client", async () => {
@@ -141,8 +139,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("archived");
-      expect(resBody<_RB>(res).data.archivedAt).toBeTruthy();
+      expect(resBody<ApiResponse>(res).data.status).toBe("archived");
+      expect(resBody<ApiResponse>(res).data.archivedAt).toBeTruthy();
     });
 
     it("cannot update archived client", async () => {
@@ -162,8 +160,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("active");
-      expect(resBody<_RB>(res).data.archivedAt).toBeNull();
+      expect(resBody<ApiResponse>(res).data.status).toBe("active");
+      expect(resBody<ApiResponse>(res).data.archivedAt).toBeNull();
     });
 
     it("other tenant cannot see this client", async () => {
@@ -193,8 +191,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       expect(res.status).toBe(201);
-      expect(resBody<_RB>(res).data.assetType).toBe("ebike");
-      assetId = resBody<_RB>(res).data.id as string;
+      expect(resBody<ApiResponse>(res).data.assetType).toBe("ebike");
+      assetId = resBody<ApiResponse>(res).data.id as string;
     });
 
     it("changes status draft → available", async () => {
@@ -205,7 +203,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ status: "available", reason: "Ready for fleet" });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("available");
+      expect(resBody<ApiResponse>(res).data.status).toBe("available");
     });
 
     it("rejects invalid transition available → draft", async () => {
@@ -226,7 +224,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ status: "maintenance", reason: "Scheduled check" });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("maintenance");
+      expect(resBody<ApiResponse>(res).data.status).toBe("maintenance");
     });
 
     it("records status history", async () => {
@@ -237,8 +235,11 @@ describe("Phase 4 — Core Tenant CRUD", () => {
 
       expect(res.status).toBe(200);
       expect(
-        (resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>)
-          .length,
+        (
+          resBody<ApiResponse>(res).data as unknown as Array<
+            Record<string, unknown>
+          >
+        ).length,
       ).toBeGreaterThanOrEqual(3);
     });
 
@@ -249,7 +250,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(archiveRes.status).toBe(200);
-      expect(resBody<_RB>(archiveRes).data.archivedAt).toBeTruthy();
+      expect(resBody<ApiResponse>(archiveRes).data.archivedAt).toBeTruthy();
 
       const restoreRes = await request(testApp)
         .post(`/api/assets/${assetId}/restore`)
@@ -257,7 +258,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(restoreRes.status).toBe(200);
-      expect(resBody<_RB>(restoreRes).data.archivedAt).toBeNull();
+      expect(resBody<ApiResponse>(restoreRes).data.archivedAt).toBeNull();
     });
 
     it("other tenant cannot change status of this asset", async () => {
@@ -293,7 +294,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
           assetType: "scooter",
           serialNumber: `RW-${Date.now()}`,
         });
-      assetId = resBody<_RB>(assetRes).data.id as string;
+      assetId = resBody<ApiResponse>(assetRes).data.id as string;
 
       await request(testApp)
         .post(`/api/assets/${assetId}/status`)
@@ -306,7 +307,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Rental Client" });
-      clientId = resBody<_RB>(clientRes).data.id as string;
+      clientId = resBody<ApiResponse>(clientRes).data.id as string;
     });
 
     it("creates a rental", async () => {
@@ -317,8 +318,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId, assetId, branchId: tenantA.branch.id });
 
       expect(res.status).toBe(201);
-      expect(resBody<_RB>(res).data.status).toBe("draft");
-      rentalId = resBody<_RB>(res).data.id as string;
+      expect(resBody<ApiResponse>(res).data.status).toBe("draft");
+      rentalId = resBody<ApiResponse>(res).data.id as string;
     });
 
     it("approves the rental (draft → awaiting_payment)", async () => {
@@ -328,7 +329,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("awaiting_payment");
+      expect(resBody<ApiResponse>(res).data.status).toBe("awaiting_payment");
     });
 
     it("starts the rental (awaiting_pickup → active)", async () => {
@@ -340,7 +341,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("active");
+      expect(resBody<ApiResponse>(res).data.status).toBe("active");
     });
 
     it("extends the rental (active → extended)", async () => {
@@ -354,7 +355,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ newEndDate: nextWeek, reason: "Customer requested extension" });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("extended");
+      expect(resBody<ApiResponse>(res).data.status).toBe("extended");
     });
 
     it("returns the rental (extended → completed)", async () => {
@@ -365,8 +366,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ assetReturnStatus: "available" });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("completed");
-      expect(resBody<_RB>(res).data.actualEndAt).toBeTruthy();
+      expect(resBody<ApiResponse>(res).data.status).toBe("completed");
+      expect(resBody<ApiResponse>(res).data.actualEndAt).toBeTruthy();
     });
 
     it("records rental status history", async () => {
@@ -377,8 +378,11 @@ describe("Phase 4 — Core Tenant CRUD", () => {
 
       expect(res.status).toBe(200);
       expect(
-        (resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>)
-          .length,
+        (
+          resBody<ApiResponse>(res).data as unknown as Array<
+            Record<string, unknown>
+          >
+        ).length,
       ).toBeGreaterThanOrEqual(3);
     });
 
@@ -406,7 +410,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
           assetType: "bike",
           serialNumber: `CAN-${Date.now()}`,
         });
-      assetId = resBody<_RB>(assetRes).data.id as string;
+      assetId = resBody<ApiResponse>(assetRes).data.id as string;
 
       await request(testApp)
         .post(`/api/assets/${assetId}/status`)
@@ -419,7 +423,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Cancel Test Client" });
-      clientId = resBody<_RB>(clientRes).data.id as string;
+      clientId = resBody<ApiResponse>(clientRes).data.id as string;
     });
 
     it("creates and cancels a draft rental", async () => {
@@ -432,13 +436,13 @@ describe("Phase 4 — Core Tenant CRUD", () => {
       expect(createRes.status).toBe(201);
 
       const cancelRes = await request(testApp)
-        .post(`/api/rentals/${resBody<_RB>(createRes).data.id}/cancel`)
+        .post(`/api/rentals/${resBody<ApiResponse>(createRes).data.id}/cancel`)
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ reason: "Customer changed mind" });
 
       expect(cancelRes.status).toBe(200);
-      expect(resBody<_RB>(cancelRes).data.status).toBe("canceled");
+      expect(resBody<ApiResponse>(cancelRes).data.status).toBe("canceled");
     });
   });
 
@@ -451,7 +455,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Blacklist Test Client" });
-      clientId = resBody<_RB>(clientRes).data.id as string;
+      clientId = resBody<ApiResponse>(clientRes).data.id as string;
     });
 
     it("creates a warning-level blacklist entry", async () => {
@@ -477,9 +481,9 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.isBlacklisted).toBe(true);
-      expect(resBody<_RB>(res).data.isBlocked).toBe(false);
-      expect(resBody<_RB>(res).data.strongestAction).toBe("warning");
+      expect(resBody<ApiResponse>(res).data.isBlacklisted).toBe(true);
+      expect(resBody<ApiResponse>(res).data.isBlocked).toBe(false);
+      expect(resBody<ApiResponse>(res).data.strongestAction).toBe("warning");
     });
 
     it("adds a blocking-level entry", async () => {
@@ -505,9 +509,11 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.isBlocked).toBe(true);
-      expect(resBody<_RB>(res).data.strongestAction).toBe("blocked_company");
-      expect(resBody<_RB>(res).data.strongestSeverity).toBe(6);
+      expect(resBody<ApiResponse>(res).data.isBlocked).toBe(true);
+      expect(resBody<ApiResponse>(res).data.strongestAction).toBe(
+        "blocked_company",
+      );
+      expect(resBody<ApiResponse>(res).data.strongestSeverity).toBe(6);
     });
 
     it("blocked client cannot create rental", async () => {
@@ -520,7 +526,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
           assetType: "scooter",
           serialNumber: `BL-${Date.now()}`,
         });
-      const assetId = resBody<_RB>(assetRes).data.id as string;
+      const assetId = resBody<ApiResponse>(assetRes).data.id as string;
 
       await request(testApp)
         .post(`/api/assets/${assetId}/status`)
@@ -547,7 +553,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id)
         .send({ fullName: "Revoke Test Client" });
-      clientId = resBody<_RB>(clientRes).data.id as string;
+      clientId = resBody<ApiResponse>(clientRes).data.id as string;
     });
 
     it("creates and revokes a blacklist entry", async () => {
@@ -563,12 +569,14 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       const revokeRes = await request(testApp)
-        .post(`/api/blacklist/${resBody<_RB>(createRes).data.id}/revoke`)
+        .post(
+          `/api/blacklist/${resBody<ApiResponse>(createRes).data.id}/revoke`,
+        )
         .set("Authorization", `Bearer ${tenantA.ownerToken}`)
         .set("x-company-id", tenantA.company.id);
 
       expect(revokeRes.status).toBe(200);
-      expect(resBody<_RB>(revokeRes).data.endsAt).toBeTruthy();
+      expect(resBody<ApiResponse>(revokeRes).data.endsAt).toBeTruthy();
     });
 
     it("revoked entry no longer blocks", async () => {
@@ -579,7 +587,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .send({ clientId });
 
       expect(checkRes.status).toBe(200);
-      expect(resBody<_RB>(checkRes).data.isBlocked).toBe(false);
+      expect(resBody<ApiResponse>(checkRes).data.isBlocked).toBe(false);
     });
 
     it("other tenant cannot revoke this entry", async () => {
@@ -595,7 +603,7 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         });
 
       const res = await request(testApp)
-        .post(`/api/blacklist/${resBody<_RB>(newEntry).data.id}/revoke`)
+        .post(`/api/blacklist/${resBody<ApiResponse>(newEntry).data.id}/revoke`)
         .set("Authorization", `Bearer ${tenantB.ownerToken}`)
         .set("x-company-id", tenantB.company.id);
 
@@ -611,14 +619,15 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.items).toBeDefined();
-      expect(resBody<_RB>(res).data.pagination).toBeDefined();
+      expect(resBody<ApiResponse>(res).data.items).toBeDefined();
+      expect(resBody<ApiResponse>(res).data.pagination).toBeDefined();
       expect(
-        (resBody<_RB>(res).data.pagination as Record<string, unknown>).page,
+        (resBody<ApiResponse>(res).data.pagination as Record<string, unknown>)
+          .page,
       ).toBe(1);
       expect(
         (
-          resBody<_RB>(res).data.items as unknown as Array<
+          resBody<ApiResponse>(res).data.items as unknown as Array<
             Record<string, unknown>
           >
         ).length,
@@ -632,9 +641,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      for (const item of resBody<_RB>(res).data.items as unknown as Array<
-        Record<string, unknown>
-      >) {
+      for (const item of resBody<ApiResponse>(res).data
+        .items as unknown as Array<Record<string, unknown>>) {
         expect(item.entityType).toBe("rental");
       }
     });
@@ -646,9 +654,8 @@ describe("Phase 4 — Core Tenant CRUD", () => {
         .set("x-company-id", tenantA.company.id);
 
       expect(res.status).toBe(200);
-      for (const item of resBody<_RB>(res).data.items as unknown as Array<
-        Record<string, unknown>
-      >) {
+      for (const item of resBody<ApiResponse>(res).data
+        .items as unknown as Array<Record<string, unknown>>) {
         expect(item.action).toBe("create");
       }
     });
@@ -662,13 +669,13 @@ describe("Phase 4 — Core Tenant CRUD", () => {
       expect(res.status).toBe(200);
       expect(
         (
-          resBody<_RB>(res).data.items as unknown as Array<
+          resBody<ApiResponse>(res).data.items as unknown as Array<
             Record<string, unknown>
           >
         ).length,
       ).toBeGreaterThanOrEqual(1);
       const item = (
-        resBody<_RB>(res).data.items as unknown as Array<
+        resBody<ApiResponse>(res).data.items as unknown as Array<
           Record<string, unknown>
         >
       )[0];
@@ -691,18 +698,16 @@ describe("Phase 4 — Core Tenant CRUD", () => {
 
       expect(
         (
-          resBody<_RB>(resA).data.items as unknown as Array<
+          resBody<ApiResponse>(resA).data.items as unknown as Array<
             Record<string, unknown>
           >
         ).length,
       ).toBeGreaterThan(0);
 
-      for (const item of resBody<_RB>(resB).data.items as unknown as Array<
-        Record<string, unknown>
-      >) {
-        for (const itemA of resBody<_RB>(resA).data.items as unknown as Array<
-          Record<string, unknown>
-        >) {
+      for (const item of resBody<ApiResponse>(resB).data
+        .items as unknown as Array<Record<string, unknown>>) {
+        for (const itemA of resBody<ApiResponse>(resA).data
+          .items as unknown as Array<Record<string, unknown>>) {
           expect(item.id).not.toBe(itemA.id);
         }
       }

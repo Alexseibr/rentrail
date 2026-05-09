@@ -15,12 +15,7 @@ import {
   type TestTenant,
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
-import { resBody } from "../helpers/response-body";
-
-type _RB = {
-  data: Record<string, unknown>;
-  error: { code: string; message: string };
-};
+import { resBody, type ApiResponse } from "../helpers/response-body";
 
 describe("Rental Workflow API", () => {
   let admin: TestUser;
@@ -57,7 +52,7 @@ describe("Rental Workflow API", () => {
       branchId: tenant.branch.id,
     });
     expect(res.status).toBe(201);
-    return resBody<_RB>(res).data;
+    return resBody<ApiResponse>(res).data;
   }
 
   async function forceRentalStatus(rentalId: string, status: string) {
@@ -82,8 +77,8 @@ describe("Rental Workflow API", () => {
       });
 
       expect(res.status).toBe(201);
-      expect(resBody<_RB>(res).data.status).toBe("draft");
-      rentalId = resBody<_RB>(res).data.id as string;
+      expect(resBody<ApiResponse>(res).data.status).toBe("draft");
+      rentalId = resBody<ApiResponse>(res).data.id as string;
     });
 
     it("approve rental (draft → awaiting_payment)", async () => {
@@ -92,7 +87,7 @@ describe("Rental Workflow API", () => {
         .set(h());
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("awaiting_payment");
+      expect(resBody<ApiResponse>(res).data.status).toBe("awaiting_payment");
     });
 
     it("start rental (awaiting_pickup → active)", async () => {
@@ -103,14 +98,14 @@ describe("Rental Workflow API", () => {
         .set(h());
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("active");
+      expect(resBody<ApiResponse>(res).data.status).toBe("active");
     });
 
     it("asset becomes rented after start", async () => {
       const res = await request(testApp).get(`/api/assets/${assetId}`).set(h());
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("rented");
+      expect(resBody<ApiResponse>(res).data.status).toBe("rented");
     });
 
     it("extend rental (active → extended)", async () => {
@@ -123,7 +118,7 @@ describe("Rental Workflow API", () => {
         .send({ newEndDate: futureDate, reason: "Customer requested" });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("extended");
+      expect(resBody<ApiResponse>(res).data.status).toBe("extended");
     });
 
     it("return rental (extended → completed)", async () => {
@@ -136,14 +131,14 @@ describe("Rental Workflow API", () => {
         });
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("completed");
+      expect(resBody<ApiResponse>(res).data.status).toBe("completed");
     });
 
     it("asset reverts to available after return", async () => {
       const res = await request(testApp).get(`/api/assets/${assetId}`).set(h());
 
       expect(res.status).toBe(200);
-      expect(resBody<_RB>(res).data.status).toBe("available");
+      expect(resBody<ApiResponse>(res).data.status).toBe("available");
     });
 
     it("rental status history is complete", async () => {
@@ -153,7 +148,9 @@ describe("Rental Workflow API", () => {
 
       expect(res.status).toBe(200);
       const statuses = (
-        resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+        resBody<ApiResponse>(res).data as unknown as Array<
+          Record<string, unknown>
+        >
       ).map((e: { toStatus: string }) => e.toStatus);
       expect(statuses).toContain("draft");
       expect(statuses).toContain("active");
@@ -171,7 +168,7 @@ describe("Rental Workflow API", () => {
         .send({ reason: "Customer changed mind" });
 
       expect(cancel.status).toBe(200);
-      expect(resBody<_RB>(cancel).data.status).toBe("canceled");
+      expect(resBody<ApiResponse>(cancel).data.status).toBe("canceled");
     });
 
     it("cancel active rental rolls back asset to available", async () => {
@@ -184,7 +181,7 @@ describe("Rental Workflow API", () => {
       const assetCheck = await request(testApp)
         .get(`/api/assets/${asset.id}`)
         .set(h());
-      expect(resBody<_RB>(assetCheck).data.status).toBe("rented");
+      expect(resBody<ApiResponse>(assetCheck).data.status).toBe("rented");
 
       const cancel = await request(testApp)
         .post(`/api/rentals/${rental.id}/cancel`)
@@ -192,12 +189,12 @@ describe("Rental Workflow API", () => {
         .send({ reason: "Emergency" });
 
       expect(cancel.status).toBe(200);
-      expect(resBody<_RB>(cancel).data.status).toBe("canceled");
+      expect(resBody<ApiResponse>(cancel).data.status).toBe("canceled");
 
       const assetAfter = await request(testApp)
         .get(`/api/assets/${asset.id}`)
         .set(h());
-      expect(resBody<_RB>(assetAfter).data.status).toBe("available");
+      expect(resBody<ApiResponse>(assetAfter).data.status).toBe("available");
     });
 
     it("cancel awaiting_payment rental", async () => {
@@ -211,7 +208,7 @@ describe("Rental Workflow API", () => {
         .send({});
 
       expect(cancel.status).toBe(200);
-      expect(resBody<_RB>(cancel).data.status).toBe("canceled");
+      expect(resBody<ApiResponse>(cancel).data.status).toBe("canceled");
     });
   });
 
@@ -335,14 +332,14 @@ describe("Rental Workflow API", () => {
         .set(h())
         .send({ status: "maintenance", reason: "Scheduled check" });
       expect(toMaint.status).toBe(200);
-      expect(resBody<_RB>(toMaint).data.status).toBe("maintenance");
+      expect(resBody<ApiResponse>(toMaint).data.status).toBe("maintenance");
 
       const toAvail = await request(testApp)
         .post(`/api/assets/${asset.id}/status`)
         .set(h())
         .send({ status: "available", reason: "Repair done" });
       expect(toAvail.status).toBe(200);
-      expect(resBody<_RB>(toAvail).data.status).toBe("available");
+      expect(resBody<ApiResponse>(toAvail).data.status).toBe("available");
     });
 
     it("cannot transition retired asset to available", async () => {
@@ -392,7 +389,7 @@ describe("Rental Workflow API", () => {
       expect(history.status).toBe(200);
       expect(
         (
-          resBody<_RB>(history).data as unknown as Array<
+          resBody<ApiResponse>(history).data as unknown as Array<
             Record<string, unknown>
           >
         ).length,

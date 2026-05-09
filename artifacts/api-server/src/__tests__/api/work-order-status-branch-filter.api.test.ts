@@ -12,12 +12,7 @@ import {
 } from "../../test/helpers";
 import { seedRolesAndPermissions } from "../../test/seed-rbac-inline";
 import { db, branches } from "@workspace/db";
-import { resBody } from "../helpers/response-body";
-
-type _RB = {
-  data: Record<string, unknown>;
-  error: { code: string; message: string };
-};
+import { resBody, type ApiResponse } from "../helpers/response-body";
 
 describe("GET /api/work-orders — status filter", () => {
   let admin: TestUser;
@@ -46,14 +41,14 @@ describe("GET /api/work-orders — status filter", () => {
       .set(h())
       .send({ title: "Draft WO", orderType: "inspection" });
     expect(resDraft.status).toBe(201);
-    woDraft = resBody<_RB>(resDraft).data.id as string;
+    woDraft = resBody<ApiResponse>(resDraft).data.id as string;
 
     const resInProgress = await request(testApp)
       .post("/api/work-orders")
       .set(h())
       .send({ title: "In-Progress WO", orderType: "field_repair" });
     expect(resInProgress.status).toBe(201);
-    woInProgress = resBody<_RB>(resInProgress).data.id as string;
+    woInProgress = resBody<ApiResponse>(resInProgress).data.id as string;
 
     await request(testApp)
       .post(`/api/work-orders/${woInProgress}/status`)
@@ -65,7 +60,7 @@ describe("GET /api/work-orders — status filter", () => {
       .set(h())
       .send({ title: "Completed WO", orderType: "workshop_repair" });
     expect(resCompleted.status).toBe(201);
-    woCompleted = resBody<_RB>(resCompleted).data.id as string;
+    woCompleted = resBody<ApiResponse>(resCompleted).data.id as string;
 
     await request(testApp)
       .post(`/api/work-orders/${woCompleted}/status`)
@@ -84,7 +79,9 @@ describe("GET /api/work-orders — status filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woDraft);
     expect(ids).not.toContain(woInProgress);
@@ -98,7 +95,9 @@ describe("GET /api/work-orders — status filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woInProgress);
     expect(ids).not.toContain(woDraft);
@@ -112,7 +111,9 @@ describe("GET /api/work-orders — status filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woCompleted);
     expect(ids).not.toContain(woDraft);
@@ -125,7 +126,7 @@ describe("GET /api/work-orders — status filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    for (const wo of resBody<_RB>(res).data as unknown as Array<
+    for (const wo of resBody<ApiResponse>(res).data as unknown as Array<
       Record<string, unknown>
     >) {
       expect(wo.status).toBe("in_progress");
@@ -176,7 +177,7 @@ describe("GET /api/work-orders — branchId filter", () => {
       branchId: tenant.branch.id,
     });
     expect(resA.status).toBe(201);
-    woBranchA = resBody<_RB>(resA).data.id as string;
+    woBranchA = resBody<ApiResponse>(resA).data.id as string;
 
     const resB = await request(testApp).post("/api/work-orders").set(h()).send({
       title: "WO for Branch B",
@@ -184,14 +185,14 @@ describe("GET /api/work-orders — branchId filter", () => {
       branchId: branchBId,
     });
     expect(resB.status).toBe(201);
-    woBranchB = resBody<_RB>(resB).data.id as string;
+    woBranchB = resBody<ApiResponse>(resB).data.id as string;
 
     const resNone = await request(testApp)
       .post("/api/work-orders")
       .set(h())
       .send({ title: "WO without Branch", orderType: "workshop_repair" });
     expect(resNone.status).toBe(201);
-    woNoBranch = resBody<_RB>(resNone).data.id as string;
+    woNoBranch = resBody<ApiResponse>(resNone).data.id as string;
   }, 30000);
 
   function h() {
@@ -205,7 +206,9 @@ describe("GET /api/work-orders — branchId filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woBranchA);
     expect(ids).not.toContain(woBranchB);
@@ -219,7 +222,9 @@ describe("GET /api/work-orders — branchId filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woBranchB);
     expect(ids).not.toContain(woBranchA);
@@ -232,7 +237,7 @@ describe("GET /api/work-orders — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    for (const wo of resBody<_RB>(res).data as unknown as Array<
+    for (const wo of resBody<ApiResponse>(res).data as unknown as Array<
       Record<string, unknown>
     >) {
       expect(wo.branchId).toBe(branchBId);
@@ -245,7 +250,7 @@ describe("GET /api/work-orders — branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data).toHaveLength(0);
+    expect(resBody<ApiResponse>(res).data).toHaveLength(0);
   });
 });
 
@@ -287,7 +292,7 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
         branchId: tenant.branch.id,
       });
     expect(resADraft.status).toBe(201);
-    woBranchADraft = resBody<_RB>(resADraft).data.id as string;
+    woBranchADraft = resBody<ApiResponse>(resADraft).data.id as string;
 
     const resACompleted = await request(testApp)
       .post("/api/work-orders")
@@ -298,7 +303,7 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
         branchId: tenant.branch.id,
       });
     expect(resACompleted.status).toBe(201);
-    woBranchACompleted = resBody<_RB>(resACompleted).data.id as string;
+    woBranchACompleted = resBody<ApiResponse>(resACompleted).data.id as string;
 
     await request(testApp)
       .post(`/api/work-orders/${woBranchACompleted}/status`)
@@ -314,7 +319,7 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
         branchId: branchBId,
       });
     expect(resBDraft.status).toBe(201);
-    woBranchBDraft = resBody<_RB>(resBDraft).data.id as string;
+    woBranchBDraft = resBody<ApiResponse>(resBDraft).data.id as string;
   }, 30000);
 
   function h() {
@@ -328,7 +333,9 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woBranchADraft);
     expect(ids).not.toContain(woBranchACompleted);
@@ -342,7 +349,9 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woBranchACompleted);
     expect(ids).not.toContain(woBranchADraft);
@@ -356,7 +365,9 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).toContain(woBranchBDraft);
     expect(ids).not.toContain(woBranchADraft);
@@ -370,7 +381,9 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
 
     expect(res.status).toBe(200);
     const ids = (
-      resBody<_RB>(res).data as unknown as Array<Record<string, unknown>>
+      resBody<ApiResponse>(res).data as unknown as Array<
+        Record<string, unknown>
+      >
     ).map((wo: Record<string, unknown>) => wo.id as string);
     expect(ids).not.toContain(woBranchADraft);
     expect(ids).not.toContain(woBranchACompleted);
@@ -385,6 +398,6 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
       .set(h());
 
     expect(res.status).toBe(200);
-    expect(resBody<_RB>(res).data).toHaveLength(0);
+    expect(resBody<ApiResponse>(res).data).toHaveLength(0);
   });
 });
