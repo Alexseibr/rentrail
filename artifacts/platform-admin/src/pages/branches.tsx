@@ -77,11 +77,9 @@ export default function BranchesPage() {
     : {};
 
   const [showCreate, setShowCreate] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editBranch, setEditBranch] = useState<any>(null);
+  const [editBranch, setEditBranch] = useState<Branch | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [toggleConfirm, setToggleConfirm] = useState<any>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<Branch | null>(null);
 
   const branchesQuery = useQuery({
     queryKey: ["branches", companyId],
@@ -164,8 +162,7 @@ export default function BranchesPage() {
     setShowCreate(true);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function openEdit(branch: any) {
+  function openEdit(branch: Branch) {
     setShowCreate(false);
     setEditBranch(branch);
     setForm({
@@ -245,86 +242,77 @@ export default function BranchesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map(
-                  (
-                    branch: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-                  ) => (
-                    <TableRow key={branch.id}>
-                      <TableCell className="font-medium">
-                        {branch.name}
-                      </TableCell>
-                      <TableCell>{branch.city || "—"}</TableCell>
-                      <TableCell className="max-w-48 truncate">
-                        {branch.address || "—"}
-                      </TableCell>
-                      <TableCell>{branch.phone || "—"}</TableCell>
+                {items.map((branch: Branch) => (
+                  <TableRow key={branch.id}>
+                    <TableCell className="font-medium">{branch.name}</TableCell>
+                    <TableCell>{branch.city || "—"}</TableCell>
+                    <TableCell className="max-w-48 truncate">
+                      {branch.address || "—"}
+                    </TableCell>
+                    <TableCell>{branch.phone || "—"}</TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          STATUS_COLORS[branch.status ?? ""] ||
+                          "bg-green-100 text-green-800"
+                        }
+                      >
+                        {String(
+                          t(
+                            `status.${branch.status || "active"}`,
+                            branch.status || "active",
+                          ),
+                        )}
+                      </Badge>
+                    </TableCell>
+                    {canWriteBranch && (
                       <TableCell>
-                        <Badge
-                          className={
-                            STATUS_COLORS[branch.status ?? ""] ||
-                            "bg-green-100 text-green-800"
-                          }
-                        >
-                          {String(
-                            t(
-                              `status.${branch.status || "active"}`,
-                              branch.status || "active",
-                            ),
-                          )}
-                        </Badge>
-                      </TableCell>
-                      {canWriteBranch && (
-                        <TableCell>
-                          <div className="flex gap-1">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0"
+                            onClick={() => openEdit(branch)}
+                            title={t("common.edit")}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          {branch.status === "inactive" ? (
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-7 w-7 p-0"
-                              onClick={() => openEdit(branch)}
-                              title={t("common.edit")}
+                              className="h-7 w-7 p-0 text-green-600"
+                              onClick={() =>
+                                setToggleConfirm({
+                                  ...branch,
+                                  activate: true,
+                                })
+                              }
+                              title={t("branches.activate", "Активировать")}
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <Power className="h-3.5 w-3.5" />
                             </Button>
-                            {branch.status === "inactive" ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 text-green-600"
-                                onClick={() =>
-                                  setToggleConfirm({
-                                    ...branch,
-                                    activate: true,
-                                  })
-                                }
-                                title={t("branches.activate", "Активировать")}
-                              >
-                                <Power className="h-3.5 w-3.5" />
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 text-destructive"
-                                onClick={() =>
-                                  setToggleConfirm({
-                                    ...branch,
-                                    activate: false,
-                                  })
-                                }
-                                title={t(
-                                  "branches.deactivate",
-                                  "Деактивировать",
-                                )}
-                              >
-                                <PowerOff className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ),
-                )}
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-destructive"
+                              onClick={() =>
+                                setToggleConfirm({
+                                  ...branch,
+                                  activate: false,
+                                })
+                              }
+                              title={t("branches.deactivate", "Деактивировать")}
+                            >
+                              <PowerOff className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
                 {items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-6">

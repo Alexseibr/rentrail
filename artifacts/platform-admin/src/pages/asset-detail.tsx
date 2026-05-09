@@ -211,12 +211,9 @@ export default function AssetDetailPage() {
           <CardContent className="p-0">
             {historyQuery.isLoading ? (
               <div className="p-6 space-y-2">
-                {Array.from({ length: 3 }).map(
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (_: any, i) => (
-                    <Skeleton key={i} className="h-8 w-full" />
-                  ),
-                )}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full" />
+                ))}
               </div>
             ) : history.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">
@@ -232,43 +229,40 @@ export default function AssetDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map(
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (entry: any, i: number) => (
-                      <TableRow key={entry.id || i}>
-                        <TableCell className="text-sm">
-                          {entry.createdAt
-                            ? new Date(entry.createdAt).toLocaleString()
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={
-                              STATUS_COLORS[
-                                entry.newStatus ||
-                                  entry.toStatus ||
-                                  entry.status ||
-                                  ""
-                              ] || "bg-gray-100"
-                            }
-                          >
-                            {String(
-                              t(
-                                `status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`,
-                                entry.newStatus ||
-                                  entry.toStatus ||
-                                  entry.status ||
-                                  "—",
-                              ),
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {entry.reason || entry.notes || "—"}
-                        </TableCell>
-                      </TableRow>
-                    ),
-                  )}
+                  {history.map((entry: StatusHistoryEntry, i: number) => (
+                    <TableRow key={entry.id || i}>
+                      <TableCell className="text-sm">
+                        {entry.createdAt
+                          ? new Date(entry.createdAt).toLocaleString()
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            STATUS_COLORS[
+                              entry.newStatus ||
+                                entry.toStatus ||
+                                entry.status ||
+                                ""
+                            ] || "bg-gray-100"
+                          }
+                        >
+                          {String(
+                            t(
+                              `status.${entry.newStatus || entry.toStatus || entry.status || "draft"}`,
+                              entry.newStatus ||
+                                entry.toStatus ||
+                                entry.status ||
+                                "—",
+                            ),
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {entry.reason || entry.notes || "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             )}

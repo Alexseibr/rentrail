@@ -95,12 +95,11 @@ export default function DiagnosticsPage() {
       );
       const items = res ?? [];
       return items.map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (t: any): TenantHealth => ({
-          companyId: String(t.companyId ?? t.id ?? ""),
-          companyName: String(t.companyName ?? t.name ?? ""),
-          status: String(t.status ?? t.healthStatus ?? "healthy"),
-          issues: Array.isArray(t.issues) ? (t.issues as string[]) : [],
+        (item): TenantHealth => ({
+          companyId: String(item.companyId ?? item.id ?? ""),
+          companyName: String(item.companyName ?? item.name ?? ""),
+          status: String(item.status ?? item.healthStatus ?? "healthy"),
+          issues: Array.isArray(item.issues) ? (item.issues as string[]) : [],
         }),
       );
     },

@@ -95,11 +95,9 @@ export default function ClientsCompanyPage() {
     : {};
 
   const [showCreate, setShowCreate] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [editClient, setEditClient] = useState<any>(null);
+  const [editClient, setEditClient] = useState<Client | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [archiveConfirm, setArchiveConfirm] = useState<any>(null);
+  const [archiveConfirm, setArchiveConfirm] = useState<Client | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -111,12 +109,11 @@ export default function ClientsCompanyPage() {
   const allItems = clientsQuery.data ?? [];
   const filtered =
     statusFilter !== "all"
-      ? allItems.filter((c: any) => c.status === statusFilter) // eslint-disable-line @typescript-eslint/no-explicit-any
+      ? allItems.filter((c: Client) => c.status === statusFilter)
       : allItems;
   const items = search
     ? filtered.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (c: any) =>
+        (c: Client) =>
           (c.fullName?.toLowerCase() || "").includes(search.toLowerCase()) ||
           (c.phone || "").includes(search) ||
           (c.email?.toLowerCase() || "").includes(search.toLowerCase()),
@@ -197,8 +194,7 @@ export default function ClientsCompanyPage() {
     setShowCreate(true);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function openEdit(client: any) {
+  function openEdit(client: Client) {
     setShowCreate(false);
     setEditClient(client);
     setForm({
@@ -231,14 +227,14 @@ export default function ClientsCompanyPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  const activeCount = allItems.filter((c: any) => c.status === "active").length; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const activeCount = allItems.filter(
+    (c: Client) => c.status === "active",
+  ).length;
   const suspendedCount = allItems.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (c: any) => c.status === "suspended",
+    (c: Client) => c.status === "suspended",
   ).length;
   const blockedCount = allItems.filter(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (c: any) => c.status === "blocked",
+    (c: Client) => c.status === "blocked",
   ).length;
 
   return (
@@ -386,78 +382,74 @@ export default function ClientsCompanyPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map(
-                  (
-                    client: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-                  ) => (
-                    <TableRow key={client.id} className="hover:bg-muted/30">
-                      <TableCell className="font-medium text-sm">
-                        {client.fullName}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {client.phone || "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {client.email || "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {client.documentType
-                          ? `${client.documentType}: ${client.documentNumber || "—"}`
-                          : "—"}
-                      </TableCell>
+                {items.map((client: Client) => (
+                  <TableRow key={client.id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium text-sm">
+                      {client.fullName}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {client.phone || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {client.email || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {client.documentType
+                        ? `${client.documentType}: ${client.documentNumber || "—"}`
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={`text-xs ${STATUS_COLORS[client.status ?? ""] || "bg-gray-100"}`}
+                      >
+                        {String(
+                          t(`status.${client.status}`, client.status ?? ""),
+                        )}
+                      </Badge>
+                    </TableCell>
+                    {canWriteClient && (
                       <TableCell>
-                        <Badge
-                          className={`text-xs ${STATUS_COLORS[client.status ?? ""] || "bg-gray-100"}`}
-                        >
-                          {String(
-                            t(`status.${client.status}`, client.status ?? ""),
-                          )}
-                        </Badge>
-                      </TableCell>
-                      {canWriteClient && (
-                        <TableCell>
-                          <div className="flex gap-1">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0"
+                            onClick={() => openEdit(client)}
+                            title={t("common.edit")}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          {client.status === "archived" ? (
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-7 w-7 p-0"
-                              onClick={() => openEdit(client)}
-                              title={t("common.edit")}
+                              className="h-7 w-7 p-0 text-muted-foreground"
+                              onClick={() =>
+                                setArchiveConfirm({
+                                  ...client,
+                                  restore: true,
+                                })
+                              }
+                              title={t("clients.restore", "Восстановить")}
                             >
-                              <Pencil className="h-3.5 w-3.5" />
+                              <RotateCcw className="h-3.5 w-3.5" />
                             </Button>
-                            {client.status === "archived" ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 text-muted-foreground"
-                                onClick={() =>
-                                  setArchiveConfirm({
-                                    ...client,
-                                    restore: true,
-                                  })
-                                }
-                                title={t("clients.restore", "Восстановить")}
-                              >
-                                <RotateCcw className="h-3.5 w-3.5" />
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0 text-destructive"
-                                onClick={() => setArchiveConfirm(client)}
-                                title={t("clients.archive", "Архивировать")}
-                              >
-                                <Archive className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ),
-                )}
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-destructive"
+                              onClick={() => setArchiveConfirm(client)}
+                              title={t("clients.archive", "Архивировать")}
+                            >
+                              <Archive className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
                 {items.length === 0 && allItems.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-6">

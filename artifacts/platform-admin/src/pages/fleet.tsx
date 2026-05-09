@@ -679,15 +679,11 @@ export default function FleetPage() {
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map(
-                      (
-                        b: any, // eslint-disable-line @typescript-eslint/no-explicit-any
-                      ) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ),
-                    )}
+                    {branches.map((b: Branch) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

@@ -170,11 +170,10 @@ export default function AnalyticsPage() {
           ? (raw.items as Record<string, unknown>[])
           : [];
       return items.map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (t: any): TopTenant => ({
-          companyId: String(t.companyId ?? t.id ?? ""),
-          companyName: String(t.companyName ?? t.name ?? ""),
-          value: Number(t.value ?? t.count ?? 0),
+        (item): TopTenant => ({
+          companyId: String(item.companyId ?? item.id ?? ""),
+          companyName: String(item.companyName ?? item.name ?? ""),
+          value: Number(item.value ?? item.count ?? 0),
         }),
       );
     },
@@ -193,11 +192,10 @@ export default function AnalyticsPage() {
           ? (raw.items as Record<string, unknown>[])
           : [];
       return items.map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (t: any): TopTenant => ({
-          companyId: String(t.companyId ?? t.id ?? ""),
-          companyName: String(t.companyName ?? t.name ?? ""),
-          value: Number(t.value ?? t.count ?? 0),
+        (item): TopTenant => ({
+          companyId: String(item.companyId ?? item.id ?? ""),
+          companyName: String(item.companyName ?? item.name ?? ""),
+          value: Number(item.value ?? item.count ?? 0),
         }),
       );
     },

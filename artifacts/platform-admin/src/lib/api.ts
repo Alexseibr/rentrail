@@ -37,7 +37,9 @@ async function tryRefresh(): Promise<boolean> {
       body: JSON.stringify({ refreshToken }),
     });
     if (!res.ok) return false;
-    const json = await res.json();
+    const json = (await res.json()) as {
+      data: { accessToken: string; refreshToken: string };
+    };
     accessToken = json.data.accessToken;
     refreshToken = json.data.refreshToken;
     return true;
@@ -86,7 +88,9 @@ export async function api<T = unknown>(
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: { code?: string; message?: string };
+    };
     throw new ApiError(
       res.status,
       body.error?.code || "UNKNOWN",
@@ -94,6 +98,6 @@ export async function api<T = unknown>(
     );
   }
 
-  const json = await res.json();
-  return json.data as T;
+  const json = (await res.json()) as { data: T };
+  return json.data;
 }

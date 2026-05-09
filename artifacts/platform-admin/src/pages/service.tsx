@@ -235,10 +235,15 @@ export default function ServicePage() {
   const [tab, setTab] = useState("requests");
   const [showCreate, setShowCreate] = useState(false);
   const [showCreateWO, setShowCreateWO] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [assignDialog, setAssignDialog] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [statusDialog, setStatusDialog] = useState<any>(null);
+  const [assignDialog, setAssignDialog] = useState<{
+    id: string;
+    title?: string;
+  } | null>(null);
+  const [statusDialog, setStatusDialog] = useState<{
+    id: string;
+    title?: string;
+    type: string;
+  } | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedMechanic, setSelectedMechanic] = useState("");
