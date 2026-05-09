@@ -83,16 +83,18 @@ export class ObjectStorageService {
   async downloadObject(
     file: File,
     cacheTtlSec: number = 3600,
+    isPublic: boolean = false,
   ): Promise<Response> {
     const [metadata] = await file.getMetadata();
 
     const nodeStream = file.createReadStream();
     const webStream = Readable.toWeb(nodeStream) as ReadableStream;
 
+    const cacheVisibility = isPublic ? "public" : "private";
     const headers: Record<string, string> = {
       "Content-Type":
         (metadata.contentType as string) || "application/octet-stream",
-      "Cache-Control": `private, max-age=${cacheTtlSec}`,
+      "Cache-Control": `${cacheVisibility}, max-age=${cacheTtlSec}`,
     };
     if (metadata.size) {
       headers["Content-Length"] = String(metadata.size);
