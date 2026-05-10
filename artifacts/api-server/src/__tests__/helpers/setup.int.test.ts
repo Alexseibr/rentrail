@@ -8,7 +8,7 @@ import {
   clearRolesCache,
 } from "./index";
 
-const HOOK_TIMEOUT = 60_000;
+const HOOK_TIMEOUT = 15_000;
 
 async function countRows(tableName: string): Promise<number> {
   const result = await db.execute<{ count: string }>(

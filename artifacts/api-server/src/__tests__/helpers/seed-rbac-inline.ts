@@ -5,7 +5,6 @@ import {
   rolePermissions,
   platformRoles,
 } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
 
 const SYSTEM_ROLES = [
   {
@@ -215,111 +214,75 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     .map((r) => `${r}:read`),
 };
 
+const PLATFORM_ROLES = [
+  {
+    code: "superAdmin",
+    name: "Super Admin",
+    description: "Full platform access with all capabilities",
+  },
+  {
+    code: "platformAdmin",
+    name: "Platform Admin",
+    description: "Platform administration and tenant management",
+  },
+  {
+    code: "platformSupport",
+    name: "Platform Support",
+    description: "Read-only tenant inspection and support tools",
+  },
+  {
+    code: "platformFinance",
+    name: "Platform Finance",
+    description: "SaaS billing, invoices, and subscription management",
+  },
+  {
+    code: "platformRisk",
+    name: "Platform Risk",
+    description: "Global blacklist and risk management",
+  },
+];
+
 export async function seedRolesAndPermissions() {
-  for (const role of SYSTEM_ROLES) {
-    const existing = await db
-      .select()
-      .from(roles)
-      .where(eq(roles.code, role.code))
-      .limit(1);
-    if (existing.length === 0) {
-      await db.insert(roles).values(role);
-    }
-  }
+  await db.insert(roles).values(SYSTEM_ROLES).onConflictDoNothing();
 
-  const permMap = new Map<string, string>();
-  for (const [resource, actions] of Object.entries(RESOURCE_ACTIONS)) {
-    const module = getModule(resource);
-    for (const action of actions) {
-      const code = `${resource}:${action}`;
-      const existing = await db
-        .select()
-        .from(permissions)
-        .where(eq(permissions.code, code))
-        .limit(1);
-      if (existing.length === 0) {
-        const [perm] = await db
-          .insert(permissions)
-          .values({
-            code,
-            name: `${action.charAt(0).toUpperCase() + action.slice(1)} ${resource}`,
-            module,
-            description: `${action} ${resource}`,
-          })
-          .returning();
-        permMap.set(code, perm.id);
-      } else {
-        permMap.set(code, existing[0].id);
-      }
-    }
-  }
+  const permissionValues = Object.entries(RESOURCE_ACTIONS).flatMap(
+    ([resource, actions]) =>
+      actions.map((action) => ({
+        code: `${resource}:${action}`,
+        name: `${action.charAt(0).toUpperCase() + action.slice(1)} ${resource}`,
+        module: getModule(resource),
+        description: `${action} ${resource}`,
+      })),
+  );
 
-  const allRoles = await db.select().from(roles);
+  await db.insert(permissions).values(permissionValues).onConflictDoNothing();
+
+  const [allRoles, allPermissions] = await Promise.all([
+    db.select().from(roles),
+    db.select().from(permissions),
+  ]);
+
   const roleMap = new Map(allRoles.map((r) => [r.code, r.id]));
+  const permMap = new Map(allPermissions.map((p) => [p.code, p.id]));
 
-  for (const [roleCode, permCodes] of Object.entries(ROLE_PERMISSIONS)) {
-    const roleId = roleMap.get(roleCode);
-    if (!roleId) continue;
+  const rolePermissionValues = Object.entries(ROLE_PERMISSIONS).flatMap(
+    ([roleCode, permCodes]) => {
+      const roleId = roleMap.get(roleCode);
+      if (!roleId) return [];
+      return permCodes.flatMap((code) => {
+        const permId = permMap.get(code);
+        if (!permId) return [];
+        return [{ roleId, permissionId: permId }];
+      });
+    },
+  );
 
-    for (const code of permCodes) {
-      const permId = permMap.get(code);
-      if (!permId) continue;
-
-      const existing = await db
-        .select()
-        .from(rolePermissions)
-        .where(
-          and(
-            eq(rolePermissions.roleId, roleId),
-            eq(rolePermissions.permissionId, permId),
-          ),
-        )
-        .limit(1);
-
-      if (existing.length === 0) {
-        await db
-          .insert(rolePermissions)
-          .values({ roleId, permissionId: permId });
-      }
-    }
+  if (rolePermissionValues.length > 0) {
+    await db
+      .insert(rolePermissions)
+      .values(rolePermissionValues)
+      .onConflictDoNothing();
   }
 
-  const PLATFORM_ROLES = [
-    {
-      code: "superAdmin",
-      name: "Super Admin",
-      description: "Full platform access with all capabilities",
-    },
-    {
-      code: "platformAdmin",
-      name: "Platform Admin",
-      description: "Platform administration and tenant management",
-    },
-    {
-      code: "platformSupport",
-      name: "Platform Support",
-      description: "Read-only tenant inspection and support tools",
-    },
-    {
-      code: "platformFinance",
-      name: "Platform Finance",
-      description: "SaaS billing, invoices, and subscription management",
-    },
-    {
-      code: "platformRisk",
-      name: "Platform Risk",
-      description: "Global blacklist and risk management",
-    },
-  ];
-
-  for (const role of PLATFORM_ROLES) {
-    const existing = await db
-      .select()
-      .from(platformRoles)
-      .where(eq(platformRoles.code, role.code))
-      .limit(1);
-    if (existing.length === 0) {
-      await db.insert(platformRoles).values(role);
-    }
-  }
+  await db.insert(platformRoles).values(PLATFORM_ROLES).onConflictDoNothing();
 }
