@@ -200,4 +200,71 @@ describe("Push Tokens — integration", () => {
       expect(rows[0].platform).toBe("android");
     });
   });
+
+  // ─── POST /api/push/unregister ────────────────────────────────────────────────
+
+  describe("POST /api/push/unregister", () => {
+    it("returns 401 when no auth token is provided", async () => {
+      const res = await request(testApp).post("/api/push/unregister").send({
+        token: "ExponentPushToken[unregister-no-auth]",
+      });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("removes a known token owned by the requesting user and returns 200", async () => {
+      const pushToken = `ExponentPushToken[unregister-ok-${Date.now()}]`;
+
+      await request(testApp)
+        .post("/api/push/register")
+        .set(authHeaders(userA.token))
+        .send({ token: pushToken, platform: "ios" });
+
+      const res = await request(testApp)
+        .post("/api/push/unregister")
+        .set(authHeaders(userA.token))
+        .send({ token: pushToken });
+
+      expect(res.status).toBe(200);
+
+      const rows = await db
+        .select()
+        .from(pushDeviceTokens)
+        .where(eq(pushDeviceTokens.token, pushToken));
+
+      expect(rows.length).toBe(0);
+    });
+
+    it("returns 404 when the token belongs to a different user", async () => {
+      const pushToken = `ExponentPushToken[unregister-ownership-${Date.now()}]`;
+
+      await request(testApp)
+        .post("/api/push/register")
+        .set(authHeaders(userA.token))
+        .send({ token: pushToken, platform: "android" });
+
+      const res = await request(testApp)
+        .post("/api/push/unregister")
+        .set(authHeaders(userB.token))
+        .send({ token: pushToken });
+
+      expect(res.status).toBe(404);
+
+      const rows = await db
+        .select()
+        .from(pushDeviceTokens)
+        .where(eq(pushDeviceTokens.token, pushToken));
+
+      expect(rows.length).toBe(1);
+    });
+
+    it("returns 404 when the token does not exist", async () => {
+      const res = await request(testApp)
+        .post("/api/push/unregister")
+        .set(authHeaders(userA.token))
+        .send({ token: "ExponentPushToken[does-not-exist]" });
+
+      expect(res.status).toBe(404);
+    });
+  });
 });
