@@ -28,6 +28,7 @@ export default defineWorkspace([
       poolOptions: {
         forks: { singleFork: true },
       },
+      globalSetup: ["artifacts/api-server/src/__tests__/global-setup.int.ts"],
     },
   },
   {
@@ -45,6 +46,7 @@ export default defineWorkspace([
       poolOptions: {
         forks: { singleFork: true },
       },
+      globalSetup: ["artifacts/api-server/src/__tests__/global-setup.ts"],
     },
   },
   {
