@@ -16,17 +16,28 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { signAccessToken } from "../../lib/jwt";
 import type { AccessTokenPayload } from "../../lib/jwt";
+import { seedRolesAndPermissions } from "./seed-rbac-inline";
 
 let _rolesCache: Map<string, string> | null = null;
+let _seeding: Promise<void> | null = null;
+
+async function ensureRolesSeeded(): Promise<void> {
+  if (_seeding) return _seeding;
+  _seeding = seedRolesAndPermissions().finally(() => {
+    _seeding = null;
+  });
+  return _seeding;
+}
 
 async function ensureRoles(): Promise<Map<string, string>> {
   if (_rolesCache && _rolesCache.size > 0) return _rolesCache;
 
   const existingRoles = await db.select().from(roles);
   if (existingRoles.length === 0) {
-    throw new Error(
-      "Roles not seeded. Run seed-rbac first or call seedRolesAndPermissions().",
-    );
+    await ensureRolesSeeded();
+    const seededRoles = await db.select().from(roles);
+    _rolesCache = new Map(seededRoles.map((r) => [r.code, r.id]));
+    return _rolesCache;
   }
 
   _rolesCache = new Map(existingRoles.map((r) => [r.code, r.id]));
@@ -77,6 +88,10 @@ export async function createTestUser(opts: {
 
   const assignedRoleCodes: string[] = [];
   if (opts.platformRoleCodes && opts.platformRoleCodes.length > 0) {
+    const existingPlatformRoles = await db.select().from(platformRoles);
+    if (existingPlatformRoles.length === 0) {
+      await ensureRolesSeeded();
+    }
     for (const code of opts.platformRoleCodes) {
       const [role] = await db
         .select()

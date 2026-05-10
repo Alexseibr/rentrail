@@ -58,13 +58,21 @@ export async function getOverview() {
     .where(sql`${saasSubscriptions.status} IN ('active', 'trial')`)
     .groupBy(saasPlans.name, saasPlans.code);
 
+  const total = totalTenants?.count ?? 0;
+  const active = activeTenants?.count ?? 0;
+  const trial = trialTenants?.count ?? 0;
+  const pending = pendingTenants?.count ?? 0;
+  const blocked = blockedTenants?.count ?? 0;
+  const suspended = suspendedTenants?.count ?? 0;
+
   return {
-    totalCompanies: totalTenants?.count ?? 0,
-    activeCompanies: activeTenants?.count ?? 0,
-    trialCompanies: trialTenants?.count ?? 0,
-    pendingCompanies: pendingTenants?.count ?? 0,
-    blockedCompanies: blockedTenants?.count ?? 0,
-    suspendedCompanies: suspendedTenants?.count ?? 0,
+    tenants: { total, active, trial, pending, blocked, suspended },
+    totalCompanies: total,
+    activeCompanies: active,
+    trialCompanies: trial,
+    pendingCompanies: pending,
+    blockedCompanies: blocked,
+    suspendedCompanies: suspended,
     totalAssets: totalAssets?.count ?? 0,
     totalRentals: totalRentals?.count ?? 0,
     totalUsers: totalUsers?.count ?? 0,
