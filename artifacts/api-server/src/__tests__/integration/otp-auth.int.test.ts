@@ -17,6 +17,7 @@ const HOOK_TIMEOUT = 30_000;
 
 const TEST_PHONE = "+79001112233";
 const OTHER_PHONE = "+79009998877";
+const NO_PASS_PHONE = "+79005550001";
 
 async function insertUserWithPhone(phone: string): Promise<string> {
   const passwordHash = await bcrypt.hash("TestPass123!", 4);
@@ -28,6 +29,21 @@ async function insertUserWithPhone(phone: string): Promise<string> {
       email: `otp-user-${suffix}@test.com`,
       passwordHash,
       firstName: "OTP",
+      lastName: "User",
+    })
+    .returning();
+  return user.id;
+}
+
+async function insertUserWithoutPassword(phone: string): Promise<string> {
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const [user] = await db
+    .insert(users)
+    .values({
+      phone,
+      email: `otp-nopass-${suffix}@test.com`,
+      passwordHash: null,
+      firstName: "NoPass",
       lastName: "User",
     })
     .returning();
@@ -65,6 +81,7 @@ describe("OTP Auth — integration", () => {
     clearRolesCache();
     await seedRolesAndPermissions();
     await insertUserWithPhone(TEST_PHONE);
+    await insertUserWithoutPassword(NO_PASS_PHONE);
   }, HOOK_TIMEOUT);
 
   afterAll(() => {
@@ -286,6 +303,148 @@ describe("OTP Auth — integration", () => {
         .send({ phone: OTHER_PHONE, code: "111111" });
 
       expect(res.status).toBe(401);
+    });
+  });
+
+  // ─── POST /api/auth/phone/login ───────────────────────────────────────────────
+
+  describe("POST /api/auth/phone/login", () => {
+    it("returns accessToken, refreshToken, and user on valid credentials", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/phone/login")
+        .send({ phone: TEST_PHONE, password: "TestPass123!" });
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data;
+      expect(typeof data.accessToken).toBe("string");
+      expect(typeof data.refreshToken).toBe("string");
+      expect(data).toHaveProperty("user");
+    });
+
+    it("returns 401 for a wrong password", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/phone/login")
+        .send({ phone: TEST_PHONE, password: "WrongPassword!" });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 401 for a user that has no password set", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/phone/login")
+        .send({ phone: NO_PASS_PHONE, password: "AnyPassword1!" });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 401 for a phone number that is not registered", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/phone/login")
+        .send({ phone: "+70000000001", password: "SomePassword1!" });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 4xx when phone field is missing", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/phone/login")
+        .send({ password: "TestPass123!" });
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
+    });
+
+    it("returns 4xx when password field is missing", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/phone/login")
+        .send({ phone: TEST_PHONE });
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
+    });
+  });
+
+  // ─── POST /api/auth/phone/set-password ───────────────────────────────────────
+
+  describe("POST /api/auth/phone/set-password", () => {
+    const SET_PASS_PHONE = "+79007770002";
+
+    async function resetSetPassUser(): Promise<void> {
+      await db.delete(users).where(eq(users.phone, SET_PASS_PHONE));
+      await insertUserWithoutPassword(SET_PASS_PHONE);
+    }
+
+    async function getTokenViaOtp(phone: string): Promise<string> {
+      const otpRes = await request(testApp)
+        .post("/api/auth/phone/request-otp")
+        .send({ phone });
+      expect(otpRes.status).toBe(200);
+
+      const code = await readOldestValidOtp(phone);
+
+      const verifyRes = await request(testApp)
+        .post("/api/auth/phone/verify-otp")
+        .send({ phone, code });
+      expect(verifyRes.status).toBe(200);
+
+      const data = resBody<ApiResponse>(verifyRes).data;
+      return data.accessToken as string;
+    }
+
+    beforeEach(async () => {
+      await clearOtpRecords();
+      await resetSetPassUser();
+    }, HOOK_TIMEOUT);
+
+    it("allows an authenticated user to set a new password", async () => {
+      const token = await getTokenViaOtp(SET_PASS_PHONE);
+
+      const res = await request(testApp)
+        .post("/api/auth/phone/set-password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ password: "NewPassword1!" });
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data;
+      expect(data).toHaveProperty("message");
+    });
+
+    it("allows phone/login to succeed after set-password", async () => {
+      const token = await getTokenViaOtp(SET_PASS_PHONE);
+
+      await request(testApp)
+        .post("/api/auth/phone/set-password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ password: "NewPassword1!" });
+
+      const loginRes = await request(testApp)
+        .post("/api/auth/phone/login")
+        .send({ phone: SET_PASS_PHONE, password: "NewPassword1!" });
+
+      expect(loginRes.status).toBe(200);
+      const loginData = resBody<ApiResponse>(loginRes).data;
+      expect(typeof loginData.accessToken).toBe("string");
+      expect(typeof loginData.refreshToken).toBe("string");
+    });
+
+    it("returns 401 when called without an access token", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/phone/set-password")
+        .send({ password: "NewPassword1!" });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 4xx when password is shorter than 6 characters", async () => {
+      const token = await getTokenViaOtp(SET_PASS_PHONE);
+
+      const res = await request(testApp)
+        .post("/api/auth/phone/set-password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ password: "abc" });
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
     });
   });
 });
