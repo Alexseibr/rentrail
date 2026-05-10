@@ -26,7 +26,7 @@
     "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
     "codegen:check": "pnpm --filter @workspace/api-spec run codegen && git --no-optional-locks diff --exit-code -- lib/api-client-react/src/generated/ lib/api-zod/src/generated/ artifacts/mockup-sandbox/src/.generated/ || (printf '\\n[codegen:check failed] Generated files differ from Orval output. Run: pnpm --filter @workspace/api-spec run codegen\\n\\n' >&2 && exit 1)",
     "type-coverage": "pnpm -r --filter \"./artifacts/**\" --if-present run type-coverage",
-    "ci": "pnpm run typecheck && pnpm run type-coverage && pnpm run check-map-cleanup && pnpm run codegen:check && pnpm --filter @workspace/scripts run test && pnpm --filter @workspace/scripts run test-map-cleanup && pnpm run test:unit && pnpm run format:check && pnpm run lint:eslint"
+    "ci": "pnpm run typecheck && pnpm run type-coverage && pnpm run check-map-cleanup && pnpm run codegen:check && pnpm --filter @workspace/scripts run test && pnpm --filter @workspace/scripts run test-map-cleanup && pnpm run test:unit && pnpm run test:integration && pnpm run test:api && pnpm run format:check && pnpm run lint:eslint"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
