@@ -52,3 +52,6 @@ Thumbs.db
 lib/api-client-react/src/generated/
 lib/api-zod/src/generated/
 artifacts/mockup-sandbox/src/.generated/
+
+# Test result reports
+test-results/
