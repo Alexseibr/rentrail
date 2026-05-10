@@ -11,6 +11,7 @@ import {
   assignRole,
   authHeaders,
   resBody,
+  createTestAsset,
   type TestUser,
   type TestTenant,
   type ApiResponse,
@@ -876,6 +877,135 @@ describe("IoT / Telemetry / Geofence — integration", () => {
       const types = cmds.map((c) => c.commandType);
       expect(types).toContain("arm_alarm");
       expect(types).toContain("disarm_alarm");
+    });
+  });
+
+  // ─── No-ride zone auto-lock ─────────────────────────────────────────────────
+
+  describe("No-ride zone auto-lock — geofence automation", () => {
+    it("enqueues a lock command when a device enters a no_ride_zone", async () => {
+      const deviceId = await createDevice();
+      await request(testApp)
+        .post(`/api/devices/${deviceId}/change-status`)
+        .set(h())
+        .send({ status: "active" });
+
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "ebike",
+        status: "available",
+      });
+
+      const bindRes = await request(testApp)
+        .post(`/api/assets/${asset.id}/devices`)
+        .set(h())
+        .send({ deviceId, bindingType: "lock", isPrimary: true });
+      expect(bindRes.status).toBe(201);
+
+      await createGeofence({
+        name: "No-Ride Auto-Lock Zone",
+        type: "no_ride_zone",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [40, 40],
+            [50, 40],
+            [50, 50],
+            [40, 50],
+            [40, 40],
+          ],
+        },
+      });
+
+      await request(testApp)
+        .post("/api/telemetry/ingest")
+        .set("x-api-key", providerApiKey)
+        .send({
+          deviceId,
+          provider: "test_provider",
+          recordedAt: new Date().toISOString(),
+          lat: 45,
+          lng: 45,
+        });
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+
+      const cmdRes = await request(testApp)
+        .get(`/api/devices/${deviceId}/commands`)
+        .set(h());
+
+      expect(cmdRes.status).toBe(200);
+      const cmds = resBody<ApiResponse>(cmdRes).data as unknown as Array<{
+        commandType: string;
+        status: string;
+      }>;
+      const lockCmds = cmds.filter((c) => c.commandType === "lock");
+      expect(lockCmds.length).toBeGreaterThanOrEqual(1);
+      expect(lockCmds[0]!.status).toBe("queued");
+    });
+
+    it("does not enqueue a second lock if one is already pending", async () => {
+      const deviceId = await createDevice();
+      await request(testApp)
+        .post(`/api/devices/${deviceId}/change-status`)
+        .set(h())
+        .send({ status: "active" });
+
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "scooter",
+        status: "available",
+      });
+
+      const bindRes = await request(testApp)
+        .post(`/api/assets/${asset.id}/devices`)
+        .set(h())
+        .send({ deviceId, bindingType: "lock", isPrimary: true });
+      expect(bindRes.status).toBe(201);
+
+      await createGeofence({
+        name: "No-Ride Dedup Zone",
+        type: "no_ride_zone",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [60, 60],
+            [70, 60],
+            [70, 70],
+            [60, 70],
+            [60, 60],
+          ],
+        },
+      });
+
+      const telemetryPayload = {
+        deviceId,
+        provider: "test_provider",
+        recordedAt: new Date().toISOString(),
+        lat: 65,
+        lng: 65,
+      };
+
+      await request(testApp)
+        .post("/api/telemetry/ingest")
+        .set("x-api-key", providerApiKey)
+        .send(telemetryPayload);
+
+      await request(testApp)
+        .post("/api/telemetry/ingest")
+        .set("x-api-key", providerApiKey)
+        .send({ ...telemetryPayload, recordedAt: new Date().toISOString() });
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+
+      const cmdRes = await request(testApp)
+        .get(`/api/devices/${deviceId}/commands`)
+        .set(h());
+
+      expect(cmdRes.status).toBe(200);
+      const cmds = resBody<ApiResponse>(cmdRes).data as unknown as Array<{
+        commandType: string;
+      }>;
+      const lockCmds = cmds.filter((c) => c.commandType === "lock");
+      expect(lockCmds.length).toBe(1);
     });
   });
 });
