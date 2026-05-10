@@ -29,6 +29,7 @@ export default defineWorkspace([
         forks: { singleFork: true },
       },
       globalSetup: ["artifacts/api-server/src/__tests__/global-setup.int.ts"],
+      setupFiles: ["artifacts/api-server/src/__tests__/per-file-setup.ts"],
     },
   },
   {
@@ -47,6 +48,7 @@ export default defineWorkspace([
         forks: { singleFork: true },
       },
       globalSetup: ["artifacts/api-server/src/__tests__/global-setup.ts"],
+      setupFiles: ["artifacts/api-server/src/__tests__/per-file-setup.ts"],
     },
   },
   {
