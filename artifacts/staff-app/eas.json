@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "your-dev-api.replit.app"
+        "EXPO_PUBLIC_DOMAIN": "rentrail.ru"
       }
     },
     "preview": {
@@ -20,13 +20,13 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "your-staging-api.replit.app"
+        "EXPO_PUBLIC_DOMAIN": "rentrail.ru"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "your-prod-api.replit.app"
+        "EXPO_PUBLIC_DOMAIN": "rentrail.ru"
       }
     }
   },
