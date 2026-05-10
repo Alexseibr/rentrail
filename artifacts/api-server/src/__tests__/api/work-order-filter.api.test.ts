@@ -6,8 +6,6 @@ import {
   createTestTenant,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -24,9 +22,6 @@ describe("GET /api/work-orders — assignedToUserId filter", () => {
   let woUnassigned: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "WO Filter Co" });
     admin = await createTestUser({ email: `wo-admin-${Date.now()}@test.com` });
     userA = await createTestUser({

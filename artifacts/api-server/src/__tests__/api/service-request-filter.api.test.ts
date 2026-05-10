@@ -6,8 +6,6 @@ import {
   createTestTenant,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -20,9 +18,6 @@ describe("GET /api/service-requests — status filter validation", () => {
   let tenant: TestTenant;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "SR Status Filter Co" });
     admin = await createTestUser({
       email: `sr-status-admin-${Date.now()}@test.com`,
@@ -95,9 +90,6 @@ describe("GET /api/service-requests — status filter correctness", () => {
   let srCompleted: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({
       companyName: "SR Status Correctness Co",
     });
@@ -243,9 +235,6 @@ describe("GET /api/service-requests — branchId filter", () => {
   let srBranchB: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "SR Branch Filter Co" });
     admin = await createTestUser({
       email: `sr-branch-admin-${Date.now()}@test.com`,
@@ -354,9 +343,6 @@ describe("GET /api/service-requests — combined status + branchId filter", () =
   let srBranchBNew: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "SR Combined Filter Co" });
     admin = await createTestUser({
       email: `sr-combined-admin-${Date.now()}@test.com`,

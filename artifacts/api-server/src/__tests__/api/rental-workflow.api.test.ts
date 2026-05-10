@@ -10,8 +10,6 @@ import {
   createTestAsset,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -24,9 +22,6 @@ describe("Rental Workflow API", () => {
   let client: Awaited<ReturnType<typeof createTestClient>>;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "Workflow Co" });
     admin = await createTestUser({ email: `wf-admin-${Date.now()}@test.com` });
     await assignRole(admin.id, tenant.company.id, "admin");

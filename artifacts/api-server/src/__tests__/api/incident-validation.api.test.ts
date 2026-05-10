@@ -6,8 +6,6 @@ import {
   createTestTenant,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -19,9 +17,6 @@ describe("GET /api/incidents — status filter validation", () => {
   let tenant: TestTenant;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({
       companyName: "Incident Status Filter Co",
     });

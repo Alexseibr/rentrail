@@ -4,7 +4,6 @@ import app from "../../app";
 import {
   createTestUser,
   createTestTenant,
-  seedRolesAndPermissions,
   resBody,
   type ApiResponse,
 } from "../helpers";
@@ -32,8 +31,6 @@ describe("Platform Access Model", () => {
   let regularUser: { id: string; email: string | undefined; token: string };
 
   beforeAll(async () => {
-    await seedRolesAndPermissions();
-
     superAdminUser = await createTestUser({
       platformRoleCodes: ["superAdmin"],
     });

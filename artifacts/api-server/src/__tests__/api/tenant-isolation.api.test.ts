@@ -8,8 +8,6 @@ import {
   createTestAsset,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -27,9 +25,6 @@ describe("Multi-Tenant Isolation", () => {
   let clientA: Awaited<ReturnType<typeof createTestClient>>;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenantA = await createTestTenant({ companyName: "Company Alpha" });
     tenantB = await createTestTenant({ companyName: "Company Beta" });
 

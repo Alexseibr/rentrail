@@ -6,8 +6,6 @@ import {
   createTestTenant,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -24,9 +22,6 @@ describe("GET /api/incidents — status filter", () => {
   let incidentResolved: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({
       companyName: "Incident Status Filter Co",
     });
@@ -169,9 +164,6 @@ describe("GET /api/incidents — branchId filter", () => {
   let incidentNoBranch: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({
       companyName: "Incident Branch Filter Co",
     });
@@ -283,9 +275,6 @@ describe("GET /api/incidents — combined status + branchId filter", () => {
   let incidentBranchBOpen: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({
       companyName: "Incident Combined Filter Co",
     });

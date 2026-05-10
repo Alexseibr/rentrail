@@ -6,8 +6,6 @@ import {
   createTestTenant,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -24,9 +22,6 @@ describe("GET /api/work-orders — status filter", () => {
   let woCompleted: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "WO Status Filter Co" });
     admin = await createTestUser({
       email: `wo-status-admin-${Date.now()}@test.com`,
@@ -153,9 +148,6 @@ describe("GET /api/work-orders — branchId filter", () => {
   let woNoBranch: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "WO Branch Filter Co" });
     admin = await createTestUser({
       email: `wo-branch-admin-${Date.now()}@test.com`,
@@ -265,9 +257,6 @@ describe("GET /api/work-orders — combined status + branchId filter", () => {
   let woBranchBDraft: string;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "WO Combined Filter Co" });
     admin = await createTestUser({
       email: `wo-combined-admin-${Date.now()}@test.com`,

@@ -6,8 +6,6 @@ import {
   createTestTenant,
   assignRole,
   authHeaders,
-  clearRolesCache,
-  seedRolesAndPermissions,
   resBody,
   type TestUser,
   type TestTenant,
@@ -18,9 +16,6 @@ describe("GET /api/rentals — status filter validation", () => {
   let tenant: TestTenant;
 
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     tenant = await createTestTenant({ companyName: "Rental Status Filter Co" });
     admin = await createTestUser({
       email: `rental-status-admin-${Date.now()}@test.com`,
