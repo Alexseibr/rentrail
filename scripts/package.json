@@ -11,6 +11,7 @@
     "check-map-cleanup": "tsx ./src/check-map-cleanup.ts",
     "test": "tsx --test ./src/check-map-cleanup-lib.test.ts",
     "test-map-cleanup": "tsx --test ./src/check-map-cleanup.test.ts",
+    "print-test-report": "tsx ./src/print-test-report.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

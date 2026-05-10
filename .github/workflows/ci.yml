@@ -39,7 +39,18 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: mkdir -p test-results
       - run: pnpm test:unit
+      - name: Print test report
+        if: always()
+        run: pnpm --filter @workspace/scripts run print-test-report
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: test-results/unit.xml
+          if-no-files-found: ignore
 
   api-tests:
     name: API & Integration Tests
@@ -74,8 +85,21 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @workspace/db run push
       - run: pnpm --filter @workspace/scripts run seed-rbac
+      - run: mkdir -p test-results
       - run: pnpm test:api
       - run: pnpm test:integration
+      - name: Print test report
+        if: always()
+        run: pnpm --filter @workspace/scripts run print-test-report
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: |
+            test-results/api.xml
+            test-results/integration.xml
+          if-no-files-found: ignore
 
   build:
     name: Build
