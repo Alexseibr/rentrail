@@ -18,5 +18,6 @@ export default defineConfig({
       },
     },
     globalSetup: ["./src/__tests__/global-setup.int.ts"],
+    reporters: ["verbose"],
   },
 });
