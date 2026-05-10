@@ -1,12 +1,7 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { db, users, companies } from "@workspace/db";
 import { sql } from "drizzle-orm";
-import {
-  cleanDatabase,
-  cleanDatabaseFull,
-  seedRolesAndPermissions,
-  clearRolesCache,
-} from "./index";
+import { cleanDatabase, cleanDatabaseFull } from "./index";
 
 const HOOK_TIMEOUT = 15_000;
 
@@ -44,10 +39,6 @@ const PRESERVED_TABLES = new Set([
 
 describe("cleanDatabase", () => {
   beforeAll(async () => {
-    await cleanDatabaseFull();
-    clearRolesCache();
-    await seedRolesAndPermissions();
-
     await db.insert(users).values({
       email: `setup-test-${Date.now()}@test.com`,
       passwordHash: "hash",
@@ -101,8 +92,6 @@ describe("cleanDatabase", () => {
 
 describe("cleanDatabaseFull", () => {
   beforeAll(async () => {
-    clearRolesCache();
-    await seedRolesAndPermissions();
     await cleanDatabaseFull();
   }, HOOK_TIMEOUT);
 

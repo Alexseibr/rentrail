@@ -20,6 +20,7 @@ export default defineWorkspace([
       testTimeout: 30000,
       hookTimeout: 30000,
       sequence: { concurrent: false },
+      globalSetup: ["./artifacts/api-server/src/__tests__/global-setup.int.ts"],
     },
   },
   {
