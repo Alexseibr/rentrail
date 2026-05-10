@@ -8,15 +8,16 @@ import {
   seedRolesAndPermissions,
   createTestUser,
   createTestTenant,
+  createTestAsset,
   assignRole,
   authHeaders,
   resBody,
-  createTestAsset,
   type TestUser,
   type TestTenant,
   type ApiResponse,
 } from "../helpers";
 import { generateApiKey } from "../../services/provider-key.service";
+import { db, locationHistory, telemetryEvents } from "@workspace/db";
 
 const HOOK_TIMEOUT = 30_000;
 
@@ -1006,6 +1007,554 @@ describe("IoT / Telemetry / Geofence — integration", () => {
       }>;
       const lockCmds = cmds.filter((c) => c.commandType === "lock");
       expect(lockCmds.length).toBe(1);
+    });
+  });
+
+  // ─── Location history ──────────────────────────────────────────────────────
+
+  describe("GET /api/telemetry/assets/:id/locations — location history", () => {
+    const T0 = new Date("2024-03-01T10:00:00Z");
+    const T1 = new Date("2024-03-01T11:00:00Z");
+    const T2 = new Date("2024-03-01T12:00:00Z");
+
+    async function seedLocations(
+      assetId: string,
+      companyId: string,
+    ): Promise<void> {
+      await db.insert(locationHistory).values([
+        { companyId, assetId, lat: 55.1, lng: 37.1, recordedAt: T0 },
+        { companyId, assetId, lat: 55.2, lng: 37.2, recordedAt: T1 },
+        { companyId, assetId, lat: 55.3, lng: 37.3, recordedAt: T2 },
+      ]);
+    }
+
+    it("returns all location history records for an asset", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+      await seedLocations(asset.id, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/locations`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        lat: string | number;
+      }>;
+      expect(data.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("filters records on or after 'from' date", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+      await seedLocations(asset.id, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(
+          `/api/telemetry/assets/${asset.id}/locations?from=${T1.toISOString()}`,
+        )
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        lat: string | number;
+      }>;
+      expect(data.length).toBe(2);
+      const lats = data.map((d) => Number(d.lat));
+      expect(lats).toContain(55.2);
+      expect(lats).toContain(55.3);
+      expect(lats).not.toContain(55.1);
+    });
+
+    it("filters records on or before 'to' date", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+      await seedLocations(asset.id, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(
+          `/api/telemetry/assets/${asset.id}/locations?to=${T1.toISOString()}`,
+        )
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        lat: string | number;
+      }>;
+      expect(data.length).toBe(2);
+      const lats = data.map((d) => Number(d.lat));
+      expect(lats).toContain(55.1);
+      expect(lats).toContain(55.2);
+      expect(lats).not.toContain(55.3);
+    });
+
+    it("respects 'from' and 'to' together as a closed range", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+      await seedLocations(asset.id, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(
+          `/api/telemetry/assets/${asset.id}/locations?from=${T1.toISOString()}&to=${T1.toISOString()}`,
+        )
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        lat: string | number;
+      }>;
+      expect(data.length).toBe(1);
+      expect(Number(data[0].lat)).toBeCloseTo(55.2, 2);
+    });
+
+    it("paginates with limit", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+      await seedLocations(asset.id, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/locations?limit=2`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as unknown[];
+      expect(data.length).toBe(2);
+    });
+
+    it("advances the page with offset", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+      await seedLocations(asset.id, tenant.company.id);
+
+      const page1 = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/locations?limit=2&offset=0`)
+        .set(h());
+      const page2 = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/locations?limit=2&offset=2`)
+        .set(h());
+
+      expect(page1.status).toBe(200);
+      expect(page2.status).toBe(200);
+      const ids1 = (
+        resBody<ApiResponse>(page1).data as unknown as Array<{ id: string }>
+      ).map((r) => r.id);
+      const ids2 = (
+        resBody<ApiResponse>(page2).data as unknown as Array<{ id: string }>
+      ).map((r) => r.id);
+      const overlap = ids1.filter((id) => ids2.includes(id));
+      expect(overlap).toHaveLength(0);
+    });
+
+    it("returns an empty array for an asset with no location history", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "scooter",
+      });
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/locations`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      expect(
+        resBody<ApiResponse>(res).data as unknown as unknown[],
+      ).toHaveLength(0);
+    });
+
+    it("returns 401 without authentication", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/locations`)
+        .set("x-company-id", tenant.company.id);
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  // ─── Asset event history ───────────────────────────────────────────────────
+
+  describe("GET /api/telemetry/assets/:id/events — asset event history", () => {
+    const EV_T0 = new Date("2024-04-01T08:00:00Z");
+    const EV_T1 = new Date("2024-04-01T09:00:00Z");
+    const EV_T2 = new Date("2024-04-01T10:00:00Z");
+
+    async function seedEvents(
+      assetId: string,
+      deviceId: string,
+      companyId: string,
+    ): Promise<void> {
+      await db.insert(telemetryEvents).values([
+        {
+          companyId,
+          assetId,
+          deviceId,
+          eventType: "online" as const,
+          severity: "info" as const,
+          recordedAt: EV_T0,
+        },
+        {
+          companyId,
+          assetId,
+          deviceId,
+          eventType: "low_battery" as const,
+          severity: "warning" as const,
+          recordedAt: EV_T1,
+        },
+        {
+          companyId,
+          assetId,
+          deviceId,
+          eventType: "geofence_exit" as const,
+          severity: "warning" as const,
+          recordedAt: EV_T2,
+        },
+      ]);
+    }
+
+    it("returns all events for an asset", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "ebike",
+      });
+      const deviceId = await createDevice();
+      await seedEvents(asset.id, deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/events`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        eventType: string;
+      }>;
+      expect(data.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("filters by eventType", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "ebike",
+      });
+      const deviceId = await createDevice();
+      await seedEvents(asset.id, deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/events?eventType=low_battery`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        eventType: string;
+      }>;
+      expect(data.length).toBe(1);
+      expect(data[0].eventType).toBe("low_battery");
+    });
+
+    it("filters by severity", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "ebike",
+      });
+      const deviceId = await createDevice();
+      await seedEvents(asset.id, deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/events?severity=warning`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        severity: string;
+      }>;
+      expect(data.length).toBe(2);
+      expect(data.every((e) => e.severity === "warning")).toBe(true);
+    });
+
+    it("filters by from date", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "ebike",
+      });
+      const deviceId = await createDevice();
+      await seedEvents(asset.id, deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(
+          `/api/telemetry/assets/${asset.id}/events?from=${EV_T1.toISOString()}`,
+        )
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        eventType: string;
+      }>;
+      expect(data.length).toBe(2);
+      const types = data.map((e) => e.eventType);
+      expect(types).toContain("low_battery");
+      expect(types).toContain("geofence_exit");
+      expect(types).not.toContain("online");
+    });
+
+    it("filters by to date", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "ebike",
+      });
+      const deviceId = await createDevice();
+      await seedEvents(asset.id, deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(
+          `/api/telemetry/assets/${asset.id}/events?to=${EV_T1.toISOString()}`,
+        )
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        eventType: string;
+      }>;
+      expect(data.length).toBe(2);
+      const types = data.map((e) => e.eventType);
+      expect(types).toContain("online");
+      expect(types).toContain("low_battery");
+      expect(types).not.toContain("geofence_exit");
+    });
+
+    it("returns 401 without authentication", async () => {
+      const asset = await createTestAsset(tenant.company.id, tenant.branch.id, {
+        assetType: "bike",
+      });
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${asset.id}/events`)
+        .set("x-company-id", tenant.company.id);
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  // ─── Device event history ──────────────────────────────────────────────────
+
+  describe("GET /api/telemetry/devices/:id/events — device event history", () => {
+    const DEV_T0 = new Date("2024-05-01T08:00:00Z");
+    const DEV_T1 = new Date("2024-05-01T09:00:00Z");
+    const DEV_T2 = new Date("2024-05-01T10:00:00Z");
+
+    async function seedDeviceEvents(
+      deviceId: string,
+      companyId: string,
+    ): Promise<void> {
+      await db.insert(telemetryEvents).values([
+        {
+          companyId,
+          deviceId,
+          eventType: "online" as const,
+          severity: "info" as const,
+          recordedAt: DEV_T0,
+        },
+        {
+          companyId,
+          deviceId,
+          eventType: "low_battery" as const,
+          severity: "warning" as const,
+          recordedAt: DEV_T1,
+        },
+        {
+          companyId,
+          deviceId,
+          eventType: "geofence_enter" as const,
+          severity: "info" as const,
+          recordedAt: DEV_T2,
+        },
+      ]);
+    }
+
+    it("returns all events for a device", async () => {
+      const deviceId = await createDevice();
+      await seedDeviceEvents(deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/devices/${deviceId}/events`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        eventType: string;
+      }>;
+      expect(data.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("filters device events by eventType", async () => {
+      const deviceId = await createDevice();
+      await seedDeviceEvents(deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(
+          `/api/telemetry/devices/${deviceId}/events?eventType=geofence_enter`,
+        )
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        eventType: string;
+      }>;
+      expect(data.length).toBe(1);
+      expect(data[0].eventType).toBe("geofence_enter");
+    });
+
+    it("filters device events by severity", async () => {
+      const deviceId = await createDevice();
+      await seedDeviceEvents(deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/devices/${deviceId}/events?severity=info`)
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        severity: string;
+      }>;
+      expect(data.every((e) => e.severity === "info")).toBe(true);
+      const types = data.map(
+        (e) => (e as unknown as { eventType: string }).eventType,
+      );
+      expect(types).toContain("online");
+      expect(types).toContain("geofence_enter");
+    });
+
+    it("filters device events by from and to dates", async () => {
+      const deviceId = await createDevice();
+      await seedDeviceEvents(deviceId, tenant.company.id);
+
+      const res = await request(testApp)
+        .get(
+          `/api/telemetry/devices/${deviceId}/events?from=${DEV_T1.toISOString()}&to=${DEV_T1.toISOString()}`,
+        )
+        .set(h());
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as Array<{
+        eventType: string;
+      }>;
+      expect(data.length).toBe(1);
+      expect(data[0].eventType).toBe("low_battery");
+    });
+
+    it("returns 401 without authentication", async () => {
+      const deviceId = await createDevice();
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/devices/${deviceId}/events`)
+        .set("x-company-id", tenant.company.id);
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  // ─── Tenant isolation for history endpoints ────────────────────────────────
+
+  describe("tenant isolation — location and event history", () => {
+    it("cannot read location history for an asset that belongs to another company", async () => {
+      const tenantB = await createTestTenant({ companyName: "Isolation Co B" });
+      const userB = await createTestUser({
+        email: `iso-b-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+      });
+      await assignRole(
+        userB.id,
+        tenantB.company.id,
+        "owner",
+        tenantB.branch.id,
+      );
+
+      const assetA = await createTestAsset(
+        tenant.company.id,
+        tenant.branch.id,
+        { assetType: "bike" },
+      );
+      await db.insert(locationHistory).values({
+        companyId: tenant.company.id,
+        assetId: assetA.id,
+        lat: 60.0,
+        lng: 30.0,
+        recordedAt: new Date("2024-06-01T10:00:00Z"),
+      });
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${assetA.id}/locations`)
+        .set(authHeaders(userB.token, tenantB.company.id, tenantB.branch.id));
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as unknown[];
+      expect(data).toHaveLength(0);
+    });
+
+    it("cannot read event history for an asset that belongs to another company", async () => {
+      const tenantC = await createTestTenant({ companyName: "Isolation Co C" });
+      const userC = await createTestUser({
+        email: `iso-c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+      });
+      await assignRole(
+        userC.id,
+        tenantC.company.id,
+        "owner",
+        tenantC.branch.id,
+      );
+
+      const assetA = await createTestAsset(
+        tenant.company.id,
+        tenant.branch.id,
+        { assetType: "ebike" },
+      );
+      const deviceId = await createDevice();
+      await db.insert(telemetryEvents).values({
+        companyId: tenant.company.id,
+        assetId: assetA.id,
+        deviceId,
+        eventType: "online" as const,
+        severity: "info" as const,
+        recordedAt: new Date("2024-06-01T11:00:00Z"),
+      });
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/assets/${assetA.id}/events`)
+        .set(authHeaders(userC.token, tenantC.company.id, tenantC.branch.id));
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as unknown[];
+      expect(data).toHaveLength(0);
+    });
+
+    it("cannot read device event history for a device belonging to another company", async () => {
+      const tenantD = await createTestTenant({ companyName: "Isolation Co D" });
+      const userD = await createTestUser({
+        email: `iso-d-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+      });
+      await assignRole(
+        userD.id,
+        tenantD.company.id,
+        "owner",
+        tenantD.branch.id,
+      );
+
+      const deviceId = await createDevice();
+      await db.insert(telemetryEvents).values({
+        companyId: tenant.company.id,
+        deviceId,
+        eventType: "online" as const,
+        severity: "info" as const,
+        recordedAt: new Date("2024-06-01T12:00:00Z"),
+      });
+
+      const res = await request(testApp)
+        .get(`/api/telemetry/devices/${deviceId}/events`)
+        .set(authHeaders(userD.token, tenantD.company.id, tenantD.branch.id));
+
+      expect(res.status).toBe(200);
+      const data = resBody<ApiResponse>(res).data as unknown as unknown[];
+      expect(data).toHaveLength(0);
     });
   });
 });
