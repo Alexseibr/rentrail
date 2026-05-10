@@ -10,11 +10,14 @@ export default function App() {
               height="18"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
-              strokeWidth="2.5"
+              stroke="#1C1917"
+              strokeWidth="2"
+              strokeLinecap="round"
             >
               <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
+              <ellipse cx="12" cy="12" rx="4" ry="10" />
+              <line x1="2" y1="9" x2="22" y2="9" />
+              <line x1="2" y1="15" x2="22" y2="15" />
             </svg>
           </div>
           <span className="text-xl font-bold tracking-tight text-gray-900">
