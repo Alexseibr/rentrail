@@ -219,17 +219,14 @@ export default function App() {
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
                 {active.title}
               </h3>
-              <p className="text-gray-500 leading-relaxed mb-6">{active.desc}</p>
+              <p className="text-gray-500 leading-relaxed mb-6">
+                {active.desc}
+              </p>
               <ul className="space-y-3">
                 {active.points.map((p) => (
                   <li key={p} className="flex items-start gap-3">
                     <span className="mt-0.5 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
-                      <svg
-                        width="10"
-                        height="8"
-                        viewBox="0 0 10 8"
-                        fill="none"
-                      >
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
                         <path
                           d="M1 4L3.5 6.5L9 1"
                           stroke="#1C1917"

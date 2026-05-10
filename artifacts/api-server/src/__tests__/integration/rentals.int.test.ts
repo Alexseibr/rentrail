@@ -117,14 +117,11 @@ describe("Rentals — integration", () => {
     it("creates a rental in draft status", async () => {
       const asset = await freshAsset();
 
-      const res = await request(testApp)
-        .post("/api/rentals")
-        .set(h())
-        .send({
-          clientId: client.id,
-          assetId: asset.id,
-          branchId: tenant.branch.id,
-        });
+      const res = await request(testApp).post("/api/rentals").set(h()).send({
+        clientId: client.id,
+        assetId: asset.id,
+        branchId: tenant.branch.id,
+      });
 
       expect(res.status).toBe(201);
       const rental = resBody<ApiResponse>(res).data;

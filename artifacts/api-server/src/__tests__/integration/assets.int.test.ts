@@ -124,14 +124,11 @@ describe("Assets — integration", () => {
     });
 
     it("accepts an explicit initial status", async () => {
-      const res = await request(testApp)
-        .post("/api/assets")
-        .set(h())
-        .send({
-          branchId: tenant.branch.id,
-          assetType: "scooter",
-          status: "available",
-        });
+      const res = await request(testApp).post("/api/assets").set(h()).send({
+        branchId: tenant.branch.id,
+        assetType: "scooter",
+        status: "available",
+      });
 
       expect(res.status).toBe(201);
       expect(resBody<ApiResponse>(res).data.status).toBe("available");

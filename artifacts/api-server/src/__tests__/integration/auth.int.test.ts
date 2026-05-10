@@ -36,12 +36,14 @@ describe("Auth — integration", () => {
 
   describe("POST /api/auth/register", () => {
     it("creates a user and returns the record", async () => {
-      const res = await request(testApp).post("/api/auth/register").send({
-        email: `alice-${Date.now()}@example.com`,
-        password: "StrongPass1!",
-        firstName: "Alice",
-        lastName: "Smith",
-      });
+      const res = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          email: `alice-${Date.now()}@example.com`,
+          password: "StrongPass1!",
+          firstName: "Alice",
+          lastName: "Smith",
+        });
 
       expect(res.status).toBe(201);
       const body = resBody<ApiResponse>(res);
@@ -86,34 +88,40 @@ describe("Auth — integration", () => {
     });
 
     it("rejects a weak password", async () => {
-      const res = await request(testApp).post("/api/auth/register").send({
-        email: `weak-${Date.now()}@example.com`,
-        password: "abc",
-        firstName: "W",
-        lastName: "P",
-      });
+      const res = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          email: `weak-${Date.now()}@example.com`,
+          password: "abc",
+          firstName: "W",
+          lastName: "P",
+        });
 
       expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.status).toBeLessThan(500);
     });
 
     it("rejects missing firstName", async () => {
-      const res = await request(testApp).post("/api/auth/register").send({
-        email: `nofirst-${Date.now()}@example.com`,
-        password: "StrongPass1!",
-        lastName: "Only",
-      });
+      const res = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          email: `nofirst-${Date.now()}@example.com`,
+          password: "StrongPass1!",
+          lastName: "Only",
+        });
 
       expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.status).toBeLessThan(500);
     });
 
     it("rejects missing password", async () => {
-      const res = await request(testApp).post("/api/auth/register").send({
-        email: `nopass-${Date.now()}@example.com`,
-        firstName: "No",
-        lastName: "Pass",
-      });
+      const res = await request(testApp)
+        .post("/api/auth/register")
+        .send({
+          email: `nopass-${Date.now()}@example.com`,
+          firstName: "No",
+          lastName: "Pass",
+        });
 
       expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.status).toBeLessThan(500);
@@ -282,7 +290,9 @@ describe("Auth — integration", () => {
         .send({ email: refreshEmail, password: "StrongPass1!" });
       const rt = resBody<ApiResponse>(loginRes).data.refreshToken as string;
 
-      await request(testApp).post("/api/auth/refresh").send({ refreshToken: rt });
+      await request(testApp)
+        .post("/api/auth/refresh")
+        .send({ refreshToken: rt });
 
       const reuse = await request(testApp)
         .post("/api/auth/refresh")
