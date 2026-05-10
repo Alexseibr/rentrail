@@ -8,6 +8,10 @@ export default defineWorkspace([
       include: ["src/**/__tests__/**/*.unit.test.ts"],
       environment: "node",
       globals: true,
+      pool: "forks",
+      poolOptions: {
+        forks: { singleFork: true },
+      },
     },
   },
   {
@@ -20,6 +24,10 @@ export default defineWorkspace([
       testTimeout: 30000,
       hookTimeout: 30000,
       sequence: { concurrent: false },
+      pool: "forks",
+      poolOptions: {
+        forks: { singleFork: true },
+      },
       globalSetup: ["./artifacts/api-server/src/__tests__/global-setup.int.ts"],
     },
   },
@@ -34,6 +42,10 @@ export default defineWorkspace([
       hookTimeout: 60000,
       fileParallelism: false,
       sequence: { concurrent: false },
+      pool: "forks",
+      poolOptions: {
+        forks: { singleFork: true },
+      },
       globalSetup: ["./artifacts/api-server/src/__tests__/global-setup.ts"],
     },
   },
