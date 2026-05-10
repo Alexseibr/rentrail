@@ -5,16 +5,30 @@ export function Dark() {
       <nav className="flex items-center justify-between px-8 py-5 border-b border-white/10">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111318" strokeWidth="2.5">
-              <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#111318"
+              strokeWidth="2.5"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
             </svg>
           </div>
           <span className="text-xl font-bold tracking-tight">Rentrail</span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm text-white/60">
-          <a href="#" className="hover:text-white transition-colors">Возможности</a>
-          <a href="#" className="hover:text-white transition-colors">Тарифы</a>
-          <a href="#" className="hover:text-white transition-colors">О нас</a>
+          <a href="#" className="hover:text-white transition-colors">
+            Возможности
+          </a>
+          <a href="#" className="hover:text-white transition-colors">
+            Тарифы
+          </a>
+          <a href="#" className="hover:text-white transition-colors">
+            О нас
+          </a>
         </div>
         <a
           href="/platform-admin/"
@@ -33,11 +47,13 @@ export function Dark() {
             SaaS-платформа для аренды электротранспорта
           </div>
           <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-            Управляйте прокатом<br />
+            Управляйте прокатом
+            <br />
             <span className="text-amber-400">умнее и быстрее</span>
           </h1>
           <p className="text-lg text-white/60 max-w-xl mx-auto mb-10">
-            Rentrail — всё что нужно для прокатного бизнеса: флот, аренды, клиенты, оплата и аналитика в одном месте.
+            Rentrail — всё что нужно для прокатного бизнеса: флот, аренды,
+            клиенты, оплата и аналитика в одном месте.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
@@ -46,7 +62,10 @@ export function Dark() {
             >
               Войти в кабинет →
             </a>
-            <a href="#features" className="text-white/60 hover:text-white text-sm font-medium transition-colors">
+            <a
+              href="#features"
+              className="text-white/60 hover:text-white text-sm font-medium transition-colors"
+            >
               Узнать подробнее ↓
             </a>
           </div>
@@ -62,7 +81,9 @@ export function Dark() {
             { value: "24/7", label: "поддержка" },
           ].map((s) => (
             <div key={s.label} className="bg-[#111318] px-8 py-8 text-center">
-              <div className="text-3xl font-extrabold text-amber-400 mb-1">{s.value}</div>
+              <div className="text-3xl font-extrabold text-amber-400 mb-1">
+                {s.value}
+              </div>
               <div className="text-sm text-white/50">{s.label}</div>
             </div>
           ))}
@@ -72,21 +93,54 @@ export function Dark() {
       {/* Features */}
       <section id="features" className="px-8 pb-24">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-3">Всё для вашего бизнеса</h2>
-          <p className="text-center text-white/50 mb-14 text-sm">От велосипедов до самокатов — один инструмент для всего</p>
+          <h2 className="text-3xl font-bold text-center mb-3">
+            Всё для вашего бизнеса
+          </h2>
+          <p className="text-center text-white/50 mb-14 text-sm">
+            От велосипедов до самокатов — один инструмент для всего
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { icon: "🛴", title: "Управление флотом", desc: "Учёт всех единиц техники, статусы, сервис и история." },
-              { icon: "📱", title: "Мобильное приложение", desc: "Сотрудники работают со смартфона — заказы, смены, карта." },
-              { icon: "💳", title: "Онлайн-оплата", desc: "ЮKassa, Тинькофф, CloudPayments. Депозиты и возвраты." },
-              { icon: "📍", title: "GPS и геозоны", desc: "Реальное время на карте. Автоматические ограничения скорости." },
-              { icon: "👥", title: "CRM клиентов", desc: "База, история аренд, блэклист, уведомления." },
-              { icon: "📊", title: "Аналитика", desc: "Доходы, загрузка флота, популярные маршруты." },
+              {
+                icon: "🛴",
+                title: "Управление флотом",
+                desc: "Учёт всех единиц техники, статусы, сервис и история.",
+              },
+              {
+                icon: "📱",
+                title: "Мобильное приложение",
+                desc: "Сотрудники работают со смартфона — заказы, смены, карта.",
+              },
+              {
+                icon: "💳",
+                title: "Онлайн-оплата",
+                desc: "ЮKassa, Тинькофф, CloudPayments. Депозиты и возвраты.",
+              },
+              {
+                icon: "📍",
+                title: "GPS и геозоны",
+                desc: "Реальное время на карте. Автоматические ограничения скорости.",
+              },
+              {
+                icon: "👥",
+                title: "CRM клиентов",
+                desc: "База, история аренд, блэклист, уведомления.",
+              },
+              {
+                icon: "📊",
+                title: "Аналитика",
+                desc: "Доходы, загрузка флота, популярные маршруты.",
+              },
             ].map((f) => (
-              <div key={f.title} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-amber-400/30 transition-colors">
+              <div
+                key={f.title}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-amber-400/30 transition-colors"
+              >
                 <div className="text-3xl mb-3">{f.icon}</div>
                 <div className="font-semibold mb-2">{f.title}</div>
-                <div className="text-sm text-white/50 leading-relaxed">{f.desc}</div>
+                <div className="text-sm text-white/50 leading-relaxed">
+                  {f.desc}
+                </div>
               </div>
             ))}
           </div>
@@ -96,8 +150,12 @@ export function Dark() {
       {/* CTA */}
       <section className="px-8 pb-24">
         <div className="max-w-2xl mx-auto bg-amber-400 rounded-3xl p-12 text-center">
-          <h2 className="text-3xl font-extrabold text-[#111318] mb-3">Готовы начать?</h2>
-          <p className="text-[#111318]/70 mb-8 text-sm">Зарегистрируйте компанию и запустите прокат уже сегодня</p>
+          <h2 className="text-3xl font-extrabold text-[#111318] mb-3">
+            Готовы начать?
+          </h2>
+          <p className="text-[#111318]/70 mb-8 text-sm">
+            Зарегистрируйте компанию и запустите прокат уже сегодня
+          </p>
           <a
             href="/platform-admin/"
             className="inline-block bg-[#111318] text-white font-bold px-8 py-4 rounded-xl text-base hover:bg-[#1e2230] transition-colors"
