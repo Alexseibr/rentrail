@@ -13,17 +13,20 @@ export async function cleanDatabase() {
   const tables = await db.execute<{ tablename: string }>(
     sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`,
   );
-  for (const { tablename } of tables.rows) {
-    if (PRESERVED_TABLES.has(tablename)) continue;
-    await db.execute(sql.raw(`TRUNCATE TABLE "${tablename}" CASCADE`));
-  }
+  const toTruncate = tables.rows
+    .map((r) => r.tablename)
+    .filter((t) => !PRESERVED_TABLES.has(t));
+  if (toTruncate.length === 0) return;
+  const list = toTruncate.map((t) => `"${t}"`).join(", ");
+  await db.execute(sql.raw(`TRUNCATE TABLE ${list} CASCADE`));
 }
 
 export async function cleanDatabaseFull() {
   const tables = await db.execute<{ tablename: string }>(
     sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != '__drizzle_migrations'`,
   );
-  for (const { tablename } of tables.rows) {
-    await db.execute(sql.raw(`TRUNCATE TABLE "${tablename}" CASCADE`));
-  }
+  const toTruncate = tables.rows.map((r) => r.tablename);
+  if (toTruncate.length === 0) return;
+  const list = toTruncate.map((t) => `"${t}"`).join(", ");
+  await db.execute(sql.raw(`TRUNCATE TABLE ${list} CASCADE`));
 }
