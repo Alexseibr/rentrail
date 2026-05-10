@@ -18,6 +18,9 @@ export default defineConfig({
       },
     },
     globalSetup: ["./src/__tests__/global-setup.int.ts"],
-    reporters: ["verbose"],
+    reporters: ["verbose", "junit"],
+    outputFile: {
+      junit: "test-results/integration.xml",
+    },
   },
 });
