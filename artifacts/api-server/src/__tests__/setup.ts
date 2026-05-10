@@ -39,3 +39,29 @@ export async function cleanDatabaseFull() {
   const list = toTruncate.map((t) => `"${t}"`).join(", ");
   await db.execute(sql.raw(`TRUNCATE TABLE ${list} CASCADE`));
 }
+
+let _cleanDatabaseSafe: Promise<void> = Promise.resolve();
+
+export function cleanDatabaseSafe(): Promise<void> {
+  const next = _cleanDatabaseSafe.then(
+    () => cleanDatabase(),
+    () => cleanDatabase(),
+  );
+  _cleanDatabaseSafe = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
+
+let _lockChain: Promise<void> = Promise.resolve();
+
+export function acquireTestLock(): Promise<() => void> {
+  let release!: () => void;
+  const held = new Promise<void>((res) => {
+    release = res;
+  });
+  const wait = _lockChain.then(() => release);
+  _lockChain = _lockChain.then(() => held);
+  return wait;
+}

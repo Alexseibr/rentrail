@@ -128,36 +128,38 @@ export async function createTestTenant(opts?: {
     opts?.slug ??
     `test-co-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
-  const [company] = await db
-    .insert(companies)
-    .values({
-      name: opts?.companyName ?? "Test Company",
-      slug,
-    })
-    .returning();
+  return db.transaction(async (tx) => {
+    const [company] = await tx
+      .insert(companies)
+      .values({
+        name: opts?.companyName ?? "Test Company",
+        slug,
+      })
+      .returning();
 
-  const [branch] = await db
-    .insert(branches)
-    .values({
-      companyId: company.id,
-      name: "Main Branch",
-    })
-    .returning();
+    const [branch] = await tx
+      .insert(branches)
+      .values({
+        companyId: company.id,
+        name: "Main Branch",
+      })
+      .returning();
 
-  const [station] = await db
-    .insert(stations)
-    .values({
-      companyId: company.id,
-      branchId: branch.id,
-      name: "Station A",
-    })
-    .returning();
+    const [station] = await tx
+      .insert(stations)
+      .values({
+        companyId: company.id,
+        branchId: branch.id,
+        name: "Station A",
+      })
+      .returning();
 
-  return {
-    company: { id: company.id, name: company.name, slug: company.slug },
-    branch: { id: branch.id, name: branch.name },
-    station: { id: station.id, name: station.name },
-  };
+    return {
+      company: { id: company.id, name: company.name, slug: company.slug },
+      branch: { id: branch.id, name: branch.name },
+      station: { id: station.id, name: station.name },
+    };
+  });
 }
 
 export async function assignRole(

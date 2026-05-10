@@ -18,11 +18,33 @@ export default defineWorkspace([
     test: {
       name: "api-integration",
       root: "artifacts/api-server",
-      include: ["src/**/__tests__/**/*.int.test.ts"],
+      include: ["src/**/__tests__/integration/**/*.int.test.ts"],
+      environment: "node",
+      globals: true,
+      testTimeout: 30000,
+      hookTimeout: 60000,
+      fileParallelism: false,
+      sequence: { concurrent: false },
+      isolate: false,
+      pool: "threads",
+      poolOptions: {
+        threads: {
+          singleThread: true,
+        },
+      },
+      globalSetup: ["./artifacts/api-server/src/__tests__/global-setup.int.ts"],
+    },
+  },
+  {
+    test: {
+      name: "api-db-helpers",
+      root: "artifacts/api-server",
+      include: ["src/**/__tests__/helpers/**/*.int.test.ts"],
       environment: "node",
       globals: true,
       testTimeout: 30000,
       hookTimeout: 30000,
+      fileParallelism: false,
       sequence: { concurrent: false },
       pool: "forks",
       poolOptions: {
