@@ -48,6 +48,11 @@ const extendSchema = z.object({
 
 const cancelSchema = z.object({ reason: z.string().optional() });
 
+const resolveDisputeSchema = z.object({
+  resolution: z.enum(["completed", "defaulted"]),
+  reason: z.string().optional(),
+});
+
 const returnSchema = z.object({
   returnedToStationId: z.string().uuid().optional(),
   assetReturnStatus: z
@@ -272,6 +277,38 @@ router.post(
       companyId: req.tenant!.companyId,
       actorUserId: req.user!.userId,
       action: "cancel",
+      entityType: "rental",
+      entityId: updated.id,
+      before: { status: previousStatus },
+      after: { status: updated.status },
+      metadata: reason ? { reason } : undefined,
+      req,
+    });
+    res.json({ data: updated });
+  },
+);
+
+router.post(
+  "/rentals/:id/resolve-dispute",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("rental:complete"),
+  validate({ params: idParams, body: resolveDisputeSchema }),
+  async (req, res) => {
+    const { resolution, reason } =
+      getBody<z.infer<typeof resolveDisputeSchema>>(req);
+    const { updated, previousStatus } =
+      await rentalService.resolveRentalDispute(
+        req.params.id as string,
+        req.tenant!.companyId,
+        resolution,
+        req.user!.userId,
+        reason,
+      );
+    await createAuditLog({
+      companyId: req.tenant!.companyId,
+      actorUserId: req.user!.userId,
+      action: "resolve_dispute",
       entityType: "rental",
       entityId: updated.id,
       before: { status: previousStatus },

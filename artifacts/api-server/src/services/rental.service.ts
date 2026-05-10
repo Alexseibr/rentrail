@@ -7,9 +7,10 @@ import {
   clients,
   branches,
   stations,
+  rentalBlackoutDates,
   type InsertRental,
 } from "@workspace/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, lte, gte, or, isNull } from "drizzle-orm";
 import {
   NotFoundError,
   AppError,
@@ -208,6 +209,41 @@ async function validateRentalOwnership(
   }
 }
 
+async function checkBlackoutDates(
+  companyId: string,
+  assetId: string,
+  branchId: string | null | undefined,
+  targetDate: Date,
+) {
+  const conditions = [
+    eq(rentalBlackoutDates.companyId, companyId),
+    lte(rentalBlackoutDates.startDate, targetDate),
+    gte(rentalBlackoutDates.endDate, targetDate),
+    or(
+      and(
+        isNull(rentalBlackoutDates.branchId),
+        isNull(rentalBlackoutDates.assetId),
+      ),
+      eq(rentalBlackoutDates.assetId, assetId),
+      ...(branchId ? [eq(rentalBlackoutDates.branchId, branchId)] : []),
+    ),
+  ];
+
+  const [conflict] = await db
+    .select({ id: rentalBlackoutDates.id })
+    .from(rentalBlackoutDates)
+    .where(and(...conditions))
+    .limit(1);
+
+  if (conflict) {
+    throw new AppError(
+      422,
+      "Rental creation is blocked by a blackout date for this period",
+      "BLACKOUT_DATE_CONFLICT",
+    );
+  }
+}
+
 async function checkActiveRentalConflict(assetId: string, companyId: string) {
   const [existing] = await db
     .select({ id: rentals.id, status: rentals.status })
@@ -238,6 +274,14 @@ export async function createRental(data: InsertRental, userId?: string) {
     data.branchId,
   );
   await checkActiveRentalConflict(data.assetId, data.companyId);
+
+  const rentalDate = data.startAt ?? new Date();
+  await checkBlackoutDates(
+    data.companyId,
+    data.assetId,
+    data.branchId,
+    rentalDate,
+  );
 
   const blacklistResult = await checkClientBlacklist(
     data.clientId,
@@ -538,6 +582,53 @@ export async function cancelRental(
       companyId,
       userId,
       `Rental ${id} canceled`,
+    );
+  }
+
+  return { updated, previousStatus: rental.status };
+}
+
+export async function resolveRentalDispute(
+  id: string,
+  companyId: string,
+  resolution: "completed" | "defaulted",
+  userId?: string,
+  reason?: string,
+) {
+  const rental = await getRentalOrThrow(id, companyId);
+
+  if (rental.status !== "disputed") {
+    throw new InvalidStatusTransitionError(rental.status, resolution, "rental");
+  }
+
+  validateTransition(rental.status, resolution);
+
+  const [updated] = await db
+    .update(rentals)
+    .set({
+      status: resolution as RentalStatus,
+      actualEndAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(rentals.id, id), eq(rentals.companyId, companyId)))
+    .returning();
+
+  await writeRentalStatusHistory(
+    companyId,
+    id,
+    rental.status,
+    resolution,
+    userId,
+    reason ?? `Dispute resolved: ${resolution}`,
+  );
+
+  if (resolution === "completed") {
+    await setAssetStatus(
+      rental.assetId,
+      "available",
+      companyId,
+      userId,
+      `Rental ${id} dispute resolved as completed`,
     );
   }
 
