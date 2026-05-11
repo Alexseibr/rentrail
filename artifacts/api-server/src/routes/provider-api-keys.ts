@@ -55,6 +55,46 @@ router.get(
   },
 );
 
+router.post(
+  "/provider-api-keys/:id/rotate",
+  authenticate,
+  requireCompanyAccess,
+  requirePermission("settings:manage"),
+  validate({ params: idParams }),
+  async (req, res) => {
+    const result = await keyService.rotateApiKey(
+      req.params.id as string,
+      req.tenant!.companyId,
+    );
+    await Promise.all([
+      createAuditLog({
+        companyId: req.tenant!.companyId,
+        actorUserId: req.user!.userId,
+        action: "revoke",
+        entityType: "provider_api_key",
+        entityId: result.revoked.id,
+        req,
+      }),
+      createAuditLog({
+        companyId: req.tenant!.companyId,
+        actorUserId: req.user!.userId,
+        action: "create",
+        entityType: "provider_api_key",
+        entityId: result.created.id,
+        req,
+      }),
+    ]);
+    const { keyHash: _keyHash, ...safeCreated } = result.created;
+    void _keyHash;
+    res.status(201).json({
+      data: {
+        revokedId: result.revoked.id,
+        newKey: safeCreated,
+      },
+    });
+  },
+);
+
 router.delete(
   "/provider-api-keys/:id",
   authenticate,

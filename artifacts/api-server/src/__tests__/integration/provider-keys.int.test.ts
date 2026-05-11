@@ -201,6 +201,141 @@ describe("Provider API Key management — integration", () => {
     });
   });
 
+  // ─── POST /api/provider-api-keys/:id/rotate ───────────────────────────────
+
+  describe("POST /api/provider-api-keys/:id/rotate — key rotation", () => {
+    it("creates a new active key and revokes the old one atomically, old key → 401, new key → 200", async () => {
+      const createRes = await request(testApp)
+        .post("/api/provider-api-keys")
+        .set(h())
+        .send({ provider: "rotate_provider", name: "Key To Rotate" });
+
+      expect(createRes.status).toBe(201);
+      const original = resBody<ApiResponse>(createRes).data;
+      const oldRawKey = original.rawKey as string;
+      const oldId = original.id as string;
+
+      const ingestBefore = await request(testApp)
+        .post("/api/telemetry/ingest")
+        .set("x-api-key", oldRawKey)
+        .send({
+          provider: "rotate_provider",
+          recordedAt: new Date().toISOString(),
+          lat: 55.75,
+          lng: 37.62,
+        });
+      expect(ingestBefore.status).not.toBe(401);
+
+      const rotateRes = await request(testApp)
+        .post(`/api/provider-api-keys/${oldId}/rotate`)
+        .set(h());
+
+      expect(rotateRes.status).toBe(201);
+      const rotated = resBody<ApiResponse>(rotateRes).data as Record<
+        string,
+        unknown
+      >;
+      expect(rotated.revokedId).toBe(oldId);
+      const newKey = rotated.newKey as Record<string, unknown>;
+      expect(newKey).toHaveProperty("id");
+      expect(newKey.id).not.toBe(oldId);
+      expect(newKey).toHaveProperty("rawKey");
+      expect(typeof newKey.rawKey).toBe("string");
+      expect((newKey.rawKey as string).startsWith("pk_")).toBe(true);
+      expect(newKey.isActive).toBe(true);
+      expect(newKey).not.toHaveProperty("keyHash");
+
+      const ingestOld = await request(testApp)
+        .post("/api/telemetry/ingest")
+        .set("x-api-key", oldRawKey)
+        .send({
+          provider: "rotate_provider",
+          recordedAt: new Date().toISOString(),
+          lat: 55.75,
+          lng: 37.62,
+        });
+      expect(ingestOld.status).toBe(401);
+
+      const ingestNew = await request(testApp)
+        .post("/api/telemetry/ingest")
+        .set("x-api-key", newKey.rawKey as string)
+        .send({
+          provider: "rotate_provider",
+          recordedAt: new Date().toISOString(),
+          lat: 55.75,
+          lng: 37.62,
+        });
+      expect(ingestNew.status).not.toBe(401);
+    });
+
+    it("preserves provider and name on the new key", async () => {
+      const createRes = await request(testApp)
+        .post("/api/provider-api-keys")
+        .set(h())
+        .send({ provider: "meta_provider", name: "Meta Test Key" });
+
+      expect(createRes.status).toBe(201);
+      const original = resBody<ApiResponse>(createRes).data;
+
+      const rotateRes = await request(testApp)
+        .post(`/api/provider-api-keys/${original.id as string}/rotate`)
+        .set(h());
+
+      expect(rotateRes.status).toBe(201);
+      const rotated = resBody<ApiResponse>(rotateRes).data as Record<
+        string,
+        unknown
+      >;
+      const newKey = rotated.newKey as Record<string, unknown>;
+      expect(newKey.provider).toBe("meta_provider");
+      expect(newKey.name).toBe("Meta Test Key");
+    });
+
+    it("returns 404 when rotating a non-existent key id", async () => {
+      const res = await request(testApp)
+        .post(
+          "/api/provider-api-keys/00000000-0000-0000-0000-000000000000/rotate",
+        )
+        .set(h());
+
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 404 when rotating an already-revoked key", async () => {
+      const createRes = await request(testApp)
+        .post("/api/provider-api-keys")
+        .set(h())
+        .send({ provider: "revoked_rotate_provider", name: "Already Revoked" });
+
+      expect(createRes.status).toBe(201);
+      const keyId = resBody<ApiResponse>(createRes).data.id as string;
+
+      await request(testApp).delete(`/api/provider-api-keys/${keyId}`).set(h());
+
+      const rotateRes = await request(testApp)
+        .post(`/api/provider-api-keys/${keyId}/rotate`)
+        .set(h());
+
+      expect(rotateRes.status).toBe(404);
+    });
+
+    it("returns 401 without authentication", async () => {
+      const createRes = await request(testApp)
+        .post("/api/provider-api-keys")
+        .set(h())
+        .send({ provider: "auth_rotate_provider", name: "Auth Rotate Test" });
+
+      expect(createRes.status).toBe(201);
+      const keyId = resBody<ApiResponse>(createRes).data.id as string;
+
+      const res = await request(testApp)
+        .post(`/api/provider-api-keys/${keyId}/rotate`)
+        .set("x-company-id", tenant.company.id);
+
+      expect(res.status).toBe(401);
+    });
+  });
+
   // ─── Tenant isolation ─────────────────────────────────────────────────────
 
   describe("Tenant isolation — key from company A cannot ingest for company B", () => {

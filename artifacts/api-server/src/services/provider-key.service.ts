@@ -58,6 +58,42 @@ export async function revokeApiKey(id: string, companyId: string) {
   return updated;
 }
 
+export async function rotateApiKey(id: string, companyId: string) {
+  return db.transaction(async (tx) => {
+    const [revoked] = await tx
+      .update(providerApiKeys)
+      .set({ isActive: false, revokedAt: new Date() })
+      .where(
+        and(
+          eq(providerApiKeys.id, id),
+          eq(providerApiKeys.companyId, companyId),
+          eq(providerApiKeys.isActive, true),
+        ),
+      )
+      .returning();
+
+    if (!revoked)
+      throw new NotFoundError("API key not found or already revoked");
+
+    const rawKey = `pk_${randomBytes(32).toString("hex")}`;
+    const keyHash = hashKey(rawKey);
+    const keyPrefix = rawKey.slice(0, 10);
+
+    const [created] = await tx
+      .insert(providerApiKeys)
+      .values({
+        companyId: revoked.companyId,
+        provider: revoked.provider,
+        name: revoked.name,
+        keyHash,
+        keyPrefix,
+      })
+      .returning();
+
+    return { revoked, created: { ...created, rawKey } };
+  });
+}
+
 export async function resolveApiKey(rawKey: string) {
   const keyHash = hashKey(rawKey);
   const [record] = await db
