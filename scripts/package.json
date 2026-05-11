@@ -11,6 +11,7 @@
     "check-map-cleanup": "tsx ./src/check-map-cleanup.ts",
     "test": "tsx --test ./src/check-map-cleanup-lib.test.ts ./src/print-test-report-lib.test.ts ./src/ci-guard.test.ts",
     "test-map-cleanup": "tsx --test ./src/check-map-cleanup.test.ts",
+    "collect-xml-files": "tsx ./src/collect-xml-files.ts",
     "print-test-report": "tsx ./src/print-test-report.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

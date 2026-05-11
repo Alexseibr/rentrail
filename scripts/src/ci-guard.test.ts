@@ -10,16 +10,19 @@
  *    trap wiring from `ci.sh`:
  *
  *      set -euo pipefail
- *      trap 'tsx print-test-report.ts -- a.xml b.xml' EXIT
+ *      EXPECTED_XMLS=$(tsx collect-xml-files.ts)
+ *      trap "tsx print-test-report.ts -- $EXPECTED_XMLS" EXIT
  *      # main body exits 0; trap fires and detects the missing file
  *
  *    This ensures that removing or rewiring the trap in `ci.sh` would break
  *    the test even if `print-test-report.ts` itself is untouched.
  *
- * 3. ci.sh source audit: reads `ci.sh` directly and asserts that its trap
- *    command lists the exact set of XML basenames the CI pipeline is
- *    expected to produce. Editing ci.sh's trap without updating this
- *    canonical list is a breaking change that this layer will catch.
+ * 3. ci.sh source audit: reads `ci.sh` directly and asserts that it derives
+ *    its expected XML list via `collect-xml-files` (the dynamic scanner)
+ *    rather than a hardcoded parallel array. Also verifies that the
+ *    `CI_XML_FILES` module itself produces the correct basenames.
+ *    Editing ci.sh's trap without keeping the derivation wiring is a breaking
+ *    change that this layer will catch.
  *
  * All layers redirect `RESULTS_DIR` to a temporary directory via the
  * `TEST_RESULTS_DIR` env var so no real `test-results/` files are touched.
@@ -42,6 +45,7 @@ import {
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { CI_XML_FILES, collectCiXmlFiles } from "./ci-xml-files.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,20 +74,19 @@ function runScript(
  * Write a minimal bash stand-in that mirrors ci.sh's trap structure:
  *
  *   set -euo pipefail
- *   trap 'tsx print-test-report.ts -- <files...>' EXIT
+ *   EXPECTED_XMLS=$(tsx collect-xml-files.ts)
+ *   trap "tsx print-test-report.ts -- $EXPECTED_XMLS" EXIT
  *   exit 0   # main body succeeds; trap fires and may exit 1
  *
  * Returns the overall exit code of running the stand-in.
  */
-function runStandin(
-  resultsDir: string,
-  expectedFiles: string[],
-): { status: number; stderr: string } {
-  const fileList = expectedFiles.join(" ");
+function runStandin(resultsDir: string): { status: number; stderr: string } {
+  const collectScript = join(__dirname, "collect-xml-files.ts");
   const standin = [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
-    `trap '${TSX} ${SCRIPT} -- ${fileList}' EXIT`,
+    `EXPECTED_XMLS=$(${TSX} ${collectScript})`,
+    `trap "${TSX} ${SCRIPT} -- $EXPECTED_XMLS" EXIT`,
     "exit 0",
   ].join("\n");
 
@@ -187,32 +190,22 @@ describe("ci-guard (shell stand-in): ci.sh trap wiring exits 1 on missing XML", 
   });
 
   it("stand-in exits 1 when one expected XML file is absent (trap catches it)", () => {
-    writeXml(resultsDir, "api.xml");
-    writeXml(resultsDir, "unit.xml");
-    removeXml(resultsDir, "integration.xml");
+    // Write all but the first derived XML file.
+    for (const name of CI_XML_FILES.slice(1)) writeXml(resultsDir, name);
+    removeXml(resultsDir, CI_XML_FILES[0]!);
 
-    const { status } = runStandin(resultsDir, [
-      "api.xml",
-      "integration.xml",
-      "unit.xml",
-    ]);
+    const { status } = runStandin(resultsDir);
     assert.equal(
       status,
       1,
-      `Expected stand-in to exit 1 (integration.xml missing) but got ${status}`,
+      `Expected stand-in to exit 1 (${CI_XML_FILES[0]} missing) but got ${status}`,
     );
   });
 
   it("stand-in exits 0 when all expected XML files are present (trap is silent)", () => {
-    writeXml(resultsDir, "api.xml");
-    writeXml(resultsDir, "integration.xml");
-    writeXml(resultsDir, "unit.xml");
+    for (const name of CI_XML_FILES) writeXml(resultsDir, name);
 
-    const { status } = runStandin(resultsDir, [
-      "api.xml",
-      "integration.xml",
-      "unit.xml",
-    ]);
+    const { status } = runStandin(resultsDir);
     assert.equal(
       status,
       0,
@@ -221,11 +214,9 @@ describe("ci-guard (shell stand-in): ci.sh trap wiring exits 1 on missing XML", 
   });
 
   it("stand-in exits 1 when ALL expected XML files are absent", () => {
-    const { status } = runStandin(resultsDir, [
-      "gone-a.xml",
-      "gone-b.xml",
-      "gone-c.xml",
-    ]);
+    for (const name of CI_XML_FILES) removeXml(resultsDir, name);
+
+    const { status } = runStandin(resultsDir);
     assert.equal(
       status,
       1,
@@ -235,44 +226,61 @@ describe("ci-guard (shell stand-in): ci.sh trap wiring exits 1 on missing XML", 
 });
 
 // ---------------------------------------------------------------------------
-// Layer 3: ci.sh source audit — trap declaration matches canonical file list
+// Layer 3: ci.sh source audit — dynamic derivation is wired correctly
 // ---------------------------------------------------------------------------
-//
-// These are the XML basenames that the CI pipeline's test steps are expected
-// to write. If ci.sh's trap is edited to drop or rename one of these, the
-// test below will fail immediately — without needing to run a full CI pass.
-//
-const CANONICAL_CI_XML_FILES = ["api.xml", "integration.xml", "unit.xml"];
 
-/**
- * Extract the `.xml` basenames listed inside the `trap '...' EXIT` command
- * of a ci.sh file.  Returns an empty array when no trap line is found.
- */
-function parseTrapXmlFiles(ciShContent: string): string[] {
-  // Match: trap '...' EXIT  (single-quoted trap body on one line)
-  const trapMatch = /trap\s+'([^']+)'\s+EXIT/.exec(ciShContent);
-  if (!trapMatch) return [];
-  const trapBody = trapMatch[1];
-  return (trapBody.match(/\b\w+\.xml\b/g) ?? []).sort();
-}
-
-describe("ci-guard (ci.sh source audit): trap lists the canonical XML files", () => {
+describe("ci-guard (ci.sh source audit): trap uses derived XML file list", () => {
   const CI_SH = join(WORKSPACE_ROOT, "ci.sh");
 
   it("ci.sh contains an EXIT trap", () => {
     const src = readFileSync(CI_SH, "utf8");
-    const trapMatch = /trap\s+'[^']+'\s+EXIT/.test(src);
-    assert.ok(trapMatch, "Expected ci.sh to declare a trap '...' EXIT command");
+    const trapMatch = /trap\s+".+"\s+EXIT/.test(src);
+    assert.ok(trapMatch, 'Expected ci.sh to declare a trap "..." EXIT command');
   });
 
-  it("ci.sh trap lists exactly the canonical XML basenames", () => {
+  it("ci.sh derives expected XML via collect-xml-files, not a hardcoded list", () => {
     const src = readFileSync(CI_SH, "utf8");
-    const found = parseTrapXmlFiles(src);
-    const expected = [...CANONICAL_CI_XML_FILES].sort();
+
+    // The script must call collect-xml-files to build the file list dynamically.
+    assert.ok(
+      src.includes("collect-xml-files"),
+      "Expected ci.sh to call collect-xml-files for dynamic XML list derivation",
+    );
+
+    // The trap body itself must not embed hardcoded *.xml filenames — it should
+    // reference a variable populated by collect-xml-files instead.
+    const trapMatch = /trap\s+"([^"]+)"\s+EXIT/.exec(src);
+    assert.ok(
+      trapMatch !== null,
+      'Expected ci.sh to declare a double-quoted trap "..." EXIT command',
+    );
+    const trapBody = trapMatch[1] ?? "";
+    assert.ok(
+      !/\b\w+\.xml\b/.test(trapBody),
+      `Expected trap body to use a shell variable, not hardcoded XML names. Found: ${trapBody}`,
+    );
+  });
+
+  it("CI_XML_FILES module yields well-formed basenames consistent with a fresh scan", () => {
+    // Shape: non-empty, every entry is a well-formed XML basename.
+    // No fixed list is asserted here — adding a new test suite that correctly
+    // declares its output file requires no change to this test.
+    assert.ok(CI_XML_FILES.length > 0, "CI_XML_FILES must not be empty");
+    for (const name of CI_XML_FILES) {
+      assert.match(
+        name,
+        /^[a-z][a-z0-9-]*\.xml$/,
+        `Expected a well-formed XML basename, got: ${name}`,
+      );
+    }
+
+    // Consistency: the exported constant must match a fresh run of the scanner
+    // so the module cannot drift from the workspace declarations it reads.
+    const fresh = collectCiXmlFiles();
     assert.deepEqual(
-      found,
-      expected,
-      `ci.sh trap XML list mismatch.\n  found:    ${found.join(", ")}\n  expected: ${expected.join(", ")}`,
+      CI_XML_FILES,
+      fresh,
+      "CI_XML_FILES export must equal a fresh collectCiXmlFiles() call",
     );
   });
 

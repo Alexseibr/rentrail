@@ -12,11 +12,16 @@ set -euo pipefail
 # Ensure the test-results directory exists before any test command runs.
 mkdir -p test-results
 
+# Derive the expected XML basenames from test-command declarations.
+# collect-xml-files scans package.json --outputFile.junit flags and vitest
+# config outputFile.junit entries — adding a new test suite automatically
+# extends the guard without a separate manual edit to this file.
+EXPECTED_XMLS=$(pnpm --filter @workspace/scripts run --silent collect-xml-files)
+
 # Always print the structured XML test report on exit, pass or fail.
-# Declare the XML basenames that test:unit and test:api are expected to write.
-# print-test-report exits non-zero if any of these files is absent, catching a
+# print-test-report exits non-zero if any expected file is absent, catching a
 # silently-crashed test runner before it would otherwise go undetected.
-trap 'pnpm --filter @workspace/scripts run print-test-report -- api.xml integration.xml unit.xml' EXIT
+trap "pnpm --filter @workspace/scripts run print-test-report -- $EXPECTED_XMLS" EXIT
 
 echo ""
 echo "▶ [1/11] typecheck"
