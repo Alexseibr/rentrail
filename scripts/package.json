@@ -13,6 +13,7 @@
     "test-map-cleanup": "tsx --test ./src/check-map-cleanup.test.ts",
     "collect-xml-files": "tsx ./src/collect-xml-files.ts",
     "check-undeclared-xml": "tsx ./src/check-undeclared-xml.ts",
+    "check-vitest-output-file": "tsx ./src/check-vitest-output-file.ts",
     "print-test-report": "tsx ./src/print-test-report.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

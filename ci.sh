@@ -24,51 +24,55 @@ EXPECTED_XMLS=$(pnpm --filter @workspace/scripts run --silent collect-xml-files)
 trap "pnpm --filter @workspace/scripts run print-test-report -- $EXPECTED_XMLS" EXIT
 
 echo ""
-echo "▶ [1/12] typecheck"
+echo "▶ [1/13] typecheck"
 pnpm run typecheck
 
 echo ""
-echo "▶ [2/12] type-coverage"
+echo "▶ [2/13] type-coverage"
 pnpm run type-coverage
 
 echo ""
-echo "▶ [3/12] check-map-cleanup"
+echo "▶ [3/13] check-map-cleanup"
 pnpm run check-map-cleanup
 
 echo ""
-echo "▶ [4/12] codegen:check"
+echo "▶ [4/13] check-vitest-output-file"
+pnpm --filter @workspace/scripts run check-vitest-output-file
+
+echo ""
+echo "▶ [5/13] codegen:check"
 pnpm run codegen:check
 
 echo ""
-echo "▶ [5/12] scripts: test"
+echo "▶ [6/13] scripts: test"
 pnpm --filter @workspace/scripts run test
 
 echo ""
-echo "▶ [6/12] scripts: test-map-cleanup"
+echo "▶ [7/13] scripts: test-map-cleanup"
 pnpm --filter @workspace/scripts run test-map-cleanup
 
 echo ""
-echo "▶ [7/12] test:unit"
+echo "▶ [8/13] test:unit"
 pnpm run test:unit
 
 echo ""
-echo "▶ [8/12] test:integration (standalone config, bail on first failure)"
+echo "▶ [9/13] test:integration (standalone config, bail on first failure)"
 pnpm run test:integration
 
 echo ""
-echo "▶ [9/12] test:api"
+echo "▶ [10/13] test:api"
 pnpm run test:api
 
 echo ""
-echo "▶ [10/12] check-undeclared-xml"
+echo "▶ [11/13] check-undeclared-xml"
 pnpm --filter @workspace/scripts run check-undeclared-xml
 
 echo ""
-echo "▶ [11/12] format:check"
+echo "▶ [12/13] format:check"
 pnpm run format:check
 
 echo ""
-echo "▶ [12/12] lint:eslint"
+echo "▶ [13/13] lint:eslint"
 pnpm run lint:eslint
 
 echo ""

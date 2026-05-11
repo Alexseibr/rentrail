@@ -46,7 +46,11 @@ import {
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { CI_XML_FILES, collectCiXmlFiles } from "./ci-xml-files.js";
+import {
+  CI_XML_FILES,
+  collectCiXmlFiles,
+  findVitestConfigsWithoutOutputFile,
+} from "./ci-xml-files.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1253,6 +1257,388 @@ describe("ci-guard (enforcement gate): ci.sh wires check-undeclared-xml as a bui
       undeclaredIdx > testApiIdx,
       "check-undeclared-xml must appear after test:api in ci.sh so all XML " +
         "files are on disk before the gate runs",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layer 7: vitest output-file check — findVitestConfigsWithoutOutputFile
+//
+// Tests the static checker that detects vitest configs referencing the junit
+// reporter but missing an outputFile declaration.  A missing outputFile causes
+// vitest to write JUnit XML to stdout instead of a file, so CI can never
+// collect or validate the report.
+//
+// Sub-layers:
+//   7a. Unit tests for findVitestConfigsWithoutOutputFile against a synthetic
+//       temp workspace — covers the "no outputFile" case, the "has outputFile"
+//       case, the "no junit at all" case, and the shared-helper import case.
+//   7b. Script-level exit-code tests: spawns check-vitest-output-file.ts
+//       directly against controlled temp directories.
+//   7c. ci.sh source audit: verifies check-vitest-output-file is wired as a
+//       build step before any test steps run.
+//   7d. Real-workspace assertion: the current workspace must have zero flagged
+//       vitest configs so the check stays green on every commit.
+// ---------------------------------------------------------------------------
+
+describe("ci-guard (vitest output-file check): findVitestConfigsWithoutOutputFile — unit", () => {
+  let tmpRoot: string;
+
+  before(() => {
+    tmpRoot = mkdtempSync(join(tmpdir(), "ci-vitest-outputfile-"));
+    writeFileSync(
+      join(tmpRoot, "package.json"),
+      JSON.stringify({ scripts: {} }),
+      "utf8",
+    );
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n",
+      "utf8",
+    );
+  });
+
+  after(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  it("flags a vitest config that mentions junit but has no outputFile declaration", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest.no-output.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    reporters: ['verbose', 'junit'],",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = findVitestConfigsWithoutOutputFile(tmpRoot);
+    assert.ok(
+      result.some((p) => p.includes("vitest.no-output.ts")),
+      `Expected vitest.no-output.ts to be flagged; got: [${result.join(", ")}]`,
+    );
+  });
+
+  it("does not flag a vitest config with a per-reporter outputFile object", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest.with-object.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    reporters: ['verbose', 'junit'],",
+        "    outputFile: { junit: 'test-results/with-object.xml' },",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = findVitestConfigsWithoutOutputFile(tmpRoot);
+    assert.ok(
+      !result.some((p) => p.includes("vitest.with-object.ts")),
+      `Expected vitest.with-object.ts to not be flagged; got: [${result.join(", ")}]`,
+    );
+  });
+
+  it("does not flag a vitest config with a plain-string outputFile", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest.with-plain.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    reporters: ['junit'],",
+        '    outputFile: "test-results/with-plain.xml",',
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = findVitestConfigsWithoutOutputFile(tmpRoot);
+    assert.ok(
+      !result.some((p) => p.includes("vitest.with-plain.ts")),
+      `Expected vitest.with-plain.ts to not be flagged; got: [${result.join(", ")}]`,
+    );
+  });
+
+  it("does not flag a vitest config with a reporter-tuple outputFile", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest.with-tuple.ts"),
+      [
+        "import { defineConfig } from 'vitest/config';",
+        "export default defineConfig({",
+        "  test: {",
+        "    reporters: [['junit', { outputFile: 'test-results/with-tuple.xml' }]],",
+        "  },",
+        "});",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = findVitestConfigsWithoutOutputFile(tmpRoot);
+    assert.ok(
+      !result.some((p) => p.includes("vitest.with-tuple.ts")),
+      `Expected vitest.with-tuple.ts to not be flagged; got: [${result.join(", ")}]`,
+    );
+  });
+
+  it("does not flag a vitest config that has no junit reporter reference at all", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest.no-junit.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    reporters: ['verbose'],",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = findVitestConfigsWithoutOutputFile(tmpRoot);
+    assert.ok(
+      !result.some((p) => p.includes("vitest.no-junit.ts")),
+      `Expected vitest.no-junit.ts to not be flagged (no junit reporter); got: [${result.join(", ")}]`,
+    );
+  });
+
+  it("does not flag a vitest config whose outputFile is declared in a shared helper import", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest-junit-helper.ts"),
+      [
+        "export const outputFile = {",
+        "  junit: 'test-results/helper-declared.xml',",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+    writeFileSync(
+      join(tmpRoot, "vitest.helper-consumer.ts"),
+      [
+        "import { outputFile } from './vitest-junit-helper';",
+        "export default { test: { reporters: ['junit'], outputFile } };",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = findVitestConfigsWithoutOutputFile(tmpRoot);
+    assert.ok(
+      !result.some((p) => p.includes("vitest.helper-consumer.ts")),
+      `Expected vitest.helper-consumer.ts to not be flagged (outputFile in shared helper); got: [${result.join(", ")}]`,
+    );
+  });
+
+  it("flags configs in package subdirectories listed in pnpm-workspace.yaml", () => {
+    const subDir = join(tmpRoot, "packages", "missing-output-pkg");
+    mkdirSync(subDir, { recursive: true });
+    writeFileSync(
+      join(subDir, "vitest.unit.ts"),
+      [
+        "export default {",
+        "  test: { reporters: ['junit'] },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const result = findVitestConfigsWithoutOutputFile(tmpRoot);
+    assert.ok(
+      result.some((p) => p.includes("missing-output-pkg")),
+      `Expected config in package subdir to be flagged; got: [${result.join(", ")}]`,
+    );
+  });
+
+  it("returns [] for a workspace that has no vitest configs at all", () => {
+    const cleanRoot = mkdtempSync(join(tmpdir(), "ci-vitest-clean-"));
+    try {
+      writeFileSync(
+        join(cleanRoot, "package.json"),
+        JSON.stringify({ scripts: {} }),
+        "utf8",
+      );
+      writeFileSync(
+        join(cleanRoot, "pnpm-workspace.yaml"),
+        "packages:\n",
+        "utf8",
+      );
+      const result = findVitestConfigsWithoutOutputFile(cleanRoot);
+      assert.deepEqual(
+        result,
+        [],
+        "Expected empty array for workspace with no vitest configs",
+      );
+    } finally {
+      rmSync(cleanRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layer 7b: script-level exit-code contract for check-vitest-output-file
+// ---------------------------------------------------------------------------
+
+const CHECK_VITEST_SCRIPT = join(
+  __dirname,
+  "check-vitest-output-file.ts",
+);
+
+function runCheckVitestOutputFile(workspaceRoot: string): {
+  status: number;
+  stderr: string;
+} {
+  const result = spawnSync(TSX, [CHECK_VITEST_SCRIPT], {
+    cwd: WORKSPACE_ROOT,
+    encoding: "utf8",
+    env: { ...process.env, CHECK_WORKSPACE_ROOT: workspaceRoot },
+  });
+  return { status: result.status ?? 1, stderr: result.stderr ?? "" };
+}
+
+describe("ci-guard (vitest output-file check): check-vitest-output-file exit-code contract", () => {
+  let tmpRoot: string;
+
+  before(() => {
+    tmpRoot = mkdtempSync(join(tmpdir(), "ci-vitest-script-"));
+    writeFileSync(
+      join(tmpRoot, "package.json"),
+      JSON.stringify({ scripts: {} }),
+      "utf8",
+    );
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n",
+      "utf8",
+    );
+  });
+
+  after(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  it("exits 0 when no vitest config references junit without outputFile", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest.ok.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    reporters: ['junit'],",
+        "    outputFile: { junit: 'test-results/ok.xml' },",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const { status } = runCheckVitestOutputFile(tmpRoot);
+    assert.equal(
+      status,
+      0,
+      `Expected exit code 0 (all configs have outputFile) but got ${status}`,
+    );
+  });
+
+  it("exits 1 when a vitest config has junit but no outputFile", () => {
+    writeFileSync(
+      join(tmpRoot, "vitest.missing.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    reporters: ['verbose', 'junit'],",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const { status, stderr } = runCheckVitestOutputFile(tmpRoot);
+    assert.equal(
+      status,
+      1,
+      `Expected exit code 1 (missing outputFile) but got ${status}`,
+    );
+    assert.ok(
+      stderr.includes("vitest.missing.ts"),
+      `Expected stderr to mention vitest.missing.ts; got: ${stderr}`,
+    );
+  });
+
+  it("exits 0 when there are no vitest configs at all", () => {
+    const emptyRoot = mkdtempSync(join(tmpdir(), "ci-vitest-empty-"));
+    try {
+      writeFileSync(
+        join(emptyRoot, "package.json"),
+        JSON.stringify({ scripts: {} }),
+        "utf8",
+      );
+      writeFileSync(
+        join(emptyRoot, "pnpm-workspace.yaml"),
+        "packages:\n",
+        "utf8",
+      );
+
+      const { status } = runCheckVitestOutputFile(emptyRoot);
+      assert.equal(
+        status,
+        0,
+        `Expected exit code 0 (no configs) but got ${status}`,
+      );
+    } finally {
+      rmSync(emptyRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layer 7c: ci.sh source audit — check-vitest-output-file is wired correctly
+// ---------------------------------------------------------------------------
+
+describe("ci-guard (vitest output-file check): ci.sh wires check-vitest-output-file as a build step", () => {
+  const CI_SH = join(WORKSPACE_ROOT, "ci.sh");
+
+  it("ci.sh calls check-vitest-output-file", () => {
+    const src = readFileSync(CI_SH, "utf8");
+    assert.ok(
+      src.includes("check-vitest-output-file"),
+      "Expected ci.sh to invoke check-vitest-output-file as a build step. " +
+        "Removing or renaming the step without updating this test is a breaking change.",
+    );
+  });
+
+  it("check-vitest-output-file step appears before any test steps that write XML", () => {
+    const src = readFileSync(CI_SH, "utf8");
+    const vitestCheckIdx = src.indexOf("check-vitest-output-file");
+    // test:unit is the first step that writes XML — the static check must precede it.
+    const testUnitIdx = src.indexOf("test:unit");
+    assert.ok(
+      vitestCheckIdx !== -1,
+      "Expected ci.sh to contain a check-vitest-output-file step",
+    );
+    assert.ok(testUnitIdx !== -1, "Expected ci.sh to contain a test:unit step");
+    assert.ok(
+      vitestCheckIdx < testUnitIdx,
+      "check-vitest-output-file must appear before test:unit in ci.sh so " +
+        "misconfigured suites are caught before any tests run",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layer 7d: real-workspace assertion — current workspace has no flagged configs
+// ---------------------------------------------------------------------------
+
+describe("ci-guard (vitest output-file check): real workspace has no vitest configs missing outputFile", () => {
+  it("findVitestConfigsWithoutOutputFile returns [] for the actual workspace", () => {
+    const missing = findVitestConfigsWithoutOutputFile(WORKSPACE_ROOT);
+    assert.deepEqual(
+      missing,
+      [],
+      `The following vitest configs reference junit but declare no outputFile:\n` +
+        `  ${missing.join("\n  ")}\n` +
+        `Add an outputFile declaration (e.g. outputFile: { junit: "test-results/<name>.xml" })\n` +
+        `so CI can collect and validate the JUnit report.`,
     );
   });
 });

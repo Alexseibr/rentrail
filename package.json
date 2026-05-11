@@ -22,6 +22,8 @@
     "lint:eslint:strict": "eslint . --max-warnings 0",
     "lint:eslint:fix": "eslint . --fix",
     "lint:fix": "prettier --write .",
+    "lint:eslint:fix": "eslint . --fix",
+    "lint:fix": "prettier --write .",
     "format:check": "prettier --check . || (printf '\\n[Format check failed] One or more files are not formatted correctly.\\nRun: pnpm run lint:fix\\n\\n' >&2 && exit 1)",
     "seed": "pnpm --filter @workspace/scripts run seed-rbac",
     "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
@@ -41,6 +43,15 @@
     "dev:test": "pnpm run dev:doctor && pnpm run dev:db:up && DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/rentrail} pnpm run dev:verify",
     "dev:doctor": "bash scripts/dev-doctor.sh",
     "dev:doctor:json": "bash scripts/dev-doctor.sh --json"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,mjs,cjs,jsx,json,css,md,yaml,yml}": [
+      "prettier --write"
+    ]
   },
   "lint-staged": {
     "*.{ts,tsx}": [

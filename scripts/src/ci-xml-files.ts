@@ -377,6 +377,111 @@ function resolveWorkspacePackageDirs(workspaceRoot: string): string[] {
   return dirs;
 }
 
+// ---------------------------------------------------------------------------
+// Module-level shared helpers (used by both collectCiXmlFiles and
+// findVitestConfigsWithoutOutputFile)
+// ---------------------------------------------------------------------------
+
+/**
+ * Matches both `import ... from './path'` and `export ... from './path'`.
+ * Only relative specifiers (starting with `.`) are followed; bare module
+ * specifiers are left to the package manager.
+ *
+ * Global flag is required for matchAll.  matchAll clones the regex internally
+ * so it never mutates lastIndex on the module-level instance.
+ */
+const RELATIVE_IMPORT_RE = /\bfrom\s+["'](\.{1,2}\/[^"']+)["']/g;
+
+/**
+ * Resolve a relative import specifier from `fromDir` to an absolute file
+ * path.  Tries the specifier as-is, then with `.ts`, then with `/index.ts`
+ * appended (matching Node/TypeScript module resolution for local files).
+ * Returns `null` when no candidate exists on disk.
+ */
+function resolveRelativeImport(
+  fromDir: string,
+  specifier: string,
+): string | null {
+  const candidates = [
+    join(fromDir, specifier),
+    join(fromDir, specifier + ".ts"),
+    join(fromDir, specifier + "/index.ts"),
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (statSync(candidate).isFile()) return candidate;
+    } catch {
+      // try next candidate
+    }
+  }
+  return null;
+}
+
+// Non-global variants of the outputFile-detecting patterns.  Used with
+// .test() which must not share state with the global regexes used by matchAll.
+const JUNIT_KEY_TEST_RE =
+  /\bjunit\b\s*:\s*["']test-results\/[^"']+?\.xml["']/;
+const OUTPUT_FILE_TEST_RE =
+  /\boutputFile\s*:\s*["']test-results\/[^"']+?\.xml["']/;
+const TUPLE_TEST_RE =
+  /\[\s*["']junit["']\s*,\s*\{[^}]*\boutputFile\s*:\s*["']test-results\/[^"']+?\.xml["']/;
+
+/** Maximum import-chain depth for the outputFile presence check. */
+const OUTPUT_FILE_CHECK_MAX_DEPTH = 3;
+
+/**
+ * Returns true when `filePath` (or any relative import it makes, followed
+ * recursively up to OUTPUT_FILE_CHECK_MAX_DEPTH levels) contains a recognised
+ * outputFile declaration pattern for the junit reporter.
+ *
+ * Mirrors the recursive depth used by collectCiXmlFiles so the two checks
+ * stay consistent as import chains grow deeper.
+ */
+function fileHasOutputFile(
+  filePath: string,
+  visited: Set<string>,
+  depth: number,
+): boolean {
+  if (depth > OUTPUT_FILE_CHECK_MAX_DEPTH) return false;
+  if (visited.has(filePath)) return false;
+  visited.add(filePath);
+
+  let content: string;
+  try {
+    content = readFileSync(filePath, "utf8");
+  } catch {
+    return false;
+  }
+
+  if (
+    JUNIT_KEY_TEST_RE.test(content) ||
+    OUTPUT_FILE_TEST_RE.test(content) ||
+    TUPLE_TEST_RE.test(content)
+  ) {
+    return true;
+  }
+
+  const fileDir = dirname(filePath);
+  for (const m of content.matchAll(RELATIVE_IMPORT_RE)) {
+    const specifier = m[1];
+    if (specifier === undefined) continue;
+    const helperPath = resolveRelativeImport(fileDir, specifier);
+    if (helperPath === null) continue;
+    if (fileHasOutputFile(helperPath, visited, depth + 1)) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Returns true when `filePath` (or any relative import it makes, followed
+ * recursively up to OUTPUT_FILE_CHECK_MAX_DEPTH levels) contains a recognised
+ * outputFile declaration pattern for the junit reporter.
+ */
+function configHasOutputFile(filePath: string): boolean {
+  return fileHasOutputFile(filePath, new Set<string>(), 0);
+}
+
 /**
  * Scan the workspace and return the sorted, deduplicated set of XML basename
  * strings that CI test commands are declared to write into test-results/.
@@ -444,12 +549,6 @@ export function collectCiXmlFiles(
   const TUPLE_RE =
     /\[\s*["']junit["']\s*,\s*\{[^}]*\boutputFile\s*:\s*["']test-results\/([^"']+?\.xml)["']/g;
 
-  // 2d. Relative imports inside a vitest.*.ts config — followed one level deep.
-  //     Matches both `import ... from './path'` and `export ... from './path'`.
-  //     Only relative specifiers (starting with `.`) are followed; bare module
-  //     specifiers are left to the package manager and have no local file to read.
-  const RELATIVE_IMPORT_RE = /\bfrom\s+["'](\.{1,2}\/[^"']+)["']/g;
-
   /**
    * Apply all outputFile-detecting regexes to `content` and add any matched
    * XML basenames into `files`.
@@ -467,31 +566,6 @@ export function collectCiXmlFiles(
       const name = m[1];
       if (name !== undefined) files.add(name);
     }
-  }
-
-  /**
-   * Resolve a relative import specifier from `fromDir` to an absolute file
-   * path.  Tries the specifier as-is, then with `.ts`, then with `/index.ts`
-   * appended (matching Node/TypeScript module resolution for local files).
-   * Returns `null` when no candidate exists on disk.
-   */
-  function resolveRelativeImport(
-    fromDir: string,
-    specifier: string,
-  ): string | null {
-    const candidates = [
-      join(fromDir, specifier),
-      join(fromDir, specifier + ".ts"),
-      join(fromDir, specifier + "/index.ts"),
-    ];
-    for (const candidate of candidates) {
-      try {
-        if (statSync(candidate).isFile()) return candidate;
-      } catch {
-        // try next candidate
-      }
-    }
-    return null;
   }
 
   /**
@@ -573,3 +647,61 @@ export function collectCiXmlFiles(
 
 /** The derived list of XML basenames CI is expected to produce. */
 export const CI_XML_FILES: string[] = collectCiXmlFiles();
+
+// ---------------------------------------------------------------------------
+// Output-file declaration check for vitest configs
+// ---------------------------------------------------------------------------
+
+/**
+ * Scan the workspace and return the sorted absolute paths of vitest.*.ts
+ * config files that reference the junit reporter but lack a detectable
+ * outputFile declaration — either inline in the config or in a relative
+ * helper imported up to OUTPUT_FILE_CHECK_MAX_DEPTH levels deep.
+ *
+ * A missing outputFile means vitest will write the JUnit XML to stdout rather
+ * than to a file, so CI will never collect or validate the report.  Flagging
+ * these configs early (as a static check) lets the developer fix the omission
+ * before it silently causes a missing-report gap in CI.
+ *
+ * Only configs that explicitly reference "junit" as a reporter are checked;
+ * workspace-grouper files (e.g. vitest.workspace.ts using defineWorkspace)
+ * that have no junit reporter are naturally excluded.
+ */
+export function findVitestConfigsWithoutOutputFile(
+  workspaceRoot: string = WORKSPACE_ROOT,
+): string[] {
+  const JUNIT_REPORTER_RE = /["']junit["']/;
+  const missing: string[] = [];
+
+  function checkDir(dir: string): void {
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const f of entries) {
+      if (!/^vitest\..+\.ts$/.test(f)) continue;
+      const configPath = join(dir, f);
+      let content: string;
+      try {
+        content = readFileSync(configPath, "utf8");
+      } catch {
+        continue;
+      }
+      // Only check configs that reference the junit reporter.
+      if (!JUNIT_REPORTER_RE.test(content)) continue;
+      // Flag when no outputFile declaration is found in the config or its helpers.
+      if (!configHasOutputFile(configPath)) {
+        missing.push(configPath);
+      }
+    }
+  }
+
+  checkDir(workspaceRoot);
+  for (const pkgDir of resolveWorkspacePackageDirs(workspaceRoot)) {
+    checkDir(pkgDir);
+  }
+
+  return missing.sort();
+}

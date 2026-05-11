@@ -4,9 +4,8 @@ import { z } from "zod/v4";
 
 export const permissions = pgTable("permissions", {
   id: uuid("id").defaultRandom().primaryKey(),
-  code: varchar("code", { length: 200 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  module: varchar("module", { length: 100 }).notNull(),
+  resource: varchar("resource", { length: 100 }).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

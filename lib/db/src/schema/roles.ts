@@ -11,8 +11,8 @@ import { z } from "zod/v4";
 
 export const roles = pgTable("roles", {
   id: uuid("id").defaultRandom().primaryKey(),
-  code: varchar("code", { length: 100 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
   description: text("description"),
   isSystem: boolean("is_system").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
