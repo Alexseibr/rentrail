@@ -34,7 +34,11 @@
     "codegen": "pnpm --filter @workspace/api-spec run codegen",
     "pretypecheck": "pnpm run codegen",
     "prebuild": "pnpm run codegen",
-    "dev:verify": "bash scripts/dev-verify.sh"
+    "dev:verify": "bash scripts/dev-verify.sh",
+    "dev:db:up": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:db:down": "docker compose -f docker-compose.dev.yml down",
+    "dev:db:logs": "docker compose -f docker-compose.dev.yml logs -f postgres",
+    "dev:test": "pnpm run dev:db:up && DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/rentrail} pnpm run dev:verify"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
