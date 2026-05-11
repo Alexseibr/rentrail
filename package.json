@@ -15,6 +15,7 @@
     "test:integration": "vitest run --config vitest.integration.ts --bail",
     "test:db-helpers": "vitest run --project api-db-helpers",
     "test:api": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
+    "test:api:report": "bash -c 'mkdir -p test-results; pnpm run test:api; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- api.xml; exit $rc'",
     "test:coverage": "vitest run --coverage",
     "lint": "prettier --check .",
     "lint:eslint": "eslint .",
