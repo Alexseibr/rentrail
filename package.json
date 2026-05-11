@@ -42,7 +42,9 @@
     "dev:db:logs": "docker compose -f docker-compose.dev.yml logs -f postgres",
     "dev:test": "pnpm run dev:doctor && pnpm run dev:db:up && DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/rentrail} pnpm run dev:verify",
     "dev:doctor": "bash scripts/dev-doctor.sh",
-    "dev:doctor:json": "bash scripts/dev-doctor.sh --json"
+    "dev:doctor:json": "bash scripts/dev-doctor.sh --json",
+    "test:smoke": "bash scripts/run-with-db.sh vitest run --config vitest.integration.ts artifacts/api-server/src/__tests__/integration/auth.int.test.ts artifacts/api-server/src/__tests__/integration/rentals.int.test.ts artifacts/api-server/src/__tests__/integration/payment-flows.int.test.ts --bail",
+    "dev:verify:smoke": "pnpm run dev:bootstrap && pnpm run test:smoke"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

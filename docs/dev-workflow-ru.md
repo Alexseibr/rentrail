@@ -61,6 +61,24 @@ pnpm run dev:verify
 2. API-тесты,
 3. integration-тесты.
 
+## 3.1) Smoke-проверка критичного флоу
+
+```bash
+pnpm run test:smoke
+```
+
+Покрывает минимальный критичный путь API/интеграций:
+
+- `auth.int.test.ts`
+- `rentals.int.test.ts`
+- `payment-flows.int.test.ts`
+
+Для последовательного прогона bootstrap + smoke:
+
+```bash
+pnpm run dev:verify:smoke
+```
+
 ## 4) Быстрый полный запуск (если установлен docker)
 
 ```bash
