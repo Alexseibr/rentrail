@@ -224,6 +224,7 @@ describe("ci-guard (shell stand-in): ci.sh trap wiring exits 1 on missing XML", 
       `Expected stand-in to exit 1 (all absent) but got ${status}`,
     );
   });
+
 });
 
 // ---------------------------------------------------------------------------
