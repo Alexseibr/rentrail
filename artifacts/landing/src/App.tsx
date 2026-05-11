@@ -193,11 +193,23 @@ export default function App() {
 
           {/* Content */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            {/* Phone mockup */}
+            {/* Mockup — phone for mobile, browser for web */}
             <div className="flex justify-center">
-              <div className="relative">
-                <div className="w-64 h-[520px] bg-gray-900 rounded-[40px] p-3 shadow-2xl shadow-gray-900/30 ring-4 ring-gray-800">
-                  <div className="w-full h-full rounded-[30px] overflow-hidden bg-gray-100">
+              {active.id === "admin" ? (
+                /* Browser / laptop frame */
+                <div className="w-full max-w-md shadow-2xl shadow-gray-900/20 rounded-xl overflow-hidden border border-gray-200">
+                  {/* Browser chrome */}
+                  <div className="bg-gray-100 border-b border-gray-200 px-4 py-2.5 flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <div className="w-3 h-3 rounded-full bg-red-400" />
+                      <div className="w-3 h-3 rounded-full bg-amber-400" />
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                    </div>
+                    <div className="flex-1 bg-white rounded-md px-3 py-1 text-xs text-gray-400 border border-gray-200 ml-2">
+                      rentrail.ru/platform-admin/
+                    </div>
+                  </div>
+                  <div className="bg-white overflow-hidden" style={{ height: 280 }}>
                     <img
                       key={active.img}
                       src={active.img}
@@ -206,9 +218,23 @@ export default function App() {
                     />
                   </div>
                 </div>
-                {/* Notch */}
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-gray-900 rounded-full" />
-              </div>
+              ) : (
+                /* Phone frame */
+                <div className="relative">
+                  <div className="w-64 h-[520px] bg-gray-900 rounded-[40px] p-3 shadow-2xl shadow-gray-900/30 ring-4 ring-gray-800">
+                    <div className="w-full h-full rounded-[30px] overflow-hidden bg-gray-100">
+                      <img
+                        key={active.img}
+                        src={active.img}
+                        alt={active.title}
+                        className="w-full h-full object-cover object-top"
+                      />
+                    </div>
+                  </div>
+                  {/* Notch */}
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-gray-900 rounded-full" />
+                </div>
+              )}
             </div>
 
             {/* Description */}
