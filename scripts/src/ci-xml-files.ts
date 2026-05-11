@@ -25,6 +25,93 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // ---------------------------------------------------------------------------
+// Minimal but correct YAML scalar helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a single-quoted YAML scalar starting at index 0 of `s` (the opening
+ * quote must already have been consumed, i.e. `s` begins with the content or
+ * the next `'`).
+ *
+ * Returns the decoded string value and the index in `s` immediately after the
+ * closing quote (or `s.length` when the closing quote is missing).
+ */
+function parseSingleQuotedScalar(s: string): { value: string; end: number } {
+  let i = 0;
+  let value = "";
+  while (i < s.length) {
+    if (s[i] === "'") {
+      if (s[i + 1] === "'") {
+        value += "'";
+        i += 2;
+      } else {
+        i++; // skip closing quote
+        break;
+      }
+    } else {
+      value += s[i];
+      i++;
+    }
+  }
+  return { value, end: i };
+}
+
+/**
+ * Parse a double-quoted YAML scalar starting at index 0 of `s` (the opening
+ * quote must already have been consumed).
+ *
+ * Handles the common backslash escapes: \\n, \\t, \\r, \\\\, and \\".
+ *
+ * Returns the decoded string value and the index in `s` immediately after the
+ * closing quote (or `s.length` when the closing quote is missing).
+ */
+function parseDoubleQuotedScalar(s: string): { value: string; end: number } {
+  let i = 0;
+  let value = "";
+  while (i < s.length) {
+    if (s[i] === "\\") {
+      const next = s[i + 1] ?? "";
+      switch (next) {
+        case "n":
+          value += "\n";
+          break;
+        case "t":
+          value += "\t";
+          break;
+        case "r":
+          value += "\r";
+          break;
+        case "\\":
+          value += "\\";
+          break;
+        case '"':
+          value += '"';
+          break;
+        default:
+          value += next;
+      }
+      i += 2;
+    } else if (s[i] === '"') {
+      i++; // skip closing quote
+      break;
+    } else {
+      value += s[i];
+      i++;
+    }
+  }
+  return { value, end: i };
+}
+
+/**
+ * Parse a bare/plain YAML scalar.  An inline comment (` #…`) is stripped;
+ * trailing whitespace is trimmed.
+ */
+function parseBareScalar(s: string): string {
+  const commentIdx = s.search(/\s+#/);
+  return commentIdx === -1 ? s.trimEnd() : s.slice(0, commentIdx);
+}
+
+// ---------------------------------------------------------------------------
 // Minimal but correct YAML sequence parser
 // ---------------------------------------------------------------------------
 
@@ -127,6 +214,104 @@ function parseYamlStringSequence(yaml: string, key: string): string[] {
       const value =
         commentIdx === -1 ? scalar.trimEnd() : scalar.slice(0, commentIdx);
       if (value.length > 0) results.push(value);
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Minimal but correct YAML mapping parser
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse the value of a top-level mapping key from a YAML document and return
+ * its entries as a plain `Record<string, string>`.
+ *
+ * Suitable for reading the `catalog:` and `overrides:` sections of
+ * pnpm-workspace.yaml without a third-party YAML library.
+ *
+ * Handles all three YAML scalar styles for both keys and values:
+ *   • Single-quoted  – '@scope/pkg': ^1.0.0
+ *   • Double-quoted  – "@scope/pkg": ^1.0.0
+ *   • Bare/plain     – react: 19.1.0   (trailing `# comment` stripped)
+ *
+ * Keys containing a colon (common for scoped npm packages like
+ * `@scope/pkg>@scope/dep`) must be quoted in the YAML source; bare keys stop
+ * at the first `:` followed by a space or end-of-line, which is the standard
+ * YAML key delimiter.
+ *
+ * Does not support multi-line scalars or nested mappings — those are not used
+ * in the catalog/overrides sections.
+ */
+export function parseYamlStringMap(
+  yaml: string,
+  key: string,
+): Record<string, string> {
+  const keyRe = new RegExp(`^${key}\\s*:`);
+  const results: Record<string, string> = {};
+  let inMap = false;
+
+  for (const rawLine of yaml.split("\n")) {
+    if (keyRe.test(rawLine)) {
+      inMap = true;
+      continue;
+    }
+    if (!inMap) continue;
+
+    // A non-indented non-empty line that is not a comment ends the mapping.
+    if (
+      /^\S/.test(rawLine) &&
+      rawLine.trim() !== "" &&
+      !rawLine.trimStart().startsWith("#")
+    ) {
+      break;
+    }
+
+    // Skip blank lines and comment-only lines.
+    const trimmed = rawLine.trimStart();
+    if (trimmed === "" || trimmed.startsWith("#")) continue;
+
+    // Parse the entry key (single-quoted, double-quoted, or bare).
+    let rest = trimmed;
+    let entryKey: string;
+
+    if (rest.startsWith("'")) {
+      const { value, end } = parseSingleQuotedScalar(rest.slice(1));
+      entryKey = value;
+      rest = rest.slice(1 + end).trimStart();
+    } else if (rest.startsWith('"')) {
+      const { value, end } = parseDoubleQuotedScalar(rest.slice(1));
+      entryKey = value;
+      rest = rest.slice(1 + end).trimStart();
+    } else {
+      // Bare key: the delimiter is `: ` (colon + space) or `:\n` (colon at EOL).
+      // We look for `:` followed by whitespace or end of string.
+      const colonIdx = rest.search(/:\s|:$/);
+      if (colonIdx === -1) continue; // malformed — skip
+      entryKey = rest.slice(0, colonIdx).trimEnd();
+      rest = rest.slice(colonIdx);
+    }
+
+    // Expect the `: ` separator after the key.
+    if (!rest.startsWith(":")) continue; // malformed — skip
+    rest = rest.slice(1).trimStart();
+
+    // Parse the entry value (single-quoted, double-quoted, or bare).
+    let entryValue: string;
+
+    if (rest.startsWith("'")) {
+      const { value } = parseSingleQuotedScalar(rest.slice(1));
+      entryValue = value;
+    } else if (rest.startsWith('"')) {
+      const { value } = parseDoubleQuotedScalar(rest.slice(1));
+      entryValue = value;
+    } else {
+      entryValue = parseBareScalar(rest);
+    }
+
+    if (entryKey.length > 0) {
+      results[entryKey] = entryValue;
     }
   }
 
