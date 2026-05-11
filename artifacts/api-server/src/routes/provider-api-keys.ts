@@ -38,7 +38,9 @@ router.post(
       entityId: result.id,
       req,
     });
-    res.status(201).json({ data: result });
+    const { keyHash: _keyHash, ...safeResult } = result;
+    void _keyHash;
+    res.status(201).json({ data: safeResult });
   },
 );
 
