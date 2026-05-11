@@ -29,7 +29,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // scripts/src/ -> scripts/ -> workspace root
 const WORKSPACE_ROOT = join(__dirname, "../..");
-const RESULTS_DIR = join(WORKSPACE_ROOT, "test-results");
+// TEST_RESULTS_DIR allows integration tests to redirect to a temp directory
+// without touching the real workspace test-results/ folder.
+const RESULTS_DIR =
+  process.env["TEST_RESULTS_DIR"] ?? join(WORKSPACE_ROOT, "test-results");
 
 function truncate(s: string, max: number): string {
   return s.length > max ? s.slice(0, max - 3) + "..." : s;
