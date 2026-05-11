@@ -18,16 +18,23 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
 
-type Step = "phone" | "password" | "otp" | "set-password";
+type Step =
+  | "email"
+  | "password"
+  | "otp"
+  | "set-password"
+  | "phone"
+  | "phone-password"
+  | "phone-otp";
 type LoginMode = "staff" | "client";
 
 const DEMO_STAFF_ACCOUNTS = [
-  { label: "Owner", phone: "+79991000001" },
-  { label: "Admin", phone: "+79991000002" },
-  { label: "Manager", phone: "+79991000003" },
-  { label: "Operator", phone: "+79991000004" },
-  { label: "Mechanic", phone: "+79991000005" },
-  { label: "Viewer", phone: "+79991000006" },
+  { label: "Owner", email: "owner@velocityrides.demo" },
+  { label: "Admin", email: "admin@velocityrides.demo" },
+  { label: "Manager", email: "manager@velocityrides.demo" },
+  { label: "Operator", email: "operator@velocityrides.demo" },
+  { label: "Mechanic", email: "mechanic@velocityrides.demo" },
+  { label: "Viewer", email: "viewer@velocityrides.demo" },
 ];
 
 const DEMO_CLIENT_ACCOUNTS = [
@@ -45,15 +52,19 @@ export default function LoginScreen() {
   const router = useRouter();
   const { company } = useCompany();
   const {
-    loginWithPhone,
+    loginWithEmail,
     loginAsClient,
+    requestEmailOtp,
+    verifyEmailOtp,
+    setEmailPassword,
     requestOtp,
     verifyOtp,
     setPhonePassword,
   } = useAuth();
 
   const [mode, setMode] = useState<LoginMode>("staff");
-  const [step, setStep] = useState<Step>("phone");
+  const [step, setStep] = useState<Step>("email");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -68,8 +79,8 @@ export default function LoginScreen() {
 
   const busy = loading || !!demoLoading;
 
-  const handlePhoneContinue = () => {
-    if (!phone.trim()) return;
+  const handleEmailContinue = () => {
+    if (!email.trim()) return;
     setError(null);
     setStep("password");
   };
@@ -82,7 +93,7 @@ export default function LoginScreen() {
       if (mode === "client") {
         await loginAsClient(phone.trim(), password);
       } else {
-        await loginWithPhone(phone.trim(), password);
+        await loginWithEmail(email.trim(), password);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
@@ -95,11 +106,11 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSendOtp = async () => {
+  const handleSendEmailOtp = async () => {
     setError(null);
     setLoading(true);
     try {
-      const result = await requestOtp(phone.trim());
+      const result = await requestEmailOtp(email.trim());
       setDevCode(result.devCode ?? null);
       setOtpCode("");
       setStep("otp");
@@ -113,7 +124,85 @@ export default function LoginScreen() {
     }
   };
 
-  const handleVerifyOtp = async () => {
+  const handleVerifyEmailOtp = async () => {
+    if (otpCode.length !== 6) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const { needsPassword } = await verifyEmailOtp(email.trim(), otpCode);
+      if (needsPassword) {
+        setNewPassword("");
+        setStep("set-password");
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (err: unknown) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(err instanceof Error ? err.message : t("login.invalidCode"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetEmailPassword = async () => {
+    if (newPassword.length < 6) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await setEmailPassword(newPassword);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : t("login.failedToSetPassword"),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Client phone flow
+  const handlePhoneContinue = () => {
+    if (!phone.trim()) return;
+    setError(null);
+    setStep("phone-password");
+  };
+
+  const handleClientPasswordLogin = async () => {
+    if (!password.trim()) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await loginAsClient(phone.trim(), password);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: unknown) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(
+        err instanceof Error ? err.message : t("login.invalidCredentials"),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendPhoneOtp = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await requestOtp(phone.trim());
+      setDevCode(result.devCode ?? null);
+      setOtpCode("");
+      setStep("phone-otp");
+      setTimeout(() => otpRef.current?.focus(), 200);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : t("login.failedToSendCode"),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyPhoneOtp = async () => {
     if (otpCode.length !== 6) return;
     setError(null);
     setLoading(true);
@@ -133,7 +222,7 @@ export default function LoginScreen() {
     }
   };
 
-  const handleSetPassword = async () => {
+  const handleSetPhonePassword = async () => {
     if (newPassword.length < 6) return;
     setError(null);
     setLoading(true);
@@ -149,15 +238,25 @@ export default function LoginScreen() {
     }
   };
 
-  const handleDemoLogin = async (demoPhone: string) => {
+  const handleDemoStaffLogin = async (demoEmail: string) => {
+    setError(null);
+    setDemoLoading(demoEmail);
+    try {
+      await loginWithEmail(demoEmail, DEMO_STAFF_PASSWORD);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: unknown) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(err instanceof Error ? err.message : t("login.demoLoginFailed"));
+    } finally {
+      setDemoLoading(null);
+    }
+  };
+
+  const handleDemoClientLogin = async (demoPhone: string) => {
     setError(null);
     setDemoLoading(demoPhone);
     try {
-      if (mode === "client") {
-        await loginAsClient(demoPhone, DEMO_CLIENT_PASSWORD);
-      } else {
-        await loginWithPhone(demoPhone, DEMO_STAFF_PASSWORD);
-      }
+      await loginAsClient(demoPhone, DEMO_CLIENT_PASSWORD);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -169,25 +268,47 @@ export default function LoginScreen() {
 
   const handleModeSwitch = (newMode: LoginMode) => {
     setMode(newMode);
-    setStep("phone");
+    setStep(newMode === "staff" ? "email" : "phone");
+    setEmail("");
     setPhone("");
     setPassword("");
     setError(null);
   };
 
-  const stepTitle: Record<Step, string> = {
-    phone: t("login.signInToManage"),
-    password: t("login.welcomeBack"),
-    otp: t("login.enterYourCode"),
-    "set-password": t("login.createPassword"),
-  };
+  const isEmailStep =
+    step === "email" ||
+    step === "password" ||
+    step === "otp" ||
+    step === "set-password";
+  const isPhoneStep =
+    step === "phone" || step === "phone-password" || step === "phone-otp";
 
-  const stepSubtitle: Record<Step, string> = {
-    phone: t("login.enterPhone"),
-    password: phone,
-    otp: t("login.codeSentTo", { phone }),
-    "set-password": t("login.noCodeNextTime"),
-  };
+  const stepTitle = (() => {
+    if (mode === "client") return t("login.signInToRent");
+    switch (step) {
+      case "email":
+        return t("login.signInToManage");
+      case "password":
+        return t("login.welcomeBack");
+      case "otp":
+        return t("login.enterYourCode");
+      case "set-password":
+        return t("login.createPassword");
+      default:
+        return t("login.signInToManage");
+    }
+  })();
+
+  const stepHint = (() => {
+    switch (step) {
+      case "password":
+        return email;
+      case "otp":
+        return t("login.codeSentToEmail", { email });
+      default:
+        return null;
+    }
+  })();
 
   return (
     <ScrollView
@@ -285,12 +406,8 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.subtitle}>
-          {mode === "client" ? t("login.signInToRent") : stepTitle[step]}
-        </Text>
-        {step !== "phone" && (
-          <Text style={styles.stepHint}>{stepSubtitle[step]}</Text>
-        )}
+        <Text style={styles.subtitle}>{stepTitle}</Text>
+        {stepHint && <Text style={styles.stepHint}>{stepHint}</Text>}
       </View>
 
       <View style={styles.formCard}>
@@ -301,17 +418,18 @@ export default function LoginScreen() {
           </View>
         )}
 
-        {step === "phone" && (
+        {/* Staff: email step */}
+        {step === "email" && (
           <>
             <View style={styles.inputWrap}>
-              <Feather name="phone" size={18} color="#8c8c8c" />
+              <Feather name="mail" size={18} color="#8c8c8c" />
               <TextInput
                 style={styles.input}
-                placeholder="+7 999 100 0001"
+                placeholder="you@company.com"
                 placeholderTextColor="#bbb"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoFocus
@@ -320,10 +438,10 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={[
                 styles.button,
-                { opacity: busy || !phone.trim() ? 0.6 : 1 },
+                { opacity: busy || !email.trim() ? 0.6 : 1 },
               ]}
-              onPress={handlePhoneContinue}
-              disabled={busy || !phone.trim()}
+              onPress={handleEmailContinue}
+              disabled={busy || !email.trim()}
               activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>{t("login.continue")}</Text>
@@ -331,6 +449,7 @@ export default function LoginScreen() {
           </>
         )}
 
+        {/* Staff: password step */}
         {step === "password" && (
           <>
             <View style={styles.inputWrap}>
@@ -368,27 +487,28 @@ export default function LoginScreen() {
             <View style={styles.row}>
               <TouchableOpacity
                 onPress={() => {
-                  setStep("phone");
+                  setStep("email");
                   setError(null);
                 }}
               >
                 <Text style={styles.linkTextLight}>
-                  {"\u2190"} {t("login.changeNumber")}
+                  {"\u2190"} {t("login.changeEmail", "Изменить email")}
                 </Text>
               </TouchableOpacity>
-              {mode === "staff" && (
-                <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
-                  <Text
-                    style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}
-                  >
-                    {loading ? t("login.sending") : t("login.getSmsCode")}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity onPress={handleSendEmailOtp} disabled={busy}>
+                <Text
+                  style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}
+                >
+                  {loading
+                    ? t("login.sending")
+                    : t("login.getEmailCode", "Код на почту")}
+                </Text>
+              </TouchableOpacity>
             </View>
           </>
         )}
 
+        {/* Staff: email OTP step */}
         {step === "otp" && (
           <>
             {devCode && (
@@ -420,7 +540,7 @@ export default function LoginScreen() {
                 styles.button,
                 { opacity: busy || otpCode.length !== 6 ? 0.6 : 1 },
               ]}
-              onPress={handleVerifyOtp}
+              onPress={handleVerifyEmailOtp}
               disabled={busy || otpCode.length !== 6}
               activeOpacity={0.8}
             >
@@ -441,7 +561,7 @@ export default function LoginScreen() {
                   {"\u2190"} {t("login.back")}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSendOtp} disabled={busy}>
+              <TouchableOpacity onPress={handleSendEmailOtp} disabled={busy}>
                 <Text
                   style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}
                 >
@@ -452,7 +572,8 @@ export default function LoginScreen() {
           </>
         )}
 
-        {step === "set-password" && (
+        {/* Set password (email flow) */}
+        {step === "set-password" && isEmailStep && (
           <>
             <View style={styles.inputWrap}>
               <Feather name="lock" size={18} color="#8c8c8c" />
@@ -473,7 +594,196 @@ export default function LoginScreen() {
                 styles.button,
                 { opacity: busy || newPassword.length < 6 ? 0.6 : 1 },
               ]}
-              onPress={handleSetPassword}
+              onPress={handleSetEmailPassword}
+              disabled={busy || newPassword.length < 6}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#1a1a1a" size="small" />
+              ) : (
+                <Text style={styles.buttonText}>
+                  {t("login.setPasswordContinue")}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* Client: phone step */}
+        {step === "phone" && (
+          <>
+            <View style={styles.inputWrap}>
+              <Feather name="phone" size={18} color="#8c8c8c" />
+              <TextInput
+                style={styles.input}
+                placeholder="+7 999 100 0001"
+                placeholderTextColor="#bbb"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus
+              />
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                { opacity: busy || !phone.trim() ? 0.6 : 1 },
+              ]}
+              onPress={handlePhoneContinue}
+              disabled={busy || !phone.trim()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>{t("login.continue")}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* Client: phone-password step */}
+        {step === "phone-password" && (
+          <>
+            <View style={styles.inputWrap}>
+              <Feather name="lock" size={18} color="#8c8c8c" />
+              <TextInput
+                style={styles.input}
+                placeholder={t("login.password")}
+                placeholderTextColor="#bbb"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoFocus
+                autoCorrect={false}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Feather
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={18}
+                  color="#8c8c8c"
+                />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={[styles.button, { opacity: busy ? 0.7 : 1 }]}
+              onPress={handleClientPasswordLogin}
+              disabled={busy}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#1a1a1a" size="small" />
+              ) : (
+                <Text style={styles.buttonText}>{t("login.signIn")}</Text>
+              )}
+            </TouchableOpacity>
+            <View style={styles.row}>
+              <TouchableOpacity
+                onPress={() => {
+                  setStep("phone");
+                  setError(null);
+                }}
+              >
+                <Text style={styles.linkTextLight}>
+                  {"\u2190"} {t("login.changeNumber")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSendPhoneOtp} disabled={busy}>
+                <Text
+                  style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}
+                >
+                  {loading ? t("login.sending") : t("login.getSmsCode")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* Client: phone OTP step */}
+        {step === "phone-otp" && (
+          <>
+            {devCode && (
+              <View style={styles.devBanner}>
+                <Text style={styles.devText}>
+                  {t("login.devModeCode")}{" "}
+                  <Text style={styles.devCode}>{devCode}</Text>
+                </Text>
+              </View>
+            )}
+            <View style={styles.inputWrap}>
+              <Feather name="hash" size={18} color="#8c8c8c" />
+              <TextInput
+                ref={otpRef}
+                style={[styles.input, styles.otpInput]}
+                placeholder="000000"
+                placeholderTextColor="#bbb"
+                value={otpCode}
+                onChangeText={(v) =>
+                  setOtpCode(v.replace(/\D/g, "").slice(0, 6))
+                }
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                { opacity: busy || otpCode.length !== 6 ? 0.6 : 1 },
+              ]}
+              onPress={handleVerifyPhoneOtp}
+              disabled={busy || otpCode.length !== 6}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#1a1a1a" size="small" />
+              ) : (
+                <Text style={styles.buttonText}>{t("login.verifyCode")}</Text>
+              )}
+            </TouchableOpacity>
+            <View style={styles.row}>
+              <TouchableOpacity
+                onPress={() => {
+                  setStep("phone-password");
+                  setError(null);
+                }}
+              >
+                <Text style={styles.linkTextLight}>
+                  {"\u2190"} {t("login.back")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSendPhoneOtp} disabled={busy}>
+                <Text
+                  style={[styles.linkTextAccent, { opacity: busy ? 0.5 : 1 }]}
+                >
+                  {t("login.resendCode")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* Set password (phone flow) */}
+        {step === "set-password" && isPhoneStep && (
+          <>
+            <View style={styles.inputWrap}>
+              <Feather name="lock" size={18} color="#8c8c8c" />
+              <TextInput
+                style={styles.input}
+                placeholder={t("login.minChars")}
+                placeholderTextColor="#bbb"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+                autoFocus
+                autoCorrect={false}
+                autoComplete="new-password"
+              />
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                { opacity: busy || newPassword.length < 6 ? 0.6 : 1 },
+              ]}
+              onPress={handleSetPhonePassword}
               disabled={busy || newPassword.length < 6}
               activeOpacity={0.8}
             >
@@ -492,23 +802,37 @@ export default function LoginScreen() {
       <View style={styles.demoBox}>
         <Text style={styles.demoTitle}>{t("login.demoTapToEnter")}</Text>
         <View style={styles.demoGrid}>
-          {(mode === "client" ? DEMO_CLIENT_ACCOUNTS : DEMO_STAFF_ACCOUNTS).map(
-            (acc) => (
-              <TouchableOpacity
-                key={acc.phone}
-                style={styles.demoBtn}
-                onPress={() => handleDemoLogin(acc.phone)}
-                disabled={busy}
-                activeOpacity={0.8}
-              >
-                {demoLoading === acc.phone ? (
-                  <ActivityIndicator color="#1a1a1a" size="small" />
-                ) : (
-                  <Text style={styles.demoBtnText}>{acc.label}</Text>
-                )}
-              </TouchableOpacity>
-            ),
-          )}
+          {mode === "client"
+            ? DEMO_CLIENT_ACCOUNTS.map((acc) => (
+                <TouchableOpacity
+                  key={acc.phone}
+                  style={styles.demoBtn}
+                  onPress={() => handleDemoClientLogin(acc.phone)}
+                  disabled={busy}
+                  activeOpacity={0.8}
+                >
+                  {demoLoading === acc.phone ? (
+                    <ActivityIndicator color="#1a1a1a" size="small" />
+                  ) : (
+                    <Text style={styles.demoBtnText}>{acc.label}</Text>
+                  )}
+                </TouchableOpacity>
+              ))
+            : DEMO_STAFF_ACCOUNTS.map((acc) => (
+                <TouchableOpacity
+                  key={acc.email}
+                  style={styles.demoBtn}
+                  onPress={() => handleDemoStaffLogin(acc.email)}
+                  disabled={busy}
+                  activeOpacity={0.8}
+                >
+                  {demoLoading === acc.email ? (
+                    <ActivityIndicator color="#1a1a1a" size="small" />
+                  ) : (
+                    <Text style={styles.demoBtnText}>{acc.label}</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
         </View>
         <Text style={styles.demoHint}>
           {t("login.demoHint")}{" "}

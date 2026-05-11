@@ -7,27 +7,27 @@ import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { Bike, ArrowLeft } from "lucide-react";
 
-type Step = "phone" | "password" | "otp" | "set-password";
+type Step = "email" | "password" | "otp" | "set-password";
 
 const DEMO_ACCOUNTS = [
   {
-    labelKey: "login.demoOwner",
-    phone: "+79991000001",
+    label: "Velocity Rides (Владелец)",
+    email: "owner@velocityrides.demo",
     color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground",
   },
   {
-    labelKey: "login.demoAdmin",
-    phone: "+79991000002",
+    label: "Velocity Rides (Админ)",
+    email: "admin@velocityrides.demo",
     color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground",
   },
   {
-    labelKey: "login.demoUrbanOwner",
-    phone: "+79991000008",
+    label: "Urban Wheels (Владелец)",
+    email: "owner@urbanwheels.demo",
     color: "bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground",
   },
   {
-    labelKey: "login.demoOperator",
-    phone: "+79991000004",
+    label: "Velocity Rides (Оператор)",
+    email: "operator@velocityrides.demo",
     color: "bg-primary hover:bg-primary/90 text-primary-foreground",
   },
 ];
@@ -35,11 +35,12 @@ const DEMO_ACCOUNTS = [
 const DEMO_PASSWORD = "demo1234";
 
 export default function LoginPage() {
-  const { loginWithPhone, requestOtp, verifyOtp, setPhonePassword } = useAuth();
+  const { loginWithEmail, requestEmailOtp, verifyEmailOtp, setEmailPassword } =
+    useAuth();
   const { t } = useTranslation();
 
-  const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState("");
+  const [step, setStep] = useState<Step>("email");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -48,9 +49,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState<string | null>(null);
 
-  const handlePhoneContinue = (e: React.FormEvent) => {
+  const handleEmailContinue = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.trim()) return;
+    if (!email.trim()) return;
     setError("");
     setStep("password");
   };
@@ -60,7 +61,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await loginWithPhone(phone.trim(), password);
+      await loginWithEmail(email.trim(), password);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -76,7 +77,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const result = await requestOtp(phone.trim());
+      const result = await requestEmailOtp(email.trim());
       setDevCode(result.devCode ?? null);
       setOtpCode("");
       setStep("otp");
@@ -96,7 +97,10 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const { needsPassword } = await verifyOtp(phone.trim(), otpCode.trim());
+      const { needsPassword } = await verifyEmailOtp(
+        email.trim(),
+        otpCode.trim(),
+      );
       if (needsPassword) {
         setNewPassword("");
         setStep("set-password");
@@ -117,7 +121,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await setPhonePassword(newPassword);
+      await setEmailPassword(newPassword);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -129,11 +133,11 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (demoPhone: string) => {
+  const handleDemoLogin = async (demoEmail: string) => {
     setError("");
-    setDemoLoading(demoPhone);
+    setDemoLoading(demoEmail);
     try {
-      await loginWithPhone(demoPhone, DEMO_PASSWORD);
+      await loginWithEmail(demoEmail, DEMO_PASSWORD);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : t("login.demoLoginFailed"),
@@ -167,9 +171,9 @@ export default function LoginPage() {
         <div className="bg-card rounded-2xl shadow-xl p-6">
           <div className="text-center mb-5">
             <p className="text-sm text-muted-foreground">
-              {step === "phone" && t("login.enterPhone")}
-              {step === "password" && t("login.signInAs", { phone })}
-              {step === "otp" && t("login.enterCode", { phone })}
+              {step === "email" && t("login.enterEmail")}
+              {step === "password" && t("login.signInAs", { phone: email })}
+              {step === "otp" && t("login.enterCodeEmail", { email })}
               {step === "set-password" && t("login.createPassword")}
             </p>
           </div>
@@ -180,22 +184,22 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === "phone" && (
-            <form onSubmit={handlePhoneContinue} className="space-y-4">
+          {step === "email" && (
+            <form onSubmit={handleEmailContinue} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-medium">
-                  {t("login.phoneLabel")}
+                <Label htmlFor="email" className="text-sm font-medium">
+                  {t("login.emailLabel")}
                 </Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+7 999 000 0001"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
-                  autoComplete="tel"
+                  autoComplete="email"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={busy}>
@@ -228,13 +232,13 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setStep("phone");
+                    setStep("email");
                     setError("");
                   }}
                   className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
                 >
                   <ArrowLeft className="h-3 w-3" />
-                  {t("login.changeNumber")}
+                  {t("login.changeEmail")}
                 </button>
                 <button
                   type="button"
@@ -242,7 +246,7 @@ export default function LoginPage() {
                   disabled={busy}
                   className="text-primary hover:text-primary/80 font-medium disabled:opacity-50 transition-colors"
                 >
-                  {loading ? t("login.sending") : t("login.getSmsCode")}
+                  {loading ? t("login.sending") : t("login.getEmailCode")}
                 </button>
               </div>
             </form>
@@ -347,20 +351,17 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-2">
             {DEMO_ACCOUNTS.map((acc) => (
               <button
-                key={acc.phone}
-                onClick={() => handleDemoLogin(acc.phone)}
+                key={acc.email}
+                onClick={() => handleDemoLogin(acc.email)}
                 disabled={busy}
                 className={`${acc.color} text-xs font-medium rounded-xl px-3 py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm`}
               >
-                {demoLoading === acc.phone ? "..." : t(acc.labelKey)}
+                {demoLoading === acc.email ? "..." : acc.label}
               </button>
             ))}
           </div>
           <p className="text-xs text-muted-foreground text-center mt-3">
-            {t("login.testNumbers")}{" "}
-            <span className="font-mono text-foreground/70">
-              +7 999 000 000X
-            </span>
+            {t("login.testEmails")}
           </p>
         </div>
       </div>

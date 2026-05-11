@@ -52,13 +52,20 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   loginWithPhone: (phone: string, password: string) => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
   loginAsClient: (phone: string, password: string) => Promise<void>;
   requestOtp: (phone: string) => Promise<{ devCode?: string }>;
   verifyOtp: (
     phone: string,
     code: string,
   ) => Promise<{ needsPassword: boolean }>;
+  requestEmailOtp: (email: string) => Promise<{ devCode?: string }>;
+  verifyEmailOtp: (
+    email: string,
+    code: string,
+  ) => Promise<{ needsPassword: boolean }>;
   setPhonePassword: (password: string) => Promise<void>;
+  setEmailPassword: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   setCompanyId: (id: string) => Promise<void>;
   setBranchId: (id: string | null) => Promise<void>;
@@ -220,6 +227,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applyAuthResult],
   );
 
+  const loginWithEmail = useCallback(
+    async (email: string, password: string) => {
+      const { data } = await fetchWithAuth<LoginApiResponse>(
+        `${BASE_URL}/api/auth/email/login`,
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        },
+      );
+      await applyAuthResult(data.accessToken, data.refreshToken);
+    },
+    [applyAuthResult],
+  );
+
   const loginAsClient = useCallback(async (phone: string, password: string) => {
     const { data } = await fetchWithAuth<ClientLoginApiResponse>(
       `${BASE_URL}/api/auth/client/login`,
@@ -285,9 +306,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applyAuthResult],
   );
 
+  const requestEmailOtp = useCallback(
+    async (email: string): Promise<{ devCode?: string }> => {
+      const { data } = await fetchWithAuth<OtpRequestApiResponse>(
+        `${BASE_URL}/api/auth/email/request-otp`,
+        {
+          method: "POST",
+          body: JSON.stringify({ email }),
+        },
+      );
+      return { devCode: data.devCode };
+    },
+    [],
+  );
+
+  const verifyEmailOtp = useCallback(
+    async (
+      email: string,
+      code: string,
+    ): Promise<{ needsPassword: boolean }> => {
+      const { data } = await fetchWithAuth<VerifyOtpApiResponse>(
+        `${BASE_URL}/api/auth/email/verify-otp`,
+        {
+          method: "POST",
+          body: JSON.stringify({ email, code }),
+        },
+      );
+      await applyAuthResult(data.accessToken, data.refreshToken);
+      return { needsPassword: data.needsPassword };
+    },
+    [applyAuthResult],
+  );
+
   const setPhonePassword = useCallback(async (password: string) => {
     const token = await getAccessToken();
     await fetchWithAuth(`${BASE_URL}/api/auth/phone/set-password`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }, []);
+
+  const setEmailPassword = useCallback(async (password: string) => {
+    const token = await getAccessToken();
+    await fetchWithAuth(`${BASE_URL}/api/auth/email/set-password`, {
       method: "POST",
       body: JSON.stringify({ password }),
       headers: { Authorization: `Bearer ${token}` },
@@ -346,10 +408,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...state,
         login,
         loginWithPhone,
+        loginWithEmail,
         loginAsClient,
         requestOtp,
         verifyOtp,
+        requestEmailOtp,
+        verifyEmailOtp,
         setPhonePassword,
+        setEmailPassword,
         logout,
         setCompanyId: setCompanyIdFn,
         setBranchId: setBranchIdFn,

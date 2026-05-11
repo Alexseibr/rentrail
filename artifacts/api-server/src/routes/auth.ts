@@ -6,6 +6,7 @@ import { authenticate } from "../middlewares/authenticate";
 import { requireCompanyAccess } from "../middlewares/authorize";
 import * as authService from "../services/auth.service";
 import * as phoneAuthService from "../services/phone-auth.service";
+import * as emailAuthService from "../services/email-auth.service";
 import * as clientAuthService from "../services/client-auth.service";
 import { config } from "../lib/config";
 import { signAccessToken } from "../lib/jwt";
@@ -48,6 +49,20 @@ const phoneLoginSchema = z.object({
 
 const setPasswordSchema = z.object({
   password: z.string().min(6),
+});
+
+const emailRequestOtpSchema = z.object({
+  email: z.string().email(),
+});
+
+const emailVerifyOtpSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6),
+});
+
+const emailLoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 router.post(
@@ -121,6 +136,57 @@ router.post(
   async (req, res) => {
     const { password } = getBody<z.infer<typeof setPasswordSchema>>(req);
     await phoneAuthService.setPassword(req.user!.userId, password);
+    res.json({ data: { message: "Password set successfully" } });
+  },
+);
+
+router.post(
+  "/auth/email/request-otp",
+  validate({ body: emailRequestOtpSchema }),
+  async (req, res) => {
+    const { email } = getBody<z.infer<typeof emailRequestOtpSchema>>(req);
+    const result = await emailAuthService.requestEmailOtp(email);
+    res.json({ data: result });
+  },
+);
+
+router.post(
+  "/auth/email/verify-otp",
+  validate({ body: emailVerifyOtpSchema }),
+  async (req, res) => {
+    const { email, code } = getBody<z.infer<typeof emailVerifyOtpSchema>>(req);
+    const result = await emailAuthService.verifyEmailOtp(
+      email,
+      code,
+      req.headers["user-agent"],
+      req.ip,
+    );
+    res.json({ data: result });
+  },
+);
+
+router.post(
+  "/auth/email/login",
+  validate({ body: emailLoginSchema }),
+  async (req, res) => {
+    const { email, password } = getBody<z.infer<typeof emailLoginSchema>>(req);
+    const result = await emailAuthService.loginWithEmailPassword(
+      email,
+      password,
+      req.headers["user-agent"],
+      req.ip,
+    );
+    res.json({ data: result });
+  },
+);
+
+router.post(
+  "/auth/email/set-password",
+  authenticate,
+  validate({ body: setPasswordSchema }),
+  async (req, res) => {
+    const { password } = getBody<z.infer<typeof setPasswordSchema>>(req);
+    await emailAuthService.setEmailPassword(req.user!.userId, password);
     res.json({ data: { message: "Password set successfully" } });
   },
 );

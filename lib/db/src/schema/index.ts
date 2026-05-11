@@ -39,6 +39,7 @@ export * from "./provider-api-keys";
 export * from "./attachments";
 export * from "./push-device-tokens";
 export * from "./phone-otp-codes";
+export * from "./email-otp-codes";
 export * from "./platform-roles";
 export * from "./platform-audit-logs";
 export * from "./company-moderation-events";
