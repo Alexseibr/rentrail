@@ -1436,11 +1436,9 @@ describe("ci-guard (vitest output-file check): findVitestConfigsWithoutOutputFil
     mkdirSync(subDir, { recursive: true });
     writeFileSync(
       join(subDir, "vitest.unit.ts"),
-      [
-        "export default {",
-        "  test: { reporters: ['junit'] },",
-        "};",
-      ].join("\n"),
+      ["export default {", "  test: { reporters: ['junit'] },", "};"].join(
+        "\n",
+      ),
       "utf8",
     );
 
@@ -1480,10 +1478,7 @@ describe("ci-guard (vitest output-file check): findVitestConfigsWithoutOutputFil
 // Layer 7b: script-level exit-code contract for check-vitest-output-file
 // ---------------------------------------------------------------------------
 
-const CHECK_VITEST_SCRIPT = join(
-  __dirname,
-  "check-vitest-output-file.ts",
-);
+const CHECK_VITEST_SCRIPT = join(__dirname, "check-vitest-output-file.ts");
 
 function runCheckVitestOutputFile(workspaceRoot: string): {
   status: number;
@@ -1507,11 +1502,7 @@ describe("ci-guard (vitest output-file check): check-vitest-output-file exit-cod
       JSON.stringify({ scripts: {} }),
       "utf8",
     );
-    writeFileSync(
-      join(tmpRoot, "pnpm-workspace.yaml"),
-      "packages:\n",
-      "utf8",
-    );
+    writeFileSync(join(tmpRoot, "pnpm-workspace.yaml"), "packages:\n", "utf8");
   });
 
   after(() => {

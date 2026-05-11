@@ -419,8 +419,7 @@ function resolveRelativeImport(
 
 // Non-global variants of the outputFile-detecting patterns.  Used with
 // .test() which must not share state with the global regexes used by matchAll.
-const JUNIT_KEY_TEST_RE =
-  /\bjunit\b\s*:\s*["']test-results\/[^"']+?\.xml["']/;
+const JUNIT_KEY_TEST_RE = /\bjunit\b\s*:\s*["']test-results\/[^"']+?\.xml["']/;
 const OUTPUT_FILE_TEST_RE =
   /\boutputFile\s*:\s*["']test-results\/[^"']+?\.xml["']/;
 const TUPLE_TEST_RE =
