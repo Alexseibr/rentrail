@@ -6,8 +6,9 @@
  * than maintained as a hand-written parallel list.
  *
  * Patterns recognised:
- *   • CLI flag    --outputFile.junit=test-results/<name>.xml  (package.json scripts)
- *   • Vitest cfg  junit: "test-results/<name>.xml"            (vitest.*.ts files)
+ *   • CLI flag        --outputFile.junit=test-results/<name>.xml  (package.json scripts)
+ *   • Vitest cfg (a)  junit: "test-results/<name>.xml"            (per-reporter object key in vitest.*.ts)
+ *   • Vitest cfg (b)  outputFile: "test-results/<name>.xml"       (plain string form in vitest.*.ts)
  *
  * Adding a new `pnpm test:xxx` step that declares one of these patterns
  * automatically extends the list — no separate manual edit required.
@@ -44,15 +45,27 @@ export function collectCiXmlFiles(
     }
   }
 
-  // 2. Scan vitest.*.ts config files for outputFile.junit entries.
-  //    Matches both quoted ("junit") and unquoted (junit) object keys.
-  const CONFIG_RE = /\bjunit\b\s*:\s*["']test-results\/([^"']+?\.xml)["']/g;
+  // 2. Scan vitest.*.ts config files at the workspace root.
   const vitestConfigs = readdirSync(workspaceRoot).filter((f) =>
     /^vitest\..+\.ts$/.test(f),
   );
+
+  // 2a. Per-reporter object key:  outputFile: { junit: "test-results/<name>.xml" }
+  //     Matches both quoted ("junit") and unquoted (junit) property names.
+  const JUNIT_KEY_RE = /\bjunit\b\s*:\s*["']test-results\/([^"']+?\.xml)["']/g;
+
+  // 2b. Plain string form:  outputFile: "test-results/<name>.xml"
+  //     Used when a single reporter writes all output to one file.
+  const OUTPUT_FILE_RE =
+    /\boutputFile\s*:\s*["']test-results\/([^"']+?\.xml)["']/g;
+
   for (const configFile of vitestConfigs) {
     const content = readFileSync(join(workspaceRoot, configFile), "utf8");
-    for (const m of content.matchAll(CONFIG_RE)) {
+    for (const m of content.matchAll(JUNIT_KEY_RE)) {
+      const name = m[1];
+      if (name !== undefined) files.add(name);
+    }
+    for (const m of content.matchAll(OUTPUT_FILE_RE)) {
       const name = m[1];
       if (name !== undefined) files.add(name);
     }

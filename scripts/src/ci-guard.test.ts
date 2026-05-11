@@ -36,6 +36,7 @@ import { spawnSync } from "node:child_process";
 import {
   existsSync,
   readFileSync,
+  readdirSync,
   writeFileSync,
   unlinkSync,
   mkdirSync,
@@ -300,6 +301,284 @@ describe("ci-guard (ci.sh source audit): trap uses derived XML file list", () =>
     assert.ok(
       setPipeIdx < (trapCmdMatch.index ?? Infinity),
       "'set -euo pipefail' must appear before the trap declaration",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layer 4: scanner pattern coverage — synthetic workspace
+//
+// Creates a minimal fake workspace in a temp directory and calls
+// collectCiXmlFiles() directly against it to verify every supported
+// declaration pattern is recognised.  Also documents the subdirectory
+// limitation so future work to lift it causes a deliberate test failure.
+// ---------------------------------------------------------------------------
+
+describe("ci-guard (scanner patterns): collectCiXmlFiles detects all supported declaration styles", () => {
+  let tmpRoot: string;
+
+  before(() => {
+    tmpRoot = mkdtempSync(join(tmpdir(), "ci-scanner-patterns-"));
+    // Seed an empty package.json so every test can rely on it existing.
+    writeFileSync(
+      join(tmpRoot, "package.json"),
+      JSON.stringify({ scripts: {} }),
+      "utf8",
+    );
+  });
+
+  after(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  function writePkg(scripts: Record<string, string>): void {
+    writeFileSync(
+      join(tmpRoot, "package.json"),
+      JSON.stringify({ scripts }),
+      "utf8",
+    );
+  }
+
+  function writeConfig(name: string, content: string): void {
+    writeFileSync(join(tmpRoot, name), content, "utf8");
+  }
+
+  it("detects the --outputFile.junit CLI flag declared in a package.json test script", () => {
+    writePkg({
+      "test:e2e":
+        "vitest run --reporter=junit --outputFile.junit=test-results/e2e-cli.xml e2e.test",
+    });
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("e2e-cli.xml"),
+      `Expected scanner to detect e2e-cli.xml via --outputFile.junit flag, got: [${found.join(", ")}]`,
+    );
+  });
+
+  it("detects the per-reporter outputFile object key (junit: ...) inside a vitest.*.ts config", () => {
+    writePkg({});
+    writeConfig(
+      "vitest.cfg-object.ts",
+      [
+        'import { defineConfig } from "vitest/config";',
+        "export default defineConfig({",
+        "  test: {",
+        '    reporters: ["verbose", "junit"],',
+        "    outputFile: {",
+        '      junit: "test-results/cfg-object.xml",',
+        "    },",
+        "  },",
+        "});",
+      ].join("\n"),
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("cfg-object.xml"),
+      `Expected scanner to detect cfg-object.xml via vitest config per-reporter junit: key, got: [${found.join(", ")}]`,
+    );
+  });
+
+  it("detects the plain-string outputFile form (outputFile: '...') inside a vitest.*.ts config", () => {
+    // Vitest also accepts a plain string when a single reporter owns all output.
+    // This is the alternative shape the scanner previously missed.
+    writePkg({});
+    writeConfig(
+      "vitest.cfg-plain.ts",
+      [
+        "export default {",
+        "  test: {",
+        '    reporters: ["junit"],',
+        '    outputFile: "test-results/cfg-plain.xml",',
+        "  },",
+        "};",
+      ].join("\n"),
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("cfg-plain.xml"),
+      `Expected scanner to detect cfg-plain.xml via vitest config plain outputFile: string, got: [${found.join(", ")}]`,
+    );
+  });
+
+  it("deduplicates when the same basename appears in both a script and a vitest config", () => {
+    writePkg({
+      "test:dup":
+        "vitest run --reporter=junit --outputFile.junit=test-results/dup.xml dup.test",
+    });
+    writeConfig(
+      "vitest.dup.ts",
+      [
+        "export default {",
+        "  test: {",
+        "    outputFile: {",
+        '      junit: "test-results/dup.xml",',
+        "    },",
+        "  },",
+        "};",
+      ].join("\n"),
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    const dupCount = found.filter((n) => n === "dup.xml").length;
+    assert.equal(
+      dupCount,
+      1,
+      `Expected dup.xml to appear exactly once after deduplication, got ${dupCount} occurrence(s)`,
+    );
+  });
+
+  it("does NOT detect a vitest config placed in a subdirectory (known scanner limitation)", () => {
+    // The scanner calls readdirSync(workspaceRoot) without recursion, so a
+    // config nested under a package dir (e.g. artifacts/api-server/vitest.e2e.ts)
+    // is invisible.  If this assertion starts failing, the scanner has been
+    // extended to recurse — remove or update this test accordingly.
+    const subDir = join(tmpRoot, "sub");
+    mkdirSync(subDir, { recursive: true });
+    writePkg({});
+    writeFileSync(
+      join(subDir, "vitest.e2e.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    outputFile: {",
+        '      junit: "test-results/sub-e2e.xml",',
+        "    },",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      !found.includes("sub-e2e.xml"),
+      `Scanner unexpectedly found sub-e2e.xml from a subdirectory config — the ` +
+        `subdirectory limitation no longer exists. Update this test accordingly.`,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layer 5: on-disk cross-check — enforcement logic tests
+//
+// The "on-disk cross-check" catches test suites that write JUnit XML without
+// using a scanner-recognised declaration pattern.  Its logic:
+//
+//   1. Read all *.xml files from the results directory.
+//   2. Assert every one is present in the declared list (CI_XML_FILES).
+//   3. Any file that is on disk but not declared is flagged as an omission.
+//
+// These tests exercise that logic directly against controlled temp directories
+// so enforcement is independent of when in the CI pipeline this suite runs.
+//
+// A passive bonus check at the bottom also runs against the real test-results/
+// directory if it happens to exist (e.g. after a local test run).
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the basenames of any XML files in `resultsDir` that are NOT listed
+ * in `declared`.  An absent or empty directory returns [].
+ */
+function findUndeclaredXmlFiles(
+  resultsDir: string,
+  declared: string[],
+): string[] {
+  let onDisk: string[];
+  try {
+    onDisk = readdirSync(resultsDir).filter((f) => f.endsWith(".xml"));
+  } catch {
+    return [];
+  }
+  const declaredSet = new Set(declared);
+  return onDisk.filter((f) => !declaredSet.has(f));
+}
+
+describe("ci-guard (on-disk cross-check): logic catches undeclared XML files", () => {
+  let resultsDir: string;
+
+  before(() => {
+    resultsDir = mkdtempSync(join(tmpdir(), "ci-crosscheck-"));
+  });
+
+  after(() => {
+    rmSync(resultsDir, { recursive: true, force: true });
+  });
+
+  it("returns [] when the results directory does not exist", () => {
+    const absent = join(resultsDir, "does-not-exist");
+    const undeclared = findUndeclaredXmlFiles(absent, ["a.xml"]);
+    assert.deepEqual(undeclared, []);
+  });
+
+  it("returns [] when every on-disk XML file is declared", () => {
+    writeFileSync(join(resultsDir, "unit.xml"), "<testsuites/>", "utf8");
+    writeFileSync(join(resultsDir, "api.xml"), "<testsuites/>", "utf8");
+
+    const undeclared = findUndeclaredXmlFiles(resultsDir, [
+      "api.xml",
+      "unit.xml",
+    ]);
+    assert.deepEqual(undeclared, []);
+  });
+
+  it("returns the undeclared filename when a suite writes XML without a recognised declaration", () => {
+    // Simulate a developer adding a new suite (mystery.xml) whose vitest config
+    // uses a pattern the scanner does not recognise.  The file lands on disk
+    // but is absent from CI_XML_FILES — the cross-check must surface it.
+    writeFileSync(join(resultsDir, "mystery.xml"), "<testsuites/>", "utf8");
+
+    const undeclared = findUndeclaredXmlFiles(resultsDir, [
+      "api.xml",
+      "unit.xml",
+    ]);
+    assert.deepEqual(
+      undeclared,
+      ["mystery.xml"],
+      "Expected the cross-check to flag mystery.xml as undeclared",
+    );
+  });
+
+  it("flags all undeclared files when multiple are present", () => {
+    writeFileSync(join(resultsDir, "extra-a.xml"), "<testsuites/>", "utf8");
+    writeFileSync(join(resultsDir, "extra-b.xml"), "<testsuites/>", "utf8");
+
+    const undeclared = findUndeclaredXmlFiles(resultsDir, [
+      "api.xml",
+      "unit.xml",
+    ]);
+    // mystery.xml, extra-a.xml, extra-b.xml are all undeclared; sort for stability.
+    assert.deepEqual([...undeclared].sort(), [
+      "extra-a.xml",
+      "extra-b.xml",
+      "mystery.xml",
+    ]);
+  });
+});
+
+// Passive bonus: if test-results/ exists (e.g. after a local test run), every
+// XML file in it must be declared by the scanner.  This is non-enforcing when
+// the directory is absent (fresh checkout or CI step ordering).
+describe("ci-guard (on-disk cross-check): real test-results/ matches scanner when present", () => {
+  it("all *.xml files under test-results/ are listed in CI_XML_FILES (skips if dir absent)", () => {
+    const undeclared = findUndeclaredXmlFiles(
+      join(WORKSPACE_ROOT, "test-results"),
+      CI_XML_FILES,
+    );
+
+    const HINT =
+      `\nThis means a test suite is writing a JUnit XML file without using a\n` +
+      `recognised declaration pattern:\n` +
+      `  • --outputFile.junit=test-results/<name>.xml  (in a package.json script)\n` +
+      `  • outputFile: { junit: "test-results/<name>.xml" }  (in a vitest.*.ts config)\n` +
+      `  • outputFile: "test-results/<name>.xml"            (in a vitest.*.ts config)\n`;
+
+    assert.deepEqual(
+      undeclared,
+      [],
+      `Files in test-results/ that are NOT declared by the scanner: ${undeclared.join(", ")}${HINT}`,
     );
   });
 });
