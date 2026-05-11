@@ -10,6 +10,44 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+detect_os() {
+  case "$(uname -s)" in
+    Linux*) echo "linux" ;;
+    Darwin*) echo "macos" ;;
+    MINGW* | MSYS* | CYGWIN*) echo "windows" ;;
+    *) echo "unknown" ;;
+  esac
+}
+
+install_hint() {
+  local tool="$1"
+  local os="$2"
+
+  case "$tool:$os" in
+    node:linux)
+      echo "Install Node.js LTS: https://nodejs.org/en/download"
+      ;;
+    node:macos)
+      echo "brew install node"
+      ;;
+    node:windows)
+      echo "Install Node.js LTS: https://nodejs.org/en/download"
+      ;;
+    pnpm:linux | pnpm:macos | pnpm:windows)
+      echo "npm install -g pnpm"
+      ;;
+    docker:linux)
+      echo "Install Docker Engine/Desktop: https://docs.docker.com/engine/install/"
+      ;;
+    docker:macos | docker:windows)
+      echo "Install Docker Desktop: https://www.docker.com/products/docker-desktop/"
+      ;;
+    *)
+      echo "Install $tool and ensure it is available in PATH"
+      ;;
+  esac
+}
+
 node_ok=false
 pnpm_ok=false
 docker_ok=false
@@ -25,9 +63,14 @@ if [[ "$node_ok" != true || "$pnpm_ok" != true || "$docker_ok" != true ]]; then
   ok=false
 fi
 
+os="$(detect_os)"
+
 if [[ "$MODE" == "json" ]]; then
-  printf '{"ok":%s,"checks":{"node":%s,"pnpm":%s,"docker":%s,"databaseUrlSet":%s}}\n' \
-    "$ok" "$node_ok" "$pnpm_ok" "$docker_ok" "$db_set"
+  printf '{"ok":%s,"os":"%s","checks":{"node":%s,"pnpm":%s,"docker":%s,"databaseUrlSet":%s},"hints":{"node":"%s","pnpm":"%s","docker":"%s"}}\n' \
+    "$ok" "$os" "$node_ok" "$pnpm_ok" "$docker_ok" "$db_set" \
+    "$(install_hint node "$os")" \
+    "$(install_hint pnpm "$os")" \
+    "$(install_hint docker "$os")"
   [[ "$ok" == true ]] && exit 0 || exit 1
 fi
 
@@ -39,6 +82,9 @@ fi
 if [[ "$ok" != true ]]; then
   echo ""
   echo "Doctor failed. Install missing tools and retry."
+  [[ "$node_ok" == true ]] || echo "- node: $(install_hint node "$os")"
+  [[ "$pnpm_ok" == true ]] || echo "- pnpm: $(install_hint pnpm "$os")"
+  [[ "$docker_ok" == true ]] || echo "- docker: $(install_hint docker "$os")"
   exit 1
 fi
 

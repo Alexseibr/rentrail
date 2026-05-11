@@ -9,11 +9,15 @@ pnpm run dev:doctor
 ```
 
 Проверяет: `node`, `pnpm`, `docker` и наличие `DATABASE_URL`.
+Если чего-то не хватает, выводит подсказки по установке под текущую OS.
+
 Для CI/интеграций можно получить машиночитаемый вывод:
 
 ```bash
 pnpm run dev:doctor:json
 ```
+
+JSON-вывод содержит `ok`, `checks` и `hints` (подсказки установки).
 
 ## 1) Поднять локальную БД
 
@@ -70,10 +74,11 @@ pnpm run dev:test
 
 ## Если тесты не стартуют
 
-1. Проверьте, что Docker установлен и работает.
-2. Проверьте, что Postgres контейнер запущен.
-3. Проверьте `DATABASE_URL`.
-4. Перезапустите:
+1. Запустите `pnpm run dev:doctor` и исправьте missing-check'и.
+2. Проверьте, что Docker установлен и работает.
+3. Проверьте, что Postgres контейнер запущен.
+4. Проверьте `DATABASE_URL`.
+5. Перезапустите:
    - `pnpm run dev:db:down`
    - `pnpm run dev:db:up`
    - `pnpm run dev:verify`
