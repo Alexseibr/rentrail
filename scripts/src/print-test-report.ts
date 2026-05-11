@@ -16,7 +16,11 @@
 import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseXml, type FailedTest } from "./print-test-report-lib.js";
+import {
+  parseXml,
+  buildGithubSummaryMarkdown,
+  type FailedTest,
+} from "./print-test-report-lib.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,9 +33,10 @@ function truncate(s: string, max: number): string {
 }
 
 /**
- * Append Markdown to $GITHUB_STEP_SUMMARY so failed test names appear in the
- * structured GitHub Actions job summary UI (the "Summary" tab on a workflow
- * run page). No-ops when the env var is absent (local / non-GitHub CI).
+ * Append Markdown to $GITHUB_STEP_SUMMARY so failed test names and any
+ * malformed-XML warnings appear in the structured GitHub Actions job summary
+ * UI (the "Summary" tab on a workflow run page). No-ops when the env var is
+ * absent (local / non-GitHub CI).
  */
 function writeGithubSummary(
   fileNames: string[],
@@ -39,34 +44,20 @@ function writeGithubSummary(
   totalFailures: number,
   totalErrors: number,
   allFailed: FailedTest[],
+  malformedFiles: string[],
 ): void {
   const summaryPath = process.env["GITHUB_STEP_SUMMARY"];
   if (!summaryPath) return;
 
-  const lines: string[] = [];
-  lines.push("## Test Report");
-  lines.push("");
-  lines.push(
-    `| XML reports | Tests | Failures | Errors |`,
-    `|---|---|---|---|`,
-    `| ${fileNames.join(", ")} | ${totalTests} | ${totalFailures} | ${totalErrors} |`,
+  const markdown = buildGithubSummaryMarkdown(
+    fileNames,
+    totalTests,
+    totalFailures,
+    totalErrors,
+    allFailed,
+    malformedFiles,
   );
-  lines.push("");
-
-  if (allFailed.length === 0) {
-    lines.push("✅ All tests passed.");
-  } else {
-    lines.push(`### ❌ Failed tests (${allFailed.length})`);
-    lines.push("");
-    lines.push("| Test | Suite | Reason |", "|---|---|---|");
-    for (const { suite, name, message } of allFailed) {
-      const safeMessage = truncate(message.replace(/\|/g, "\\|"), 100);
-      lines.push(`| ${name} | ${suite} | ${safeMessage} |`);
-    }
-  }
-
-  lines.push("");
-  appendFileSync(summaryPath, lines.join("\n") + "\n");
+  appendFileSync(summaryPath, markdown);
 }
 
 function run(): void {
@@ -94,10 +85,16 @@ function run(): void {
   let totalFailures = 0;
   let totalErrors = 0;
   const allFailed: FailedTest[] = [];
+  const malformedFiles: string[] = [];
 
   for (const file of xmlFiles) {
+    const fileName = fileNames[xmlFiles.indexOf(file)] ?? file;
     const xml = readFileSync(file, "utf8");
-    const { suites, failed } = parseXml(xml);
+    const { suites, failed, malformed } = parseXml(xml);
+
+    if (malformed) {
+      malformedFiles.push(fileName);
+    }
 
     for (const s of suites) {
       totalTests += s.total;
@@ -142,6 +139,14 @@ function run(): void {
     console.log("");
   }
 
+  if (malformedFiles.length > 0) {
+    console.log(
+      `  ⚠  Malformed XML (${malformedFiles.length}): ${malformedFiles.join(", ")}`,
+    );
+    console.log(divider);
+    console.log("");
+  }
+
   // ── GitHub Actions job summary (structured UI, appears in Summary tab) ───
 
   writeGithubSummary(
@@ -150,6 +155,7 @@ function run(): void {
     totalFailures,
     totalErrors,
     allFailed,
+    malformedFiles,
   );
 }
 

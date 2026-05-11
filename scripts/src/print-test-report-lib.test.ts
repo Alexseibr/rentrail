@@ -5,14 +5,21 @@
  *   - attrValue: attribute extraction from XML attribute strings
  *   - parseXml: all-passing suites, mixed pass/fail, multiple suites,
  *               <testsuites> wrapper, self-closing testcase tags,
- *               attribute-vs-body failure messages, long (multi-line) messages
+ *               attribute-vs-body failure messages, long (multi-line) messages,
+ *               malformed flag
+ *   - buildGithubSummaryMarkdown: summary table, ⚠️ malformed section,
+ *               ✅ all-passed, ❌ failed tests table
  *
  * Run: pnpm --filter @workspace/scripts run test
  */
 
 import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { attrValue, parseXml } from "./print-test-report-lib.js";
+import {
+  attrValue,
+  parseXml,
+  buildGithubSummaryMarkdown,
+} from "./print-test-report-lib.js";
 
 // ---------------------------------------------------------------------------
 // attrValue
@@ -442,7 +449,7 @@ describe("parseXml — malformed or unexpected XML warns and returns empty", () 
   it("emits a console.warn when a non-empty XML string yields no suites", () => {
     const warnSpy = mock.method(console, "warn", () => undefined);
     try {
-      const { suites, failed } = parseXml(
+      const { suites, failed, malformed } = parseXml(
         `<?xml version="1.0"?><report><summary/></report>`,
       );
       assert.equal(warnSpy.mock.calls.length, 1);
@@ -453,6 +460,7 @@ describe("parseXml — malformed or unexpected XML warns and returns empty", () 
       );
       assert.deepEqual(suites, []);
       assert.deepEqual(failed, []);
+      assert.equal(malformed, true);
     } finally {
       warnSpy.mock.restore();
     }
@@ -461,12 +469,13 @@ describe("parseXml — malformed or unexpected XML warns and returns empty", () 
   it("emits a console.warn for truncated XML that cuts off mid-element", () => {
     const warnSpy = mock.method(console, "warn", () => undefined);
     try {
-      const { suites, failed } = parseXml(
+      const { suites, failed, malformed } = parseXml(
         `<?xml version="1.0"?><testsuites><testsuite name="S"`,
       );
       assert.equal(warnSpy.mock.calls.length, 1);
       assert.deepEqual(suites, []);
       assert.deepEqual(failed, []);
+      assert.equal(malformed, true);
     } finally {
       warnSpy.mock.restore();
     }
@@ -475,9 +484,12 @@ describe("parseXml — malformed or unexpected XML warns and returns empty", () 
   it("emits a console.warn for XML with only a processing instruction and no suites", () => {
     const warnSpy = mock.method(console, "warn", () => undefined);
     try {
-      const { suites } = parseXml(`<?xml version="1.0" encoding="UTF-8"?>`);
+      const { suites, malformed } = parseXml(
+        `<?xml version="1.0" encoding="UTF-8"?>`,
+      );
       assert.equal(warnSpy.mock.calls.length, 1);
       assert.deepEqual(suites, []);
+      assert.equal(malformed, true);
     } finally {
       warnSpy.mock.restore();
     }
@@ -486,10 +498,11 @@ describe("parseXml — malformed or unexpected XML warns and returns empty", () 
   it("does NOT emit a console.warn for a completely empty string", () => {
     const warnSpy = mock.method(console, "warn", () => undefined);
     try {
-      const { suites, failed } = parseXml("");
+      const { suites, failed, malformed } = parseXml("");
       assert.equal(warnSpy.mock.calls.length, 0);
       assert.deepEqual(suites, []);
       assert.deepEqual(failed, []);
+      assert.equal(malformed, false);
     } finally {
       warnSpy.mock.restore();
     }
@@ -498,9 +511,10 @@ describe("parseXml — malformed or unexpected XML warns and returns empty", () 
   it("does NOT emit a console.warn for a whitespace-only string", () => {
     const warnSpy = mock.method(console, "warn", () => undefined);
     try {
-      const { suites } = parseXml("   \n\t  ");
+      const { suites, malformed } = parseXml("   \n\t  ");
       assert.equal(warnSpy.mock.calls.length, 0);
       assert.deepEqual(suites, []);
+      assert.equal(malformed, false);
     } finally {
       warnSpy.mock.restore();
     }
@@ -514,12 +528,135 @@ describe("parseXml — malformed or unexpected XML warns and returns empty", () 
         tests: 1,
         body: makePassingTestcase("t1"),
       });
-      const { suites } = parseXml(xml);
+      const { suites, malformed } = parseXml(xml);
       assert.equal(warnSpy.mock.calls.length, 0);
       assert.equal(suites.length, 1);
+      assert.equal(malformed, false);
     } finally {
       warnSpy.mock.restore();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildGithubSummaryMarkdown
+// ---------------------------------------------------------------------------
+
+describe("buildGithubSummaryMarkdown — structure", () => {
+  it("includes the ## Test Report heading", () => {
+    const md = buildGithubSummaryMarkdown(["r.xml"], 5, 0, 0, [], []);
+    assert.ok(md.includes("## Test Report"), "Missing heading");
+  });
+
+  it("includes a stats table row with the supplied file name and counts", () => {
+    const md = buildGithubSummaryMarkdown(["results.xml"], 10, 2, 1, [], []);
+    assert.ok(md.includes("results.xml"), "Missing file name in table");
+    assert.ok(md.includes("10"), "Missing test count");
+    assert.ok(md.includes("2"), "Missing failure count");
+    assert.ok(md.includes("1"), "Missing error count");
+  });
+
+  it("shows ✅ all-passed message when there are no failures", () => {
+    const md = buildGithubSummaryMarkdown(["ok.xml"], 3, 0, 0, [], []);
+    assert.ok(md.includes("✅ All tests passed."), "Missing all-passed line");
+    assert.ok(!md.includes("❌"), "Should not contain failure heading");
+  });
+});
+
+describe("buildGithubSummaryMarkdown — failed tests section", () => {
+  it("includes failed test name and suite in the table", () => {
+    const failed = [
+      { suite: "My Suite", name: "breaks badly", message: "Expected 1 got 2" },
+    ];
+    const md = buildGithubSummaryMarkdown(["r.xml"], 1, 1, 0, failed, []);
+    assert.ok(
+      md.includes("### ❌ Failed tests (1)"),
+      "Missing failures heading",
+    );
+    assert.ok(md.includes("breaks badly"), "Missing test name");
+    assert.ok(md.includes("My Suite"), "Missing suite name");
+    assert.ok(md.includes("Expected 1 got 2"), "Missing message");
+  });
+
+  it("truncates long failure messages to 100 characters in the table", () => {
+    const longMsg = "x".repeat(150);
+    const failed = [{ suite: "S", name: "t", message: longMsg }];
+    const md = buildGithubSummaryMarkdown(["r.xml"], 1, 1, 0, failed, []);
+    assert.ok(!md.includes(longMsg), "Long message should be truncated");
+    assert.ok(md.includes("..."), "Truncation marker expected");
+  });
+
+  it("escapes pipe characters in failure messages to avoid breaking the table", () => {
+    const failed = [{ suite: "S", name: "t", message: "a | b | c" }];
+    const md = buildGithubSummaryMarkdown(["r.xml"], 1, 1, 0, failed, []);
+    assert.ok(md.includes("a \\| b \\| c"), "Pipes should be escaped");
+  });
+
+  it("lists multiple failed tests", () => {
+    const failed = [
+      { suite: "S", name: "fail A", message: "reason A" },
+      { suite: "S", name: "fail B", message: "reason B" },
+    ];
+    const md = buildGithubSummaryMarkdown(["r.xml"], 2, 2, 0, failed, []);
+    assert.ok(md.includes("fail A"), "Missing fail A");
+    assert.ok(md.includes("fail B"), "Missing fail B");
+  });
+});
+
+describe("buildGithubSummaryMarkdown — malformed files section", () => {
+  it("includes a ⚠️ section when malformed files are provided", () => {
+    const md = buildGithubSummaryMarkdown(
+      ["good.xml", "bad.xml"],
+      5,
+      0,
+      0,
+      [],
+      ["bad.xml"],
+    );
+    assert.ok(
+      md.includes("### ⚠️ Malformed XML files"),
+      "Missing malformed heading",
+    );
+    assert.ok(md.includes("`bad.xml`"), "Missing malformed file name");
+  });
+
+  it("lists multiple malformed files", () => {
+    const md = buildGithubSummaryMarkdown(
+      ["a.xml", "b.xml", "c.xml"],
+      0,
+      0,
+      0,
+      [],
+      ["a.xml", "c.xml"],
+    );
+    assert.ok(md.includes("`a.xml`"), "Missing a.xml");
+    assert.ok(md.includes("`c.xml`"), "Missing c.xml");
+  });
+
+  it("does NOT include the ⚠️ section when no malformed files are provided", () => {
+    const md = buildGithubSummaryMarkdown(["ok.xml"], 3, 0, 0, [], []);
+    assert.ok(!md.includes("⚠️"), "Should not contain warning emoji");
+    assert.ok(
+      !md.includes("Malformed XML files"),
+      "Should not contain malformed section",
+    );
+  });
+
+  it("shows both the malformed warning and the failed tests table when both are present", () => {
+    const failed = [{ suite: "S", name: "t1", message: "oops" }];
+    const md = buildGithubSummaryMarkdown(
+      ["good.xml", "bad.xml"],
+      2,
+      1,
+      0,
+      failed,
+      ["bad.xml"],
+    );
+    assert.ok(
+      md.includes("⚠️ Malformed XML files"),
+      "Missing malformed section",
+    );
+    assert.ok(md.includes("❌ Failed tests"), "Missing failed section");
   });
 });
 

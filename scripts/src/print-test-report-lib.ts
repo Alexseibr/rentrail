@@ -4,7 +4,8 @@
  * Pure XML-parsing logic extracted from print-test-report.ts so it can be
  * unit-tested independently of filesystem I/O and process.exit.
  *
- * Exported: attrValue, parseXml, and the shared result interfaces.
+ * Exported: attrValue, parseXml, buildGithubSummaryMarkdown, and the shared
+ * result interfaces.
  */
 
 export interface FailedTest {
@@ -24,6 +25,8 @@ export interface SuiteSummary {
 export interface ParseResult {
   suites: SuiteSummary[];
   failed: FailedTest[];
+  /** True when the XML was non-empty but contained no <testsuite> elements. */
+  malformed: boolean;
 }
 
 /**
@@ -106,7 +109,9 @@ export function parseXml(xml: string): ParseResult {
     }
   }
 
-  if (suites.length === 0 && xml.trim().length > 0) {
+  const malformed = suites.length === 0 && xml.trim().length > 0;
+
+  if (malformed) {
     console.warn(
       "[print-test-report] WARNING: XML input was non-empty but contained no" +
         " <testsuite> elements. The file may be malformed, truncated, or use an" +
@@ -114,5 +119,69 @@ export function parseXml(xml: string): ParseResult {
     );
   }
 
-  return { suites, failed };
+  return { suites, failed, malformed };
+}
+
+/**
+ * Build the Markdown string that is appended to the GitHub Actions job summary
+ * ($GITHUB_STEP_SUMMARY). Pure function — no I/O, fully unit-testable.
+ *
+ * @param fileNames     - All XML report file names that were processed.
+ * @param totalTests    - Sum of all test counts across every suite.
+ * @param totalFailures - Sum of all failure counts across every suite.
+ * @param totalErrors   - Sum of all error counts across every suite.
+ * @param allFailed     - Every individual failed/errored test case.
+ * @param malformedFiles - File names that produced a malformed-XML warning.
+ */
+export function buildGithubSummaryMarkdown(
+  fileNames: string[],
+  totalTests: number,
+  totalFailures: number,
+  totalErrors: number,
+  allFailed: FailedTest[],
+  malformedFiles: string[],
+): string {
+  const lines: string[] = [];
+  lines.push("## Test Report");
+  lines.push("");
+  lines.push(
+    `| XML reports | Tests | Failures | Errors |`,
+    `|---|---|---|---|`,
+    `| ${fileNames.join(", ")} | ${totalTests} | ${totalFailures} | ${totalErrors} |`,
+  );
+  lines.push("");
+
+  if (malformedFiles.length > 0) {
+    lines.push("### ⚠️ Malformed XML files");
+    lines.push("");
+    lines.push(
+      "The following report files were non-empty but contained no" +
+        " `<testsuite>` elements. They may be truncated or use an unexpected" +
+        " format. Their results are **not** included in the summary above.",
+    );
+    lines.push("");
+    for (const f of malformedFiles) {
+      lines.push(`- \`${f}\``);
+    }
+    lines.push("");
+  }
+
+  if (allFailed.length === 0) {
+    lines.push("✅ All tests passed.");
+  } else {
+    lines.push(`### ❌ Failed tests (${allFailed.length})`);
+    lines.push("");
+    lines.push("| Test | Suite | Reason |", "|---|---|---|");
+    for (const { suite, name, message } of allFailed) {
+      const safeMessage = truncate(message.replace(/\|/g, "\\|"), 100);
+      lines.push(`| ${name} | ${suite} | ${safeMessage} |`);
+    }
+  }
+
+  lines.push("");
+  return lines.join("\n") + "\n";
+}
+
+function truncate(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max - 3) + "..." : s;
 }
