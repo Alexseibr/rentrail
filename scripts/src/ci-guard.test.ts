@@ -578,6 +578,156 @@ describe("ci-guard (scanner patterns): collectCiXmlFiles detects all supported d
       `Expected scanner to detect sub-e2e.xml from a package subdirectory config, got: [${found.join(", ")}]`,
     );
   });
+
+  it("resolves package dirs when pnpm-workspace.yaml uses double-quoted glob patterns", () => {
+    // A future author may write  - "packages/*"  with double quotes.
+    // The proper YAML parser must strip the quotes and still expand the glob.
+    const subDir = join(tmpRoot, "packages", "dq-sub");
+    mkdirSync(subDir, { recursive: true });
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      'packages:\n  - "packages/*"\n',
+      "utf8",
+    );
+    writePkg({});
+    writeFileSync(
+      join(subDir, "vitest.dq.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    outputFile: {",
+        '      junit: "test-results/dq-sub.xml",',
+        "    },",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("dq-sub.xml"),
+      `Expected double-quoted glob to be resolved; got: [${found.join(", ")}]`,
+    );
+
+    // Restore the original workspace yaml so subsequent tests are unaffected.
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n",
+      "utf8",
+    );
+  });
+
+  it("resolves package dirs when pnpm-workspace.yaml uses single-quoted glob patterns", () => {
+    // A future author may write  - 'packages/*'  with single quotes.
+    const subDir = join(tmpRoot, "packages", "sq-sub");
+    mkdirSync(subDir, { recursive: true });
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - 'packages/*'\n",
+      "utf8",
+    );
+    writePkg({});
+    writeFileSync(
+      join(subDir, "vitest.sq.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    outputFile: {",
+        '      junit: "test-results/sq-sub.xml",',
+        "    },",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("sq-sub.xml"),
+      `Expected single-quoted glob to be resolved; got: [${found.join(", ")}]`,
+    );
+
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n",
+      "utf8",
+    );
+  });
+
+  it("resolves package dirs when pnpm-workspace.yaml has inline comments on pattern lines", () => {
+    // An author annotating patterns with  # comments  must not break the scan.
+    const subDir = join(tmpRoot, "packages", "cm-sub");
+    mkdirSync(subDir, { recursive: true });
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/* # all workspace packages\n",
+      "utf8",
+    );
+    writePkg({});
+    writeFileSync(
+      join(subDir, "vitest.cm.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    outputFile: {",
+        '      junit: "test-results/cm-sub.xml",',
+        "    },",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("cm-sub.xml"),
+      `Expected inline-commented glob to be resolved; got: [${found.join(", ")}]`,
+    );
+
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n",
+      "utf8",
+    );
+  });
+
+  it("resolves package dirs when pnpm-workspace.yaml mixes quoted and commented patterns", () => {
+    // Both robustness features active at once: double-quoted value + inline comment.
+    const subDir = join(tmpRoot, "packages", "mix-sub");
+    mkdirSync(subDir, { recursive: true });
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      'packages:\n  - "packages/*" # root packages\n',
+      "utf8",
+    );
+    writePkg({});
+    writeFileSync(
+      join(subDir, "vitest.mix.ts"),
+      [
+        "export default {",
+        "  test: {",
+        "    outputFile: {",
+        '      junit: "test-results/mix-sub.xml",',
+        "    },",
+        "  },",
+        "};",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("mix-sub.xml"),
+      `Expected double-quoted + commented glob to be resolved; got: [${found.join(", ")}]`,
+    );
+
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n",
+      "utf8",
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -24,6 +24,115 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// ---------------------------------------------------------------------------
+// Minimal but correct YAML sequence parser
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse the value of a top-level sequence key from a YAML document and return
+ * its items as plain strings.
+ *
+ * Handles all three YAML scalar styles that may appear in pnpm-workspace.yaml:
+ *   • Single-quoted  – 'artifacts/*'  (only escape is '' → literal ')
+ *   • Double-quoted  – "artifacts/*"  (standard backslash escapes)
+ *   • Bare/plain     – artifacts/*    (trailing `# comment` stripped)
+ *
+ * Does not support multi-line scalars or nested mappings — those are not used
+ * in pnpm-workspace.yaml package lists.
+ */
+function parseYamlStringSequence(yaml: string, key: string): string[] {
+  const keyRe = new RegExp(`^${key}\\s*:`);
+  const results: string[] = [];
+  let inSequence = false;
+
+  for (const rawLine of yaml.split("\n")) {
+    if (keyRe.test(rawLine)) {
+      inSequence = true;
+      continue;
+    }
+    if (!inSequence) continue;
+
+    // A non-indented non-empty line that is not a comment ends the sequence.
+    if (
+      /^\S/.test(rawLine) &&
+      rawLine.trim() !== "" &&
+      !rawLine.trimStart().startsWith("#")
+    ) {
+      break;
+    }
+
+    // Sequence item: leading whitespace then "- ".
+    const trimmed = rawLine.trimStart();
+    if (!trimmed.startsWith("- ") && trimmed !== "-") continue;
+
+    const scalar = trimmed.slice(2).trimStart();
+    if (scalar === "") continue;
+
+    if (scalar.startsWith("'")) {
+      // Single-quoted scalar: '' is an escaped single quote inside the value.
+      let i = 1;
+      let value = "";
+      while (i < scalar.length) {
+        if (scalar[i] === "'") {
+          if (scalar[i + 1] === "'") {
+            value += "'";
+            i += 2;
+          } else {
+            break; // closing quote
+          }
+        } else {
+          value += scalar[i];
+          i++;
+        }
+      }
+      if (value.length > 0 || i < scalar.length) results.push(value);
+    } else if (scalar.startsWith('"')) {
+      // Double-quoted scalar: standard backslash escapes.
+      let i = 1;
+      let value = "";
+      while (i < scalar.length) {
+        if (scalar[i] === "\\") {
+          const next = scalar[i + 1] ?? "";
+          switch (next) {
+            case "n":
+              value += "\n";
+              break;
+            case "t":
+              value += "\t";
+              break;
+            case "r":
+              value += "\r";
+              break;
+            case "\\":
+              value += "\\";
+              break;
+            case '"':
+              value += '"';
+              break;
+            default:
+              value += next;
+          }
+          i += 2;
+        } else if (scalar[i] === '"') {
+          break; // closing quote
+        } else {
+          value += scalar[i];
+          i++;
+        }
+      }
+      if (value.length > 0 || i < scalar.length) results.push(value);
+    } else {
+      // Bare/plain scalar: a ` #` (space then hash) starts an inline comment.
+      const commentIdx = scalar.search(/\s+#/);
+      const value =
+        commentIdx === -1 ? scalar.trimEnd() : scalar.slice(0, commentIdx);
+      if (value.length > 0) results.push(value);
+    }
+  }
+
+  return results;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // scripts/src/ -> scripts/ -> workspace root
@@ -46,29 +155,7 @@ function resolveWorkspacePackageDirs(workspaceRoot: string): string[] {
     return [];
   }
 
-  // Minimal line-by-line extraction of the `packages:` array.
-  // We intentionally avoid pulling in a YAML library to keep the script
-  // dependency-free; the format is simple enough for a regex approach.
-  const patterns: string[] = [];
-  let inPackages = false;
-  for (const line of yaml.split("\n")) {
-    if (/^packages\s*:/.test(line)) {
-      inPackages = true;
-      continue;
-    }
-    if (inPackages) {
-      const m = /^\s+-\s+['"]?([^'"#\s]+)['"]?/.exec(line);
-      if (m) {
-        patterns.push(m[1]!);
-      } else if (
-        /^\S/.test(line) &&
-        line.trim() !== "" &&
-        !line.trimStart().startsWith("#")
-      ) {
-        break; // new top-level YAML key — packages section is over
-      }
-    }
-  }
+  const patterns = parseYamlStringSequence(yaml, "packages");
 
   const dirs: string[] = [];
   for (const pattern of patterns) {
