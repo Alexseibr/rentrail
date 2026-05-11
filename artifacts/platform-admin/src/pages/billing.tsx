@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -233,11 +234,10 @@ function PlansTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("billing.priceUnits")}</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  required
+                  onChange={(raw) => setForm({ ...form, price: raw })}
+                  currency="₽"
                 />
               </div>
               <div className="space-y-2">
@@ -315,11 +315,10 @@ function PlansTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("billing.priceUnits")}</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  required
+                  onChange={(raw) => setForm({ ...form, price: raw })}
+                  currency="₽"
                 />
               </div>
               <div className="space-y-2">

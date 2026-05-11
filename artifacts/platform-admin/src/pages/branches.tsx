@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { CityAutocomplete } from "@/components/ui/city-autocomplete";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -375,9 +378,9 @@ export default function BranchesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("branches.city", "Город")}</Label>
-                <Input
+                <CityAutocomplete
                   value={form.city}
-                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  onChange={(city) => setForm({ ...form, city })}
                 />
               </div>
               <div className="space-y-2">
@@ -392,17 +395,18 @@ export default function BranchesPage() {
             </div>
             <div className="space-y-2">
               <Label>{t("branches.address", "Адрес")}</Label>
-              <Input
+              <AddressAutocomplete
                 value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                onChange={(address) => setForm({ ...form, address })}
+                city={form.city}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("common.phone")}</Label>
-                <Input
+                <PhoneInput
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(phone) => setForm({ ...form, phone })}
                 />
               </div>
               <div className="space-y-2">
