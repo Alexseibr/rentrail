@@ -116,3 +116,68 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @workspace/api-server run build
+      - run: PORT=18150 BASE_PATH=/ pnpm --filter @workspace/landing run build
+      - run: PORT=18151 BASE_PATH=/platform-admin/ pnpm --filter @workspace/platform-admin run build
+      - name: Upload landing build
+        uses: actions/upload-artifact@v4
+        with:
+          name: landing-dist
+          path: artifacts/landing/dist/public/
+      - name: Upload admin build
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-dist
+          path: artifacts/platform-admin/dist/public/
+      - name: Upload api build
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: artifacts/api-server/dist/
+
+  deploy:
+    name: Deploy to rentrail.ru
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Download landing build
+        uses: actions/download-artifact@v4
+        with:
+          name: landing-dist
+          path: dist/landing/
+      - name: Download admin build
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-dist
+          path: dist/admin/
+      - name: Download api build
+        uses: actions/download-artifact@v4
+        with:
+          name: api-dist
+          path: dist/api/
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+      - name: Pack and upload artifacts
+        run: |
+          tar czf /tmp/landing.tar.gz -C dist/landing .
+          tar czf /tmp/admin.tar.gz -C dist/admin .
+          tar czf /tmp/api.tar.gz -C dist/api .
+          scp -i ~/.ssh/deploy_key /tmp/landing.tar.gz /tmp/admin.tar.gz /tmp/api.tar.gz \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/
+      - name: Deploy on server
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+          set -e
+          rm -rf /opt/rideflow/landing/*
+          tar xzf /tmp/landing.tar.gz -C /opt/rideflow/landing/
+          rm -rf /opt/rideflow/admin/*
+          tar xzf /tmp/admin.tar.gz -C /opt/rideflow/admin/
+          tar xzf /tmp/api.tar.gz -C /opt/rideflow/api/dist/
+          pm2 restart rideflow-api
+          rm /tmp/landing.tar.gz /tmp/admin.tar.gz /tmp/api.tar.gz
+          echo "Deploy complete"
+          ENDSSH
