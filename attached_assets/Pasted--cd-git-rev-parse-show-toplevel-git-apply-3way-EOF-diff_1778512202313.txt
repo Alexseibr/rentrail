@@ -1,0 +1,345 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000000000000000000000000000000000000..985070c30a22315a3c455dfbed304dbf5ae40324
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,6 @@
++# Database (required for api/integration tests and seeding)
++DATABASE_URL=postgres://postgres:postgres@localhost:5432/rentrail
++
++# Optional runtime envs (examples)
++NODE_ENV=development
++PORT=3000
+diff --git a/docker-compose.dev.yml b/docker-compose.dev.yml
+new file mode 100644
+index 0000000000000000000000000000000000000000..367afe96307331e94e994fc3362ec7941cc1643d
+--- /dev/null
++++ b/docker-compose.dev.yml
+@@ -0,0 +1,20 @@
++version: "3.9"
++services:
++  postgres:
++    image: postgres:16-alpine
++    container_name: rentrail-postgres
++    environment:
++      POSTGRES_DB: rentrail
++      POSTGRES_USER: postgres
++      POSTGRES_PASSWORD: postgres
++    ports:
++      - "5432:5432"
++    volumes:
++      - pgdata_rentrail:/var/lib/postgresql/data
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U postgres -d rentrail"]
++      interval: 5s
++      timeout: 5s
++      retries: 20
++volumes:
++  pgdata_rentrail:
+diff --git a/docs/code-review-ru.md b/docs/code-review-ru.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..e2ffa5205704429f9998fc2d4bd181cf65f8fb05
+--- /dev/null
++++ b/docs/code-review-ru.md
+@@ -0,0 +1,165 @@
++# Code Review (русский)
++
++Дата ревью: 11 мая 2026.
++
++## 1) Что уже есть в проекте
++
++Проект выглядит как зрелый TypeScript monorepo на `pnpm` с хорошей инженерной базой:
++
++- Единый набор quality-gates на уровне root (`typecheck`, `lint`, `test`, `ci`).
++- Явная архитектурная декомпозиция на `artifacts/*` (приложения) и `lib/*` (переиспользуемые библиотеки).
++- Богатая доменная модель в БД (много таблиц, enum-ы, индексы, связи), реализованная через Drizzle.
++- Четко описанные практики эксплуатации в документации (`docs/rollout`, `docs/playbooks`, `docs/release-readiness`).
++
++## 2) Оценка качества кода
++
++### Сильные стороны
++
++1. **Инженерная дисциплина.**
++   В `package.json` есть отдельные скрипты для проверки типов, тестов, линтинга и CI.
++
++2. **Хорошая типизация в data layer.**
++   В `lib/db/src/schema/*` таблицы описаны явно, плюс есть Zod-схемы для insert-моделей (`createInsertSchema`).
++
++3. **Зрелая доменная модель.**
++   По структуре видно, что это полноценная SaaS-платформа (RBAC, billing, moderation, telemetry), а не простой CRUD.
++
++4. **Сильная эксплуатационная документация.**
++   Есть rollout/playbook документы, что важно для поддержки и релизов.
++
++### Текущие риски/проблемы
++
++1. **Сломан базовый typecheck для библиотек без codegen-артефактов.**
++   `pnpm run typecheck:libs` падает на `lib/api-client-react` и `lib/api-zod` (нет `./generated/*`).
++
++2. **Неявный контракт bootstrap/codegen.**
++   Для нового разработчика отсутствует “безошибочный путь” от clone до green-check.
++
++3. **Риск регрессий на стыке API-контрактов и генерации клиентов.**
++   При изменении OpenAPI возможна поломка потребителей, если codegen не встроен в обязательные шаги.
++
++## 3) Проверка дизайна (UI/UX)
++
++Проверил дизайн-структуру на уровне компонентов и навигации (без ручного визуального QA в браузере/эмуляторе):
++
++### Что хорошо
++
++1. **Структурированная навигация и role-based фильтрация.**
++   В `AppLayout` есть группировка меню (main/tools, main/management) и фильтрация доступных пунктов по ролям.
++
++2. **Переиспользуемый компонентный слой.**
++   Есть унифицированные UI-компоненты (например, `Empty`, `PageBreadcrumb`), что обычно уменьшает визуальный дрейф.
++
++3. **Поддержка локализации из коробки.**
++   В layout есть переключение языка `ru/en`.
++
++### Что улучшить по дизайну
++
++1. **Фиксировать дизайн-стандарты как enforceable checks.**
++   Рекомендую добавить visual regression (Playwright snapshots / Chromatic / Loki), иначе дизайн-регрессии ловятся только руками.
++
++2. **Единый UX checklist для ключевых экранов.**
++   Для страниц Fleet/Rentals/Service/Branches: пустые состояния, ошибки загрузки, длинные таблицы, mobile breakpoints.
++
++3. **Accessibility budget.**
++   Ввести обязательный проход `axe` для основных экранов и минимум WCAG AA для контрастов/фокуса/клавиатурной навигации.
++
++## 4) Проверка E2E/интеграционных тестов
++
++### Что фактически проверено
++
++Запущен `pnpm run test:api` (API/E2E набор на базе Vitest). В текущем окружении тесты не смогли стартовать полноценно из-за отсутствия `DATABASE_URL`.
++
++### Текущее состояние
++
++- Упало **18 test suites**.
++- Основная причина: `DATABASE_URL must be set`.
++- Это ограничение окружения, а не обязательно дефект бизнес-логики тестов.
++
++### Можно ли “проверить E2E всех функций”
++
++Коротко: **да, но не в этом окружении без поднятой БД и bootstrap данных**.
++
++Что нужно для полноценного прогона:
++
++1. Поднять PostgreSQL и выставить `DATABASE_URL`.
++2. Прогнать миграции/инициализацию данных (если требуется тестовым setup).
++3. Выполнить:
++   - `pnpm run test:api`
++   - `pnpm run test:integration`
++   - (опционально) web/mobile UI E2E через Playwright/Detox, если добавите такие сценарии.
++
++## 5) Приоритетный план улучшений
++
++### P0 (сразу)
++
++1. Автоматизировать codegen перед `typecheck`/`build` (например, через `pretypecheck`).
++2. Сделать обязательный bootstrap-сценарий в README/CONTRIBUTING.
++3. Добавить reproducible local test stack (docker-compose для Postgres + seed).
++
++### P1 (ближайший спринт)
++
++4. Включить `codegen:check` в обязательный CI-путь до тестов.
++5. Добавить visual regression для platform-admin.
++6. Добавить smoke E2E user journeys (login → rental flow → payment flow).
++
++### P2 (поддерживаемость)
++
++7. Зафиксировать ADR по tenant isolation boundary.
++8. Расширить quality-metrics: mutation testing на критичных доменных сценариях.
++
++## 6) Итог
++
++**Общее качество: выше среднего / ближе к высокому.**
++Архитектура и инженерная культура уже хорошие. Главные точки роста — воспроизводимый bootstrap (codegen+db) и автоматизированная проверка UI/E2E, чтобы “проверка всех функций” была действительно стабильной и повторяемой.
++
++## 7) Конкретные рекомендации (что делать прямо сейчас)
++
++Ниже — практичный, короткий план без «воды».
++
++### На этой неделе
++
++1. **Починить воспроизводимость окружения:**
++   - добавить `docker-compose` для Postgres,
++   - добавить `pnpm run dev:bootstrap` (codegen + migrate + seed),
++   - добавить `.env.example` с обязательными переменными.
++
++2. **Зашить codegen в pipeline:**
++   - `pretypecheck`/`prebuild` для генерации клиентов,
++   - оставить `codegen:check` как блокер в CI.
++
++3. **Сделать smoke-проход критичного флоу:**
++   - auth → создание аренды → завершение аренды → платеж.
++
++### В течение 2–3 недель
++
++4. **Добавить визуальные регрессии для platform-admin:**
++   - snapshot-тесты для ключевых страниц (Dashboard/Fleet/Rentals/Service).
++
++5. **Собрать test-matrix по ролям и tenant isolation:**
++   - owner/admin/mechanic/platform\* роли,
++   - позитивные и негативные кейсы доступа.
++
++6. **Усилить observability для тестов:**
++   - структурированные логи падений,
++   - сохранение SQL/HTTP trace в CI-артефакты.
++
++### В течение 1–2 месяцев
++
++7. **Формализовать архитектурные решения (ADR):**
++   - tenant boundaries,
++   - стратегия денежных расчетов (`numeric`, округления, валюты),
++   - политика обновления `updatedAt` и аудита изменений.
++
++8. **Повысить устойчивость релизов:**
++   - mandatory release checklist,
++   - canary rollout для рискованных изменений,
++   - post-release health gates.
++
++### Если выбрать только 3 приоритета
++
++1. **Bootstrap + DB reproducibility.**
++2. **Codegen как обязательный шаг перед typecheck/build.**
++3. **Smoke E2E для денежного и rental флоу.**
++
++Это даст максимальный эффект по качеству за минимальное время.
+diff --git a/package.json b/package.json
+index 1d2e56bd263bfec35cdc951fa133599c50e6de9c..50281b8ce26d57709bf026b91a7296ee3d64ec18 100644
+--- a/package.json
++++ b/package.json
+@@ -1,57 +1,62 @@
+ {
+   "name": "workspace",
+   "version": "0.0.0",
+   "license": "MIT",
+   "scripts": {
+     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+     "prepare": "husky",
+     "build": "pnpm run typecheck && pnpm -r --if-present run build",
+     "typecheck:libs": "tsc --build",
+     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+     "test": "vitest run --reporter=verbose",
+     "test:watch": "vitest",
+     "test:unit": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/unit.xml unit.test",
+     "test:unit:report": "bash -c 'mkdir -p test-results; pnpm run test:unit; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- unit.xml; exit $rc'",
+-    "test:integration": "vitest run --config vitest.integration.ts --bail",
+-    "test:db-helpers": "vitest run --project api-db-helpers",
+-    "test:api": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
++    "test:integration": "bash scripts/run-with-db.sh vitest run --config vitest.integration.ts --bail",
++    "test:db-helpers": "bash scripts/run-with-db.sh vitest run --project api-db-helpers",
++    "test:api": "bash scripts/run-with-db.sh vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
+     "test:api:report": "bash -c 'mkdir -p test-results; pnpm run test:api; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- api.xml; exit $rc'",
+     "test:coverage": "vitest run --coverage",
+     "lint": "prettier --check .",
+     "lint:eslint": "eslint .",
+     "lint:eslint:strict": "eslint . --max-warnings 0",
+     "lint:eslint:fix": "eslint . --fix",
+     "lint:fix": "prettier --write .",
+     "format:check": "prettier --check . || (printf '\\n[Format check failed] One or more files are not formatted correctly.\\nRun: pnpm run lint:fix\\n\\n' >&2 && exit 1)",
+     "seed": "pnpm --filter @workspace/scripts run seed-rbac",
+     "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
+     "seed:demo:reset": "pnpm --filter @workspace/scripts run seed-demo:reset",
+     "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
+     "codegen:check": "pnpm --filter @workspace/api-spec run codegen && git --no-optional-locks diff --exit-code -- lib/api-client-react/src/generated/ lib/api-zod/src/generated/ artifacts/mockup-sandbox/src/.generated/ || (printf '\\n[codegen:check failed] Generated files differ from Orval output. Run: pnpm --filter @workspace/api-spec run codegen\\n\\n' >&2 && exit 1)",
+     "type-coverage": "pnpm -r --filter \"./artifacts/**\" --if-present run type-coverage",
+-    "ci": "bash ci.sh"
++    "ci": "bash ci.sh",
++    "dev:bootstrap": "bash scripts/dev-bootstrap.sh",
++    "codegen": "pnpm --filter @workspace/api-spec run codegen",
++    "pretypecheck": "pnpm run codegen",
++    "prebuild": "pnpm run codegen",
++    "dev:verify": "bash scripts/dev-verify.sh"
+   },
+   "lint-staged": {
+     "*.{ts,tsx}": [
+       "eslint --fix",
+       "prettier --write"
+     ],
+     "*.{js,mjs,cjs,jsx,json,css,md,yaml,yml}": [
+       "prettier --write"
+     ]
+   },
+   "private": true,
+   "devDependencies": {
+     "@types/supertest": "^7.2.0",
+     "@typescript-eslint/eslint-plugin": "^8.59.2",
+     "@typescript-eslint/parser": "^8.59.2",
+     "@vitest/coverage-v8": "^4.1.2",
+     "eslint": "^10.3.0",
+     "eslint-plugin-jsx-a11y": "^6.10.2",
+     "eslint-plugin-react": "^7.37.5",
+     "eslint-plugin-react-hooks": "^5.2.0",
+     "husky": "^9.1.7",
+     "lint-staged": "^17.0.2",
+     "prettier": "^3.8.1",
+     "supertest": "^7.2.2",
+     "type-coverage": "^2.29.7",
+diff --git a/scripts/dev-bootstrap.sh b/scripts/dev-bootstrap.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..e1e6a9bf470bbeb3aae848b2f50a359c0e380bb2
+--- /dev/null
++++ b/scripts/dev-bootstrap.sh
+@@ -0,0 +1,19 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++echo "[1/3] Generating API clients from OpenAPI..."
++pnpm --filter @workspace/api-spec run codegen
++
++echo "[2/3] Checking library types..."
++pnpm run typecheck:libs
++
++if [[ -z "${DATABASE_URL:-}" ]]; then
++  echo "[3/3] Skipping DB seeds (DATABASE_URL is not set)."
++  echo "Done. To seed RBAC, set DATABASE_URL and run: pnpm run seed"
++  exit 0
++fi
++
++echo "[3/3] Seeding RBAC..."
++pnpm run seed
++
++echo "Bootstrap complete."
+diff --git a/scripts/dev-verify.sh b/scripts/dev-verify.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..ac955c2f85dfa603fa96b1133e7cb2dc6a0d2bfe
+--- /dev/null
++++ b/scripts/dev-verify.sh
+@@ -0,0 +1,13 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++echo "[verify 1/3] Bootstrap (codegen + typecheck + optional seed)"
++pnpm run dev:bootstrap
++
++echo "[verify 2/3] API DB-backed tests"
++pnpm run test:api
++
++echo "[verify 3/3] Integration tests"
++pnpm run test:integration
++
++echo "Verification complete."
+diff --git a/scripts/run-with-db.sh b/scripts/run-with-db.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..f9330e5eb2845faf0dbe9d33a4b755460ed6d681
+--- /dev/null
++++ b/scripts/run-with-db.sh
+@@ -0,0 +1,11 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++if [[ -z "${DATABASE_URL:-}" ]]; then
++  echo "[db-check] DATABASE_URL is not set."
++  echo "[db-check] Start local DB: docker compose -f docker-compose.dev.yml up -d"
++  echo "[db-check] Then export env: export DATABASE_URL=postgres://postgres:postgres@localhost:5432/rentrail"
++  exit 1
++fi
++
++"$@"
+ 
+EOF
+)

@@ -33,7 +33,8 @@
     "dev:bootstrap": "bash scripts/dev-bootstrap.sh",
     "codegen": "pnpm --filter @workspace/api-spec run codegen",
     "pretypecheck": "pnpm run codegen",
-    "prebuild": "pnpm run codegen"
+    "prebuild": "pnpm run codegen",
+    "dev:verify": "bash scripts/dev-verify.sh"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
