@@ -310,8 +310,8 @@ describe("ci-guard (ci.sh source audit): trap uses derived XML file list", () =>
 //
 // Creates a minimal fake workspace in a temp directory and calls
 // collectCiXmlFiles() directly against it to verify every supported
-// declaration pattern is recognised.  Also documents the subdirectory
-// limitation so future work to lift it causes a deliberate test failure.
+// declaration pattern is recognised, including vitest configs placed inside
+// package subdirectories listed in pnpm-workspace.yaml.
 // ---------------------------------------------------------------------------
 
 describe("ci-guard (scanner patterns): collectCiXmlFiles detects all supported declaration styles", () => {
@@ -323,6 +323,13 @@ describe("ci-guard (scanner patterns): collectCiXmlFiles detects all supported d
     writeFileSync(
       join(tmpRoot, "package.json"),
       JSON.stringify({ scripts: {} }),
+      "utf8",
+    );
+    // Seed a pnpm-workspace.yaml that declares a `packages/*` glob so the
+    // subdirectory-scan tests can place configs under `packages/sub/`.
+    writeFileSync(
+      join(tmpRoot, "pnpm-workspace.yaml"),
+      "packages:\n  - packages/*\n",
       "utf8",
     );
   });
@@ -451,12 +458,11 @@ describe("ci-guard (scanner patterns): collectCiXmlFiles detects all supported d
     );
   });
 
-  it("does NOT detect a vitest config placed in a subdirectory (known scanner limitation)", () => {
-    // The scanner calls readdirSync(workspaceRoot) without recursion, so a
-    // config nested under a package dir (e.g. artifacts/api-server/vitest.e2e.ts)
-    // is invisible.  If this assertion starts failing, the scanner has been
-    // extended to recurse — remove or update this test accordingly.
-    const subDir = join(tmpRoot, "sub");
+  it("detects a vitest config placed in a package subdirectory listed in pnpm-workspace.yaml", () => {
+    // The scanner resolves package dirs from pnpm-workspace.yaml and scans
+    // each package root, so a config at packages/sub/vitest.e2e.ts is found
+    // even though it is not at the workspace root.
+    const subDir = join(tmpRoot, "packages", "sub");
     mkdirSync(subDir, { recursive: true });
     writePkg({});
     writeFileSync(
@@ -475,9 +481,8 @@ describe("ci-guard (scanner patterns): collectCiXmlFiles detects all supported d
 
     const found = collectCiXmlFiles(tmpRoot);
     assert.ok(
-      !found.includes("sub-e2e.xml"),
-      `Scanner unexpectedly found sub-e2e.xml from a subdirectory config — the ` +
-        `subdirectory limitation no longer exists. Update this test accordingly.`,
+      found.includes("sub-e2e.xml"),
+      `Expected scanner to detect sub-e2e.xml from a package subdirectory config, got: [${found.join(", ")}]`,
     );
   });
 });
