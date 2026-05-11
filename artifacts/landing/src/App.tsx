@@ -209,7 +209,10 @@ export default function App() {
                       rentrail.ru/platform-admin/
                     </div>
                   </div>
-                  <div className="bg-white overflow-hidden" style={{ height: 280 }}>
+                  <div
+                    className="bg-white overflow-hidden"
+                    style={{ height: 280 }}
+                  >
                     <img
                       key={active.img}
                       src={active.img}

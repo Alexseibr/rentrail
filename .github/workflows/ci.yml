@@ -43,7 +43,7 @@ jobs:
       - run: pnpm test:unit
       - name: Print test report
         if: always()
-        run: pnpm --filter @workspace/scripts run print-test-report
+        run: pnpm --filter @workspace/scripts run print-test-report -- unit.xml
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,7 +90,7 @@ jobs:
       - run: pnpm test:integration
       - name: Print test report
         if: always()
-        run: pnpm --filter @workspace/scripts run print-test-report
+        run: pnpm --filter @workspace/scripts run print-test-report -- api.xml integration.xml
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

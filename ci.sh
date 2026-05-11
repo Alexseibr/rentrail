@@ -13,7 +13,10 @@ set -euo pipefail
 mkdir -p test-results
 
 # Always print the structured XML test report on exit, pass or fail.
-trap 'pnpm --filter @workspace/scripts run print-test-report' EXIT
+# Declare the XML basenames that test:unit and test:api are expected to write.
+# print-test-report exits non-zero if any of these files is absent, catching a
+# silently-crashed test runner before it would otherwise go undetected.
+trap 'pnpm --filter @workspace/scripts run print-test-report -- api.xml integration.xml unit.xml' EXIT
 
 echo ""
 echo "▶ [1/11] typecheck"
