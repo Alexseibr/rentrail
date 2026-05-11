@@ -431,6 +431,27 @@ describe("ci-guard (scanner patterns): collectCiXmlFiles detects all supported d
     );
   });
 
+  it("detects the reporter-tuple outputFile form (['junit', { outputFile: '...' }]) inside a vitest.*.ts config", () => {
+    writePkg({});
+    writeConfig(
+      "vitest.cfg-tuple.ts",
+      [
+        'import { defineConfig } from "vitest/config";',
+        "export default defineConfig({",
+        "  test: {",
+        "    reporters: [['junit', { outputFile: 'test-results/cfg-tuple.xml' }]],",
+        "  },",
+        "});",
+      ].join("\n"),
+    );
+
+    const found = collectCiXmlFiles(tmpRoot);
+    assert.ok(
+      found.includes("cfg-tuple.xml"),
+      `Expected scanner to detect cfg-tuple.xml via reporter-tuple outputFile, got: [${found.join(", ")}]`,
+    );
+  });
+
   it("does NOT detect a vitest config placed in a subdirectory (known scanner limitation)", () => {
     // The scanner calls readdirSync(workspaceRoot) without recursion, so a
     // config nested under a package dir (e.g. artifacts/api-server/vitest.e2e.ts)
@@ -574,7 +595,8 @@ describe("ci-guard (on-disk cross-check): real test-results/ matches scanner whe
       `recognised declaration pattern:\n` +
       `  • --outputFile.junit=test-results/<name>.xml  (in a package.json script)\n` +
       `  • outputFile: { junit: "test-results/<name>.xml" }  (in a vitest.*.ts config)\n` +
-      `  • outputFile: "test-results/<name>.xml"            (in a vitest.*.ts config)\n`;
+      `  • outputFile: "test-results/<name>.xml"            (in a vitest.*.ts config)\n` +
+      `  • ['junit', { outputFile: 'test-results/<name>.xml' }]  (reporter-tuple in a vitest.*.ts config)\n`;
 
     assert.deepEqual(
       undeclared,

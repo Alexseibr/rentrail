@@ -9,6 +9,7 @@
  *   • CLI flag        --outputFile.junit=test-results/<name>.xml  (package.json scripts)
  *   • Vitest cfg (a)  junit: "test-results/<name>.xml"            (per-reporter object key in vitest.*.ts)
  *   • Vitest cfg (b)  outputFile: "test-results/<name>.xml"       (plain string form in vitest.*.ts)
+ *   • Vitest cfg (c)  ['junit', { outputFile: 'test-results/<name>.xml' }]  (reporter-tuple syntax in vitest.*.ts)
  *
  * Adding a new `pnpm test:xxx` step that declares one of these patterns
  * automatically extends the list — no separate manual edit required.
@@ -59,6 +60,17 @@ export function collectCiXmlFiles(
   const OUTPUT_FILE_RE =
     /\boutputFile\s*:\s*["']test-results\/([^"']+?\.xml)["']/g;
 
+  // 2c. Reporter-tuple form:  ['junit', { outputFile: 'test-results/<name>.xml' }]
+  //     Note: OUTPUT_FILE_RE (2b) already matches `outputFile: '...'` appearing
+  //     anywhere — including inside a tuple options object — so in practice these
+  //     two regexes overlap for the tuple case.  TUPLE_RE is kept as a distinct
+  //     pass to (a) document the pattern explicitly in both code and tests, and
+  //     (b) guard against a future tightening of OUTPUT_FILE_RE that might require
+  //     surrounding context.  The Set-based deduplication in collectCiXmlFiles()
+  //     means double-matching the same basename has no behavioral effect.
+  const TUPLE_RE =
+    /\[\s*["']junit["']\s*,\s*\{[^}]*\boutputFile\s*:\s*["']test-results\/([^"']+?\.xml)["']/g;
+
   for (const configFile of vitestConfigs) {
     const content = readFileSync(join(workspaceRoot, configFile), "utf8");
     for (const m of content.matchAll(JUNIT_KEY_RE)) {
@@ -66,6 +78,10 @@ export function collectCiXmlFiles(
       if (name !== undefined) files.add(name);
     }
     for (const m of content.matchAll(OUTPUT_FILE_RE)) {
+      const name = m[1];
+      if (name !== undefined) files.add(name);
+    }
+    for (const m of content.matchAll(TUPLE_RE)) {
       const name = m[1];
       if (name !== undefined) files.add(name);
     }
