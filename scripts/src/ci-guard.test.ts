@@ -110,6 +110,22 @@ function writeXml(dir: string, name: string): void {
   writeFileSync(join(dir, name), "<testsuites/>");
 }
 
+/**
+ * Extract every XML basename that appears literally in a trap body string.
+ *
+ * Uses /[a-z][a-z0-9-]*\.xml/g so that hyphenated stems like "api-server.xml"
+ * are matched in full.  The previous \b\w+\.xml\b pattern relied on word
+ * boundaries and could only match the suffix after the last hyphen (e.g.
+ * "server.xml" from "api-server.xml"), silently missing the full filename.
+ *
+ * Returns an empty array when the trap body contains only shell variable
+ * references (the expected case in ci.sh).
+ */
+function parseTrapXmlFiles(trapBody: string): string[] {
+  const FILENAME_RE = /[a-z][a-z0-9-]*\.xml/g;
+  return [...trapBody.matchAll(FILENAME_RE)].map((m) => m[0]);
+}
+
 function removeXml(dir: string, name: string): void {
   const p = join(dir, name);
   if (existsSync(p)) unlinkSync(p);
@@ -256,10 +272,87 @@ describe("ci-guard (ci.sh source audit): trap uses derived XML file list", () =>
       'Expected ci.sh to declare a double-quoted trap "..." EXIT command',
     );
     const trapBody = trapMatch[1] ?? "";
-    assert.ok(
-      !/\b\w+\.xml\b/.test(trapBody),
-      `Expected trap body to use a shell variable, not hardcoded XML names. Found: ${trapBody}`,
+    const hardcoded = parseTrapXmlFiles(trapBody);
+    assert.deepEqual(
+      hardcoded,
+      [],
+      `Expected trap body to reference a shell variable, not hardcoded XML names. ` +
+        `Found: [${hardcoded.join(", ")}] in: ${trapBody}`,
     );
+  });
+
+  it("parseTrapXmlFiles extracts hyphenated and plain XML filenames from a trap body", () => {
+    // Regression guard: the previous \b\w+\.xml\b pattern only matched the
+    // portion after the last hyphen (e.g. "server.xml" from "api-server.xml").
+    // parseTrapXmlFiles must return the full filename in every case.
+
+    // Plain (no hyphens) — baseline.
+    assert.deepEqual(
+      parseTrapXmlFiles("tsx print-test-report.ts -- unit.xml"),
+      ["unit.xml"],
+    );
+
+    // Hyphenated stem — the key regression case.
+    assert.deepEqual(
+      parseTrapXmlFiles("tsx print-test-report.ts -- api-server.xml"),
+      ["api-server.xml"],
+    );
+
+    // Multiple filenames, including a hyphenated one, as if someone hardcoded
+    // the canonical list directly in the trap body.
+    assert.deepEqual(
+      parseTrapXmlFiles(
+        `tsx print-test-report.ts -- unit.xml api-server.xml e2e.xml`,
+      ),
+      ["unit.xml", "api-server.xml", "e2e.xml"],
+    );
+
+    // Quoted args (e.g. 'tsx ... -- "api-server.xml"') — quotes are transparent
+    // to the regex since it matches on the bare name characters.
+    assert.deepEqual(
+      parseTrapXmlFiles(`tsx print-test-report.ts -- "api-server.xml"`),
+      ["api-server.xml"],
+    );
+
+    // A body using only a shell variable must return an empty array — this is
+    // the correct state of ci.sh and must not be flagged as hardcoded.
+    assert.deepEqual(
+      parseTrapXmlFiles("tsx print-test-report.ts -- $EXPECTED_XMLS"),
+      [],
+    );
+  });
+
+  it("parseTrapXmlFiles output is consistent with the canonical CI_XML_FILES list (hyphenated-name coverage)", () => {
+    // Build a synthetic trap body that hardcodes the exact same names as
+    // CI_XML_FILES, including any hyphenated entries, and verify that
+    // parseTrapXmlFiles recovers every entry intact.
+    //
+    // This test locks in that the canonical list and the parser agree for all
+    // current declared XML files — if a hyphenated filename is ever added to
+    // CI_XML_FILES, parseTrapXmlFiles must still round-trip it correctly.
+    const syntheticBody = `tsx print-test-report.ts -- ${CI_XML_FILES.join(" ")}`;
+    const extracted = parseTrapXmlFiles(syntheticBody);
+    assert.deepEqual(
+      extracted,
+      CI_XML_FILES,
+      `parseTrapXmlFiles must recover every entry from CI_XML_FILES unchanged. ` +
+        `Expected: [${CI_XML_FILES.join(", ")}], got: [${extracted.join(", ")}]`,
+    );
+
+    // When at least one canonical filename contains a hyphen, assert that the
+    // parser round-trips that specific entry exactly — keeping the hyphen-aware
+    // intent explicit and not just an implicit side-effect of the loop above.
+    const hyphenated = CI_XML_FILES.filter((n) => n.includes("-"));
+    if (hyphenated.length > 0) {
+      for (const name of hyphenated) {
+        const body = `tsx print-test-report.ts -- ${name}`;
+        assert.deepEqual(
+          parseTrapXmlFiles(body),
+          [name],
+          `parseTrapXmlFiles must preserve hyphenated canonical entry '${name}' intact`,
+        );
+      }
+    }
   });
 
   it("CI_XML_FILES module yields well-formed basenames consistent with a fresh scan", () => {
