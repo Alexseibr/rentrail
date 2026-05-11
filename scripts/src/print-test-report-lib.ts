@@ -4,8 +4,8 @@
  * Pure XML-parsing logic extracted from print-test-report.ts so it can be
  * unit-tested independently of filesystem I/O and process.exit.
  *
- * Exported: attrValue, parseXml, buildGithubSummaryMarkdown, and the shared
- * result interfaces.
+ * Exported: attrValue, parseXml, buildGithubSummaryMarkdown, checkExpectedFiles,
+ * and the shared result interfaces.
  */
 
 export interface FailedTest {
@@ -184,4 +184,23 @@ export function buildGithubSummaryMarkdown(
 
 function truncate(s: string, max: number): string {
   return s.length > max ? s.slice(0, max - 3) + "..." : s;
+}
+
+/**
+ * Check that every expected XML report file is present in resultsDir.
+ *
+ * Returns an array of filenames (basename only) that are absent. An empty
+ * array means all expected files were found.
+ *
+ * This is a pure function over the provided file-existence predicate so it
+ * can be unit-tested without touching the real filesystem.
+ */
+export function checkExpectedFiles(
+  expectedFileNames: string[],
+  fileExists: (path: string) => boolean,
+  resultsDir: string,
+): string[] {
+  return expectedFileNames.filter(
+    (name) => !fileExists(`${resultsDir}/${name}`),
+  );
 }

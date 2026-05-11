@@ -9,6 +9,7 @@
  *               malformed flag
  *   - buildGithubSummaryMarkdown: summary table, ⚠️ malformed section,
  *               ✅ all-passed, ❌ failed tests table
+ *   - checkExpectedFiles: missing-file detection logic
  *
  * Run: pnpm --filter @workspace/scripts run test
  */
@@ -19,6 +20,7 @@ import {
   attrValue,
   parseXml,
   buildGithubSummaryMarkdown,
+  checkExpectedFiles,
 } from "./print-test-report-lib.js";
 
 // ---------------------------------------------------------------------------
@@ -684,5 +686,67 @@ describe("parseXml — suite attribute defaults", () => {
     const xml = makeSuite({ name: "Skip Suite", tests: 5, skipped: 2 });
     const { suites } = parseXml(xml);
     assert.equal(suites[0]?.skipped, 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// checkExpectedFiles
+// ---------------------------------------------------------------------------
+
+describe("checkExpectedFiles", () => {
+  it("returns an empty array when all expected files are present", () => {
+    const exists = (p: string): boolean =>
+      ["/results/a.xml", "/results/b.xml"].includes(p);
+    const missing = checkExpectedFiles(["a.xml", "b.xml"], exists, "/results");
+    assert.deepEqual(missing, []);
+  });
+
+  it("returns the single missing filename when one file is absent", () => {
+    const exists = (p: string): boolean => p === "/results/a.xml";
+    const missing = checkExpectedFiles(["a.xml", "b.xml"], exists, "/results");
+    assert.deepEqual(missing, ["b.xml"]);
+  });
+
+  it("returns all filenames when none of the expected files exist", () => {
+    const exists = (_p: string): boolean => false;
+    const missing = checkExpectedFiles(
+      ["x.xml", "y.xml", "z.xml"],
+      exists,
+      "/results",
+    );
+    assert.deepEqual(missing, ["x.xml", "y.xml", "z.xml"]);
+  });
+
+  it("returns an empty array when the expected list is empty", () => {
+    const exists = (_p: string): boolean => false;
+    const missing = checkExpectedFiles([], exists, "/results");
+    assert.deepEqual(missing, []);
+  });
+
+  it("builds the full path correctly using the resultsDir argument", () => {
+    const seen: string[] = [];
+    const exists = (p: string): boolean => {
+      seen.push(p);
+      return true;
+    };
+    checkExpectedFiles(["report.xml"], exists, "/custom/dir");
+    assert.deepEqual(seen, ["/custom/dir/report.xml"]);
+  });
+
+  it("handles a trailing slash in resultsDir gracefully", () => {
+    const exists = (p: string): boolean => p === "/results/a.xml";
+    const missing = checkExpectedFiles(["a.xml"], exists, "/results");
+    assert.deepEqual(missing, []);
+  });
+
+  it("returns only the missing files when some are present and some are not", () => {
+    const present = new Set(["/results/present.xml", "/results/also.xml"]);
+    const exists = (p: string): boolean => present.has(p);
+    const missing = checkExpectedFiles(
+      ["present.xml", "missing1.xml", "also.xml", "missing2.xml"],
+      exists,
+      "/results",
+    );
+    assert.deepEqual(missing, ["missing1.xml", "missing2.xml"]);
   });
 });

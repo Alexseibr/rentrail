@@ -9,8 +9,10 @@
  * version of the same summary is appended to the job summary page so failed
  * test names appear in the structured CI UI without having to open raw logs.
  *
- * Always exits 0 — the actual failure exit codes come from the test commands
- * themselves. This script only reports.
+ * When CLI args or EXPECTED_XML_FILES list expected filenames, the script
+ * exits non-zero if any of those files are absent from test-results/.
+ * Otherwise it always exits 0 — the actual failure exit codes come from the
+ * test commands themselves.
  */
 
 import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
@@ -19,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import {
   parseXml,
   buildGithubSummaryMarkdown,
+  checkExpectedFiles,
   type FailedTest,
 } from "./print-test-report-lib.js";
 
@@ -60,12 +63,54 @@ function writeGithubSummary(
   appendFileSync(summaryPath, markdown);
 }
 
+/**
+ * Resolve the list of expected XML basenames from CLI args first, then from
+ * the EXPECTED_XML_FILES environment variable (comma-separated), then empty.
+ */
+function resolveExpectedFileNames(): string[] {
+  const cliArgs = process.argv.slice(2).filter((a) => a.endsWith(".xml"));
+  if (cliArgs.length > 0) return cliArgs;
+  const envVal = process.env["EXPECTED_XML_FILES"] ?? "";
+  if (envVal.trim().length > 0) {
+    return envVal
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.endsWith(".xml"));
+  }
+  return [];
+}
+
 function run(): void {
+  const expectedFileNames = resolveExpectedFileNames();
+
   if (!existsSync(RESULTS_DIR)) {
+    if (expectedFileNames.length > 0) {
+      console.error(
+        `\n✗  test-results/ directory not found but expected XML files were listed: ${expectedFileNames.join(", ")}\n`,
+      );
+      process.exit(1);
+    }
     console.log(
       "\nℹ  No test-results/ directory found — no XML reports to display.\n",
     );
     return;
+  }
+
+  if (expectedFileNames.length > 0) {
+    const missing = checkExpectedFiles(
+      expectedFileNames,
+      existsSync,
+      RESULTS_DIR,
+    );
+    if (missing.length > 0) {
+      for (const name of missing) {
+        console.error(`✗  Expected XML report not found: test-results/${name}`);
+      }
+      console.error(
+        `\n✗  ${missing.length} expected XML report(s) missing — the test runner may have crashed before writing output.\n`,
+      );
+      process.exit(1);
+    }
   }
 
   const fileNames = readdirSync(RESULTS_DIR)
