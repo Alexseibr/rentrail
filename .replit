@@ -32,15 +32,15 @@ args = "typecheck"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "unit-tests"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "format-check"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "lint"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "unit-tests"
 
 [[workflows.workflow]]
 name = "check-map-cleanup"
@@ -65,17 +65,6 @@ task = "shell.exec"
 args = "pnpm run typecheck"
 
 [[workflows.workflow]]
-name = "unit-tests"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pnpm run test:unit"
-
-[workflows.workflow.metadata]
-isValidation = true
-
-[[workflows.workflow]]
 name = "format-check"
 author = "agent"
 
@@ -96,6 +85,17 @@ isValidation = true
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm run lint:eslint"
+
+[[workflows.workflow]]
+name = "unit-tests"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run test:unit:report"
+
+[workflows.workflow.metadata]
+isValidation = true
 
 [agent]
 stack = "PNPM_WORKSPACE"
