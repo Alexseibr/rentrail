@@ -39,7 +39,8 @@
     "dev:db:down": "docker compose -f docker-compose.dev.yml down",
     "dev:db:logs": "docker compose -f docker-compose.dev.yml logs -f postgres",
     "dev:test": "pnpm run dev:doctor && pnpm run dev:db:up && DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/rentrail} pnpm run dev:verify",
-    "dev:doctor": "bash scripts/dev-doctor.sh"
+    "dev:doctor": "bash scripts/dev-doctor.sh",
+    "dev:doctor:json": "bash scripts/dev-doctor.sh --json"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

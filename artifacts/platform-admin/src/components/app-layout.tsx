@@ -245,9 +245,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {mobileOpen && (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}

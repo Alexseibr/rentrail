@@ -9,6 +9,11 @@ pnpm run dev:doctor
 ```
 
 Проверяет: `node`, `pnpm`, `docker` и наличие `DATABASE_URL`.
+Для CI/интеграций можно получить машиночитаемый вывод:
+
+```bash
+pnpm run dev:doctor:json
+```
 
 ## 1) Поднять локальную БД
 
