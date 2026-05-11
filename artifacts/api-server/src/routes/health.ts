@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
 import { sql } from "drizzle-orm";
+import { VERSION, BUILD_DATE } from "../lib/version";
 
 const router: IRouter = Router();
 
@@ -8,6 +9,10 @@ const startedAt = new Date().toISOString();
 
 router.get("/healthz", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+router.get("/version", (_req, res) => {
+  res.json({ version: VERSION, buildDate: BUILD_DATE, startedAt });
 });
 
 router.get("/health", (_req, res) => {
@@ -38,7 +43,8 @@ router.get("/health/full", async (_req, res) => {
     uptime: process.uptime(),
     startedAt,
     env: process.env.NODE_ENV ?? "development",
-    version: process.env.APP_VERSION ?? "dev",
+    version: VERSION,
+    buildDate: BUILD_DATE,
     checks,
   });
 });

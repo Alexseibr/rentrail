@@ -28,10 +28,18 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState, useMemo, useEffect, useRef, type ReactNode } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { canAccessRoute } from "@/lib/permissions";
+import { api } from "@/lib/api";
 
 interface NavItem {
   path: string;
@@ -138,6 +146,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [serverVersion, setServerVersion] = useState<string | null>(null);
+
+  const fetchVersion = useCallback(() => {
+    api<{ version: string; buildDate: string }>("/version")
+      .then((d) => setServerVersion(`v${d.version}`))
+      .catch(() => setServerVersion(null));
+  }, []);
+
+  useEffect(() => {
+    fetchVersion();
+  }, [fetchVersion]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -368,7 +387,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   {user?.firstName} {user?.lastName}
                 </p>
                 <p className="text-xs text-sidebar-foreground/50 truncate">
-                  {user?.phone}
+                  {user?.email ?? user?.phone}
                 </p>
               </div>
             )}
@@ -382,6 +401,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
+          {!collapsed && serverVersion && (
+            <p className="px-3 pb-1 text-[10px] text-sidebar-foreground/25 text-right font-mono select-none">
+              {serverVersion}
+            </p>
+          )}
         </div>
       </aside>
 
@@ -461,6 +485,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <LogOut className="h-[18px] w-[18px] shrink-0" />
             <span>{t("nav.logout", "Выйти")}</span>
           </button>
+          {serverVersion && (
+            <p className="px-3 pt-1 text-[10px] text-sidebar-foreground/25 text-right font-mono select-none">
+              {serverVersion}
+            </p>
+          )}
         </div>
       </aside>
 
