@@ -106,5 +106,13 @@ export function parseXml(xml: string): ParseResult {
     }
   }
 
+  if (suites.length === 0 && xml.trim().length > 0) {
+    console.warn(
+      "[print-test-report] WARNING: XML input was non-empty but contained no" +
+        " <testsuite> elements. The file may be malformed, truncated, or use an" +
+        " unexpected root element. Summary will be empty.",
+    );
+  }
+
   return { suites, failed };
 }

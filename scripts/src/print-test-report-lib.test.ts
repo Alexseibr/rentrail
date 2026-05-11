@@ -10,7 +10,7 @@
  * Run: pnpm --filter @workspace/scripts run test
  */
 
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import { attrValue, parseXml } from "./print-test-report-lib.js";
 
@@ -431,6 +431,95 @@ describe("parseXml — <error> element", () => {
     });
     const { failed } = parseXml(xml);
     assert.equal(failed[0]?.message, "failure wins");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseXml — malformed / unexpected-root-element (warning detection)
+// ---------------------------------------------------------------------------
+
+describe("parseXml — malformed or unexpected XML warns and returns empty", () => {
+  it("emits a console.warn when a non-empty XML string yields no suites", () => {
+    const warnSpy = mock.method(console, "warn", () => undefined);
+    try {
+      const { suites, failed } = parseXml(
+        `<?xml version="1.0"?><report><summary/></report>`,
+      );
+      assert.equal(warnSpy.mock.calls.length, 1);
+      const msg: unknown = warnSpy.mock.calls[0]?.arguments[0];
+      assert.ok(
+        typeof msg === "string" && msg.includes("[print-test-report]"),
+        `Expected warning to mention [print-test-report], got: ${String(msg)}`,
+      );
+      assert.deepEqual(suites, []);
+      assert.deepEqual(failed, []);
+    } finally {
+      warnSpy.mock.restore();
+    }
+  });
+
+  it("emits a console.warn for truncated XML that cuts off mid-element", () => {
+    const warnSpy = mock.method(console, "warn", () => undefined);
+    try {
+      const { suites, failed } = parseXml(
+        `<?xml version="1.0"?><testsuites><testsuite name="S"`,
+      );
+      assert.equal(warnSpy.mock.calls.length, 1);
+      assert.deepEqual(suites, []);
+      assert.deepEqual(failed, []);
+    } finally {
+      warnSpy.mock.restore();
+    }
+  });
+
+  it("emits a console.warn for XML with only a processing instruction and no suites", () => {
+    const warnSpy = mock.method(console, "warn", () => undefined);
+    try {
+      const { suites } = parseXml(`<?xml version="1.0" encoding="UTF-8"?>`);
+      assert.equal(warnSpy.mock.calls.length, 1);
+      assert.deepEqual(suites, []);
+    } finally {
+      warnSpy.mock.restore();
+    }
+  });
+
+  it("does NOT emit a console.warn for a completely empty string", () => {
+    const warnSpy = mock.method(console, "warn", () => undefined);
+    try {
+      const { suites, failed } = parseXml("");
+      assert.equal(warnSpy.mock.calls.length, 0);
+      assert.deepEqual(suites, []);
+      assert.deepEqual(failed, []);
+    } finally {
+      warnSpy.mock.restore();
+    }
+  });
+
+  it("does NOT emit a console.warn for a whitespace-only string", () => {
+    const warnSpy = mock.method(console, "warn", () => undefined);
+    try {
+      const { suites } = parseXml("   \n\t  ");
+      assert.equal(warnSpy.mock.calls.length, 0);
+      assert.deepEqual(suites, []);
+    } finally {
+      warnSpy.mock.restore();
+    }
+  });
+
+  it("does NOT emit a console.warn when suites are successfully parsed", () => {
+    const warnSpy = mock.method(console, "warn", () => undefined);
+    try {
+      const xml = makeSuite({
+        name: "Good Suite",
+        tests: 1,
+        body: makePassingTestcase("t1"),
+      });
+      const { suites } = parseXml(xml);
+      assert.equal(warnSpy.mock.calls.length, 0);
+      assert.equal(suites.length, 1);
+    } finally {
+      warnSpy.mock.restore();
+    }
   });
 });
 
