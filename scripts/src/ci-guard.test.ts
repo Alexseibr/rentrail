@@ -1,7 +1,7 @@
 /**
  * Integration tests — CI missing-XML guard.
  *
- * Two layers of coverage:
+ * Three layers of coverage:
  *
  * 1. Script-level: spawns `print-test-report.ts` directly and asserts the
  *    exit code for present / absent expected XML files.
@@ -16,7 +16,12 @@
  *    This ensures that removing or rewiring the trap in `ci.sh` would break
  *    the test even if `print-test-report.ts` itself is untouched.
  *
- * Both layers redirect `RESULTS_DIR` to a temporary directory via the
+ * 3. ci.sh source audit: reads `ci.sh` directly and asserts that its trap
+ *    command lists the exact set of XML basenames the CI pipeline is
+ *    expected to produce. Editing ci.sh's trap without updating this
+ *    canonical list is a breaking change that this layer will catch.
+ *
+ * All layers redirect `RESULTS_DIR` to a temporary directory via the
  * `TEST_RESULTS_DIR` env var so no real `test-results/` files are touched.
  *
  * Run: pnpm --filter @workspace/scripts run test
@@ -27,6 +32,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  readFileSync,
   writeFileSync,
   unlinkSync,
   mkdirSync,
@@ -224,6 +230,68 @@ describe("ci-guard (shell stand-in): ci.sh trap wiring exits 1 on missing XML", 
       status,
       1,
       `Expected stand-in to exit 1 (all absent) but got ${status}`,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layer 3: ci.sh source audit — trap declaration matches canonical file list
+// ---------------------------------------------------------------------------
+//
+// These are the XML basenames that the CI pipeline's test steps are expected
+// to write. If ci.sh's trap is edited to drop or rename one of these, the
+// test below will fail immediately — without needing to run a full CI pass.
+//
+const CANONICAL_CI_XML_FILES = ["api.xml", "integration.xml", "unit.xml"];
+
+/**
+ * Extract the `.xml` basenames listed inside the `trap '...' EXIT` command
+ * of a ci.sh file.  Returns an empty array when no trap line is found.
+ */
+function parseTrapXmlFiles(ciShContent: string): string[] {
+  // Match: trap '...' EXIT  (single-quoted trap body on one line)
+  const trapMatch = /trap\s+'([^']+)'\s+EXIT/.exec(ciShContent);
+  if (!trapMatch) return [];
+  const trapBody = trapMatch[1];
+  return (trapBody.match(/\b\w+\.xml\b/g) ?? []).sort();
+}
+
+describe("ci-guard (ci.sh source audit): trap lists the canonical XML files", () => {
+  const CI_SH = join(WORKSPACE_ROOT, "ci.sh");
+
+  it("ci.sh contains an EXIT trap", () => {
+    const src = readFileSync(CI_SH, "utf8");
+    const trapMatch = /trap\s+'[^']+'\s+EXIT/.test(src);
+    assert.ok(trapMatch, "Expected ci.sh to declare a trap '...' EXIT command");
+  });
+
+  it("ci.sh trap lists exactly the canonical XML basenames", () => {
+    const src = readFileSync(CI_SH, "utf8");
+    const found = parseTrapXmlFiles(src);
+    const expected = [...CANONICAL_CI_XML_FILES].sort();
+    assert.deepEqual(
+      found,
+      expected,
+      `ci.sh trap XML list mismatch.\n  found:    ${found.join(", ")}\n  expected: ${expected.join(", ")}`,
+    );
+  });
+
+  it("ci.sh uses set -euo pipefail before the trap", () => {
+    const src = readFileSync(CI_SH, "utf8");
+    const setPipeIdx = src.indexOf("set -euo pipefail");
+    // Match the `trap` command itself (start of line, not inside a comment).
+    const trapCmdMatch = /^trap\s+/m.exec(src);
+    assert.ok(
+      setPipeIdx !== -1,
+      "Expected ci.sh to contain 'set -euo pipefail'",
+    );
+    assert.ok(
+      trapCmdMatch !== null,
+      "Expected ci.sh to contain a 'trap' command",
+    );
+    assert.ok(
+      setPipeIdx < (trapCmdMatch.index ?? Infinity),
+      "'set -euo pipefail' must appear before the trap declaration",
     );
   });
 });

@@ -53,10 +53,8 @@ function toE164(raw: string): string {
   return "+" + norm;
 }
 
-interface PhoneInputProps extends Omit<
-  React.ComponentProps<"input">,
-  "onChange" | "value"
-> {
+interface PhoneInputProps
+  extends Omit<React.ComponentProps<"input">, "onChange" | "value"> {
   value?: string;
   onChange?: (e164: string) => void;
 }
