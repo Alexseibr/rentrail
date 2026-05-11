@@ -1,0 +1,1137 @@
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000000000000000000000000000000000000..985070c30a22315a3c455dfbed304dbf5ae40324
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,6 @@
++# Database (required for api/integration tests and seeding)
++DATABASE_URL=postgres://postgres:postgres@localhost:5432/rentrail
++
++# Optional runtime envs (examples)
++NODE_ENV=development
++PORT=3000
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 565859f6e2af5345f246d6ce1e7313e0bee8a533..ff6bfcf612c0948ced22a001c772abffc3849e82 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -2,78 +2,115 @@ name: CI
+ 
+ on:
+   push:
+     branches: [main]
+   pull_request:
+     branches: [main]
+ 
+ env:
+   NODE_VERSION: "22"
+ 
+ jobs:
+   quality:
+     name: Lint + Typecheck
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
+       - uses: pnpm/action-setup@v4
+         with:
+           version: 10
+       - uses: actions/setup-node@v4
+         with:
+           node-version: ${{ env.NODE_VERSION }}
+           cache: pnpm
+       - run: pnpm install --frozen-lockfile
+       - run: pnpm run lint
++      - run: pnpm run codegen:check
+       - run: pnpm run typecheck
+ 
+   unit-tests:
+     name: Unit Tests
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
+       - uses: pnpm/action-setup@v4
+         with:
+           version: 10
+       - uses: actions/setup-node@v4
+         with:
+           node-version: ${{ env.NODE_VERSION }}
+           cache: pnpm
+       - run: pnpm install --frozen-lockfile
+       - run: mkdir -p test-results
+       - run: pnpm test:unit
+       - name: Print test report
+         if: always()
+         run: pnpm --filter @workspace/scripts run print-test-report -- unit.xml
+       - name: Upload test results
+         if: always()
+         uses: actions/upload-artifact@v4
+         with:
+           name: unit-test-results
+           path: test-results/unit.xml
+           if-no-files-found: ignore
+ 
++  smoke-tests:
++    name: Smoke API Flow
++    runs-on: ubuntu-latest
++    needs: [quality]
++    services:
++      postgres:
++        image: postgres:16
++        env:
++          POSTGRES_USER: test
++          POSTGRES_PASSWORD: test
++          POSTGRES_DB: test_db
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
++        ports:
++          - 5432:5432
++    env:
++      DATABASE_URL: postgresql://test:test@localhost:5432/test_db
++      SESSION_SECRET: ci-test-secret-key-12345
++      NODE_ENV: test
++    steps:
++      - uses: actions/checkout@v4
++      - uses: pnpm/action-setup@v4
++        with:
++          version: 10
++      - uses: actions/setup-node@v4
++        with:
++          node-version: ${{ env.NODE_VERSION }}
++          cache: pnpm
++      - run: pnpm install --frozen-lockfile
++      - run: pnpm --filter @workspace/db run push
++      - run: pnpm --filter @workspace/scripts run seed-rbac
++      - run: pnpm run test:smoke
++
+   api-tests:
+     name: API & Integration Tests
+     runs-on: ubuntu-latest
+     services:
+       postgres:
+         image: postgres:16
+         env:
+           POSTGRES_USER: test
+           POSTGRES_PASSWORD: test
+           POSTGRES_DB: test_db
+         options: >-
+           --health-cmd pg_isready
+           --health-interval 10s
+           --health-timeout 5s
+           --health-retries 5
+         ports:
+           - 5432:5432
+     env:
+       DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+       SESSION_SECRET: ci-test-secret-key-12345
+       NODE_ENV: test
+     steps:
+       - uses: actions/checkout@v4
+       - uses: pnpm/action-setup@v4
+         with:
+@@ -82,51 +119,51 @@ jobs:
+         with:
+           node-version: ${{ env.NODE_VERSION }}
+           cache: pnpm
+       - run: pnpm install --frozen-lockfile
+       - run: pnpm --filter @workspace/db run push
+       - run: pnpm --filter @workspace/scripts run seed-rbac
+       - run: mkdir -p test-results
+       - run: pnpm test:api
+       - run: pnpm test:integration
+       - name: Print test report
+         if: always()
+         run: pnpm --filter @workspace/scripts run print-test-report -- api.xml integration.xml
+       - name: Upload test results
+         if: always()
+         uses: actions/upload-artifact@v4
+         with:
+           name: api-test-results
+           path: |
+             test-results/api.xml
+             test-results/integration.xml
+           if-no-files-found: ignore
+ 
+   build:
+     name: Build
+     runs-on: ubuntu-latest
+-    needs: [quality, unit-tests]
++    needs: [quality, unit-tests, smoke-tests]
+     steps:
+       - uses: actions/checkout@v4
+       - uses: pnpm/action-setup@v4
+         with:
+           version: 10
+       - uses: actions/setup-node@v4
+         with:
+           node-version: ${{ env.NODE_VERSION }}
+           cache: pnpm
+       - run: pnpm install --frozen-lockfile
+       - run: pnpm --filter @workspace/api-server run build
+       - run: PORT=18150 BASE_PATH=/ pnpm --filter @workspace/landing run build
+       - run: PORT=18151 BASE_PATH=/platform-admin/ pnpm --filter @workspace/platform-admin run build
+       - name: Upload landing build
+         uses: actions/upload-artifact@v4
+         with:
+           name: landing-dist
+           path: artifacts/landing/dist/public/
+       - name: Upload admin build
+         uses: actions/upload-artifact@v4
+         with:
+           name: admin-dist
+           path: artifacts/platform-admin/dist/public/
+       - name: Upload api build
+         uses: actions/upload-artifact@v4
+diff --git a/artifacts/platform-admin/src/components/app-layout.tsx b/artifacts/platform-admin/src/components/app-layout.tsx
+index 515c7dd6d51b3d1d411e4f547811afef370c0e6c..99333a4fa0c6216efcf0eab20f30f98d11233e60 100644
+--- a/artifacts/platform-admin/src/components/app-layout.tsx
++++ b/artifacts/platform-admin/src/components/app-layout.tsx
+@@ -121,50 +121,51 @@ const companyNavGroups: NavGroup[] = [
+   {
+     labelKey: "nav.groupManagement",
+     items: [
+       { path: "/clients", labelKey: "nav.clients", icon: Users },
+       { path: "/service", labelKey: "nav.service", icon: Wrench },
+       { path: "/branches", labelKey: "nav.branches", icon: MapPin },
+       { path: "/settings", labelKey: "nav.settings", icon: Settings },
+     ],
+   },
+ ];
+ 
+ const PLATFORM_ROLES = [
+   "superAdmin",
+   "platformAdmin",
+   "platformSupport",
+   "platformFinance",
+   "platformRisk",
+ ];
+ 
+ export function AppLayout({ children }: { children: ReactNode }) {
+   const { user, logout, hasTenantMemberships } = useAuth();
+   const { t, i18n } = useTranslation();
+   const [location] = useLocation();
+   const [collapsed, setCollapsed] = useState(false);
+   const [mobileOpen, setMobileOpen] = useState(false);
++  const [navQuery, setNavQuery] = useState("");
+   const [searchOpen, setSearchOpen] = useState(false);
+   const [userMenuOpen, setUserMenuOpen] = useState(false);
+   const userMenuRef = useRef<HTMLDivElement>(null);
+   const [serverVersion, setServerVersion] = useState<string | null>(null);
+ 
+   const fetchVersion = useCallback(() => {
+     api<{ version: string; buildDate: string }>("/version")
+       .then((d) => setServerVersion(`v${d.version}`))
+       .catch(() => setServerVersion(null));
+   }, []);
+ 
+   useEffect(() => {
+     fetchVersion();
+   }, [fetchVersion]);
+ 
+   useEffect(() => {
+     setMobileOpen(false);
+   }, [location]);
+ 
+   useEffect(() => {
+     if (!userMenuOpen) return;
+     function handleClickOutside(e: MouseEvent) {
+       if (
+         userMenuRef.current &&
+         !userMenuRef.current.contains(e.target as Node)
+@@ -200,137 +201,161 @@ export function AppLayout({ children }: { children: ReactNode }) {
+         .map((group) => ({
+           ...group,
+           items: group.items.filter((item) => {
+             if (!item.roles) return true;
+             if (user?.isSuperAdmin) return true;
+             const userRoles = user?.platformRoles || [];
+             return item.roles.some((r) => userRoles.includes(r));
+           }),
+         }))
+         .filter((group) => group.items.length > 0);
+     }
+     return companyNavGroups
+       .map((group) => ({
+         ...group,
+         items: group.items.filter((item) =>
+           canAccessRoute(roleCode, item.path),
+         ),
+       }))
+       .filter((group) => group.items.length > 0);
+   }, [isPlatformUser, user, roleCode]);
+ 
+   const navItems = useMemo(
+     () => navGroups.flatMap((g) => g.items),
+     [navGroups],
+   );
++  const filteredNavGroups = useMemo(() => {
++    const q = navQuery.trim().toLowerCase();
++    if (!q) return navGroups;
++    return navGroups
++      .map((group) => ({
++        ...group,
++        items: group.items.filter((item) =>
++          t(item.labelKey).toLowerCase().includes(q),
++        ),
++      }))
++      .filter((group) => group.items.length > 0);
++  }, [navGroups, navQuery, t]);
+ 
+   const toggleLang = () => {
+     i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
+   };
+ 
+   const headerTitle = isPlatformUser
+     ? t("nav.platformAdmin")
+     : companyName || t("nav.companyPanel");
+ 
+   const currentPageTitle = useMemo(() => {
+     const current = navItems.find((item) =>
+       item.path === "/"
+         ? location === "/" || location === ""
+         : location.startsWith(item.path),
+     );
+     return current ? t(current.labelKey) : "";
+   }, [navItems, location, t]);
+ 
+   const mobileNavItems = navItems.slice(0, 5);
+ 
+   return (
+     <div className="flex h-screen overflow-hidden bg-background">
+       {mobileOpen && (
+-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+-        <div
+-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
++        <button
++          type="button"
++          aria-label="Close menu"
++          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+           onClick={() => setMobileOpen(false)}
+         />
+       )}
+ 
+       <aside
+         className={cn(
+           "hidden md:flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out border-0",
+           collapsed ? "w-[72px]" : "w-64",
+         )}
+       >
+         <div
+           className={cn(
+             "flex items-center h-16 px-4",
+             collapsed ? "justify-center" : "gap-3",
+           )}
+         >
+           <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary shrink-0">
+             <Bike className="h-5 w-5 text-primary-foreground" />
+           </div>
+           {!collapsed && (
+             <div className="min-w-0 flex-1">
+               <span className="font-semibold text-sm truncate block text-sidebar-foreground">
+                 {headerTitle}
+               </span>
+               {isPlatformUser && hasTenantMemberships && (
+                 <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">
+                   Platform
+                 </span>
+               )}
+               {!isPlatformUser && roleCode && (
+                 <span className="text-[10px] text-sidebar-foreground/50 uppercase tracking-wider">
+                   {roleCode}
+                 </span>
+               )}
+             </div>
+           )}
+           <Button
+             variant="ghost"
+             size="icon"
+             className={cn(
+               "h-8 w-8 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+               collapsed && "hidden",
+             )}
+             onClick={() => setCollapsed(!collapsed)}
+           >
+             <ChevronLeft className="h-4 w-4" />
+           </Button>
+         </div>
+ 
+         <nav className="flex-1 overflow-y-auto py-3 px-3">
++          {!collapsed && (
++            <div className="mb-3 px-1">
++              <Input
++                value={navQuery}
++                onChange={(e) => setNavQuery(e.target.value)}
++                placeholder={t("common.search", "Поиск...")}
++                className="h-8 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/45"
++                aria-label={t("common.search", "Поиск...")}
++              />
++            </div>
++          )}
+           {collapsed && (
+             <Button
+               variant="ghost"
+               size="icon"
+               className="h-8 w-8 mx-auto mb-2 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent flex"
+               onClick={() => setCollapsed(false)}
+             >
+               <ChevronRight className="h-4 w-4" />
+             </Button>
+           )}
+-          {navGroups.map((group, gi) => (
++          {filteredNavGroups.map((group, gi) => (
+             <div key={gi} className={cn(gi > 0 && "mt-4")}>
+               {!collapsed && gi > 0 && (
+                 <Separator className="my-2 bg-sidebar-foreground/10" />
+               )}
+               {!collapsed && (
+                 <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                   {t(group.labelKey)}
+                 </p>
+               )}
+               {collapsed && gi > 0 && (
+                 <Separator className="my-2 bg-sidebar-foreground/10" />
+               )}
+               <div className="space-y-1">
+                 {group.items.map((item) => {
+                   const active =
+                     item.path === "/"
+                       ? location === "/" || location === ""
+                       : location.startsWith(item.path);
+                   return (
+                     <Link key={item.path} href={item.path}>
+                       <div
+                         className={cn(
+                           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
+                           active
+                             ? "bg-primary text-primary-foreground shadow-sm"
+@@ -412,51 +437,60 @@ export function AppLayout({ children }: { children: ReactNode }) {
+       <aside
+         className={cn(
+           "fixed inset-y-0 left-0 z-50 w-72 bg-sidebar text-sidebar-foreground transition-transform duration-300 ease-in-out md:hidden",
+           mobileOpen ? "translate-x-0" : "-translate-x-full",
+         )}
+       >
+         <div className="flex items-center justify-between h-16 px-4">
+           <div className="flex items-center gap-3">
+             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary shrink-0">
+               <Bike className="h-5 w-5 text-primary-foreground" />
+             </div>
+             <span className="font-semibold text-sm text-sidebar-foreground">
+               {headerTitle}
+             </span>
+           </div>
+           <Button
+             variant="ghost"
+             size="icon"
+             className="h-8 w-8 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+             onClick={() => setMobileOpen(false)}
+           >
+             <X className="h-5 w-5" />
+           </Button>
+         </div>
+         <nav className="flex-1 overflow-y-auto py-3 px-3">
+-          {navGroups.map((group, gi) => (
++          <div className="mb-3 px-1">
++            <Input
++              value={navQuery}
++              onChange={(e) => setNavQuery(e.target.value)}
++              placeholder={t("common.search", "Поиск...")}
++              className="h-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/45"
++              aria-label={t("common.search", "Поиск...")}
++            />
++          </div>
++          {filteredNavGroups.map((group, gi) => (
+             <div key={gi} className={cn(gi > 0 && "mt-4")}>
+               <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                 {t(group.labelKey)}
+               </p>
+               <div className="space-y-1">
+                 {group.items.map((item) => {
+                   const active =
+                     item.path === "/"
+                       ? location === "/" || location === ""
+                       : location.startsWith(item.path);
+                   return (
+                     <Link key={item.path} href={item.path}>
+                       <div
+                         className={cn(
+                           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
+                           active
+                             ? "bg-primary text-primary-foreground shadow-sm"
+                             : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                         )}
+                       >
+                         <item.icon
+                           className={cn(
+                             "h-[18px] w-[18px] shrink-0",
+                             active && "text-primary-foreground",
+                           )}
+diff --git a/artifacts/platform-admin/src/components/ui/empty.tsx b/artifacts/platform-admin/src/components/ui/empty.tsx
+index ec19d9dfd2582e9ae97d4d7a973a1eaba4121fff..b1a142e74e13caf29c17f3e41473154ab3b70f84 100644
+--- a/artifacts/platform-admin/src/components/ui/empty.tsx
++++ b/artifacts/platform-admin/src/components/ui/empty.tsx
+@@ -48,51 +48,51 @@ function EmptyMedia({
+   variant = "default",
+   ...props
+ }: React.ComponentProps<"div"> & VariantProps<typeof emptyMediaVariants>) {
+   return (
+     <div
+       data-slot="empty-icon"
+       data-variant={variant}
+       className={cn(emptyMediaVariants({ variant, className }))}
+       {...props}
+     />
+   );
+ }
+ 
+ function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
+   return (
+     <div
+       data-slot="empty-title"
+       className={cn("text-lg font-medium tracking-tight", className)}
+       {...props}
+     />
+   );
+ }
+ 
+ function EmptyDescription({ className, ...props }: React.ComponentProps<"p">) {
+   return (
+-    <div
++    <p
+       data-slot="empty-description"
+       className={cn(
+         "text-muted-foreground [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4",
+         className,
+       )}
+       {...props}
+     />
+   );
+ }
+ 
+ function EmptyContent({ className, ...props }: React.ComponentProps<"div">) {
+   return (
+     <div
+       data-slot="empty-content"
+       className={cn(
+         "flex w-full min-w-0 max-w-sm flex-col items-center gap-4 text-balance text-sm",
+         className,
+       )}
+       {...props}
+     />
+   );
+ }
+ 
+ export {
+   Empty,
+diff --git a/docker-compose.dev.yml b/docker-compose.dev.yml
+new file mode 100644
+index 0000000000000000000000000000000000000000..367afe96307331e94e994fc3362ec7941cc1643d
+--- /dev/null
++++ b/docker-compose.dev.yml
+@@ -0,0 +1,20 @@
++version: "3.9"
++services:
++  postgres:
++    image: postgres:16-alpine
++    container_name: rentrail-postgres
++    environment:
++      POSTGRES_DB: rentrail
++      POSTGRES_USER: postgres
++      POSTGRES_PASSWORD: postgres
++    ports:
++      - "5432:5432"
++    volumes:
++      - pgdata_rentrail:/var/lib/postgresql/data
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U postgres -d rentrail"]
++      interval: 5s
++      timeout: 5s
++      retries: 20
++volumes:
++  pgdata_rentrail:
+diff --git a/docs/code-review-ru.md b/docs/code-review-ru.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..34076681041419194c71b934866ea40f327566a2
+--- /dev/null
++++ b/docs/code-review-ru.md
+@@ -0,0 +1,234 @@
++# Code Review (русский)
++
++Дата ревью: 11 мая 2026.
++
++## 1) Что уже есть в проекте
++
++Проект выглядит как зрелый TypeScript monorepo на `pnpm` с хорошей инженерной базой:
++
++- Единый набор quality-gates на уровне root (`typecheck`, `lint`, `test`, `ci`).
++- Явная архитектурная декомпозиция на `artifacts/*` (приложения) и `lib/*` (переиспользуемые библиотеки).
++- Богатая доменная модель в БД (много таблиц, enum-ы, индексы, связи), реализованная через Drizzle.
++- Четко описанные практики эксплуатации в документации (`docs/rollout`, `docs/playbooks`, `docs/release-readiness`).
++
++## 2) Оценка качества кода
++
++### Сильные стороны
++
++1. **Инженерная дисциплина.**
++   В `package.json` есть отдельные скрипты для проверки типов, тестов, линтинга и CI.
++
++2. **Хорошая типизация в data layer.**
++   В `lib/db/src/schema/*` таблицы описаны явно, плюс есть Zod-схемы для insert-моделей (`createInsertSchema`).
++
++3. **Зрелая доменная модель.**
++   По структуре видно, что это полноценная SaaS-платформа (RBAC, billing, moderation, telemetry), а не простой CRUD.
++
++4. **Сильная эксплуатационная документация.**
++   Есть rollout/playbook документы, что важно для поддержки и релизов.
++
++### Текущие риски/проблемы
++
++1. **Сломан базовый typecheck для библиотек без codegen-артефактов.**
++   `pnpm run typecheck:libs` падает на `lib/api-client-react` и `lib/api-zod` (нет `./generated/*`).
++
++2. **Неявный контракт bootstrap/codegen.**
++   Для нового разработчика отсутствует “безошибочный путь” от clone до green-check.
++
++3. **Риск регрессий на стыке API-контрактов и генерации клиентов.**
++   При изменении OpenAPI возможна поломка потребителей, если codegen не встроен в обязательные шаги.
++
++## 3) Проверка дизайна (UI/UX)
++
++Проверил дизайн-структуру на уровне компонентов и навигации (без ручного визуального QA в браузере/эмуляторе):
++
++### Что хорошо
++
++1. **Структурированная навигация и role-based фильтрация.**
++   В `AppLayout` есть группировка меню (main/tools, main/management) и фильтрация доступных пунктов по ролям.
++
++2. **Переиспользуемый компонентный слой.**
++   Есть унифицированные UI-компоненты (например, `Empty`, `PageBreadcrumb`), что обычно уменьшает визуальный дрейф.
++
++3. **Поддержка локализации из коробки.**
++   В layout есть переключение языка `ru/en`.
++
++### Что улучшить по дизайну
++
++1. **Фиксировать дизайн-стандарты как enforceable checks.**
++   Рекомендую добавить visual regression (Playwright snapshots / Chromatic / Loki), иначе дизайн-регрессии ловятся только руками.
++
++2. **Единый UX checklist для ключевых экранов.**
++   Для страниц Fleet/Rentals/Service/Branches: пустые состояния, ошибки загрузки, длинные таблицы, mobile breakpoints.
++
++3. **Accessibility budget.**
++   Ввести обязательный проход `axe` для основных экранов и минимум WCAG AA для контрастов/фокуса/клавиатурной навигации.
++
++## 4) Проверка E2E/интеграционных тестов
++
++### Что фактически проверено
++
++Запущен `pnpm run test:api` (API/E2E набор на базе Vitest). В текущем окружении тесты не смогли стартовать полноценно из-за отсутствия `DATABASE_URL`.
++
++### Текущее состояние
++
++- Упало **18 test suites**.
++- Основная причина: `DATABASE_URL must be set`.
++- Это ограничение окружения, а не обязательно дефект бизнес-логики тестов.
++
++### Можно ли “проверить E2E всех функций”
++
++Коротко: **да, но не в этом окружении без поднятой БД и bootstrap данных**.
++
++Что нужно для полноценного прогона:
++
++1. Поднять PostgreSQL и выставить `DATABASE_URL`.
++2. Прогнать миграции/инициализацию данных (если требуется тестовым setup).
++3. Выполнить:
++   - `pnpm run test:api`
++   - `pnpm run test:integration`
++   - (опционально) web/mobile UI E2E через Playwright/Detox, если добавите такие сценарии.
++
++## 5) Приоритетный план улучшений
++
++### P0 (сразу)
++
++1. Автоматизировать codegen перед `typecheck`/`build` (например, через `pretypecheck`).
++2. Сделать обязательный bootstrap-сценарий в README/CONTRIBUTING.
++3. Добавить reproducible local test stack (docker-compose для Postgres + seed).
++
++### P1 (ближайший спринт)
++
++4. Включить `codegen:check` в обязательный CI-путь до тестов.
++5. Добавить visual regression для platform-admin.
++6. Добавить smoke E2E user journeys (login → rental flow → payment flow).
++
++### P2 (поддерживаемость)
++
++7. Зафиксировать ADR по tenant isolation boundary.
++8. Расширить quality-metrics: mutation testing на критичных доменных сценариях.
++
++## 6) Итог
++
++**Общее качество: выше среднего / ближе к высокому.**
++Архитектура и инженерная культура уже хорошие. Главные точки роста — воспроизводимый bootstrap (codegen+db) и автоматизированная проверка UI/E2E, чтобы “проверка всех функций” была действительно стабильной и повторяемой.
++
++## 7) Конкретные рекомендации (что делать прямо сейчас)
++
++Ниже — практичный, короткий план без «воды».
++
++### На этой неделе
++
++1. **Починить воспроизводимость окружения:**
++   - добавить `docker-compose` для Postgres,
++   - добавить `pnpm run dev:bootstrap` (codegen + migrate + seed),
++   - добавить `.env.example` с обязательными переменными.
++
++2. **Зашить codegen в pipeline:**
++   - `pretypecheck`/`prebuild` для генерации клиентов,
++   - оставить `codegen:check` как блокер в CI.
++
++3. **Сделать smoke-проход критичного флоу:**
++   - auth → создание аренды → завершение аренды → платеж.
++
++### В течение 2–3 недель
++
++4. **Добавить визуальные регрессии для platform-admin:**
++   - snapshot-тесты для ключевых страниц (Dashboard/Fleet/Rentals/Service).
++
++5. **Собрать test-matrix по ролям и tenant isolation:**
++   - owner/admin/mechanic/platform\* роли,
++   - позитивные и негативные кейсы доступа.
++
++6. **Усилить observability для тестов:**
++   - структурированные логи падений,
++   - сохранение SQL/HTTP trace в CI-артефакты.
++
++### В течение 1–2 месяцев
++
++7. **Формализовать архитектурные решения (ADR):**
++   - tenant boundaries,
++   - стратегия денежных расчетов (`numeric`, округления, валюты),
++   - политика обновления `updatedAt` и аудита изменений.
++
++8. **Повысить устойчивость релизов:**
++   - mandatory release checklist,
++   - canary rollout для рискованных изменений,
++   - post-release health gates.
++
++### Если выбрать только 3 приоритета
++
++1. **Bootstrap + DB reproducibility.**
++2. **Codegen как обязательный шаг перед typecheck/build.**
++3. **Smoke E2E для денежного и rental флоу.**
++
++Это даст максимальный эффект по качеству за минимальное время.
++
++## 8) Что уже сделано в ветке (обновление на 11 мая 2026)
++
++По факту в текущей ветке уже реализован большой кусок из P0/P1:
++
++1. **Воспроизводимый dev bootstrap**
++   - добавлены `dev:bootstrap`, `dev:verify`, `dev:test`;
++   - добавлены сценарии проверки окружения (`dev:doctor`, `dev:doctor:json`).
++
++2. **Инфраструктура локальной БД**
++   - добавлен `docker-compose.dev.yml`;
++   - добавлены команды `dev:db:up`, `dev:db:down`, `dev:db:logs`.
++
++3. **Fail-fast для DB-зависимых тестов**
++   - `test:api`, `test:integration`, `test:db-helpers` теперь проверяют `DATABASE_URL` заранее через обёртку.
++
++4. **Codegen встроен в обязательные шаги**
++   - добавлены `pretypecheck` и `prebuild`, которые запускают `codegen`.
++
++5. **Небольшие UI/a11y-улучшения**
++   - улучшена семантика кликабельного mobile-overlay в layout;
++   - `EmptyDescription` переведен на семантический `<p>`.
++
++Итого: базовый фундамент «поднять проект и проверить по шагам» уже есть.
++
++## 9) Что дальше по плану (предлагаю следующий порядок)
++
++### Шаг 1 (сразу, 1-2 дня): закрыть CI-дыры
++
++1. Сделать `codegen:check` обязательным в CI до тестов.
++2. Добавить отдельный CI job на `dev:doctor:json` (валидация preflight-логики).
++3. Добавить fail-fast проверку, что generated-файлы не забыты в PR.
++
++### Шаг 2 (ближайший спринт): покрыть критичный пользовательский путь
++
++4. Добавить smoke E2E сценарий:
++   - login,
++   - создание аренды,
++   - завершение аренды,
++   - проверка платежа/статуса.
++
++5. Зафиксировать минимальный test-data bootstrap для E2E (fixtures/seed).
++
++### Шаг 3 (после smoke E2E): дизайн и UX-стабильность
++
++6. Подключить visual regression для `platform-admin` (минимум ключевые страницы).
++7. Добавить a11y smoke (axe) для sidebar, диалогов и основных форм.
++8. Ввести короткий UI-чеклист для PR (empty/loading/error/mobile/focus).
++
++## 10) Что делаем прямо следующим коммитом
++
++Если идём строго «по плану», то **следующий практический коммит**:
++
++- подключить `codegen:check` в обязательный CI пайплайн,
++- и добавить короткий guard-job на generated-артефакты.
++
++Это самый быстрый шаг, который уменьшит регрессии до начала расширения E2E.
++
++## 11) Статус плана (трекер)
++
++- ✅ **Сделано:** bootstrap/codegen hooks, DB compose, doctor/verify/test orchestration, fail-fast DB guards, базовые UI/a11y-фиксы.
++- 🟡 **В работе дальше:** CI-guard generated (дожать до обязательного policy во всех ветках/пайплайнах), smoke E2E критичного денежного и rental flow.
++- ⏭️ **После этого:** visual regression + a11y smoke для ключевых экранов.
++
++Рекомендуемый порядок следующей реализации:
++
++1. Включить обязательный прогон `pnpm run codegen:check` в каждом CI workflow (не только в локальном `ci.sh`).
++2. Добавить `smoke`-проект для E2E/API с 1 критическим флоу и фикстурами.
++3. Подключить минимальный visual regression для `platform-admin` (Dashboard/Fleet/Rentals).
+diff --git a/docs/dev-workflow-ru.md b/docs/dev-workflow-ru.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..9f694c3da452c2bbfca186ccdace90f07d433ae4
+--- /dev/null
++++ b/docs/dev-workflow-ru.md
+@@ -0,0 +1,102 @@
++# Локальный workflow разработки (по шагам)
++
++Дата: 11 мая 2026.
++
++## 0) Проверка окружения
++
++```bash
++pnpm run dev:doctor
++```
++
++Проверяет: `node`, `pnpm`, `docker` и наличие `DATABASE_URL`.
++Если чего-то не хватает, выводит подсказки по установке под текущую OS.
++
++Для CI/интеграций можно получить машиночитаемый вывод:
++
++```bash
++pnpm run dev:doctor:json
++```
++
++JSON-вывод содержит `ok`, `checks` и `hints` (подсказки установки).
++
++## 1) Поднять локальную БД
++
++```bash
++pnpm run dev:db:up
++```
++
++Остановить:
++
++```bash
++pnpm run dev:db:down
++```
++
++Логи Postgres:
++
++```bash
++pnpm run dev:db:logs
++```
++
++## 2) Bootstrap проекта
++
++```bash
++pnpm run dev:bootstrap
++```
++
++Что делает команда:
++
++- codegen API-клиентов,
++- проверка типов библиотек,
++- seed RBAC (только если задан `DATABASE_URL`).
++
++## 3) Полная проверка по порядку
++
++```bash
++pnpm run dev:verify
++```
++
++Порядок:
++
++1. bootstrap,
++2. API-тесты,
++3. integration-тесты.
++
++## 3.1) Smoke-проверка критичного флоу
++
++```bash
++pnpm run test:smoke
++```
++
++Покрывает минимальный критичный путь API/интеграций:
++
++- `auth.int.test.ts`
++- `rentals.int.test.ts`
++- `payment-flows.int.test.ts`
++
++Для последовательного прогона bootstrap + smoke:
++
++```bash
++pnpm run dev:verify:smoke
++```
++
++## 4) Быстрый полный запуск (если установлен docker)
++
++```bash
++pnpm run dev:test
++```
++
++Команда:
++
++- поднимает локальный Postgres,
++- запускает `dev:verify` с дефолтным локальным `DATABASE_URL`, если переменная не задана.
++
++## Если тесты не стартуют
++
++1. Запустите `pnpm run dev:doctor` и исправьте missing-check'и.
++2. Проверьте, что Docker установлен и работает.
++3. Проверьте, что Postgres контейнер запущен.
++4. Проверьте `DATABASE_URL`.
++5. Перезапустите:
++   - `pnpm run dev:db:down`
++   - `pnpm run dev:db:up`
++   - `pnpm run dev:verify`
+diff --git a/package.json b/package.json
+index 1d2e56bd263bfec35cdc951fa133599c50e6de9c..c93ac528a99f0034c5024c955147eef4352fbfd0 100644
+--- a/package.json
++++ b/package.json
+@@ -1,57 +1,70 @@
+ {
+   "name": "workspace",
+   "version": "0.0.0",
+   "license": "MIT",
+   "scripts": {
+     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+     "prepare": "husky",
+     "build": "pnpm run typecheck && pnpm -r --if-present run build",
+     "typecheck:libs": "tsc --build",
+     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+     "test": "vitest run --reporter=verbose",
+     "test:watch": "vitest",
+     "test:unit": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/unit.xml unit.test",
+     "test:unit:report": "bash -c 'mkdir -p test-results; pnpm run test:unit; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- unit.xml; exit $rc'",
+-    "test:integration": "vitest run --config vitest.integration.ts --bail",
+-    "test:db-helpers": "vitest run --project api-db-helpers",
+-    "test:api": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
++    "test:integration": "bash scripts/run-with-db.sh vitest run --config vitest.integration.ts --bail",
++    "test:db-helpers": "bash scripts/run-with-db.sh vitest run --project api-db-helpers",
++    "test:api": "bash scripts/run-with-db.sh vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
+     "test:api:report": "bash -c 'mkdir -p test-results; pnpm run test:api; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- api.xml; exit $rc'",
+     "test:coverage": "vitest run --coverage",
+     "lint": "prettier --check .",
+     "lint:eslint": "eslint .",
+     "lint:eslint:strict": "eslint . --max-warnings 0",
+     "lint:eslint:fix": "eslint . --fix",
+     "lint:fix": "prettier --write .",
+     "format:check": "prettier --check . || (printf '\\n[Format check failed] One or more files are not formatted correctly.\\nRun: pnpm run lint:fix\\n\\n' >&2 && exit 1)",
+     "seed": "pnpm --filter @workspace/scripts run seed-rbac",
+     "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
+     "seed:demo:reset": "pnpm --filter @workspace/scripts run seed-demo:reset",
+     "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
+     "codegen:check": "pnpm --filter @workspace/api-spec run codegen && git --no-optional-locks diff --exit-code -- lib/api-client-react/src/generated/ lib/api-zod/src/generated/ artifacts/mockup-sandbox/src/.generated/ || (printf '\\n[codegen:check failed] Generated files differ from Orval output. Run: pnpm --filter @workspace/api-spec run codegen\\n\\n' >&2 && exit 1)",
+     "type-coverage": "pnpm -r --filter \"./artifacts/**\" --if-present run type-coverage",
+-    "ci": "bash ci.sh"
++    "ci": "bash ci.sh",
++    "dev:bootstrap": "bash scripts/dev-bootstrap.sh",
++    "codegen": "pnpm --filter @workspace/api-spec run codegen",
++    "pretypecheck": "pnpm run codegen",
++    "prebuild": "pnpm run codegen",
++    "dev:verify": "bash scripts/dev-verify.sh",
++    "dev:db:up": "docker compose -f docker-compose.dev.yml up -d",
++    "dev:db:down": "docker compose -f docker-compose.dev.yml down",
++    "dev:db:logs": "docker compose -f docker-compose.dev.yml logs -f postgres",
++    "dev:test": "pnpm run dev:doctor && pnpm run dev:db:up && DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/rentrail} pnpm run dev:verify",
++    "dev:doctor": "bash scripts/dev-doctor.sh",
++    "dev:doctor:json": "bash scripts/dev-doctor.sh --json",
++    "test:smoke": "bash scripts/run-with-db.sh vitest run --config vitest.integration.ts artifacts/api-server/src/__tests__/integration/auth.int.test.ts artifacts/api-server/src/__tests__/integration/rentals.int.test.ts artifacts/api-server/src/__tests__/integration/payment-flows.int.test.ts --bail",
++    "dev:verify:smoke": "pnpm run dev:bootstrap && pnpm run test:smoke"
+   },
+   "lint-staged": {
+     "*.{ts,tsx}": [
+       "eslint --fix",
+       "prettier --write"
+     ],
+     "*.{js,mjs,cjs,jsx,json,css,md,yaml,yml}": [
+       "prettier --write"
+     ]
+   },
+   "private": true,
+   "devDependencies": {
+     "@types/supertest": "^7.2.0",
+     "@typescript-eslint/eslint-plugin": "^8.59.2",
+     "@typescript-eslint/parser": "^8.59.2",
+     "@vitest/coverage-v8": "^4.1.2",
+     "eslint": "^10.3.0",
+     "eslint-plugin-jsx-a11y": "^6.10.2",
+     "eslint-plugin-react": "^7.37.5",
+     "eslint-plugin-react-hooks": "^5.2.0",
+     "husky": "^9.1.7",
+     "lint-staged": "^17.0.2",
+     "prettier": "^3.8.1",
+     "supertest": "^7.2.2",
+     "type-coverage": "^2.29.7",
+diff --git a/scripts/dev-bootstrap.sh b/scripts/dev-bootstrap.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..e1e6a9bf470bbeb3aae848b2f50a359c0e380bb2
+--- /dev/null
++++ b/scripts/dev-bootstrap.sh
+@@ -0,0 +1,19 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++echo "[1/3] Generating API clients from OpenAPI..."
++pnpm --filter @workspace/api-spec run codegen
++
++echo "[2/3] Checking library types..."
++pnpm run typecheck:libs
++
++if [[ -z "${DATABASE_URL:-}" ]]; then
++  echo "[3/3] Skipping DB seeds (DATABASE_URL is not set)."
++  echo "Done. To seed RBAC, set DATABASE_URL and run: pnpm run seed"
++  exit 0
++fi
++
++echo "[3/3] Seeding RBAC..."
++pnpm run seed
++
++echo "Bootstrap complete."
+diff --git a/scripts/dev-doctor.sh b/scripts/dev-doctor.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..b5f96b95eeb1f30955a823d6663284bce869a9e4
+--- /dev/null
++++ b/scripts/dev-doctor.sh
+@@ -0,0 +1,91 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++MODE="text"
++if [[ "${1:-}" == "--json" ]]; then
++  MODE="json"
++fi
++
++has_cmd() {
++  command -v "$1" >/dev/null 2>&1
++}
++
++detect_os() {
++  case "$(uname -s)" in
++    Linux*) echo "linux" ;;
++    Darwin*) echo "macos" ;;
++    MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
++    *) echo "unknown" ;;
++  esac
++}
++
++install_hint() {
++  local tool="$1"
++  local os="$2"
++
++  case "$tool:$os" in
++    node:linux)
++      echo "Install Node.js LTS: https://nodejs.org/en/download"
++      ;;
++    node:macos)
++      echo "brew install node"
++      ;;
++    node:windows)
++      echo "Install Node.js LTS: https://nodejs.org/en/download"
++      ;;
++    pnpm:linux|pnpm:macos|pnpm:windows)
++      echo "npm install -g pnpm"
++      ;;
++    docker:linux)
++      echo "Install Docker Engine/Desktop: https://docs.docker.com/engine/install/"
++      ;;
++    docker:macos|docker:windows)
++      echo "Install Docker Desktop: https://www.docker.com/products/docker-desktop/"
++      ;;
++    *)
++      echo "Install $tool and ensure it is available in PATH"
++      ;;
++  esac
++}
++
++node_ok=false
++pnpm_ok=false
++docker_ok=false
++db_set=false
++
++if has_cmd node; then node_ok=true; fi
++if has_cmd pnpm; then pnpm_ok=true; fi
++if has_cmd docker; then docker_ok=true; fi
++if [[ -n "${DATABASE_URL:-}" ]]; then db_set=true; fi
++
++ok=true
++if [[ "$node_ok" != true || "$pnpm_ok" != true || "$docker_ok" != true ]]; then
++  ok=false
++fi
++
++os="$(detect_os)"
++
++if [[ "$MODE" == "json" ]]; then
++  printf '{"ok":%s,"os":"%s","checks":{"node":%s,"pnpm":%s,"docker":%s,"databaseUrlSet":%s},"hints":{"node":"%s","pnpm":"%s","docker":"%s"}}\n' \
++    "$ok" "$os" "$node_ok" "$pnpm_ok" "$docker_ok" "$db_set" \
++    "$(install_hint node "$os")" \
++    "$(install_hint pnpm "$os")" \
++    "$(install_hint docker "$os")"
++  [[ "$ok" == true ]] && exit 0 || exit 1
++fi
++
++[[ "$node_ok" == true ]] && echo "[ok] node: $(command -v node)" || echo "[fail] node is not installed"
++[[ "$pnpm_ok" == true ]] && echo "[ok] pnpm: $(command -v pnpm)" || echo "[fail] pnpm is not installed"
++[[ "$docker_ok" == true ]] && echo "[ok] docker: $(command -v docker)" || echo "[fail] docker is not installed"
++[[ "$db_set" == true ]] && echo "[ok] DATABASE_URL is set" || echo "[warn] DATABASE_URL is not set (dev:test will use local default URL)"
++
++if [[ "$ok" != true ]]; then
++  echo ""
++  echo "Doctor failed. Install missing tools and retry."
++  [[ "$node_ok" == true ]] || echo "- node: $(install_hint node "$os")"
++  [[ "$pnpm_ok" == true ]] || echo "- pnpm: $(install_hint pnpm "$os")"
++  [[ "$docker_ok" == true ]] || echo "- docker: $(install_hint docker "$os")"
++  exit 1
++fi
++
++echo "Doctor passed."
+diff --git a/scripts/dev-verify.sh b/scripts/dev-verify.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..ac955c2f85dfa603fa96b1133e7cb2dc6a0d2bfe
+--- /dev/null
++++ b/scripts/dev-verify.sh
+@@ -0,0 +1,13 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++echo "[verify 1/3] Bootstrap (codegen + typecheck + optional seed)"
++pnpm run dev:bootstrap
++
++echo "[verify 2/3] API DB-backed tests"
++pnpm run test:api
++
++echo "[verify 3/3] Integration tests"
++pnpm run test:integration
++
++echo "Verification complete."
+diff --git a/scripts/run-with-db.sh b/scripts/run-with-db.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..f9330e5eb2845faf0dbe9d33a4b755460ed6d681
+--- /dev/null
++++ b/scripts/run-with-db.sh
+@@ -0,0 +1,11 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++if [[ -z "${DATABASE_URL:-}" ]]; then
++  echo "[db-check] DATABASE_URL is not set."
++  echo "[db-check] Start local DB: docker compose -f docker-compose.dev.yml up -d"
++  echo "[db-check] Then export env: export DATABASE_URL=postgres://postgres:postgres@localhost:5432/rentrail"
++  exit 1
++fi
++
++"$@"
