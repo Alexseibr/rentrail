@@ -143,6 +143,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navQuery, setNavQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -223,6 +224,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
     [navGroups],
   );
 
+  const filteredNavGroups = useMemo(() => {
+    const q = navQuery.trim().toLowerCase();
+    if (!q) return navGroups;
+    return navGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          t(item.labelKey).toLowerCase().includes(q),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [navGroups, navQuery, t]);
+
   const toggleLang = () => {
     i18n.changeLanguage(i18n.language === "ru" ? "en" : "ru");
   };
@@ -245,9 +259,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {mobileOpen && (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -298,6 +313,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3 px-3">
+          {!collapsed && (
+            <div className="mb-3 px-1">
+              <Input
+                value={navQuery}
+                onChange={(e) => setNavQuery(e.target.value)}
+                placeholder={t("common.search", "Поиск...")}
+                className="h-8 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/45"
+                aria-label={t("common.search", "Поиск...")}
+              />
+            </div>
+          )}
           {collapsed && (
             <Button
               variant="ghost"
@@ -308,7 +334,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           )}
-          {navGroups.map((group, gi) => (
+          {filteredNavGroups.map((group, gi) => (
             <div key={gi} className={cn(gi > 0 && "mt-4")}>
               {!collapsed && gi > 0 && (
                 <Separator className="my-2 bg-sidebar-foreground/10" />
@@ -434,7 +460,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </Button>
         </div>
         <nav className="flex-1 overflow-y-auto py-3 px-3">
-          {navGroups.map((group, gi) => (
+          <div className="mb-3 px-1">
+            <Input
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
+              placeholder={t("common.search", "Поиск...")}
+              className="h-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/45"
+              aria-label={t("common.search", "Поиск...")}
+            />
+          </div>
+          {filteredNavGroups.map((group, gi) => (
             <div key={gi} className={cn(gi > 0 && "mt-4")}>
               <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
                 {t(group.labelKey)}
