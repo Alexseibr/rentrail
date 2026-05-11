@@ -12,9 +12,9 @@
     "test:watch": "vitest",
     "test:unit": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/unit.xml unit.test",
     "test:unit:report": "bash -c 'mkdir -p test-results; pnpm run test:unit; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- unit.xml; exit $rc'",
-    "test:integration": "vitest run --config vitest.integration.ts --bail",
-    "test:db-helpers": "vitest run --project api-db-helpers",
-    "test:api": "vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
+    "test:integration": "bash scripts/run-with-db.sh vitest run --config vitest.integration.ts --bail",
+    "test:db-helpers": "bash scripts/run-with-db.sh vitest run --project api-db-helpers",
+    "test:api": "bash scripts/run-with-db.sh vitest run --reporter=verbose --reporter=junit --outputFile.junit=test-results/api.xml api.test",
     "test:api:report": "bash -c 'mkdir -p test-results; pnpm run test:api; rc=$?; pnpm --filter @workspace/scripts run print-test-report -- api.xml; exit $rc'",
     "test:coverage": "vitest run --coverage",
     "lint": "prettier --check .",
@@ -29,7 +29,18 @@
     "check-map-cleanup": "pnpm --filter @workspace/scripts run check-map-cleanup",
     "codegen:check": "pnpm --filter @workspace/api-spec run codegen && git --no-optional-locks diff --exit-code -- lib/api-client-react/src/generated/ lib/api-zod/src/generated/ artifacts/mockup-sandbox/src/.generated/ || (printf '\\n[codegen:check failed] Generated files differ from Orval output. Run: pnpm --filter @workspace/api-spec run codegen\\n\\n' >&2 && exit 1)",
     "type-coverage": "pnpm -r --filter \"./artifacts/**\" --if-present run type-coverage",
-    "ci": "bash ci.sh"
+    "ci": "bash ci.sh",
+    "dev:bootstrap": "bash scripts/dev-bootstrap.sh",
+    "codegen": "pnpm --filter @workspace/api-spec run codegen",
+    "pretypecheck": "pnpm run codegen",
+    "prebuild": "pnpm run codegen",
+    "dev:verify": "bash scripts/dev-verify.sh",
+    "dev:db:up": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:db:down": "docker compose -f docker-compose.dev.yml down",
+    "dev:db:logs": "docker compose -f docker-compose.dev.yml logs -f postgres",
+    "dev:test": "pnpm run dev:doctor && pnpm run dev:db:up && DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/rentrail} pnpm run dev:verify",
+    "dev:doctor": "bash scripts/dev-doctor.sh",
+    "dev:doctor:json": "bash scripts/dev-doctor.sh --json"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
