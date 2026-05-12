@@ -466,7 +466,9 @@
       "deposit": "Deposit",
       "totalDueNow": "Charge now",
       "loading": "Calculating price...",
-      "unavailable": "Could not load exact price, showing estimate."
+      "unavailable": "Could not load exact price, showing estimate.",
+      "plan": "Plan",
+      "defaultPlan": "Standard"
     }
   },
   "clientRentals": {

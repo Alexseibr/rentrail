@@ -20,6 +20,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken } from "@/services/api";
 import { getClientErrorMessage } from "@/services/client-error-message";
+import {
+  isPreviewFresh,
+  type CachedPricePreview,
+  type PricePreviewValue,
+} from "@/services/price-preview-cache";
 import { mapStartRentalErrorCode } from "@/services/rental-action-errors";
 import { buildPricePreview } from "@/services/rental-price-preview";
 
@@ -37,14 +42,8 @@ interface Vehicle {
   lng: number | null;
   batteryPercent: number | null;
 }
-interface ApiPricePreview {
-  currency: "RUB" | "USD" | "EUR";
-  unlockFee: number;
-  rentalCost: number;
-  subtotal: number;
-  depositAmount: number;
-  totalDueNow: number;
-}
+type ApiPricePreview = PricePreviewValue;
+const PREVIEW_CACHE_TTL_MS = 60_000;
 
 const ASSET_TYPE_ICONS: Record<
   string,
@@ -93,7 +92,7 @@ export default function VehiclesScreen() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [previewCache, setPreviewCache] = useState<
-    Record<string, ApiPricePreview>
+    Record<string, CachedPricePreview>
   >({});
   const locale = i18n.language.startsWith("ru") ? "ru" : "en";
 
@@ -156,18 +155,31 @@ export default function VehiclesScreen() {
         if (!res.ok) throw new Error("preview request failed");
         const json = (await res.json()) as { data?: ApiPricePreview };
         if (!json.data) throw new Error("preview data missing");
-        setPreviewCache((prev) => ({ ...prev, [vehicle.id]: json.data! }));
+        setPreviewCache((prev) => ({
+          ...prev,
+          [vehicle.id]: { data: json.data!, fetchedAt: Date.now() },
+        }));
       } catch {
         setPreviewError(true);
         setPreviewCache((prev) => ({
           ...prev,
-          [vehicle.id]: buildFallbackPreview(vehicle),
+          [vehicle.id]: {
+            data: buildFallbackPreview(vehicle),
+            fetchedAt: Date.now(),
+          },
         }));
       } finally {
         setPreviewLoading(false);
       }
     },
     [buildFallbackPreview, companyId],
+  );
+  const hasFreshPreview = useCallback(
+    (vehicleId: string) => {
+      const cached = previewCache[vehicleId];
+      return isPreviewFresh(cached, Date.now(), PREVIEW_CACHE_TTL_MS);
+    },
+    [previewCache],
   );
 
   const handleLookup = async () => {
@@ -317,7 +329,7 @@ export default function VehiclesScreen() {
           onPress={(e) => {
             e.stopPropagation?.();
             setConfirmVehicle(item);
-            if (!previewCache[item.id]) {
+            if (!hasFreshPreview(item.id)) {
               void loadPreview(item);
             }
           }}
@@ -449,12 +461,20 @@ export default function VehiclesScreen() {
               <View style={styles.priceCard}>
                 {(() => {
                   const preview =
-                    previewCache[confirmVehicle.id] ??
+                    previewCache[confirmVehicle.id]?.data ??
                     buildFallbackPreview(confirmVehicle);
+                  const estimatedMinutes =
+                    preview.estimatedDurationMinutes ?? 60;
                   return (
                     <>
                       <Text style={styles.priceTitle}>
                         {t("clientVehicles.preview.title")}
+                      </Text>
+                      <Text style={styles.priceLineMuted}>
+                        {t("clientVehicles.preview.plan")}:{" "}
+                        {preview.rentalPlanName ??
+                          t("clientVehicles.preview.defaultPlan")}{" "}
+                        · {estimatedMinutes} {t("rentalDetail.min")}
                       </Text>
                       {previewLoading && (
                         <Text style={styles.priceLineMuted}>

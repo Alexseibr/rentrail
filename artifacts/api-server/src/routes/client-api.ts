@@ -522,6 +522,99 @@ router.get("/client/vehicles/:id", authenticate, async (req, res) => {
   }
 });
 
+router.get(
+  "/client/vehicles/:id/price-preview",
+  authenticate,
+  async (req, res) => {
+    try {
+      const { companyId } = requireClient(req);
+      const assetId = req.params.id as string;
+      const requestedPlanId =
+        typeof req.query.rentalPlanId === "string"
+          ? req.query.rentalPlanId
+          : undefined;
+
+      const [asset] = await db
+        .select({
+          id: assets.id,
+          companyId: assets.companyId,
+          status: assets.status,
+          isPublic: assets.isPublic,
+        })
+        .from(assets)
+        .where(and(eq(assets.id, assetId), eq(assets.companyId, companyId)))
+        .limit(1);
+
+      if (!asset || !asset.isPublic || asset.status !== "available") {
+        throw new NotFoundError("Vehicle not found");
+      }
+
+      const [plan] = requestedPlanId
+        ? await db
+            .select({
+              id: rentalPlans.id,
+              name: rentalPlans.name,
+              price: rentalPlans.price,
+              currency: rentalPlans.currency,
+              depositAmount: rentalPlans.depositAmount,
+            })
+            .from(rentalPlans)
+            .where(
+              and(
+                eq(rentalPlans.id, requestedPlanId),
+                eq(rentalPlans.companyId, companyId),
+                eq(rentalPlans.isActive, true),
+              ),
+            )
+            .limit(1)
+        : await db
+            .select({
+              id: rentalPlans.id,
+              name: rentalPlans.name,
+              price: rentalPlans.price,
+              currency: rentalPlans.currency,
+              depositAmount: rentalPlans.depositAmount,
+            })
+            .from(rentalPlans)
+            .where(
+              and(
+                eq(rentalPlans.companyId, companyId),
+                eq(rentalPlans.isActive, true),
+                eq(rentalPlans.rentalType, "hourly"),
+              ),
+            )
+            .limit(1);
+
+      if (requestedPlanId && !plan) {
+        throw new BadRequestError("Rental plan not found or not available");
+      }
+
+      const hourlyPrice = plan?.price != null ? Number(plan.price) : 0;
+      const depositAmount =
+        plan?.depositAmount != null ? Number(plan.depositAmount) : 0;
+      const unlockFee = 0;
+      const rentalCost = hourlyPrice;
+      const subtotal = unlockFee + rentalCost;
+
+      res.json({
+        data: {
+          rentalPlanId: plan?.id ?? null,
+          rentalPlanName: plan?.name ?? "default",
+          estimatedDurationMinutes: 60,
+          currency: plan?.currency ?? "USD",
+          unlockFee,
+          rentalCost,
+          subtotal,
+          depositAmount,
+          totalDueNow: subtotal + depositAmount,
+        },
+      });
+    } catch (err: unknown) {
+      handleError(res, err, "GET /client/vehicles/:id/price-preview");
+    }
+  },
+);
+
 router.get("/client/vehicles/:id/locations", authenticate, async (req, res) => {
   try {
     const { clientId, companyId } = requireClient(req);
