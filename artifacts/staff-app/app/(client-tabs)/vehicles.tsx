@@ -19,6 +19,11 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken } from "@/services/api";
+import {
+  getClientErrorMessage,
+  type ClientErrorCode,
+} from "@/services/client-error-message";
+import { buildPricePreview } from "@/services/rental-price-preview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -57,6 +62,20 @@ const VEHICLE_STATUS_STYLE: Record<string, { color: string; bg: string }> = {
   reserved: { color: "#1565C0", bg: "#2196F320" },
   maintenance: { color: "#E65100", bg: "#FF980020" },
 };
+
+const PRICE_PER_HOUR_BY_ASSET_TYPE: Record<string, number> = {
+  bike: 180,
+  ebike: 300,
+  scooter: 250,
+  escooter: 280,
+};
+
+function toClientErrorCode(status: number): ClientErrorCode {
+  if (status === 402) return "payment_declined";
+  if (status === 423) return "lock_unreachable";
+  if (status === 503) return "network_unreachable";
+  return "unknown";
+}
 
 export default function VehiclesScreen() {
   const { t } = useTranslation();
@@ -161,10 +180,17 @@ export default function VehiclesScreen() {
         );
         fetchVehicles();
       } else {
-        Alert.alert(t("common.error"), json.error?.message ?? "Failed");
+        const fallback = getClientErrorMessage(
+          toClientErrorCode(res.status),
+          "ru",
+        );
+        Alert.alert(t("common.error"), json.error?.message ?? fallback);
       }
     } catch {
-      Alert.alert(t("common.error"), t("clientVehicles.rentFailed"));
+      Alert.alert(
+        t("common.error"),
+        getClientErrorMessage("network_unreachable", "ru"),
+      );
     } finally {
       setRenting(null);
     }
@@ -366,6 +392,41 @@ export default function VehiclesScreen() {
             <Text style={styles.modalMessage}>
               {t("clientVehicles.confirmRentMessage")}
             </Text>
+            {confirmVehicle && (
+              <View style={styles.priceCard}>
+                {(() => {
+                  const preview = buildPricePreview({
+                    basePricePerHour:
+                      PRICE_PER_HOUR_BY_ASSET_TYPE[confirmVehicle.assetType] ??
+                      250,
+                    estimatedDurationMinutes: 60,
+                    unlockFee: 49,
+                    depositAmount: 1000,
+                    currency: "RUB",
+                  });
+                  return (
+                    <>
+                      <Text style={styles.priceTitle}>Стоимость до старта</Text>
+                      <Text style={styles.priceLine}>
+                        Разблокировка: {preview.unlockFee} ₽
+                      </Text>
+                      <Text style={styles.priceLine}>
+                        1 час аренды (оценка): {preview.rentalCost} ₽
+                      </Text>
+                      <Text style={styles.priceLine}>
+                        Итого: {preview.subtotal} ₽
+                      </Text>
+                      <Text style={styles.priceLineMuted}>
+                        Депозит: {preview.depositAmount} ₽
+                      </Text>
+                      <Text style={styles.priceTotal}>
+                        К списанию сейчас: {preview.totalDueNow} ₽
+                      </Text>
+                    </>
+                  );
+                })()}
+              </View>
+            )}
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -567,6 +628,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 8,
+  },
+  priceCard: {
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    width: "100%",
+    gap: 3,
+  },
+  priceTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
+  priceLine: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#333" },
+  priceLineMuted: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#6b6b6b",
+    marginTop: 4,
+  },
+  priceTotal: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#1a1a1a",
+    marginTop: 4,
   },
   modalActions: {
     flexDirection: "row",
