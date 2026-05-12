@@ -19,10 +19,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken } from "@/services/api";
-import {
-  getClientErrorMessage,
-  type ClientErrorCode,
-} from "@/services/client-error-message";
+import { getClientErrorMessage } from "@/services/client-error-message";
+import { mapStartRentalErrorCode } from "@/services/rental-action-errors";
 import { buildPricePreview } from "@/services/rental-price-preview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
@@ -38,6 +36,14 @@ interface Vehicle {
   lat: number | null;
   lng: number | null;
   batteryPercent: number | null;
+}
+interface ApiPricePreview {
+  currency: "RUB" | "USD" | "EUR";
+  unlockFee: number;
+  rentalCost: number;
+  subtotal: number;
+  depositAmount: number;
+  totalDueNow: number;
 }
 
 const ASSET_TYPE_ICONS: Record<
@@ -70,15 +76,8 @@ const PRICE_PER_HOUR_BY_ASSET_TYPE: Record<string, number> = {
   escooter: 280,
 };
 
-function toClientErrorCode(status: number): ClientErrorCode {
-  if (status === 402) return "payment_declined";
-  if (status === 423) return "lock_unreachable";
-  if (status === 503) return "network_unreachable";
-  return "unknown";
-}
-
 export default function VehiclesScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
   const router = useRouter();
@@ -91,6 +90,12 @@ export default function VehiclesScreen() {
   const [searching, setSearching] = useState(false);
 
   const [confirmVehicle, setConfirmVehicle] = useState<Vehicle | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [previewCache, setPreviewCache] = useState<
+    Record<string, ApiPricePreview>
+  >({});
+  const locale = i18n.language.startsWith("ru") ? "ru" : "en";
 
   const fetchVehicles = useCallback(async () => {
     try {
@@ -119,6 +124,51 @@ export default function VehiclesScreen() {
   useAppStateFocus(() => {
     fetchVehicles();
   });
+
+  const buildFallbackPreview = useCallback(
+    (vehicle: Vehicle): ApiPricePreview =>
+      buildPricePreview({
+        basePricePerHour:
+          PRICE_PER_HOUR_BY_ASSET_TYPE[vehicle.assetType] ?? 250,
+        estimatedDurationMinutes: 60,
+        unlockFee: 49,
+        depositAmount: 1000,
+        currency: "RUB",
+      }),
+    [],
+  );
+
+  const loadPreview = useCallback(
+    async (vehicle: Vehicle) => {
+      setPreviewLoading(true);
+      setPreviewError(false);
+      try {
+        const token = await getAccessToken();
+        const res = await fetch(
+          `${BASE_URL}/api/client/vehicles/${vehicle.id}/price-preview`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "x-company-id": companyId || "",
+            },
+          },
+        );
+        if (!res.ok) throw new Error("preview request failed");
+        const json = (await res.json()) as { data?: ApiPricePreview };
+        if (!json.data) throw new Error("preview data missing");
+        setPreviewCache((prev) => ({ ...prev, [vehicle.id]: json.data! }));
+      } catch {
+        setPreviewError(true);
+        setPreviewCache((prev) => ({
+          ...prev,
+          [vehicle.id]: buildFallbackPreview(vehicle),
+        }));
+      } finally {
+        setPreviewLoading(false);
+      }
+    },
+    [buildFallbackPreview, companyId],
+  );
 
   const handleLookup = async () => {
     const code = searchCode.trim();
@@ -181,15 +231,15 @@ export default function VehiclesScreen() {
         fetchVehicles();
       } else {
         const fallback = getClientErrorMessage(
-          toClientErrorCode(res.status),
-          "ru",
+          mapStartRentalErrorCode(res.status),
+          locale,
         );
         Alert.alert(t("common.error"), json.error?.message ?? fallback);
       }
     } catch {
       Alert.alert(
         t("common.error"),
-        getClientErrorMessage("network_unreachable", "ru"),
+        getClientErrorMessage("network_unreachable", locale),
       );
     } finally {
       setRenting(null);
@@ -267,6 +317,9 @@ export default function VehiclesScreen() {
           onPress={(e) => {
             e.stopPropagation?.();
             setConfirmVehicle(item);
+            if (!previewCache[item.id]) {
+              void loadPreview(item);
+            }
           }}
           disabled={!!renting}
           activeOpacity={0.8}
@@ -395,32 +448,53 @@ export default function VehiclesScreen() {
             {confirmVehicle && (
               <View style={styles.priceCard}>
                 {(() => {
-                  const preview = buildPricePreview({
-                    basePricePerHour:
-                      PRICE_PER_HOUR_BY_ASSET_TYPE[confirmVehicle.assetType] ??
-                      250,
-                    estimatedDurationMinutes: 60,
-                    unlockFee: 49,
-                    depositAmount: 1000,
-                    currency: "RUB",
-                  });
+                  const preview =
+                    previewCache[confirmVehicle.id] ??
+                    buildFallbackPreview(confirmVehicle);
                   return (
                     <>
-                      <Text style={styles.priceTitle}>Стоимость до старта</Text>
+                      <Text style={styles.priceTitle}>
+                        {t("clientVehicles.preview.title")}
+                      </Text>
+                      {previewLoading && (
+                        <Text style={styles.priceLineMuted}>
+                          {t("clientVehicles.preview.loading")}
+                        </Text>
+                      )}
+                      {previewError && (
+                        <View style={styles.previewWarningRow}>
+                          <Text style={styles.previewWarningText}>
+                            {t("clientVehicles.preview.unavailable")}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => void loadPreview(confirmVehicle)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.previewRetryText}>
+                              {t("common.retry")}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                       <Text style={styles.priceLine}>
-                        Разблокировка: {preview.unlockFee} ₽
+                        {t("clientVehicles.preview.unlockFee")}:{" "}
+                        {preview.unlockFee} ₽
                       </Text>
                       <Text style={styles.priceLine}>
-                        1 час аренды (оценка): {preview.rentalCost} ₽
+                        {t("clientVehicles.preview.estimatedHour")}:{" "}
+                        {preview.rentalCost} ₽
                       </Text>
                       <Text style={styles.priceLine}>
-                        Итого: {preview.subtotal} ₽
+                        {t("clientVehicles.preview.subtotal")}:{" "}
+                        {preview.subtotal} ₽
                       </Text>
                       <Text style={styles.priceLineMuted}>
-                        Депозит: {preview.depositAmount} ₽
+                        {t("clientVehicles.preview.deposit")}:{" "}
+                        {preview.depositAmount} ₽
                       </Text>
                       <Text style={styles.priceTotal}>
-                        К списанию сейчас: {preview.totalDueNow} ₽
+                        {t("clientVehicles.preview.totalDueNow")}:{" "}
+                        {preview.totalDueNow} ₽
                       </Text>
                     </>
                   );
@@ -650,6 +724,23 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     color: "#1a1a1a",
     marginTop: 4,
+  },
+  previewWarningRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  previewWarningText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#A15C00",
+    fontFamily: "Inter_500Medium",
+  },
+  previewRetryText: {
+    fontSize: 12,
+    color: "#1a1a1a",
+    fontFamily: "Inter_700Bold",
   },
   modalActions: {
     flexDirection: "row",
