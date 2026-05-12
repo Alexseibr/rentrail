@@ -423,7 +423,15 @@
     "openMapMessage": "Open these coordinates in Maps?",
     "openMapConfirm": "Open Maps",
     "copyCoords": "Copy Coordinates",
-    "noLocation": "Location unavailable"
+    "noLocation": "Location unavailable",
+    "sos": {
+      "title": "SOS",
+      "description": "If you had an accident or need urgent help, use emergency call immediately.",
+      "call112": "Call 112",
+      "support": "Support",
+      "emergencyCallFailed": "Unable to open dialer. Please call 112 manually.",
+      "supportCallFailed": "Unable to open dialer. Please try again later."
+    }
   },
   "clientNav": {
     "vehicles": "Vehicles",
@@ -449,7 +457,19 @@
     "status_reserved": "Reserved",
     "status_maintenance": "Maintenance",
     "status_rented": "Rented",
-    "status_blocked": "Blocked"
+    "status_blocked": "Blocked",
+    "preview": {
+      "title": "Price before start",
+      "unlockFee": "Unlock fee",
+      "estimatedHour": "Estimated 1-hour rental",
+      "subtotal": "Subtotal",
+      "deposit": "Deposit",
+      "totalDueNow": "Charge now",
+      "loading": "Calculating price...",
+      "unavailable": "Could not load exact price, showing estimate.",
+      "plan": "Plan",
+      "defaultPlan": "Standard"
+    }
   },
   "clientRentals": {
     "noRentals": "No rentals yet",
