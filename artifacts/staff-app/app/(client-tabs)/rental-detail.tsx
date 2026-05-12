@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,17 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
+  Linking,
+  Modal,
+  Pressable,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { getAccessToken } from "@/services/api";
+import { getClientErrorMessage } from "@/services/client-error-message";
+import { mapReturnRentalErrorCode } from "@/services/rental-action-errors";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -58,14 +64,14 @@ const ASSET_TYPE_ICONS: Record<string, string> = {
 
 export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
 
   const [rental, setRental] = useState<RentalDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [returning, setReturning] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showReturnConfirm, setShowReturnConfirm] = useState(false);
+  const locale = i18n.language.startsWith("ru") ? "ru" : "en";
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -84,20 +90,10 @@ export default function RentalDetailScreen() {
 
   useEffect(() => {
     if (id) fetchDetail();
-    return () => {
-      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
-    };
   }, [id, fetchDetail]);
 
-  const handleReturnPress = async () => {
-    if (!confirming) {
-      setConfirming(true);
-      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
-      confirmTimerRef.current = setTimeout(() => setConfirming(false), 3000);
-      return;
-    }
-    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
-    setConfirming(false);
+  const confirmReturnRequest = async () => {
+    setShowReturnConfirm(false);
     setReturning(true);
     try {
       const token = await getAccessToken();
@@ -105,13 +101,44 @@ export default function RentalDetailScreen() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
+      const json = (await res.json()) as { error?: { message?: string } };
       if (res.ok) {
         fetchDetail();
+      } else {
+        const fallback = getClientErrorMessage(
+          mapReturnRentalErrorCode(res.status),
+          locale,
+        );
+        Alert.alert(t("common.error"), json.error?.message ?? fallback, [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("common.retry"),
+            onPress: () => void confirmReturnRequest(),
+          },
+        ]);
       }
     } catch {
+      Alert.alert(
+        t("common.error"),
+        getClientErrorMessage("network_unreachable", locale),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("common.retry"),
+            onPress: () => void confirmReturnRequest(),
+          },
+        ],
+      );
     } finally {
       setReturning(false);
     }
+  };
+
+  const handleEmergencyCall = async (phone: string) => {
+    const url = `tel:${phone}`;
+    const canOpen = await Linking.canOpenURL(url);
+    if (!canOpen) throw new Error("Cannot open dialer");
+    await Linking.openURL(url);
   };
 
   const formatDuration = (minutes: number) => {
@@ -311,25 +338,62 @@ export default function RentalDetailScreen() {
       )}
 
       {isActive && (
+        <View style={styles.sosCard}>
+          <View style={styles.sosHeader}>
+            <Feather name="alert-triangle" size={18} color="#C62828" />
+            <Text style={styles.sosTitle}>{t("rentalDetail.sos.title")}</Text>
+          </View>
+          <Text style={styles.sosText}>
+            {t("rentalDetail.sos.description")}
+          </Text>
+          <View style={styles.sosActions}>
+            <TouchableOpacity
+              style={styles.sosEmergencyButton}
+              onPress={() =>
+                handleEmergencyCall("112").catch(() =>
+                  Alert.alert(
+                    t("common.error"),
+                    t("rentalDetail.sos.emergencyCallFailed"),
+                  ),
+                )
+              }
+              activeOpacity={0.85}
+            >
+              <Feather name="phone-call" size={16} color="#fff" />
+              <Text style={styles.sosEmergencyButtonText}>
+                {t("rentalDetail.sos.call112")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sosSupportButton}
+              onPress={() =>
+                handleEmergencyCall("+78005553535").catch(() =>
+                  Alert.alert(
+                    t("common.error"),
+                    t("rentalDetail.sos.supportCallFailed"),
+                  ),
+                )
+              }
+              activeOpacity={0.85}
+            >
+              <Feather name="headphones" size={16} color="#1a1a1a" />
+              <Text style={styles.sosSupportButtonText}>
+                {t("rentalDetail.sos.support")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {isActive && (
         <TouchableOpacity
-          style={[
-            styles.returnBtn,
-            confirming && styles.returnBtnConfirm,
-            returning && { opacity: 0.7 },
-          ]}
-          onPress={handleReturnPress}
+          style={[styles.returnBtn, returning && { opacity: 0.7 }]}
+          onPress={() => setShowReturnConfirm(true)}
           disabled={returning}
           activeOpacity={0.7}
         >
           {returning ? (
             <ActivityIndicator color="#fff" size="small" />
-          ) : confirming ? (
-            <>
-              <Feather name="check" size={18} color="#1a1a1a" />
-              <Text style={[styles.returnBtnText, { color: "#1a1a1a" }]}>
-                {t("clientRentals.confirmReturn")}
-              </Text>
-            </>
           ) : (
             <>
               <Feather name="corner-down-left" size={18} color="#fff" />
@@ -340,6 +404,47 @@ export default function RentalDetailScreen() {
           )}
         </TouchableOpacity>
       )}
+
+      <Modal
+        visible={showReturnConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowReturnConfirm(false)}
+      >
+        <Pressable
+          style={styles.confirmOverlay}
+          onPress={() => setShowReturnConfirm(false)}
+        >
+          <Pressable style={styles.confirmCard} onPress={() => {}}>
+            <Text style={styles.confirmTitle}>
+              {t("clientRentals.confirmReturn")}
+            </Text>
+            <Text style={styles.confirmText}>
+              {t("rentalDetail.confirmReturnMessage")}
+            </Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={styles.confirmCancel}
+                onPress={() => setShowReturnConfirm(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmCancelText}>
+                  {t("common.cancel")}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmApply}
+                onPress={() => void confirmReturnRequest()}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmApplyText}>
+                  {t("rentalDetail.completeReturn")}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -474,6 +579,53 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: "#555" },
   infoValue: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
   notesText: { fontSize: 14, fontFamily: "Inter_400Regular", color: "#555" },
+  sosCard: {
+    backgroundColor: "#FFF5F5",
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#FFCDD2",
+    gap: 8,
+  },
+  sosHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  sosTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#C62828" },
+  sosText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: "Inter_400Regular",
+    color: "#6A1B1B",
+  },
+  sosActions: { flexDirection: "row", gap: 10, marginTop: 4 },
+  sosEmergencyButton: {
+    flex: 1,
+    backgroundColor: "#D32F2F",
+    borderRadius: 10,
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  sosEmergencyButtonText: {
+    color: "#fff",
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
+  sosSupportButton: {
+    flex: 1,
+    backgroundColor: "#FFECB3",
+    borderRadius: 10,
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  sosSupportButtonText: {
+    color: "#1a1a1a",
+    fontFamily: "Inter_700Bold",
+    fontSize: 13,
+  },
   returnBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -484,8 +636,43 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 4,
   },
-  returnBtnConfirm: {
-    backgroundColor: "#F5C518",
-  },
   returnBtnText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  confirmCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  confirmTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
+  confirmText: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#666",
+    lineHeight: 20,
+  },
+  confirmActions: { flexDirection: "row", gap: 10 },
+  confirmCancel: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: "#f0f0f0",
+    minHeight: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmCancelText: { color: "#666", fontFamily: "Inter_600SemiBold" },
+  confirmApply: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: "#E53935",
+    minHeight: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmApplyText: { color: "#fff", fontFamily: "Inter_700Bold" },
 });

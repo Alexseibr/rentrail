@@ -343,10 +343,10 @@
     "noDeviceData": "Данные устройства недоступны",
     "recentCommands": "Последние команды",
     "noRecentCommands": "Команды ещё не отправлялись",
-    "timeJustNow": "только что",
-    "timeMinutesAgo": "{{count}} мин назад",
-    "timeHoursAgo": "{{count}} ч назад",
-    "timeDaysAgo": "{{count}} д назад",
+    "timeJustNow": "Только что",
+    "timeMinutesAgo": "{{count}} мин. назад",
+    "timeHoursAgo": "{{count}} ч. назад",
+    "timeDaysAgo": "{{count}} дн. назад",
     "cmdStatus_queued": "В очереди",
     "cmdStatus_sent": "Отправлена",
     "cmdStatus_acknowledged": "Выполнена",
@@ -361,10 +361,10 @@
     "cmdType_ping": "Пинг",
     "cmdType_disable": "Отключить",
     "cmdType_set_speed_limit": "Скоростной лимит",
-    "filterCmd_all": "Все",
+    "filterCmd_all": "Все команды",
     "filterCmd_failed": "Ошибки",
     "filterCmd_acknowledged": "Выполненные",
-    "noCommandsForFilter": "Нет команд для этого фильтра",
+    "noCommandsForFilter": "Команд с таким фильтром нет",
     "refreshing": "Обновление…",
     "onlineState": "Подключение",
     "onlineState_online": "В сети",
@@ -376,22 +376,11 @@
     "openMapConfirm": "Открыть Карты",
     "copyCoords": "Скопировать координаты",
     "noLocation": "Местоположение недоступно",
-    "timeJustNow": "Только что",
-    "timeMinutesAgo": "{{count}} мин. назад",
-    "timeHoursAgo": "{{count}} ч. назад",
-    "timeDaysAgo": "{{count}} дн. назад",
-    "recentCommands": "Последние команды",
     "cmdStatus_pending": "В ожидании",
-    "cmdStatus_sent": "Отправлена",
     "cmdStatus_delivered": "Доставлена",
-    "cmdStatus_failed": "Ошибка",
-    "cmdType_lock": "Блокировка",
-    "cmdType_unlock": "Разблокировка",
     "cmdType_arm": "Охрана ВКЛ",
     "cmdType_disarm": "Охрана ВЫКЛ",
-    "filterCmd_all": "Все команды",
-    "filterCmd_pending": "Ожидающие",
-    "noCommandsForFilter": "Команд с таким фильтром нет"
+    "filterCmd_pending": "Ожидающие"
   },
   "rentalDetail": {
     "title": "Детали аренды",
@@ -441,7 +430,15 @@
     "openMapMessage": "Открыть координаты в Картах?",
     "openMapConfirm": "Открыть Карты",
     "copyCoords": "Скопировать координаты",
-    "noLocation": "Местоположение недоступно"
+    "noLocation": "Местоположение недоступно",
+    "sos": {
+      "title": "SOS",
+      "description": "Если случилась авария или нужна срочная помощь, используйте экстренный звонок.",
+      "call112": "Позвонить 112",
+      "support": "Поддержка",
+      "emergencyCallFailed": "Не удалось открыть звонок. Позвоните в 112 вручную.",
+      "supportCallFailed": "Не удалось открыть звонок. Попробуйте позже."
+    }
   },
   "clientNav": {
     "vehicles": "Транспорт",
@@ -467,7 +464,19 @@
     "status_reserved": "Забронирован",
     "status_maintenance": "На обслуживании",
     "status_rented": "В аренде",
-    "status_blocked": "Заблокирован"
+    "status_blocked": "Заблокирован",
+    "preview": {
+      "title": "Стоимость до старта",
+      "unlockFee": "Разблокировка",
+      "estimatedHour": "1 час аренды (оценка)",
+      "subtotal": "Итого",
+      "deposit": "Депозит",
+      "totalDueNow": "К списанию сейчас",
+      "loading": "Рассчитываем цену...",
+      "unavailable": "Не удалось загрузить точную цену, показана оценка.",
+      "plan": "Тариф",
+      "defaultPlan": "Стандарт"
+    }
   },
   "clientRentals": {
     "noRentals": "Аренд пока нет",
