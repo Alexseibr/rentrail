@@ -34,6 +34,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useId,
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
@@ -129,6 +130,8 @@ const companyNavGroups: NavGroup[] = [
   },
 ];
 
+const RECENT_NAV_STORAGE_KEY = "platform-admin:recent-nav";
+
 const PLATFORM_ROLES = [
   "superAdmin",
   "platformAdmin",
@@ -144,6 +147,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navQuery, setNavQuery] = useState("");
+  const [recentPaths, setRecentPaths] = useState<string[]>([]);
+  const navSearchId = useId();
+  const desktopNavSearchRef = useRef<HTMLInputElement>(null);
+  const mobileNavSearchRef = useRef<HTMLInputElement>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -176,6 +183,42 @@ export function AppLayout({ children }: { children: ReactNode }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [userMenuOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(RECENT_NAV_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentPaths(
+          parsed.filter((x): x is string => typeof x === "string"),
+        );
+      }
+    } catch {
+      // noop: ignore malformed localStorage payloads
+    }
+  }, []);
+
+  useEffect(() => {
+    function onGlobalKeydown(e: KeyboardEvent) {
+      if (e.key !== "/") return;
+      const target = e.target as HTMLElement | null;
+      const isTypingTarget =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+      if (isTypingTarget) return;
+      e.preventDefault();
+      const targetInput = window.matchMedia("(min-width: 768px)").matches
+        ? desktopNavSearchRef.current
+        : mobileNavSearchRef.current;
+      targetInput?.focus();
+      targetInput?.select();
+    }
+    window.addEventListener("keydown", onGlobalKeydown);
+    return () => window.removeEventListener("keydown", onGlobalKeydown);
+  }, []);
 
   const isPlatformUser = useMemo(() => {
     if (!user) return false;
@@ -256,6 +299,28 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const mobileNavItems = navItems.slice(0, 5);
 
+  const recentNavItems = useMemo(() => {
+    const byPath = new globalThis.Map(
+      navItems.map((item) => [item.path, item]),
+    );
+    return recentPaths
+      .map((path) => byPath.get(path))
+      .filter(Boolean) as NavItem[];
+  }, [navItems, recentPaths]);
+
+  const trackNavClick = useCallback((path: string) => {
+    setRecentPaths((prev) => {
+      const next = [path, ...prev.filter((p) => p !== path)].slice(0, 4);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          RECENT_NAV_STORAGE_KEY,
+          JSON.stringify(next),
+        );
+      }
+      return next;
+    });
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {mobileOpen && (
@@ -316,11 +381,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {!collapsed && (
             <div className="mb-3 px-1">
               <Input
+                id={navSearchId}
+                ref={desktopNavSearchRef}
                 value={navQuery}
                 onChange={(e) => setNavQuery(e.target.value)}
                 placeholder={t("common.search", "Поиск...")}
                 className="h-8 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/45"
                 aria-label={t("common.search", "Поиск...")}
+                title={t("common.search", "Поиск...") + " (/)"}
               />
             </div>
           )}
@@ -333,6 +401,28 @@ export function AppLayout({ children }: { children: ReactNode }) {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+          )}
+          {!collapsed && recentNavItems.length > 0 && (
+            <div className="mb-4">
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                {t("nav.quickAccess", "Быстрый доступ")}
+              </p>
+              <div className="space-y-1">
+                {recentNavItems.map((item) => (
+                  <Link
+                    key={`recent-${item.path}`}
+                    href={item.path}
+                    onClick={() => trackNavClick(item.path)}
+                  >
+                    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground">
+                      <item.icon className="h-[18px] w-[18px] shrink-0" />
+                      <span className="truncate">{t(item.labelKey)}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <Separator className="my-2 bg-sidebar-foreground/10" />
+            </div>
           )}
           {filteredNavGroups.map((group, gi) => (
             <div key={gi} className={cn(gi > 0 && "mt-4")}>
@@ -354,7 +444,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       ? location === "/" || location === ""
                       : location.startsWith(item.path);
                   return (
-                    <Link key={item.path} href={item.path}>
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      onClick={() => trackNavClick(item.path)}
+                    >
                       <div
                         className={cn(
                           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
@@ -462,11 +556,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <nav className="flex-1 overflow-y-auto py-3 px-3">
           <div className="mb-3 px-1">
             <Input
+              id={`${navSearchId}-mobile`}
+              ref={mobileNavSearchRef}
               value={navQuery}
               onChange={(e) => setNavQuery(e.target.value)}
               placeholder={t("common.search", "Поиск...")}
               className="h-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/45"
               aria-label={t("common.search", "Поиск...")}
+              title={t("common.search", "Поиск...") + " (/)"}
             />
           </div>
           {filteredNavGroups.map((group, gi) => (
@@ -481,7 +578,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       ? location === "/" || location === ""
                       : location.startsWith(item.path);
                   return (
-                    <Link key={item.path} href={item.path}>
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      onClick={() => trackNavClick(item.path)}
+                    >
                       <div
                         className={cn(
                           "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all duration-200",
