@@ -36,11 +36,11 @@ async function ensureRoles(): Promise<Map<string, string>> {
   if (existingRoles.length === 0) {
     await ensureRolesSeeded();
     const seededRoles = await db.select().from(roles);
-    _rolesCache = new Map(seededRoles.map((r) => [r.code, r.id]));
+    _rolesCache = new Map(seededRoles.map((r) => [r.name, r.id]));
     return _rolesCache;
   }
 
-  _rolesCache = new Map(existingRoles.map((r) => [r.code, r.id]));
+  _rolesCache = new Map(existingRoles.map((r) => [r.name, r.id]));
   return _rolesCache;
 }
 

@@ -238,11 +238,10 @@ export async function updateWorkOrder(
 }
 
 export async function getMechanics(companyId: string, _branchId?: string) {
-  const mechanicRole = await db
+  const [mechanicRole] = await db
     .select()
     .from(roles)
-    .where(eq(roles.code, "mechanic"))
-    .then((r) => r[0]);
+    .where(eq(roles.name, "mechanic"));
   if (!mechanicRole) return [];
 
   const rows = await db

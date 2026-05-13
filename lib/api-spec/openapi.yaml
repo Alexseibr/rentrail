@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: client
+    description: Client-facing operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /client/vehicles/{id}/price-preview:
+    get:
+      operationId: getClientVehiclePricePreview
+      tags: [client]
+      summary: Get client vehicle price preview
+      description: Returns pricing preview for a vehicle available to a client.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: rentalPlanId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Price preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientVehiclePricePreviewResponse"
+        "400":
+          description: Invalid input
+        "404":
+          description: Vehicle not found
 components:
   schemas:
     HealthStatus:
@@ -33,3 +65,41 @@ components:
           type: string
       required:
         - status
+    ClientVehiclePricePreview:
+      type: object
+      properties:
+        rentalPlanId:
+          type: [string, "null"]
+          format: uuid
+        rentalPlanName:
+          type: string
+        estimatedDurationMinutes:
+          type: integer
+        currency:
+          type: string
+        unlockFee:
+          type: number
+        rentalCost:
+          type: number
+        subtotal:
+          type: number
+        depositAmount:
+          type: number
+        totalDueNow:
+          type: number
+      required:
+        - rentalPlanName
+        - estimatedDurationMinutes
+        - currency
+        - unlockFee
+        - rentalCost
+        - subtotal
+        - depositAmount
+        - totalDueNow
+    ClientVehiclePricePreviewResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ClientVehiclePricePreview"
+      required:
+        - data

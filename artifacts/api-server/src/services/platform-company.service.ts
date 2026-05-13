@@ -105,7 +105,7 @@ export async function listPlatformCompanies(opts: PlatformCompanyListOptions) {
       .innerJoin(roles, eq(roles.id, userCompanyMemberships.roleId))
       .where(
         and(
-          eq(roles.code, "owner"),
+          eq(roles.name, "owner"),
           or(
             ilike(users.firstName, `%${opts.search}%`),
             ilike(users.lastName, `%${opts.search}%`),
@@ -271,7 +271,7 @@ export async function getPlatformCompanyDetail(companyId: string) {
   const ownerRole = await db
     .select({ id: roles.id })
     .from(roles)
-    .where(eq(roles.code, "owner"))
+    .where(eq(roles.name, "owner"))
     .limit(1);
 
   let ownerMembers: {

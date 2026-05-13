@@ -8,76 +8,54 @@ import {
 
 const SYSTEM_ROLES = [
   {
-    code: "superAdmin",
-    name: "Super Admin",
+    name: "superAdmin",
+    displayName: "Super Admin",
     description: "Platform-level admin with full access",
     isSystem: true,
   },
   {
-    code: "owner",
-    name: "Owner",
+    name: "owner",
+    displayName: "Owner",
     description: "Company owner with full company access",
     isSystem: true,
   },
   {
-    code: "admin",
-    name: "Admin",
+    name: "admin",
+    displayName: "Admin",
     description: "Company administrator",
     isSystem: true,
   },
   {
-    code: "manager",
-    name: "Manager",
+    name: "manager",
+    displayName: "Manager",
     description: "Branch/station manager",
     isSystem: true,
   },
   {
-    code: "accountant",
-    name: "Accountant",
+    name: "accountant",
+    displayName: "Accountant",
     description: "Financial operations",
     isSystem: true,
   },
   {
-    code: "operator",
-    name: "Operator",
+    name: "operator",
+    displayName: "Operator",
     description: "Day-to-day rental operations",
     isSystem: true,
   },
   {
-    code: "mechanic",
-    name: "Mechanic",
+    name: "mechanic",
+    displayName: "Mechanic",
     description: "Asset maintenance and repairs",
     isSystem: true,
   },
   {
-    code: "viewer",
-    name: "Viewer",
+    name: "viewer",
+    displayName: "Viewer",
     description: "Read-only access",
     isSystem: true,
   },
 ];
-
-const MODULES: Record<string, string[]> = {
-  platform: ["company"],
-  organization: ["branch", "station"],
-  crm: ["client", "inquiry", "b2b"],
-  fleet: ["asset", "device", "battery"],
-  operations: ["rental", "blacklist"],
-  finance: ["payment", "deposit"],
-  access: ["user", "role"],
-  system: ["audit", "settings"],
-  notifications: ["notification"],
-  telemetry: ["telemetry"],
-  geofencing: ["geofence"],
-  commands: ["command"],
-};
-
-function getModule(resource: string): string {
-  for (const [mod, resources] of Object.entries(MODULES)) {
-    if (resources.includes(resource)) return mod;
-  }
-  return "system";
-}
 
 const RESOURCE_ACTIONS: Record<string, string[]> = {
   company: ["read", "update", "manage"],
@@ -248,9 +226,8 @@ export async function seedRolesAndPermissions() {
   const permissionValues = Object.entries(RESOURCE_ACTIONS).flatMap(
     ([resource, actions]) =>
       actions.map((action) => ({
-        code: `${resource}:${action}`,
-        name: `${action.charAt(0).toUpperCase() + action.slice(1)} ${resource}`,
-        module: getModule(resource),
+        resource,
+        action,
         description: `${action} ${resource}`,
       })),
   );
@@ -262,8 +239,10 @@ export async function seedRolesAndPermissions() {
     db.select().from(permissions),
   ]);
 
-  const roleMap = new Map(allRoles.map((r) => [r.code, r.id]));
-  const permMap = new Map(allPermissions.map((p) => [p.code, p.id]));
+  const roleMap = new Map(allRoles.map((r) => [r.name, r.id]));
+  const permMap = new Map(
+    allPermissions.map((p) => [`${p.resource}:${p.action}`, p.id]),
+  );
 
   const rolePermissionValues = Object.entries(ROLE_PERMISSIONS).flatMap(
     ([roleCode, permCodes]) => {

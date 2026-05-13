@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { testApp } from "../helpers";
+import { createTestTenant } from "../helpers";
 import { resBody, type ApiResponse } from "../helpers";
 
 describe("Auth API", () => {
@@ -254,6 +255,174 @@ describe("Auth API", () => {
         .set("Authorization", `Bearer ${at}`);
 
       expect(meRes.status).toBe(200);
+    });
+  });
+
+  describe("POST /api/auth/client/register", () => {
+    const clientPassword = "ClientPass123!";
+    let tenantCompanyId = "";
+    const clientPhone = `+1555${Date.now().toString().slice(-7)}`;
+
+    beforeAll(async () => {
+      const tenant = await createTestTenant();
+      tenantCompanyId = tenant.company.id;
+    });
+
+    it("registers a client account and returns tokens", async () => {
+      const res = await request(testApp)
+        .post("/api/auth/client/register")
+        .send({
+          companyId: tenantCompanyId,
+          fullName: "Client Register Test",
+          phone: clientPhone,
+          password: clientPassword,
+          email: "client-register@test.com",
+        });
+
+      expect(res.status).toBe(201);
+      expect(resBody<ApiResponse>(res).data).toHaveProperty("accessToken");
+      expect(resBody<ApiResponse>(res).data).toHaveProperty("refreshToken");
+      expect(
+        resBody<ApiResponse<{ user: { phone: string } }>>(res).data.user.phone,
+      ).toBe(clientPhone);
+    });
+
+    it("logs in with registered client credentials", async () => {
+      const res = await request(testApp).post("/api/auth/client/login").send({
+        companyId: tenantCompanyId,
+        phone: clientPhone,
+        password: clientPassword,
+      });
+      expect(res.status).toBe(200);
+      expect(resBody<ApiResponse>(res).data).toHaveProperty("accessToken");
+    });
+  });
+
+  describe("POST /api/auth/client/request-otp + verify-otp", () => {
+    let tenantCompanyId = "";
+    const clientPhone = `+1666${Date.now().toString().slice(-7)}`;
+
+    beforeAll(async () => {
+      const tenant = await createTestTenant();
+      tenantCompanyId = tenant.company.id;
+      await request(testApp).post("/api/auth/client/register").send({
+        companyId: tenantCompanyId,
+        fullName: "Client OTP Test",
+        phone: clientPhone,
+        password: "OldPass123!",
+      });
+    });
+
+    it("resets client password via OTP flow", async () => {
+      const requestOtp = await request(testApp)
+        .post("/api/auth/client/request-otp")
+        .send({ companyId: tenantCompanyId, phone: clientPhone });
+
+      expect(requestOtp.status).toBe(200);
+      const devCode = resBody<ApiResponse>(requestOtp).data.devCode as string;
+      expect(devCode).toHaveLength(6);
+
+      const verify = await request(testApp)
+        .post("/api/auth/client/verify-otp")
+        .send({
+          companyId: tenantCompanyId,
+          phone: clientPhone,
+          code: devCode,
+          newPassword: "NewPass123!",
+        });
+      expect(verify.status).toBe(200);
+      expect(resBody<ApiResponse>(verify).data.success).toBe(true);
+
+      const login = await request(testApp).post("/api/auth/client/login").send({
+        companyId: tenantCompanyId,
+        phone: clientPhone,
+        password: "NewPass123!",
+      });
+      expect(login.status).toBe(200);
+    });
+  });
+
+  describe("client session security", () => {
+    const password = "ClientSession123!";
+    let tenantCompanyId = "";
+    const clientPhone = `+1777${Date.now().toString().slice(-7)}`;
+
+    beforeAll(async () => {
+      const tenant = await createTestTenant();
+      tenantCompanyId = tenant.company.id;
+      await request(testApp).post("/api/auth/client/register").send({
+        companyId: tenantCompanyId,
+        fullName: "Client Session Test",
+        phone: clientPhone,
+        password,
+      });
+    });
+
+    it("revokes client refresh token after client logout", async () => {
+      const login = await request(testApp).post("/api/auth/client/login").send({
+        companyId: tenantCompanyId,
+        phone: clientPhone,
+        password,
+      });
+
+      expect(login.status).toBe(200);
+      const { accessToken, refreshToken } = resBody<ApiResponse>(login)
+        .data as {
+        accessToken: string;
+        refreshToken: string;
+      };
+
+      const logout = await request(testApp)
+        .post("/api/auth/client/logout")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(logout.status).toBe(200);
+
+      const refresh = await request(testApp)
+        .post("/api/auth/client/refresh")
+        .send({ refreshToken });
+      expect(refresh.status).toBe(401);
+    });
+
+    it("revokes all client refresh tokens after logout-all", async () => {
+      const loginOne = await request(testApp)
+        .post("/api/auth/client/login")
+        .send({
+          companyId: tenantCompanyId,
+          phone: clientPhone,
+          password,
+        });
+      const loginTwo = await request(testApp)
+        .post("/api/auth/client/login")
+        .send({
+          companyId: tenantCompanyId,
+          phone: clientPhone,
+          password,
+        });
+
+      expect(loginOne.status).toBe(200);
+      expect(loginTwo.status).toBe(200);
+
+      const accessToken = resBody<ApiResponse>(loginOne).data
+        .accessToken as string;
+      const refreshOne = resBody<ApiResponse>(loginOne).data
+        .refreshToken as string;
+      const refreshTwo = resBody<ApiResponse>(loginTwo).data
+        .refreshToken as string;
+
+      const logoutAll = await request(testApp)
+        .post("/api/auth/client/logout-all")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(logoutAll.status).toBe(200);
+
+      const refreshAfterLogoutAllOne = await request(testApp)
+        .post("/api/auth/client/refresh")
+        .send({ refreshToken: refreshOne });
+      const refreshAfterLogoutAllTwo = await request(testApp)
+        .post("/api/auth/client/refresh")
+        .send({ refreshToken: refreshTwo });
+
+      expect(refreshAfterLogoutAllOne.status).toBe(401);
+      expect(refreshAfterLogoutAllTwo.status).toBe(401);
     });
   });
 });

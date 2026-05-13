@@ -14,6 +14,7 @@ export interface AccessTokenPayload {
 export interface RefreshTokenPayload {
   userId: string;
   sessionId: string;
+  tokenId: string;
 }
 
 export function signAccessToken(payload: AccessTokenPayload): string {

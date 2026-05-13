@@ -28,12 +28,12 @@ const COMPANY_SUSPENDED_STATUS = "suspended";
 
 async function loadRolePermissions(roleId: string): Promise<Set<string>> {
   const rows = await db
-    .select({ code: permissions.code })
+    .select({ resource: permissions.resource, action: permissions.action })
     .from(rolePermissions)
     .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
     .where(eq(rolePermissions.roleId, roleId));
 
-  return new Set(rows.map((r) => r.code));
+  return new Set(rows.map((r) => `${r.resource}:${r.action}`));
 }
 
 async function checkCompanyStatus(companyId: string): Promise<string> {
@@ -88,7 +88,7 @@ export function requireCompanyAccess(
     const [membership] = await db
       .select({
         roleId: userCompanyMemberships.roleId,
-        roleCode: roles.code,
+        roleCode: roles.name,
         status: userCompanyMemberships.status,
       })
       .from(userCompanyMemberships)
