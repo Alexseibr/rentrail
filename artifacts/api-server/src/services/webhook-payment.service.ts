@@ -164,6 +164,13 @@ export async function processYukassaWebhook(
     );
     return { ok: true };
   }
+  if (payment.status === newStatus) {
+    logger.info(
+      { paymentId: payment.id, status: payment.status },
+      "YuKassa webhook: duplicate status, skipping update",
+    );
+    return { ok: true };
+  }
 
   const updated = await updatePaymentStatus(
     payment.id,
@@ -285,6 +292,13 @@ export async function processTinkoffWebhook(
     logger.info({ paymentId }, "Tinkoff webhook: payment not found in DB");
     return { ok: true };
   }
+  if (payment.status === newStatus) {
+    logger.info(
+      { paymentId: payment.id, status: payment.status },
+      "Tinkoff webhook: duplicate status, skipping update",
+    );
+    return { ok: true };
+  }
 
   const updated = await updatePaymentStatus(
     payment.id,
@@ -371,6 +385,13 @@ export async function processCloudpaymentsWebhook(
     logger.info(
       { transactionId },
       "CloudPayments webhook: payment not found in DB",
+    );
+    return { ok: true, code: 0 };
+  }
+  if (payment.status === newStatus) {
+    logger.info(
+      { paymentId: payment.id, status: payment.status },
+      "CloudPayments webhook: duplicate status, skipping update",
     );
     return { ok: true, code: 0 };
   }

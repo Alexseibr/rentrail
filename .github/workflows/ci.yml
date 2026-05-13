@@ -10,8 +10,8 @@ env:
   NODE_VERSION: "22"
 
 jobs:
-  quality:
-    name: Lint + Typecheck
+  generated-guard:
+    name: Generated Artifacts Guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,8 +23,38 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint
       - run: pnpm run codegen:check
+
+  doctor:
+    name: Dev Doctor Preflight
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run dev:doctor:json
+
+  quality:
+    name: Lint + Typecheck
+    runs-on: ubuntu-latest
+    needs: [generated-guard]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
       - run: pnpm run typecheck
 
   unit-tests:
@@ -56,7 +86,7 @@ jobs:
   smoke-tests:
     name: Smoke API Flow
     runs-on: ubuntu-latest
-    needs: [quality]
+    needs: [doctor, generated-guard, quality]
     services:
       postgres:
         image: postgres:16
@@ -141,7 +171,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [quality, unit-tests, smoke-tests]
+    needs: [doctor, generated-guard, quality, unit-tests, smoke-tests]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

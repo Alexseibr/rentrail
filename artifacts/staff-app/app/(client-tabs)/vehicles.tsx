@@ -19,6 +19,14 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppStateFocus } from "@/hooks/useAppStateFocus";
 import { getAccessToken } from "@/services/api";
+import { getClientErrorMessage } from "@/services/client-error-message";
+import {
+  isPreviewFresh,
+  type CachedPricePreview,
+  type PricePreviewValue,
+} from "@/services/price-preview-cache";
+import { mapStartRentalErrorCode } from "@/services/rental-action-errors";
+import { buildPricePreview } from "@/services/rental-price-preview";
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
@@ -34,6 +42,8 @@ interface Vehicle {
   lng: number | null;
   batteryPercent: number | null;
 }
+type ApiPricePreview = PricePreviewValue;
+const PREVIEW_CACHE_TTL_MS = 60_000;
 
 const ASSET_TYPE_ICONS: Record<
   string,
@@ -58,8 +68,15 @@ const VEHICLE_STATUS_STYLE: Record<string, { color: string; bg: string }> = {
   maintenance: { color: "#E65100", bg: "#FF980020" },
 };
 
+const PRICE_PER_HOUR_BY_ASSET_TYPE: Record<string, number> = {
+  bike: 180,
+  ebike: 300,
+  scooter: 250,
+  escooter: 280,
+};
+
 export default function VehiclesScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const { companyId } = useAuth();
   const router = useRouter();
@@ -72,6 +89,12 @@ export default function VehiclesScreen() {
   const [searching, setSearching] = useState(false);
 
   const [confirmVehicle, setConfirmVehicle] = useState<Vehicle | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [previewCache, setPreviewCache] = useState<
+    Record<string, CachedPricePreview>
+  >({});
+  const locale = i18n.language.startsWith("ru") ? "ru" : "en";
 
   const fetchVehicles = useCallback(async () => {
     try {
@@ -100,6 +123,64 @@ export default function VehiclesScreen() {
   useAppStateFocus(() => {
     fetchVehicles();
   });
+
+  const buildFallbackPreview = useCallback(
+    (vehicle: Vehicle): ApiPricePreview =>
+      buildPricePreview({
+        basePricePerHour:
+          PRICE_PER_HOUR_BY_ASSET_TYPE[vehicle.assetType] ?? 250,
+        estimatedDurationMinutes: 60,
+        unlockFee: 49,
+        depositAmount: 1000,
+        currency: "RUB",
+      }),
+    [],
+  );
+
+  const loadPreview = useCallback(
+    async (vehicle: Vehicle) => {
+      setPreviewLoading(true);
+      setPreviewError(false);
+      try {
+        const token = await getAccessToken();
+        const res = await fetch(
+          `${BASE_URL}/api/client/vehicles/${vehicle.id}/price-preview`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "x-company-id": companyId || "",
+            },
+          },
+        );
+        if (!res.ok) throw new Error("preview request failed");
+        const json = (await res.json()) as { data?: ApiPricePreview };
+        if (!json.data) throw new Error("preview data missing");
+        setPreviewCache((prev) => ({
+          ...prev,
+          [vehicle.id]: { data: json.data!, fetchedAt: Date.now() },
+        }));
+      } catch {
+        setPreviewError(true);
+        setPreviewCache((prev) => ({
+          ...prev,
+          [vehicle.id]: {
+            data: buildFallbackPreview(vehicle),
+            fetchedAt: Date.now(),
+          },
+        }));
+      } finally {
+        setPreviewLoading(false);
+      }
+    },
+    [buildFallbackPreview, companyId],
+  );
+  const hasFreshPreview = useCallback(
+    (vehicleId: string) => {
+      const cached = previewCache[vehicleId];
+      return isPreviewFresh(cached, Date.now(), PREVIEW_CACHE_TTL_MS);
+    },
+    [previewCache],
+  );
 
   const handleLookup = async () => {
     const code = searchCode.trim();
@@ -161,10 +242,17 @@ export default function VehiclesScreen() {
         );
         fetchVehicles();
       } else {
-        Alert.alert(t("common.error"), json.error?.message ?? "Failed");
+        const fallback = getClientErrorMessage(
+          mapStartRentalErrorCode(res.status),
+          locale,
+        );
+        Alert.alert(t("common.error"), json.error?.message ?? fallback);
       }
     } catch {
-      Alert.alert(t("common.error"), t("clientVehicles.rentFailed"));
+      Alert.alert(
+        t("common.error"),
+        getClientErrorMessage("network_unreachable", locale),
+      );
     } finally {
       setRenting(null);
     }
@@ -241,6 +329,9 @@ export default function VehiclesScreen() {
           onPress={(e) => {
             e.stopPropagation?.();
             setConfirmVehicle(item);
+            if (!hasFreshPreview(item.id)) {
+              void loadPreview(item);
+            }
           }}
           disabled={!!renting}
           activeOpacity={0.8}
@@ -366,6 +457,70 @@ export default function VehiclesScreen() {
             <Text style={styles.modalMessage}>
               {t("clientVehicles.confirmRentMessage")}
             </Text>
+            {confirmVehicle && (
+              <View style={styles.priceCard}>
+                {(() => {
+                  const preview =
+                    previewCache[confirmVehicle.id]?.data ??
+                    buildFallbackPreview(confirmVehicle);
+                  const estimatedMinutes =
+                    preview.estimatedDurationMinutes ?? 60;
+                  return (
+                    <>
+                      <Text style={styles.priceTitle}>
+                        {t("clientVehicles.preview.title")}
+                      </Text>
+                      <Text style={styles.priceLineMuted}>
+                        {t("clientVehicles.preview.plan")}:{" "}
+                        {preview.rentalPlanName ??
+                          t("clientVehicles.preview.defaultPlan")}{" "}
+                        · {estimatedMinutes} {t("rentalDetail.min")}
+                      </Text>
+                      {previewLoading && (
+                        <Text style={styles.priceLineMuted}>
+                          {t("clientVehicles.preview.loading")}
+                        </Text>
+                      )}
+                      {previewError && (
+                        <View style={styles.previewWarningRow}>
+                          <Text style={styles.previewWarningText}>
+                            {t("clientVehicles.preview.unavailable")}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => void loadPreview(confirmVehicle)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.previewRetryText}>
+                              {t("common.retry")}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      <Text style={styles.priceLine}>
+                        {t("clientVehicles.preview.unlockFee")}:{" "}
+                        {preview.unlockFee} ₽
+                      </Text>
+                      <Text style={styles.priceLine}>
+                        {t("clientVehicles.preview.estimatedHour")}:{" "}
+                        {preview.rentalCost} ₽
+                      </Text>
+                      <Text style={styles.priceLine}>
+                        {t("clientVehicles.preview.subtotal")}:{" "}
+                        {preview.subtotal} ₽
+                      </Text>
+                      <Text style={styles.priceLineMuted}>
+                        {t("clientVehicles.preview.deposit")}:{" "}
+                        {preview.depositAmount} ₽
+                      </Text>
+                      <Text style={styles.priceTotal}>
+                        {t("clientVehicles.preview.totalDueNow")}:{" "}
+                        {preview.totalDueNow} ₽
+                      </Text>
+                    </>
+                  );
+                })()}
+              </View>
+            )}
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -567,6 +722,45 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 8,
+  },
+  priceCard: {
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    width: "100%",
+    gap: 3,
+  },
+  priceTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#1a1a1a" },
+  priceLine: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#333" },
+  priceLineMuted: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#6b6b6b",
+    marginTop: 4,
+  },
+  priceTotal: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
+    color: "#1a1a1a",
+    marginTop: 4,
+  },
+  previewWarningRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  previewWarningText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#A15C00",
+    fontFamily: "Inter_500Medium",
+  },
+  previewRetryText: {
+    fontSize: 12,
+    color: "#1a1a1a",
+    fontFamily: "Inter_700Bold",
   },
   modalActions: {
     flexDirection: "row",

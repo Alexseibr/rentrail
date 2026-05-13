@@ -4,24 +4,27 @@ import type { Request } from "express";
 interface AuditParams {
   companyId?: string | null;
   userId?: string | null;
+  actorUserId?: string | null;
   action: string;
   entityType: string;
   entityId?: string | null;
-  oldValues?: unknown;
-  newValues?: unknown;
+  before?: unknown;
+  after?: unknown;
+  metadata?: unknown;
   req?: Request;
 }
 
 export async function createAuditLog(params: AuditParams): Promise<void> {
   await db.insert(auditLogs).values({
     companyId: params.companyId ?? null,
-    userId: params.userId ?? null,
+    actorUserId: params.userId ?? params.actorUserId ?? null,
     action: params.action,
     entityType: params.entityType,
     entityId: params.entityId ?? null,
-    oldValues: params.oldValues ?? null,
-    newValues: params.newValues ?? null,
-    ipAddress: params.req?.ip ?? null,
+    before: params.before ?? null,
+    after: params.after ?? null,
+    metadata: params.metadata ?? null,
+    ip: params.req?.ip ?? null,
     userAgent: params.req?.headers["user-agent"] ?? null,
   });
 }

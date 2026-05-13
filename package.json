@@ -22,8 +22,6 @@
     "lint:eslint:strict": "eslint . --max-warnings 0",
     "lint:eslint:fix": "eslint . --fix",
     "lint:fix": "prettier --write .",
-    "lint:eslint:fix": "eslint . --fix",
-    "lint:fix": "prettier --write .",
     "format:check": "prettier --check . || (printf '\\n[Format check failed] One or more files are not formatted correctly.\\nRun: pnpm run lint:fix\\n\\n' >&2 && exit 1)",
     "seed": "pnpm --filter @workspace/scripts run seed-rbac",
     "seed:demo": "pnpm --filter @workspace/scripts run seed-demo",
@@ -45,15 +43,6 @@
     "dev:doctor:json": "bash scripts/dev-doctor.sh --json",
     "test:smoke": "bash scripts/run-with-db.sh vitest run --config vitest.integration.ts artifacts/api-server/src/__tests__/integration/auth.int.test.ts artifacts/api-server/src/__tests__/integration/rentals.int.test.ts artifacts/api-server/src/__tests__/integration/payment-flows.int.test.ts --bail",
     "dev:verify:smoke": "pnpm run dev:bootstrap && pnpm run test:smoke"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{js,mjs,cjs,jsx,json,css,md,yaml,yml}": [
-      "prettier --write"
-    ]
   },
   "lint-staged": {
     "*.{ts,tsx}": [

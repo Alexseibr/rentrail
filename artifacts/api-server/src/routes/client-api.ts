@@ -7,9 +7,10 @@ import {
   rentalPlans,
   branches,
   clients,
+  clientPaymentMethods,
   telemetrySnapshots,
 } from "@workspace/db";
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { eq, and, sql, inArray, isNull } from "drizzle-orm";
 import {
   UnauthorizedError,
   BadRequestError,
@@ -19,6 +20,7 @@ import * as commandService from "../services/command.service";
 import * as telemetryService from "../services/telemetry.service";
 import { logger } from "../lib/logger";
 import { getBody } from "../lib/request-body";
+import { z } from "zod/v4";
 
 const router = Router();
 
@@ -37,6 +39,16 @@ function requireClient(req: Request) {
 }
 
 function handleError(res: Response, err: unknown, context: string) {
+  if (err instanceof z.ZodError) {
+    res.status(400).json({
+      error: {
+        code: "VALIDATION",
+        message: "Validation failed",
+        details: err.issues,
+      },
+    });
+    return;
+  }
   if (err instanceof UnauthorizedError) {
     res
       .status(401)
@@ -79,6 +91,192 @@ async function requireActiveRentalForAsset(
     );
   return rental;
 }
+
+router.get("/client/payment-methods", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const items = await db
+      .select({
+        id: clientPaymentMethods.id,
+        provider: clientPaymentMethods.provider,
+        title: clientPaymentMethods.title,
+        isDefault: clientPaymentMethods.isDefault,
+        metadata: clientPaymentMethods.metadata,
+      })
+      .from(clientPaymentMethods)
+      .where(
+        and(
+          eq(clientPaymentMethods.companyId, companyId),
+          eq(clientPaymentMethods.clientId, clientId),
+          isNull(clientPaymentMethods.archivedAt),
+        ),
+      )
+      .orderBy(
+        sql`${clientPaymentMethods.isDefault} DESC, ${clientPaymentMethods.createdAt} DESC`,
+      );
+    res.json({ data: items });
+  } catch (err: unknown) {
+    handleError(res, err, "GET /client/payment-methods");
+  }
+});
+
+router.post("/client/payment-methods", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const createPaymentMethodSchema = z.object({
+      provider: z.enum(["yukassa", "tinkoff", "cloudpayments"]),
+      token: z.string().min(1),
+      title: z.string().max(255).optional(),
+      metadata: z
+        .object({
+          brand: z.string().min(1).max(50).optional(),
+          maskedPan: z
+            .string()
+            .regex(/^[0-9* ]{6,25}$/)
+            .optional(),
+        })
+        .passthrough()
+        .optional(),
+      isDefault: z.boolean().optional(),
+    });
+    const body = createPaymentMethodSchema.parse(getBody<unknown>(req));
+
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(clientPaymentMethods)
+      .where(
+        and(
+          eq(clientPaymentMethods.companyId, companyId),
+          eq(clientPaymentMethods.clientId, clientId),
+          isNull(clientPaymentMethods.archivedAt),
+        ),
+      );
+    const hasMethods = Number(count) > 0;
+    const shouldBeDefault = body.isDefault === true || !hasMethods;
+
+    if (shouldBeDefault) {
+      await db
+        .update(clientPaymentMethods)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(clientPaymentMethods.companyId, companyId),
+            eq(clientPaymentMethods.clientId, clientId),
+            isNull(clientPaymentMethods.archivedAt),
+          ),
+        );
+    }
+
+    const [created] = await db
+      .insert(clientPaymentMethods)
+      .values({
+        companyId,
+        clientId,
+        provider: body.provider,
+        token: body.token,
+        title: body.title ?? null,
+        metadata: body.metadata ?? null,
+        isDefault: shouldBeDefault,
+      })
+      .returning();
+    res.status(201).json({ data: created });
+  } catch (err: unknown) {
+    handleError(res, err, "POST /client/payment-methods");
+  }
+});
+
+router.delete("/client/payment-methods/:id", authenticate, async (req, res) => {
+  try {
+    const { clientId, companyId } = requireClient(req);
+    const id = req.params.id as string;
+    const [method] = await db
+      .select({
+        id: clientPaymentMethods.id,
+        isDefault: clientPaymentMethods.isDefault,
+      })
+      .from(clientPaymentMethods)
+      .where(
+        and(
+          eq(clientPaymentMethods.id, id),
+          eq(clientPaymentMethods.companyId, companyId),
+          eq(clientPaymentMethods.clientId, clientId),
+          isNull(clientPaymentMethods.archivedAt),
+        ),
+      )
+      .limit(1);
+    if (!method) throw new NotFoundError("Payment method not found");
+    await db
+      .update(clientPaymentMethods)
+      .set({ archivedAt: new Date(), isDefault: false, updatedAt: new Date() })
+      .where(eq(clientPaymentMethods.id, id));
+
+    if (method.isDefault) {
+      const [fallback] = await db
+        .select({ id: clientPaymentMethods.id })
+        .from(clientPaymentMethods)
+        .where(
+          and(
+            eq(clientPaymentMethods.companyId, companyId),
+            eq(clientPaymentMethods.clientId, clientId),
+            isNull(clientPaymentMethods.archivedAt),
+          ),
+        )
+        .orderBy(sql`${clientPaymentMethods.createdAt} DESC`)
+        .limit(1);
+
+      if (fallback) {
+        await db
+          .update(clientPaymentMethods)
+          .set({ isDefault: true, updatedAt: new Date() })
+          .where(eq(clientPaymentMethods.id, fallback.id));
+      }
+    }
+    res.json({ data: { id, archived: true } });
+  } catch (err: unknown) {
+    handleError(res, err, "DELETE /client/payment-methods/:id");
+  }
+});
+
+router.post(
+  "/client/payment-methods/:id/default",
+  authenticate,
+  async (req, res) => {
+    try {
+      const { clientId, companyId } = requireClient(req);
+      const id = req.params.id as string;
+      const [method] = await db
+        .select({ id: clientPaymentMethods.id })
+        .from(clientPaymentMethods)
+        .where(
+          and(
+            eq(clientPaymentMethods.id, id),
+            eq(clientPaymentMethods.companyId, companyId),
+            eq(clientPaymentMethods.clientId, clientId),
+            isNull(clientPaymentMethods.archivedAt),
+          ),
+        )
+        .limit(1);
+      if (!method) throw new NotFoundError("Payment method not found");
+      await db
+        .update(clientPaymentMethods)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(clientPaymentMethods.companyId, companyId),
+            eq(clientPaymentMethods.clientId, clientId),
+            isNull(clientPaymentMethods.archivedAt),
+          ),
+        );
+      await db
+        .update(clientPaymentMethods)
+        .set({ isDefault: true, updatedAt: new Date() })
+        .where(eq(clientPaymentMethods.id, id));
+      res.json({ data: { id, isDefault: true } });
+    } catch (err: unknown) {
+      handleError(res, err, "POST /client/payment-methods/:id/default");
+    }
+  },
+);
 
 router.get("/client/vehicles", authenticate, async (req, res) => {
   try {
@@ -344,7 +542,36 @@ router.post("/client/rentals", authenticate, async (req, res) => {
       .set({ status: "rented", updatedAt: new Date() })
       .where(eq(assets.id, assetId));
 
-    res.status(201).json({ data: rental });
+    let unlockCommand: {
+      commandId: string;
+      status: string;
+      transport: "queued" | "failed";
+    } | null = null;
+    try {
+      const cmd = await commandService.enqueueAssetCommand(
+        companyId,
+        assetId,
+        "unlock",
+        clientId,
+      );
+      unlockCommand = {
+        commandId: cmd.id,
+        status: cmd.status,
+        transport: "queued",
+      };
+    } catch (commandErr) {
+      logger.error(
+        { err: commandErr, companyId, assetId, rentalId: rental.id },
+        "Failed to enqueue unlock command after client rental start",
+      );
+      unlockCommand = {
+        commandId: "",
+        status: "failed",
+        transport: "failed",
+      };
+    }
+
+    res.status(201).json({ data: { ...rental, unlockCommand } });
   } catch (err: unknown) {
     handleError(res, err, "POST /client/rentals");
   }
@@ -521,6 +748,99 @@ router.get("/client/vehicles/:id", authenticate, async (req, res) => {
     handleError(res, err, "GET /client/vehicles/:id");
   }
 });
+
+router.get(
+  "/client/vehicles/:id/price-preview",
+  authenticate,
+  async (req, res) => {
+    try {
+      const { companyId } = requireClient(req);
+      const assetId = req.params.id as string;
+      const requestedPlanId =
+        typeof req.query.rentalPlanId === "string"
+          ? req.query.rentalPlanId
+          : undefined;
+
+      const [asset] = await db
+        .select({
+          id: assets.id,
+          companyId: assets.companyId,
+          status: assets.status,
+          isPublic: assets.isPublic,
+        })
+        .from(assets)
+        .where(and(eq(assets.id, assetId), eq(assets.companyId, companyId)))
+        .limit(1);
+
+      if (!asset || !asset.isPublic || asset.status !== "available") {
+        throw new NotFoundError("Vehicle not found");
+      }
+
+      const [plan] = requestedPlanId
+        ? await db
+            .select({
+              id: rentalPlans.id,
+              name: rentalPlans.name,
+              price: rentalPlans.price,
+              currency: rentalPlans.currency,
+              depositAmount: rentalPlans.depositAmount,
+            })
+            .from(rentalPlans)
+            .where(
+              and(
+                eq(rentalPlans.id, requestedPlanId),
+                eq(rentalPlans.companyId, companyId),
+                eq(rentalPlans.isActive, true),
+              ),
+            )
+            .limit(1)
+        : await db
+            .select({
+              id: rentalPlans.id,
+              name: rentalPlans.name,
+              price: rentalPlans.price,
+              currency: rentalPlans.currency,
+              depositAmount: rentalPlans.depositAmount,
+            })
+            .from(rentalPlans)
+            .where(
+              and(
+                eq(rentalPlans.companyId, companyId),
+                eq(rentalPlans.isActive, true),
+                eq(rentalPlans.rentalType, "hourly"),
+              ),
+            )
+            .limit(1);
+
+      if (requestedPlanId && !plan) {
+        throw new BadRequestError("Rental plan not found or not available");
+      }
+
+      const hourlyPrice = plan?.price != null ? Number(plan.price) : 0;
+      const depositAmount =
+        plan?.depositAmount != null ? Number(plan.depositAmount) : 0;
+      const unlockFee = 0;
+      const rentalCost = hourlyPrice;
+      const subtotal = unlockFee + rentalCost;
+
+      res.json({
+        data: {
+          rentalPlanId: plan?.id ?? null,
+          rentalPlanName: plan?.name ?? "default",
+          estimatedDurationMinutes: 60,
+          currency: plan?.currency ?? "USD",
+          unlockFee,
+          rentalCost,
+          subtotal,
+          depositAmount,
+          totalDueNow: subtotal + depositAmount,
+        },
+      });
+    } catch (err: unknown) {
+      handleError(res, err, "GET /client/vehicles/:id/price-preview");
+    }
+  },
+);
 
 router.get("/client/vehicles/:id/locations", authenticate, async (req, res) => {
   try {

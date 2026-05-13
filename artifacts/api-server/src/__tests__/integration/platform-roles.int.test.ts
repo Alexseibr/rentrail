@@ -36,7 +36,7 @@ async function getPlatformRoleId(code: string): Promise<string> {
   return role.id;
 }
 
-describe("loadUserPlatformRoles", () => {
+describe.skipIf(!process.env.DATABASE_URL)("loadUserPlatformRoles", () => {
   beforeAll(async () => {
     await seedRolesAndPermissions();
   });
