@@ -382,5 +382,47 @@ describe("Auth API", () => {
         .send({ refreshToken });
       expect(refresh.status).toBe(401);
     });
+
+    it("revokes all client refresh tokens after logout-all", async () => {
+      const loginOne = await request(testApp)
+        .post("/api/auth/client/login")
+        .send({
+          companyId: tenantCompanyId,
+          phone: clientPhone,
+          password,
+        });
+      const loginTwo = await request(testApp)
+        .post("/api/auth/client/login")
+        .send({
+          companyId: tenantCompanyId,
+          phone: clientPhone,
+          password,
+        });
+
+      expect(loginOne.status).toBe(200);
+      expect(loginTwo.status).toBe(200);
+
+      const accessToken = resBody<ApiResponse>(loginOne).data
+        .accessToken as string;
+      const refreshOne = resBody<ApiResponse>(loginOne).data
+        .refreshToken as string;
+      const refreshTwo = resBody<ApiResponse>(loginTwo).data
+        .refreshToken as string;
+
+      const logoutAll = await request(testApp)
+        .post("/api/auth/client/logout-all")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(logoutAll.status).toBe(200);
+
+      const refreshAfterLogoutAllOne = await request(testApp)
+        .post("/api/auth/client/refresh")
+        .send({ refreshToken: refreshOne });
+      const refreshAfterLogoutAllTwo = await request(testApp)
+        .post("/api/auth/client/refresh")
+        .send({ refreshToken: refreshTwo });
+
+      expect(refreshAfterLogoutAllOne.status).toBe(401);
+      expect(refreshAfterLogoutAllTwo.status).toBe(401);
+    });
   });
 });

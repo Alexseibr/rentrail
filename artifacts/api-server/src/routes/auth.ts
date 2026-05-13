@@ -375,6 +375,18 @@ router.post("/auth/client/logout", authenticate, async (req, res) => {
   res.json({ data: { success: true } });
 });
 
+router.post("/auth/client/logout-all", authenticate, async (req, res) => {
+  if (!req.user?.clientId) {
+    res
+      .status(403)
+      .json({ error: { code: "FORBIDDEN", message: "Not a client token" } });
+    return;
+  }
+
+  await clientAuthService.revokeClientRefreshTokens(req.user.clientId);
+  res.json({ data: { success: true } });
+});
+
 router.get("/auth/client/me", authenticate, async (req, res) => {
   if (!req.user?.clientId) {
     res
