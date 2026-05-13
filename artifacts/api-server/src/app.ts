@@ -6,6 +6,10 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { errorHandler } from "./middlewares/error-handler";
 import { correlationId } from "./middlewares/correlation-id";
+import {
+  getRentalOverdueSchedulerIntervalMs,
+  startRentalOverdueScheduler,
+} from "./services/rental-overdue-scheduler";
 
 const app: Express = express();
 
@@ -70,6 +74,7 @@ app.use("/api/client/vehicles/:id/unlock", iotLimiter);
 app.use("/api/client/vehicles/:id/arm", iotLimiter);
 app.use("/api/client/vehicles/:id/disarm", iotLimiter);
 app.use("/api", router);
+startRentalOverdueScheduler(getRentalOverdueSchedulerIntervalMs());
 
 app.use(errorHandler);
 

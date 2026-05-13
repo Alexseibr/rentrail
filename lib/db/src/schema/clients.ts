@@ -6,6 +6,7 @@ import {
   timestamp,
   date,
   integer,
+  smallint,
   index,
   unique,
 } from "drizzle-orm/pg-core";
@@ -31,6 +32,7 @@ export const clients = pgTable(
     notes: text("notes"),
     status: clientStatusEnum("status").default("active").notNull(),
     rating: integer("rating").default(0).notNull(),
+    refreshTokenVersion: smallint("refresh_token_version").default(1).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
     archivedAt: timestamp("archived_at"),

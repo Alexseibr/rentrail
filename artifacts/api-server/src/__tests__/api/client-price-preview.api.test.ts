@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 import { db, rentalPlans } from "@workspace/db";
 import { clients } from "@workspace/db/schema";
@@ -145,5 +145,92 @@ describe("client price preview API", () => {
     );
 
     expect(res.status).toBe(401);
+  });
+
+  it("supports CRUD-like flow for client payment methods", async () => {
+    const createRes = await request(testApp)
+      .post("/api/client/payment-methods")
+      .set("Authorization", `Bearer ${clientToken}`)
+      .send({
+        provider: "yukassa",
+        token: "pm_test_123",
+        title: "Visa •• 1234",
+      });
+    expect(createRes.status).toBe(201);
+    const methodId = createRes.body.data.id as string;
+    expect(createRes.body.data.isDefault).toBe(true);
+
+    const listRes = await request(testApp)
+      .get("/api/client/payment-methods")
+      .set("Authorization", `Bearer ${clientToken}`);
+    expect(listRes.status).toBe(200);
+    expect(
+      (listRes.body.data as Array<{ id: string }>).some(
+        (m) => m.id === methodId,
+      ),
+    ).toBe(true);
+
+    const defaultRes = await request(testApp)
+      .post(`/api/client/payment-methods/${methodId}/default`)
+      .set("Authorization", `Bearer ${clientToken}`);
+    expect(defaultRes.status).toBe(200);
+    expect(defaultRes.body.data.isDefault).toBe(true);
+
+    const secondCreateRes = await request(testApp)
+      .post("/api/client/payment-methods")
+      .set("Authorization", `Bearer ${clientToken}`)
+      .send({
+        provider: "tinkoff",
+        token: "pm_test_456",
+        title: "Mastercard •• 5678",
+      });
+    expect(secondCreateRes.status).toBe(201);
+    const secondMethodId = secondCreateRes.body.data.id as string;
+    expect(secondCreateRes.body.data.isDefault).toBe(false);
+
+    const deleteRes = await request(testApp)
+      .delete(`/api/client/payment-methods/${methodId}`)
+      .set("Authorization", `Bearer ${clientToken}`);
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.data.archived).toBe(true);
+
+    const listAfterDelete = await request(testApp)
+      .get("/api/client/payment-methods")
+      .set("Authorization", `Bearer ${clientToken}`);
+    expect(listAfterDelete.status).toBe(200);
+    const fallbackDefault = (
+      listAfterDelete.body.data as Array<{
+        id: string;
+        isDefault: boolean;
+      }>
+    ).find((m) => m.id === secondMethodId);
+    expect(fallbackDefault?.isDefault).toBe(true);
+  });
+
+  it("rejects payment method with unsupported provider", async () => {
+    const res = await request(testApp)
+      .post("/api/client/payment-methods")
+      .set("Authorization", `Bearer ${clientToken}`)
+      .send({
+        provider: "stripe",
+        token: "pm_bad_provider",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION");
+  });
+
+  it("rejects payment method with invalid card metadata", async () => {
+    const res = await request(testApp)
+      .post("/api/client/payment-methods")
+      .set("Authorization", `Bearer ${clientToken}`)
+      .send({
+        provider: "yukassa",
+        token: "pm_bad_metadata",
+        metadata: { maskedPan: "4111-****-1111" },
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION");
   });
 });

@@ -51,13 +51,14 @@ function future(daysAhead: number): Date {
   return d;
 }
 
-async function getRoleId(code: string): Promise<string> {
+async function getRoleId(roleName: string): Promise<string> {
   const [role] = await db
     .select()
     .from(roles)
-    .where(eq(roles.code, code))
+    .where(eq(roles.name, roleName))
     .limit(1);
-  if (!role) throw new Error(`Role '${code}' not found. Run seed-rbac first.`);
+  if (!role)
+    throw new Error(`Role '${roleName}' not found. Run seed-rbac first.`);
   return role.id;
 }
 

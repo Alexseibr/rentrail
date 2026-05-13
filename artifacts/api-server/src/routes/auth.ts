@@ -221,6 +221,16 @@ const clientLoginSchema = z.object({
   password: z.string().min(1),
   companyId: z.string().uuid().optional(),
 });
+const clientRequestOtpSchema = z.object({
+  phone: z.string().min(7),
+  companyId: z.string().uuid().optional(),
+});
+const clientVerifyOtpSchema = z.object({
+  phone: z.string().min(7),
+  code: z.string().length(6),
+  newPassword: z.string().min(6),
+  companyId: z.string().uuid().optional(),
+});
 
 router.post(
   "/auth/client/login",
@@ -237,7 +247,52 @@ router.post(
   },
 );
 
+router.post(
+  "/auth/client/request-otp",
+  validate({ body: clientRequestOtpSchema }),
+  async (req, res) => {
+    const { phone, companyId } =
+      getBody<z.infer<typeof clientRequestOtpSchema>>(req);
+    const result = await clientAuthService.clientRequestOtp(phone, companyId);
+    res.json({ data: result });
+  },
+);
+
+router.post(
+  "/auth/client/verify-otp",
+  validate({ body: clientVerifyOtpSchema }),
+  async (req, res) => {
+    const { phone, code, newPassword, companyId } =
+      getBody<z.infer<typeof clientVerifyOtpSchema>>(req);
+    const result = await clientAuthService.clientVerifyOtpAndSetPassword(
+      phone,
+      code,
+      newPassword,
+      companyId,
+    );
+    res.json({ data: result });
+  },
+);
+
 const clientRefreshSchema = z.object({ refreshToken: z.string().min(1) });
+
+const clientRegisterSchema = z.object({
+  companyId: z.string().uuid(),
+  fullName: z.string().min(2),
+  phone: z.string().min(7),
+  password: z.string().min(6),
+  email: z.string().email().optional(),
+});
+
+router.post(
+  "/auth/client/register",
+  validate({ body: clientRegisterSchema }),
+  async (req, res) => {
+    const body = getBody<z.infer<typeof clientRegisterSchema>>(req);
+    const result = await clientAuthService.clientRegisterWithPassword(body);
+    res.status(201).json({ data: result });
+  },
+);
 
 router.post(
   "/auth/client/refresh",
@@ -250,6 +305,7 @@ router.post(
         clientId: string;
         companyId: string;
         tokenType: string;
+        version?: number;
       };
       if (payload.tokenType !== "client-refresh") {
         res.status(401).json({
@@ -258,7 +314,11 @@ router.post(
         return;
       }
       const [client] = await db
-        .select({ id: clients.id, status: clients.status })
+        .select({
+          id: clients.id,
+          status: clients.status,
+          refreshTokenVersion: clients.refreshTokenVersion,
+        })
         .from(clients)
         .where(eq(clients.id, payload.clientId))
         .limit(1);
@@ -267,6 +327,18 @@ router.post(
           error: {
             code: "UNAUTHORIZED",
             message: "Client not found or suspended",
+          },
+        });
+        return;
+      }
+      if (
+        typeof payload.version !== "number" ||
+        payload.version !== client.refreshTokenVersion
+      ) {
+        res.status(401).json({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Refresh token revoked",
           },
         });
         return;
@@ -290,6 +362,18 @@ router.post(
     }
   },
 );
+
+router.post("/auth/client/logout", authenticate, async (req, res) => {
+  if (!req.user?.clientId) {
+    res
+      .status(403)
+      .json({ error: { code: "FORBIDDEN", message: "Not a client token" } });
+    return;
+  }
+
+  await clientAuthService.revokeClientRefreshTokens(req.user.clientId);
+  res.json({ data: { success: true } });
+});
 
 router.get("/auth/client/me", authenticate, async (req, res) => {
   if (!req.user?.clientId) {

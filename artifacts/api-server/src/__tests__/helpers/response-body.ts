@@ -1,7 +1,7 @@
 import type { Response } from "supertest";
 
-export type ApiResponse = {
-  data: Record<string, unknown>;
+export type ApiResponse<TData = Record<string, unknown>> = {
+  data: TData;
   error: { code: string; message: string };
 };
 

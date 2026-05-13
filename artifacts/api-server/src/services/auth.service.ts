@@ -281,7 +281,7 @@ export async function getCurrentUser(userId: string) {
       companyId: userCompanyMemberships.companyId,
       companyName: companies.name,
       roleId: userCompanyMemberships.roleId,
-      roleCode: roles.code,
+      roleCode: roles.name,
       roleName: roles.name,
       status: userCompanyMemberships.status,
     })
@@ -295,7 +295,7 @@ export async function getCurrentUser(userId: string) {
       companyId: userBranchMemberships.companyId,
       branchId: userBranchMemberships.branchId,
       roleId: userBranchMemberships.roleId,
-      roleCode: roles.code,
+      roleCode: roles.name,
       roleName: roles.name,
       status: userBranchMemberships.status,
     })
